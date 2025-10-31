@@ -1,0 +1,28 @@
+{
+  "name": "npm",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build-dev": "vite build --mode development",
+    "build-prod": "vite build --mode production"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite": "^7.1.12",
+    "vite-plugin-mkcert": "^1.17.9"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.1.16",
+    "@tsparticles/engine": "^3.9.1",
+    "@types/animejs": "^3.1.13",
+    "animejs": "^4.2.2",
+    "tailwindcss": "^4.1.16",
+    "tsparticles": "^3.9.1"
+  }
+}

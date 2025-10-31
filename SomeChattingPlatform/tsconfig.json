@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "module": "NodeNext",
-    "target": "es6",
+    "module": "ESNext",
+    "target": "ESNext",
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
@@ -21,9 +21,11 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "moduleResolution": "nodenext",
-    "noEmit": false
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "outDir": "wwwroot/js",
+    "rootDir": "ts"
   },
-  "include": ["ts/**/*.ts"],
+  "include": ["Client/scripts/**/*.ts", "Client/scripts/**/*.tsx"],
   "exclude": ["node_modules"]
 }

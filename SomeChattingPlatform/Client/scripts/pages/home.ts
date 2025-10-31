@@ -1,15 +1,16 @@
 ﻿import { tsParticles } from "@tsparticles/engine"
 import { loadFull } from "tsparticles"
 
-initParticlesBackground('js-particles-background').catch((error) => {
-    console.log("Failed to initialize particles background. Error: " + error);
-});
+export async function initParticlesBackground(selectors: string): Promise<void> {
+    const element = document.querySelector<HTMLElement>(selectors);
 
-export async function initParticlesBackground(elementId: string): Promise<void> {
+    if (!element) return;
+
     await loadFull(tsParticles);
 
     await tsParticles.load({
-        id: elementId,
+        id: 'particles-background',
+        element: element,
         options: {
             fullScreen: true,
             particles: {

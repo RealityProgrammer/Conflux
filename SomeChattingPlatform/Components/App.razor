@@ -1,16 +1,27 @@
-﻿<!DOCTYPE html>
+﻿@inject IWebHostEnvironment env
+@inject IViteManifest manifest
+@inject IViteDevServerStatus vite
+
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <base href="/"/>
-    <link rel="stylesheet" href="@Assets["css/reset-style.css"]"/>
-    <link rel="stylesheet" href="@Assets["css/style.css"]"/>
     <link rel="stylesheet" href="@Assets["SomeChattingPlatform.styles.css"]"/>
     <ImportMap/>
-    <link rel="icon" type="image/png" href="favicon.png"/>
+    @* <link rel="icon" type="image/png" href="favicon.png"/> *@
     <HeadOutlet/>
+    
+    @if (env.IsDevelopment() && vite.IsMiddlewareEnable) {
+        <script type="module" src="@@vite/client"></script>
+        <link rel="stylesheet" href="styles/input.css" />
+    } else {
+        if (manifest["styles/input.css"] is { } styleCss) {
+            <link rel="stylesheet" href="@styleCss.File" />
+        }
+    }
 </head>
 
 <body>

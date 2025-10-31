@@ -1,0 +1,177 @@
+﻿@page "/auth"
+
+@using SomeChattingPlatform.Components.Shared
+
+@rendermode InteractiveServer
+
+@implements IAsyncDisposable
+
+@inject IWebHostEnvironment env
+@inject IViteManifest manifest
+@inject IViteDevServerStatus vite
+@inject IJSRuntime js
+
+<PageTitle>Authenticate</PageTitle>
+
+<div class="absolute inset-0 morph-gradient-bg z-1">
+    <svg xmlns="http://www.w3.org/2000/svg" class="size-0">
+        <defs>
+            <filter id="goo">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur"/>
+                <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0   0 1 0 0 0   0 0 1 0 0   0 0 0 18 -8" result="goo"/>
+                <feBlend in="SourceGraphic" in2="goo"/>
+            </filter>
+        </defs>
+    </svg>
+    
+    <div class="morph-gradient-container">
+        <div class="gradient-element-1"></div>
+        <div class="gradient-element-2"></div>
+        <div class="gradient-element-3"></div>
+        <div class="gradient-element-4"></div>
+        <div class="gradient-element-5"></div>
+    </div>
+</div>
+
+<div class="z-1 absolute inset-0 grid grid-cols-3 overflow-hidden">
+    <section class="col-start-2">
+        <FlipCard @ref="_flipCard" class="size-full" FlipDuration="500ms">
+            <Front>
+                <div class="size-full flex flex-row justify-center items-center">
+                    <div class="bg-gray-700 w-full rounded-3xl shadow-xl text-white relative overflow-hidden transition-transform duration-500 ease-linear" id="login-panel">
+                        <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+
+                        <div class="p-10 size-full">
+                            <div class="w-full">
+                                <h1 class="text-center font-bold text-3xl text-white">Welcome Back</h1>
+                                <p class="text-center text-gray-400 text-sm mt-2">Identify yourself</p>
+
+                                <EditForm method="post" class="mt-8">
+                                    <div>
+                                        <label class="text-sm text-gray-300">Username</label>
+                                        <input type="email" name="username" required placeholder="Enter Username"
+                                               class="w-full h-11 mt-2 bg-gray-700/60 rounded-lg px-3 text-gray-200 placeholder-gray-500 outline-none border border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all">
+                                    </div>
+
+                                    <div class="mt-4">
+                                        <label class="text-sm text-gray-300">Password</label>
+                                        <input type="password" name="Password" required placeholder="Enter Password"
+                                               class="w-full h-11 mt-2 bg-gray-700/60 rounded-lg px-3 text-gray-200 placeholder-gray-500 outline-none border border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all">
+                                    </div>
+
+                                    <div class="flex items-center justify-between text-sm text-gray-400 mt-4">
+                                        <label class="flex items-center space-x-2">
+                                            <input type="checkbox" class="accent-indigo-500">
+                                            <span>Remember me</span>
+                                        </label>
+                                        <a href="#" class="hover:text-indigo-400 transition-colors">Forgot password?</a>
+                                    </div>
+
+                                    <button type="submit" class="w-full h-11 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 rounded-lg text-white font-semibold shadow-md transition-all duration-300 mt-4 cursor-pointer">
+                                        Log In
+                                    </button>
+
+                                    <p class="text-center text-gray-400 text-sm mt-2">
+                                        No account? Click <span class="underline cursor-pointer" @onclick="FlipCard">here</span> to create one.
+                                    </p>
+                                </EditForm>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </Front>
+
+            <Back>
+                <div class="size-full flex flex-row justify-center items-center">
+                    <div class="bg-gray-700 w-full rounded-3xl shadow-xl text-white relative overflow-hidden" id="register-panel">
+                        <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+                    
+                        <div class="p-10 size-full">
+                            <div class="w-full">
+                                <h1 class="text-center font-bold text-3xl text-white">Welcome</h1>
+                                <p class="text-center text-gray-400 text-sm mt-2">You got drink?</p>
+                    
+                                <form method="post" class="mt-8">
+                                    <div>
+                                        <label class="text-sm text-gray-300">Username</label>
+                                        <input type="email" name="username" required placeholder="Enter Username"
+                                               class="w-full h-11 mt-2 bg-gray-700/60 rounded-lg px-3 text-gray-200 placeholder-gray-500 outline-none border border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all">
+                                    </div>
+                    
+                                    <div class="mt-4">
+                                        <label class="text-sm text-gray-300">Password</label>
+                                        <input type="password" name="password" required placeholder="Enter Password"
+                                               class="w-full h-11 mt-2 bg-gray-700/60 rounded-lg px-3 text-gray-200 placeholder-gray-500 outline-none border border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all">
+                                    </div>
+                    
+                                    <div class="mt-4">
+                                        <label class="text-sm text-gray-300">Password Confirmation</label>
+                                        <input type="password" name="password_confirmation" required placeholder="Confirm Password"
+                                               class="w-full h-11 mt-2 bg-gray-700/60 rounded-lg px-3 text-gray-200 placeholder-gray-500 outline-none border border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all">
+                                    </div>
+                                    
+                                    <div class="mt-4 flex flex-row gap-2">
+                                        <input type="checkbox">
+                                        
+                                        <label>
+                                            You agree to our goddamn long-ass Terms And Conditions that you probably don't even bother to read.
+                                        </label>
+                                    </div>
+                    
+                                    <button type="submit" class="w-full h-11 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 rounded-lg text-white font-semibold shadow-md transition-all duration-300 mt-4 cursor-pointer">
+                                        Register
+                                    </button>
+                    
+                                    <p class="text-center text-gray-400 text-sm mt-2">
+                                        Already have an account? Click <span class="underline cursor-pointer" @onclick="FlipCard">here</span> to login.
+                                    </p>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </Back>
+        </FlipCard>
+    </section>
+</div>
+
+@if (env.IsDevelopment() && vite.IsMiddlewareEnable) {
+    <script type="module" src="scripts/pages/authentication.ts" defer></script>
+} else {
+    if (manifest["scripts/pages/authentication.ts"] is { } chunk) {
+        <script type="module" src="@chunk.File" defer></script>
+
+        if (chunk.Imports != null) {
+            foreach (string import in chunk.Imports) {
+                if (!manifest.ContainsKey(import)) continue;
+
+                <script type="module" src="@manifest[import]!.File" defer></script>
+            }
+        }
+    }
+}
+
+@code {
+    private IJSObjectReference? _module;
+    private FlipCard? _flipCard;
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            _module = await js.InvokeAsync<IJSObjectReference>("import", "./scripts/pages/authentication.ts");
+            await _module.InvokeVoidAsync("initBackground");
+        }
+    }
+
+    public async ValueTask DisposeAsync() {
+        if (_module != null) {
+            try {
+                await _module.DisposeAsync();
+            } catch (JSDisconnectedException) {
+            }
+        }
+    }
+    
+    public void FlipCard() {
+        _flipCard?.Flip();
+    }
+}

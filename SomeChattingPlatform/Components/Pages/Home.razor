@@ -1,14 +1,84 @@
 ﻿@page "/"
+@rendermode InteractiveServer
+
+@implements IAsyncDisposable
+
+@inject IWebHostEnvironment env
+@inject IViteManifest manifest
+@inject IViteDevServerStatus vite
+@inject IJSRuntime js
 
 <PageTitle>Home</PageTitle>
 
-<div class="home-particle-background" id="js-particles-background"></div>
+<div class="fixed inset-0 z-[-1] bg-gray-900" id="js-particles-background"></div>
 
-<header class="navigation-header__container">
+<header class="bg-[#071318] w-full h-18 border-b-2 border-b-[#353535] flex flex-row justify-around items-center px-6">
+    <section class="flex-1">
+        <p class="text-white">Insert cool logo here</p>
+    </section>
     
+    <nav class="flex-3 flex justify-around items-center gap-1">
+        <NavLink class="text-white rounded-full px-7 py-2 font-bold border-2 border-indigo-500/30 hover-rising shimmer" href="#" Match="NavLinkMatch.Prefix">
+            Home
+        </NavLink>
+
+        <NavLink class="text-white rounded-full px-7 py-2 font-bold border-2 border-indigo-500/30 hover-rising shimmer" href="#" Match="NavLinkMatch.Prefix">
+            Safety
+        </NavLink>
+
+        <NavLink class="text-white rounded-full px-7 py-2 font-bold border-2 border-indigo-500/30 hover-rising shimmer" href="#" Match="NavLinkMatch.Prefix">
+            Blog
+        </NavLink>
+
+        <NavLink class="text-white rounded-full px-7 py-2 font-bold border-2 border-indigo-500/30 hover-rising shimmer" href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" Match="NavLinkMatch.Prefix">
+            Download
+        </NavLink>
+
+        <NavLink class="text-white rounded-full px-7 py-2 font-bold border-2 border-indigo-500/30 hover-rising shimmer" href="#" Match="NavLinkMatch.Prefix">
+            About
+        </NavLink>
+    </nav>
+    
+    <section class="flex-1">
+        <div class="button-group justify-end">
+            <a href="/auth?mode=login" class="text-white py-2 font-bold border-indigo-500/30 grow-0 shrink-1 basis-24 text-center shimmer">Login</a>
+            <a href="/auth?mode=register" class="text-white py-2 font-bold border-indigo-500/30 grow-0 shrink-1 basis-24 text-center shimmer">Register</a>
+        </div>
+    </section>
 </header>
 
-<script src="@Assets["js/home.js"]"></script>
+@if (env.IsDevelopment() && vite.IsMiddlewareEnable) {
+    <script type="module" src="scripts/pages/home.ts" defer></script>
+} else {
+    if (manifest["scripts/pages/home.ts"] is { } chunk) {
+        <script type="module" src="@chunk.File" defer></script>
+
+        if (chunk.Imports != null) {
+            foreach (string import in chunk.Imports) {
+                if (!manifest.ContainsKey(import)) continue;
+
+                <script type="module" src="@manifest[import]!.File" defer></script>
+            }
+        }
+    }
+}
 
 @code {
+    private IJSObjectReference? _module;
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            _module = await js.InvokeAsync<IJSObjectReference>("import", "./scripts/pages/home.ts");
+            await _module.InvokeVoidAsync("initParticlesBackground", "#js-particles-background");
+        }
+    }
+
+    public async ValueTask DisposeAsync() {
+        if (_module != null) {
+            try {
+                await _module.DisposeAsync();
+            } catch (JSDisconnectedException) {
+            }
+        }
+    }
 }
