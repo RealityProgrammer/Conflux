@@ -21,6 +21,7 @@ export default defineConfig({
                 styles: './Client/styles/input.css',
                 home: './Client/scripts/pages/home.ts',
                 authentication: './Client/scripts/pages/authentication.ts',
+                components: './Client/scripts/components.ts',
             },
             output: {
                 entryFileNames: chunkInfo => {

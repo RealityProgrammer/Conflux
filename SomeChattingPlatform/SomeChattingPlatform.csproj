@@ -12,12 +12,13 @@
       
     <ItemGroup>
       <Folder Include="Client\public\" />
-      <Folder Include="Client\scripts\components\" />
-      <Folder Include="Migrations\" />
+      <Folder Include="Database\Migrations\" />
       <Folder Include="wwwroot\" />
     </ItemGroup>
 
     <ItemGroup>
+      <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="9.0.10" />
+      <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.10" />
       <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.10" />
       <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.10">
         <PrivateAssets>all</PrivateAssets>

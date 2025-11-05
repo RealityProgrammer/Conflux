@@ -12,8 +12,8 @@
     <link rel="stylesheet" href="@Assets["SomeChattingPlatform.styles.css"]"/>
     <ImportMap/>
     @* <link rel="icon" type="image/png" href="favicon.png"/> *@
-    <HeadOutlet/>
-    
+    <HeadOutlet @rendermode="PageRenderMode"/>
+
     @if (env.IsDevelopment() && vite.IsMiddlewareEnable) {
         <script type="module" src="@@vite/client"></script>
         <link rel="stylesheet" href="styles/input.css" />
@@ -22,11 +22,36 @@
             <link rel="stylesheet" href="@styleCss.File" />
         }
     }
+    
 </head>
 
 <body>
-<Routes/>
+<Routes @rendermode="PageRenderMode"/>
+
+@if (env.IsDevelopment() && vite.IsMiddlewareEnable) {
+    <script type="module" src="scripts/components.ts" defer></script>
+} else {
+    if (manifest["scripts/components.ts"] is { } chunk) {
+        <script type="module" src="@chunk.File" defer></script>
+
+        if (chunk.Imports != null) {
+            foreach (string import in chunk.Imports) {
+                if (!manifest.ContainsKey(import)) continue;
+
+                <script type="module" src="@manifest[import]!.File" defer></script>
+            }
+        }
+    }
+}
+
 <script src="_framework/blazor.web.js"></script>
+
 </body>
 
 </html>
+
+@code {
+    [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
+
+    private IComponentRenderMode? PageRenderMode => HttpContext.AcceptsInteractiveRouting() ? InteractiveServer : null;
+}

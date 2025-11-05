@@ -1,11 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using SomeChattingPlatform.Database.Models;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
 namespace SomeChattingPlatform.Database;
 
-public sealed class ApplicationDbContext : DbContext {
-    public DbSet<User> Users { get; set; }
-
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) {
-    }
+public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : IdentityDbContext<ApplicationUser>(options) {
 }

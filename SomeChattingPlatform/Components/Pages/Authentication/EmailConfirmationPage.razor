@@ -1,0 +1,80 @@
+﻿@using Microsoft.AspNetCore.Identity
+@using SomeChattingPlatform.Components.Services
+@using SomeChattingPlatform.Components.Shared
+@using SomeChattingPlatform.Database
+
+@page "/auth/confirm-email"
+
+@inject UserManager<ApplicationUser> UserManager
+@inject ApplicationRedirectManager RedirectManager
+
+<div class="h-screen w-screen bg-gray-800 grid grid-cols-1 px-4 md:px-0 md:grid-cols-4 lg:grid-cols-3">
+    <div class="col-start-1 col-span-1 md:col-start-2 md:col-span-2 lg:col-start-2 lg:col-span-1">
+        <div class="size-full flex flex-col justify-center items-center">
+            <div class="bg-gray-700 w-full rounded-3xl shadow-xl text-white overflow-hidden relative">
+                <div class="absolute rounded-t-3xl w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+
+                <div class="p-10 flex flex-col justify-center items-center">
+                    @switch (Status) {
+                        case VerificationStatus.InProgress:
+                            <Spinner class="size-16 fill-white"/>
+                            break;
+                    
+                        case VerificationStatus.Completed:
+                            <h1 class="text-center font-bold text-3xl text-white">Verification Success</h1>
+                            <p class="text-center text-gray-400 text-sm mt-2">You will be redirect soon</p>
+                            break;
+                    
+                        case VerificationStatus.Error:
+                            <h1 class="text-center font-bold text-3xl text-white">Verification Failed</h1>
+                            <p class="text-center text-gray-400 text-sm mt-2">An error occured</p>
+                            break;
+                    
+                        default:
+                            <h1 class="text-center font-bold text-3xl text-white">lol wut</h1>
+                            <p class="text-center text-gray-400 text-sm mt-2">How did we get here?</p>
+                            break;
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "userId")] public string? UserId { get; set; }
+    [SupplyParameterFromQuery(Name = "code")] public string? Code { get; set; }
+    
+    private ApplicationUser? _user;
+
+    public VerificationStatus Status { get; set; } = VerificationStatus.InProgress;
+
+    protected override void OnInitialized() {
+        Status = VerificationStatus.InProgress;
+    }
+
+    protected override async Task OnInitializedAsync() {
+        if (UserId == null || Code == null) {
+            RedirectManager.To("/").Execute();
+            return;
+        }
+        
+        _user = await UserManager.FindByIdAsync(UserId);
+        
+        if (_user == null || await UserManager.IsEmailConfirmedAsync(_user)) {
+            RedirectManager.To("/").Execute();
+            return;
+        }
+        
+        await Task.Delay(3000);
+        
+        Status = VerificationStatus.Completed;
+        StateHasChanged();
+    }
+
+    public enum VerificationStatus {
+        InProgress,
+        Completed,
+        Error,
+    }
+}

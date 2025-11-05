@@ -76,7 +76,7 @@
     .morph-gradient-container {
         @apply size-full;
         
-        filter: url("#goo") blur(48px);
+        filter: url("#bg") blur(48px);
     }
     
     .gradient-element-1 {
@@ -112,5 +112,18 @@
         bg-radial-[circle_at_center,var(--gradient-5-color-from)_0%,var(--gradient-5-color-to)_50%] mix-blend-hard-light
         size-[var(--gradient-size)]
         top-[calc(50%-var(--gradient-size)/2)] left-[calc(50%-var(--gradient-size)/2)];
+    }
+    
+    .hide-reveal::-ms-reveal {
+        @apply hidden;
+    }
+    
+    .input-field {
+        @apply text-gray-200 placeholder-gray-500
+        bg-gray-700/60
+        outline-none
+        border rounded-lg border-gray-600
+        focus:ring-2 focus:ring-indigo-500
+        transition duration-300;
     }
 }

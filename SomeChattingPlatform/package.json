@@ -18,6 +18,7 @@
     "vite-plugin-mkcert": "^1.17.9"
   },
   "dependencies": {
+    "@floating-ui/dom": "^1.7.4",
     "@tailwindcss/vite": "^4.1.16",
     "@tsparticles/engine": "^3.9.1",
     "@types/animejs": "^3.1.13",

@@ -1,0 +1,108 @@
+﻿@page "/auth"
+
+@using SomeChattingPlatform.Components.Shared
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Components.Sections
+@using SomeChattingPlatform.Components.Services
+@using SomeChattingPlatform.Helpers
+
+@implements IAsyncDisposable
+
+@inject IWebHostEnvironment Environment
+@inject IViteManifest ViteManifest
+@inject IViteDevServerStatus Vite
+@inject IJSRuntime JavascriptRuntime
+@inject ApplicationRedirectManager RedirectManager
+
+<PageTitle>Authentication</PageTitle>
+
+@* The background element *@
+<div class="fixed bg-fixed inset-0 morph-gradient-bg">
+    <svg xmlns="http://www.w3.org/2000/svg" class="size-0">
+        <defs>
+            <filter id="filter">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur"/>
+                <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0   0 1 0 0 0   0 0 1 0 0   0 0 0 18 -8" result="bg"/>
+                <feBlend in="SourceGraphic" in2="bg"/>
+            </filter>
+        </defs>
+    </svg>
+
+    <div class="morph-gradient-container">
+        <div class="gradient-element-1"></div>
+        <div class="gradient-element-2"></div>
+        <div class="gradient-element-3"></div>
+        <div class="gradient-element-4"></div>
+        <div class="gradient-element-5"></div>
+    </div>
+</div>
+
+<div class="h-screen w-screen grid grid-cols-1 px-4 md:px-0 md:grid-cols-4 lg:grid-cols-3">
+    <div class="col-start-1 col-span-1 md:col-start-2 md:col-span-2 lg:col-start-2 lg:col-span-1">
+        <FlipCard @ref="_flipCard" class="size-full" FlipDuration="500ms" IsFlipped="@(Mode == "register")">
+            <Front>
+                <div class="size-full flex flex-row justify-center items-center">
+                    <LoginPanel SwitchToRegister="EventUtils.AsNonRenderingEventHandler(_flipCard!.Flip)"/>
+                </div>
+            </Front>
+
+            <Back>
+                <div class="size-full flex flex-row justify-center items-center">
+                    <RegisterPanel SwitchToLogin="EventUtils.AsNonRenderingEventHandler(_flipCard!.Flip)"/>
+                </div>
+            </Back>
+        </FlipCard>
+    </div>
+</div>
+
+@if (Environment.IsDevelopment() && Vite.IsMiddlewareEnable) {
+    <script type="module" src="scripts/pages/authentication.ts" defer></script>
+} else {
+    if (ViteManifest["scripts/pages/authentication.ts"] is { } chunk) {
+        <script type="module" src="@chunk.File" defer></script>
+
+        if (chunk.Imports != null) {
+            foreach (string import in chunk.Imports) {
+                if (!ViteManifest.ContainsKey(import)) continue;
+
+                <script type="module" src="@ViteManifest[import]!.File" defer></script>
+            }
+        }
+    }
+}
+
+@code {
+    [SupplyParameterFromQuery] public string? Mode { get; set; }
+    
+    private IJSObjectReference? _pageModule;
+    private FlipCard? _flipCard;
+
+    protected override void OnInitialized() {
+        // TODO: If user already authenticated, redirect them back to home "/"
+        // RedirectManager.To("/").Execute();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        Console.WriteLine($"AuthenticatePage: OnAfterRenderAsync({firstRender})");
+        
+        if (firstRender) {
+            _pageModule = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import", "./scripts/pages/authentication.ts");
+            await _pageModule.InvokeVoidAsync("initBackground");
+        }
+    }
+    
+    public async ValueTask DisposeAsync() {
+        if (_pageModule != null) {
+            try {
+                await _pageModule.DisposeAsync();
+            } catch (JSDisconnectedException) {
+            }
+            
+            StateHasChanged();
+        }
+    }
+    
+    private void FlipCard() {
+        _flipCard?.Flip();
+    }
+}

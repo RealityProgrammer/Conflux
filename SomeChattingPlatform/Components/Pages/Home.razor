@@ -1,5 +1,4 @@
 ﻿@page "/"
-@rendermode InteractiveServer
 
 @implements IAsyncDisposable
 
@@ -10,7 +9,7 @@
 
 <PageTitle>Home</PageTitle>
 
-<div class="fixed inset-0 z-[-1] bg-gray-900" id="js-particles-background"></div>
+<div class="fixed inset-0 z-[-1] bg-gray-900" @ref="_particlesBackground"></div>
 
 <header class="bg-[#071318] w-full h-18 border-b-2 border-b-[#353535] flex flex-row justify-around items-center px-6">
     <section class="flex-1">
@@ -65,17 +64,19 @@
 
 @code {
     private IJSObjectReference? _module;
+    private ElementReference _particlesBackground;
     
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
             _module = await js.InvokeAsync<IJSObjectReference>("import", "./scripts/pages/home.ts");
-            await _module.InvokeVoidAsync("initParticlesBackground", "#js-particles-background");
+            await _module.InvokeVoidAsync("initParticlesBackground", _particlesBackground);
         }
     }
 
     public async ValueTask DisposeAsync() {
         if (_module != null) {
             try {
+                await _module.InvokeVoidAsync("disposeParticlesBackground");
                 await _module.DisposeAsync();
             } catch (JSDisconnectedException) {
             }

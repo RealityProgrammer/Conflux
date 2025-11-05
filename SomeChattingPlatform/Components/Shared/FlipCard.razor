@@ -1,31 +1,26 @@
 ﻿@using System.Globalization
 
-<div class="perspective-distant transform-3d @_class" id="@_id">
+<div class="perspective-distant transform-3d @_class" @attributes="AdditionalAttributes">
     <div class="relative size-full transform-3d" style="transition-duration: @FlipDuration">
-        <div class="@(IsFlipped ? "rotate-y-180" : "rotate-y-0") backface-hidden transform-3d absolute inset-0 z-[1]" style="-webkit-backface-visibility: hidden; transition-duration: @FlipDuration">
+        <div class="@(IsFlipped ? "rotate-y-180" : "rotate-y-0") backface-hidden transform-3d absolute inset-0 z-[1] transition-transform" style="-webkit-backface-visibility: hidden; transition-duration: @FlipDuration">
             @Front
         </div>
         
-        <div class="@(IsFlipped ? "rotate-y-0" : "-rotate-y-180") backface-hidden transform-3d absolute inset-0" style="-webkit-backface-visibility: hidden; transition-duration: @FlipDuration">
+        <div class="@(IsFlipped ? "rotate-y-0" : "-rotate-y-180") backface-hidden transform-3d absolute inset-0 transition-transform" style="-webkit-backface-visibility: hidden; transition-duration: @FlipDuration">
             @Back
         </div>
     </div>
 </div>
 
 @code {
-    [Parameter(CaptureUnmatchedValues = true)]
-    public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
     
-    [Parameter]
-    public RenderFragment? Front { get; set; }
-    
-    [Parameter]
-    public RenderFragment? Back { get; set; }
+    [Parameter] public RenderFragment? Front { get; set; }
+    [Parameter] public RenderFragment? Back { get; set; }
 
-    public bool IsFlipped { get; private set; }
+    [Parameter] public bool IsFlipped { get; set; }
 
     private string? _class;
-    private string? _id;
 
     [Parameter] public string FlipDuration { get; set; } = "500ms";
 
@@ -33,13 +28,12 @@
         if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
             _class = Convert.ToString(obj, CultureInfo.InvariantCulture);
         }
-        
-        if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("id", out obj)) {
-            _id = Convert.ToString(obj, CultureInfo.InvariantCulture);
-        }
+
+        AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key != "class").ToDictionary();
     }
 
     public void Flip() {
         IsFlipped = !IsFlipped;
+        StateHasChanged();
     }
 }

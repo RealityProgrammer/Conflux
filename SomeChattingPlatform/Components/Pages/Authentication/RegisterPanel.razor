@@ -1,0 +1,239 @@
+﻿@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Identity.EntityFrameworkCore
+@using Microsoft.AspNetCore.WebUtilities
+@using SomeChattingPlatform.Components.Services
+@using System.ComponentModel.DataAnnotations
+@using SomeChattingPlatform.Components.Shared
+@using SomeChattingPlatform.Database
+@using SomeChattingPlatform.Components.Shared.Icons
+@using System.Text
+
+@inject IWebHostEnvironment Environment
+@inject IUserStore<ApplicationUser> UserStore
+@inject UserManager<ApplicationUser> UserManager
+@inject ILogger<RegisterPanel> Logger
+@inject ApplicationRedirectManager RedirectManager
+@inject SignInManager<ApplicationUser> SignInManager
+
+<div class="bg-gray-700 w-full rounded-3xl shadow-xl text-white overflow-visible relative">
+    <div class="absolute rounded-t-3xl h-12 w-full overflow-hidden">
+        <div class="h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+    </div>
+
+    <section class="p-10">
+        <h1 class="text-center font-bold text-3xl text-white">Welcome</h1>
+        <p class="text-center text-gray-400 text-sm mt-2">You got drink?</p>
+        
+        <EditForm method="post" class="mt-8" FormName="Register" EditContext="_editContext" OnSubmit="OnSubmit">
+            <DataAnnotationsValidator/>
+                        
+            <div class="relative">
+                <label class="text-sm text-gray-300">Email</label>
+
+                <TooltipContainer ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="right" TooltipOffset="8" ShowTooltip="@(!_editContext!.IsValid(_emailField))">
+                    <Target>
+                        @{
+                            string classes = $"w-full h-11 mt-2 px-3 input-field {(_editContext.IsValid(_emailField) ? string.Empty : "border-red-700")}";
+                        }
+                        
+                        <InputText type="text" @bind-Value="_model.Email" placeholder="Enter Email" class="@classes"/>
+                    </Target>
+                
+                    <Tooltip>
+                        <ValidationMessage For="() => _model.Email" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"></ValidationMessage>
+                    </Tooltip>
+                </TooltipContainer>
+            </div>
+
+            <div class="mt-4">
+                <label class="text-sm text-gray-300">Password</label>
+            
+                <TooltipContainer ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="right" TooltipOffset="8" ShowTooltip="@(!_editContext!.IsValid(_passwordField))">
+                    <Target>
+                        @{
+                            bool isValid = _editContext.IsValid(_passwordField);
+                            
+                            string inputClass = $"w-full h-11 px-3 input-field {(isValid ? string.Empty : "border-red-700")} rounded-r-none border-r-0";
+                            string buttonClass = $"{(isValid ? string.Empty : "border-y-red-700 border-r-red-700")} transition duration-300";
+                        }
+                        
+                        <SensitiveInputText class="w-full mt-2 h-11" @bind-Value="_model.Password" placeholder="Enter Password" InputCssClass="@inputClass" ButtonCssClass="@buttonClass">
+                            <ShowButtonContent>
+                                <EyeSlash class="size-6" fill="white"/>
+                            </ShowButtonContent>
+                            
+                            <HideButtonContent>
+                                <Eye class="size-6" fill="white"/>
+                            </HideButtonContent>
+                        </SensitiveInputText>
+                    </Target>
+            
+                    <Tooltip>
+                        <ValidationMessage For="() => _model.Password" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"></ValidationMessage>
+                    </Tooltip>
+                </TooltipContainer>
+            </div>
+            
+            <div class="mt-4">
+                <label class="text-sm text-gray-300">Password Confirmation</label>
+            
+                <TooltipContainer ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="right" TooltipOffset="8" ShowTooltip="@(!_editContext!.IsValid(_confirmationPasswordField))">
+                    <Target>
+                        @{
+                            bool isValid = _editContext.IsValid(_confirmationPasswordField);
+                            
+                            string inputClass = $"w-full h-11 px-3 input-field {(isValid ? string.Empty : "border-red-700")} rounded-r-none border-r-0";
+                            string buttonClass = $"{(isValid ? string.Empty : "border-y-red-700 border-r-red-700")} transition duration-300";
+                        }
+
+                        <SensitiveInputText class="w-full mt-2 h-11" @bind-Value="_model.ConfirmationPassword" placeholder="Enter Confirmation Password" InputCssClass="@inputClass" ButtonCssClass="@buttonClass">
+                            <ShowButtonContent>
+                                <EyeSlash class="size-6" fill="white"/>
+                            </ShowButtonContent>
+
+                            <HideButtonContent>
+                                <Eye class="size-6" fill="white"/>
+                            </HideButtonContent>
+                        </SensitiveInputText>
+                    </Target>
+            
+                    <Tooltip>
+                        <ValidationMessage For="() => _model.ConfirmationPassword" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"></ValidationMessage>
+                    </Tooltip>
+                </TooltipContainer>
+            </div>
+            
+            <div class="mt-4">
+                <TooltipContainer ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="right" TooltipOffset="8" ShowTooltip="@(!_editContext!.IsValid(_acceptTermsField))">
+                    <Target>
+                        <div class="flex flex-row gap-2">
+                            <InputCheckbox class="accent-indigo-500 border-red-500 border" @bind-Value="_model.AcceptTerms"></InputCheckbox>
+            
+                            <label>
+                                You agree to our goddamn long-ass Terms And Conditions that you probably don't even bother to read.
+                            </label>
+                        </div>
+                    </Target>
+            
+                    <Tooltip>
+                        <ValidationMessage For="() => _model.AcceptTerms" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"></ValidationMessage>
+                    </Tooltip>
+                </TooltipContainer>
+            </div>
+
+            <SpinnerButton type="submit" class="w-full h-11 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 rounded-lg text-white font-semibold shadow-md transition-colors duration-500 mt-4" ShowSpinner="_isProcessing">
+                Register
+            </SpinnerButton>
+            
+            <p class="text-center text-gray-400 text-sm mt-2">
+                Already have an account? Click <span class="underline cursor-pointer" @onclick="SwitchToLogin">here</span> to login.
+            </p>
+        </EditForm>
+    </section>
+</div>
+
+@code {
+    [Parameter] public EventCallback SwitchToLogin { get; set; }
+    
+    [Parameter] public EventCallback<ApplicationUser> OnRegistered { get; set; }
+
+    private EditContext? _editContext;
+    private InputModel _model = null!;
+    private ValidationMessageStore _messageStore = null!;
+
+    private FieldIdentifier _emailField, _passwordField, _confirmationPasswordField, _acceptTermsField;
+
+    private bool _isProcessing;
+
+    protected override void OnInitialized() {
+        _model = new();
+        _editContext = new(_model);
+        _messageStore = new(_editContext);
+
+        _emailField = _editContext.Field(nameof(InputModel.Email));
+        _passwordField = _editContext.Field(nameof(InputModel.Password));
+        _confirmationPasswordField = _editContext.Field(nameof(InputModel.ConfirmationPassword));
+        _acceptTermsField = _editContext.Field(nameof(InputModel.AcceptTerms));
+    }
+
+    private async Task OnSubmit() {
+        _messageStore.Clear();
+        
+        bool result = _editContext!.Validate();
+        
+        if (result) {
+            await OnValidSubmit();
+        }
+    }
+    
+    private async Task OnValidSubmit() {
+        if (_isProcessing) return;
+        _isProcessing = true;
+
+        try {
+            var user = new ApplicationUser();
+            
+            await UserStore.SetUserNameAsync(user, user.Id, CancellationToken.None);
+            await ((IUserEmailStore<ApplicationUser>)UserStore).SetEmailAsync(user, _model.Email, CancellationToken.None);
+
+            var result = await UserManager.CreateAsync(user, _model.Password);
+            
+            if (!result.Succeeded) {
+                IdentityError error = result.Errors.First();
+
+                switch (error.Code) {
+                    case nameof(IdentityErrorDescriber.DuplicateEmail):
+                        _messageStore.Add(_emailField, error.Description);
+                        break;
+                    
+                    case nameof(IdentityErrorDescriber.PasswordRequiresDigit) or 
+                        nameof(IdentityErrorDescriber.PasswordRequiresLower) or
+                        nameof(IdentityErrorDescriber.PasswordRequiresUpper) or
+                        nameof(IdentityErrorDescriber.PasswordRequiresNonAlphanumeric) or
+                        nameof(IdentityErrorDescriber.PasswordRequiresUniqueChars):
+                        _messageStore.Add(_passwordField, error.Description);
+                        break;
+                    
+                    default:
+                        Logger.LogError("Unhandled identity error: {code} - {desc}", error.Code, error.Description);
+                        break;
+                }
+            
+                return;
+            }
+
+            // TODO: Remove this once we got more work to do.
+            if (Environment.IsDevelopment()) {
+                await Task.Delay(3000);
+            }
+
+            await OnRegistered.InvokeAsync(user);
+
+            // string userId = await UserManager.GetUserIdAsync(user);
+            // RedirectManager.To("auth/verify-email").WithQuery("userId", userId).Execute();
+        } finally {
+            _isProcessing = false;
+        }
+    }
+
+    private sealed class InputModel {
+        [Required(ErrorMessage = "Email is required.")]
+        [StringLength(320, ErrorMessage = "Email cannot be longer than {1} characters.")]
+        [EmailAddress(ErrorMessage = "A valid email is required.")]
+        public string Email { get; set; } = string.Empty;
+        
+        [Required(ErrorMessage = "Password is required.")]
+        [DataType(DataType.Password)]
+        [MinLength(8, ErrorMessage = "Password must be longer or equal to {1} characters.")]
+        public string Password { get; set; } = string.Empty;
+        
+        [Required(ErrorMessage = "Confirmation Password is required.")]
+        [DataType(DataType.Password)]
+        [Compare(nameof(Password), ErrorMessage = "Password and Confirmation Password do not match.")]
+        public string ConfirmationPassword { get; set; } = string.Empty;
+        
+        [Required]
+        [Range(typeof(bool), "true", "true", ErrorMessage = "You must accept the Terms and Conditions.")]
+        public bool AcceptTerms { get; set; }
+    }
+}
