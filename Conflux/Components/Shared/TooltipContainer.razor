@@ -27,7 +27,7 @@
     [Parameter] public bool ShowTooltip { get; set; } = false;
     [Parameter] public string TooltipPlacement { get; set; } = "bottom";
     [Parameter] public int TooltipOffset { get; set; } = 0;
-    [Parameter] public string Id { get; set; }
+    [Parameter, EditorRequired] public required string Id { get; set; }
     
     [Parameter(CaptureUnmatchedValues = true)]
     public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }

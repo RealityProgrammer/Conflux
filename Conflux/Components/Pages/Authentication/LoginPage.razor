@@ -10,8 +10,6 @@
 
 @attribute [ExcludeFromInteractiveRouting]
 
-@implements IDisposable
-
 @inject IWebHostEnvironment Environment
 @inject IViteManifest ViteManifest
 @inject IViteDevServerStatus Vite
@@ -103,21 +101,19 @@
     </div>
 </div>
 
-@* Registered successfully modal *@
-@if (HttpContext.Request.Cookies["Application.RegisterResult"] is { } result) {
-    Console.WriteLine("Register result: " + result);
-    
-    <div class="bg-gray-700 w-full rounded-3xl shadow-xl text-white overflow-hidden relative">
-        <div class="absolute rounded-t-3xl w-full h-1 panel-accent-color-1"></div>
-
-        <div class="p-10 flex flex-col justify-center items-center">
-            <h1 class="text-center font-bold text-3xl text-white">Registered Successful</h1>
-            <p class="text-center text-gray-400 text-sm mt-2">Login to confirm your account</p>
-
-            <button class="w-full h-11 text-white p-1 mt-4 rounded-lg cursor-pointer button-color-2" onclick="">Close</button>
-        </div>
-    </div>
-}
+@* TODO: Implement register successfully modal *@
+@* @if (HttpContext.Request.Cookies["Application.RegisterResult"] is { } result) { *@
+@*     <div class="bg-gray-700 w-full rounded-3xl shadow-xl text-white overflow-hidden relative"> *@
+@*         <div class="absolute rounded-t-3xl w-full h-1 panel-accent-color-1"></div> *@
+@* *@
+@*         <div class="p-10 flex flex-col justify-center items-center"> *@
+@*             <h1 class="text-center font-bold text-3xl text-white">Registered Successful</h1> *@
+@*             <p class="text-center text-gray-400 text-sm mt-2">Login to confirm your account</p> *@
+@* *@
+@*             <button class="w-full h-11 text-white p-1 mt-4 rounded-lg cursor-pointer button-color-2" onclick="">Close</button> *@
+@*         </div> *@
+@*     </div> *@
+@* } *@
 
 <SectionContent SectionName="javascript">
     @if (Environment.IsDevelopment() && Vite.IsMiddlewareEnable) {
@@ -150,15 +146,13 @@
 
     protected override void OnInitialized() {
         _editContext = new(Model);
-
-        NavigationManager.LocationChanged += OnNavigate;
     }
     
     private async Task OnValidSubmit() {
         var user = await UserManager.FindByEmailAsync(Model.Email);
 
         if (user == null) {
-            Logger.LogWarning("Invalid login request.");
+            _errorMessage = "Invalid login credential.";
             return;
         }
 
@@ -171,17 +165,8 @@
                 RedirectManager.To("/auth/verify-email").WithQuery("userId", user.Id).Execute();
             }
         } else {
-            Logger.LogWarning("Failed to login.");
+            _errorMessage = "Invalid login credential.";
         }
-    }
-
-    private void OnNavigate(object? sender, LocationChangedEventArgs args) {
-        NavigationManager.NavigateTo(args.Location, true);
-        Console.WriteLine("OnNavigate to " + args.Location);
-    }
-
-    public void Dispose() {
-        NavigationManager.LocationChanged -= OnNavigate;
     }
 
     private sealed class InputModel {

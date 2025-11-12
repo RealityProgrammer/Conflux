@@ -1,28 +1,26 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
     <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
+        <TargetFramework>net9.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
     </PropertyGroup>
 
     <ItemGroup>
       <Folder Include="Client\public\" />
-      <Folder Include="Components\Pages\Settings\" />
       <Folder Include="Components\Shared\Guards\" />
       <Folder Include="Database\Migrations\" />
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="10.0.0" />
-      <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.0" />
-      <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0" />
-      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />
-      <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0">
+      <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.11" />
+      <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.11" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.11" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.11">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
-      <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.0">
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.11">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
@@ -32,6 +30,10 @@
 
     <ItemGroup>
       <None Remove="appsettings.Development.json.example" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="Components\Pages\Profile\ProfilePage.razor" />
     </ItemGroup>
 
 </Project>
