@@ -1,0 +1,62 @@
+﻿@using Microsoft.AspNetCore.Components.Sections
+
+@inject IWebHostEnvironment Environment
+@inject IViteManifest ViteManifest
+@inject IViteDevServerStatus Vite
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <base href="/"/>
+    <link rel="stylesheet" href="@Assets["Conflux.styles.css"]"/>
+    <ImportMap/>
+    @* <link rel="icon" type="image/png" href="favicon.png"/> *@
+    <HeadOutlet @rendermode="PageRenderMode"/>
+
+    @if (Environment.IsDevelopment() && Vite.IsMiddlewareEnable) {
+        <script type="module" src="@@vite/client"></script>
+        <link rel="stylesheet" href="styles/input.css" />
+    } else {
+        if (ViteManifest["styles/input.css"] is { } styleCss) {
+            <link rel="stylesheet" href="@styleCss.File" />
+        }
+    }
+</head>
+
+<body>
+<Routes @rendermode="PageRenderMode"/>
+
+<script src="_framework/blazor.web.js"></script>
+
+@if (Environment.IsDevelopment() && Vite.IsMiddlewareEnable) {
+    <script type="module" src="scripts/components.ts"></script>
+} else {
+    IViteChunk? chunk;
+
+    if ((chunk = ViteManifest["scripts/pages/login.ts"]) != null) {
+        <script type="module" src="@chunk.File"></script>
+
+        if (chunk.Imports != null) {
+            foreach (string import in chunk.Imports) {
+                if (!ViteManifest.ContainsKey(import)) continue;
+
+                <script type="module" src="@ViteManifest[import]!.File"></script>
+            }
+        }
+    }
+}
+
+<SectionOutlet SectionName="javascript"></SectionOutlet>
+
+</body>
+
+</html>
+
+@code {
+    [CascadingParameter] private HttpContext HttpContext { get; set; } = null!;
+
+    private IComponentRenderMode? PageRenderMode => HttpContext.AcceptsInteractiveRouting() ? InteractiveServer : null;
+}

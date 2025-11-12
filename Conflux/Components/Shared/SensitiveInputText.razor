@@ -1,0 +1,64 @@
+﻿@using System.Globalization
+@using System.Linq.Expressions
+
+<div class="@_class flex flex-row" @attributes="AdditionalAttributes" data-component-type="sensitive-input">
+    @{
+        string inputCss = $"grow-1 {InputCssClass}";
+    }
+    
+    <InputText type="password" Value="@Value" ValueChanged="@ValueChanged" ValueExpression="@ValueExpression" placeholder="@_placeholder" class="@inputCss" tabindex="@_tabIndex"/>
+
+    <button type="button" class="flex-0 aspect-square rounded-l-none rounded-r-lg border border-gray-600 cursor-pointer items-center flex justify-center @ButtonCssClass" tabindex="-1">
+        <div>
+            @ShowButtonContent
+        </div>
+        
+        <div hidden>
+            @HideButtonContent
+        </div>
+    </button>
+</div>
+
+@code {
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+    [Parameter] public Expression<Func<string?>>? ValueExpression { get; set; }
+
+    [Parameter] public string? InputCssClass { get; set; }
+    [Parameter] public string? ButtonCssClass { get; set; }
+    
+    /// <summary>
+    /// The content of the button that denotes the next action will show the input content.
+    /// </summary>
+    [Parameter] public RenderFragment? ShowButtonContent { get; set; }
+    
+    /// <summary>
+    /// The content of the button that denotes the next action will hide the input content.
+    /// </summary>
+    [Parameter] public RenderFragment? HideButtonContent { get; set; }
+    
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+    
+    private string? _placeholder;
+
+    private string? _class;
+    private int _tabIndex;
+    
+    protected override void OnParametersSet() {
+        if (AdditionalAttributes != null) {
+            if (AdditionalAttributes.TryGetValue("class", out object? obj)) {
+                _class = Convert.ToString(obj, CultureInfo.InvariantCulture);
+            }
+            
+            if (AdditionalAttributes.TryGetValue("placeholder", out obj)) {
+                _placeholder = Convert.ToString(obj, CultureInfo.InvariantCulture);
+            }
+            
+            if (AdditionalAttributes.TryGetValue("tabindex", out obj)) {
+                _tabIndex = Convert.ToInt32(obj, CultureInfo.InvariantCulture);
+            }
+        }
+        
+        AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "class" and not "placeholder" and not "tabindex").ToDictionary();
+    }
+}

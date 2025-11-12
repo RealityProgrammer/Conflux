@@ -1,0 +1,39 @@
+﻿@using Conflux.Helpers
+
+@if (ChildContent != null) {
+    <div class="absolute z-[1000] inset-0 flex flex-row justify-center items-center transition-colors duration-500 overflow-hidden @(Show ? "pointer-events-auto" : "pointer-events-none") @(Show ? "bg-gray-800/80" : "bg-transparent") @BackgroundCssClass" @onclick="EventUtils.AsNonRenderingEventHandler(InvokesClickOutside)">
+        <div class="absolute inset-0" @onclick:stopPropagation>
+            @ChildContent
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Show { get; set; }
+    [Parameter, EditorRequired] public RenderFragment? ChildContent { get; set; }
+    
+    [Parameter] public EventCallback OnClickOutside { get; set; }
+    
+    [Parameter] public string? BackgroundCssClass { get; set; }
+    [Parameter] public string? ContainerCssClass { get; set; }
+
+    private async Task InvokesClickOutside() {
+        if (OnClickOutside.HasDelegate) {
+            await OnClickOutside.InvokeAsync();
+        }
+    }
+
+    public void ShowModal() {
+        if (Show) return;
+
+        Show = true;
+        StateHasChanged();
+    }
+
+    public void HideModal() {
+        if (!Show) return;
+
+        Show = false;
+        StateHasChanged();
+    }
+}

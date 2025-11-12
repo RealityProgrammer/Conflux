@@ -1,0 +1,208 @@
+﻿@page "/"
+
+@using Conflux.Components.Shared
+@using Microsoft.AspNetCore.Components.Sections
+@using Conflux.Helpers
+@using System.Diagnostics
+@using Conflux.Components.Shared.Icons
+
+@implements IAsyncDisposable
+
+@inject IWebHostEnvironment Environment
+@inject IViteManifest ViteManifest
+@inject IViteDevServerStatus Vite
+@inject IJSRuntime JSRuntime
+
+<PageTitle>HomePage</PageTitle>
+
+<div class="fixed inset-0 z-[-1] bg-gray-900" @ref="_particlesBackground"></div>
+
+<header class="bg-[#071318] w-full border-b-2 border-b-[#353535] px-6 py-2 flex flex-row items-center">
+    <section class="flex-1 inline-flex flex-row justify-start items-center gap-4">
+        <Logo/>
+        
+        <Hamburger OnToggle="EventUtils.AsNonRenderingEventHandler<bool>(OnHamburgerToggle)" @ref="_navigationHamburger" class="lg:hidden"/>
+        
+        <Modal @ref="_pageNavigationModal" BackgroundCssClass="lg:hidden" OnClickOutside="CloseHamburgerMenu">
+            <div class="fixed h-full transition-transform duration-500 @(_pageNavigationModal.Show ? "translate-x-0" : "-translate-x-full") z-10 bg-[#071318] border-r-2 border-r-[#353535] w-2/3 sm:w-1/2 md:w-1/3 p-5 pointer-events-auto overflow-hidden flex flex-col gap-4">
+                <header class="flex-none">
+                    <button class="text-white inline-flex flex-row justify-center items-center gap-2 hover:bg-white/10 px-3 py-2 rounded-full cursor-pointer" @onclick="EventUtils.AsNonRenderingEventHandler(CloseHamburgerMenu)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8"/>
+                        </svg>
+
+                        Close
+                    </button>
+                </header>
+                
+                <nav class="flex-1 overflow-y-auto flex flex-col gap-2 px-10">
+                    <NavLink class="text-white rounded-full px-7 py-2 font-bold border-2 border-indigo-500/30 shimmer flex-none" href="#" Match="NavLinkMatch.Prefix">
+                        HomePage
+                    </NavLink>
+
+                    <NavLink class="text-white rounded-full px-7 py-2 font-bold border-2 border-indigo-500/30 shimmer flex-none" href="#" Match="NavLinkMatch.Prefix">
+                        Safety
+                    </NavLink>
+
+                    <NavLink class="text-white rounded-full px-7 py-2 font-bold border-2 border-indigo-500/30 shimmer flex-none" href="#" Match="NavLinkMatch.Prefix">
+                        Blog
+                    </NavLink>
+
+                    <NavLink class="text-white rounded-full px-7 py-2 font-bold border-2 border-indigo-500/30 shimmer flex-none" href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" Match="NavLinkMatch.Prefix">
+                        Download
+                    </NavLink>
+
+                    <NavLink class="text-white rounded-full px-7 py-2 font-bold border-2 border-indigo-500/30 shimmer flex-none" href="#" Match="NavLinkMatch.Prefix">
+                        About
+                    </NavLink>
+                </nav>
+            </div>
+        </Modal>
+    </section>
+    
+    <nav class="flex-3 justify-around items-center gap-1 hidden lg:flex">
+        <NavLink class="text-white rounded-full px-7 py-2 font-bold border-2 border-indigo-500/30 hover-rising shimmer" href="#" Match="NavLinkMatch.Prefix">
+            HomePage
+        </NavLink>
+
+        <NavLink class="text-white rounded-full px-7 py-2 font-bold border-2 border-indigo-500/30 hover-rising shimmer" href="#" Match="NavLinkMatch.Prefix">
+            Safety
+        </NavLink>
+
+        <NavLink class="text-white rounded-full px-7 py-2 font-bold border-2 border-indigo-500/30 hover-rising shimmer" href="#" Match="NavLinkMatch.Prefix">
+            Blog
+        </NavLink>
+
+        <NavLink class="text-white rounded-full px-7 py-2 font-bold border-2 border-indigo-500/30 hover-rising shimmer" href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" Match="NavLinkMatch.Prefix">
+            Download
+        </NavLink>
+
+        <NavLink class="text-white rounded-full px-7 py-2 font-bold border-2 border-indigo-500/30 hover-rising shimmer" href="#" Match="NavLinkMatch.Prefix">
+            About
+        </NavLink>
+    </nav>
+
+    <section class="flex-1">
+        <AuthorizeView>
+            <Authorized>
+                <button class="float-end bg-transparent hover:bg-white/10 p-2 rounded-full inline-flex flex-row justify-end items-center gap-1 cursor-pointer" @onclick="EventUtils.AsNonRenderingEventHandler(OpenUserNavigationMenu)">
+                    <div class="rounded-full bg-white size-9"></div>
+                    <p class="text-white">@context.User.Identity?.Name</p>
+                </button>
+
+                <Modal @ref="_userNavigationModal" OnClickOutside="CloseUserNavigationMenu">
+                    <div class="absolute top-0 right-0 h-full transition-transform duration-500 @(_userNavigationModal!.Show ? "translate-x-0" : "translate-x-full") z-10 bg-[#071318] border-l-2 border-l-[#353535] w-2/3 sm:w-1/2 md:w-1/3 p-5 pointer-events-auto overflow-hidden flex flex-col gap-4">
+                        <header class="flex-none">
+                            <button class="text-white inline-flex flex-row justify-center items-center gap-2 hover:bg-white/10 px-3 py-2 rounded-full cursor-pointer" @onclick="EventUtils.AsNonRenderingEventHandler(CloseUserNavigationMenu)">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16">
+                                    <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8"/>
+                                </svg>
+
+                                Close
+                            </button>
+                        </header>
+
+                        <nav class="flex-1 overflow-y-auto flex flex-col gap-2 px-10">
+                            <NavLink class="text-white rounded-full px-7 py-2 font-bold border-2 border-indigo-500/30 shimmer w-full flex flex-row justify-center items-center gap-3 flex-none" href="#" Match="NavLinkMatch.Prefix">
+                                <Chat Filled="false" ArrowDirection="ChatArrowDirection.Right" Content="ChatContent.Dots" class="size-5" fill="white"/>
+                                
+                                Chatting
+                            </NavLink>
+
+                            <NavLink class="text-white rounded-full px-7 py-2 font-bold border-2 border-indigo-500/30 shimmer w-full flex flex-row justify-center items-center gap-3 flex-none" href="/settings" Match="NavLinkMatch.Prefix">
+                                <Journal class="size-5" fill="white"/>
+
+                                Profile
+                            </NavLink>
+
+                            <NavLink class="text-white rounded-full px-7 py-2 font-bold border-2 border-indigo-500/30 shimmer w-full flex flex-row justify-center items-center gap-3 flex-none" href="#" Match="NavLinkMatch.Prefix">
+                                <Gear class="size-5" fill="white"/>
+
+                                Settings
+                            </NavLink>
+
+                            <LogoutButton/>
+                        </nav>
+                    </div>
+                </Modal>
+            </Authorized>
+
+            <NotAuthorized>
+                <div class="button-group justify-end">
+                    <NavLink href="/auth/login" class="text-white py-2 font-bold border-indigo-500/30 grow-0 shrink-1 basis-24 text-center shimmer">Login</NavLink>
+                    <NavLink href="/auth/register" class="text-white py-2 font-bold border-indigo-500/30 grow-0 shrink-1 basis-24 text-center shimmer">Register</NavLink>
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
+    </section>
+</header>
+
+<SectionContent SectionName="javascript">
+    @if (Environment.IsDevelopment() && Vite.IsMiddlewareEnable) {
+        <script type="module" src="scripts/pages/home.ts"></script>
+    } else {
+        if (ViteManifest["scripts/pages/home.ts"] is { } chunk) {
+            <script type="module" src="@chunk.File"></script>
+
+            if (chunk.Imports != null) {
+                foreach (string import in chunk.Imports) {
+                    if (!ViteManifest.ContainsKey(import)) continue;
+
+                    <script type="module" src="@ViteManifest[import]!.File"></script>
+                }
+            }
+        }
+    }
+</SectionContent>
+
+@code {
+    private IJSObjectReference? _module;
+    private ElementReference _particlesBackground;
+
+    private Hamburger _navigationHamburger = null!;
+    private Modal _pageNavigationModal = null!;
+
+    private Modal? _userNavigationModal;
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            _module = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./scripts/pages/home.ts");
+            await _module.InvokeVoidAsync("initParticlesBackground", _particlesBackground);
+        }
+    }
+
+    private void OnHamburgerToggle(bool show) {
+        if (show) {
+            _pageNavigationModal.ShowModal();
+        } else {
+            _pageNavigationModal.HideModal();
+        }
+    }
+
+    private async Task CloseHamburgerMenu() {
+        await _navigationHamburger.Trigger(false);
+    }
+
+    private void OpenUserNavigationMenu() {
+        Debug.Assert(_userNavigationModal != null);
+
+        _userNavigationModal.ShowModal();
+    }
+
+    private void CloseUserNavigationMenu() {
+        Debug.Assert(_userNavigationModal != null);
+        
+        _userNavigationModal.HideModal();
+        Console.WriteLine("Close user navigation menu");
+    }
+
+    public async ValueTask DisposeAsync() {
+        if (_module != null) {
+            try {
+                await _module.InvokeVoidAsync("disposeParticlesBackground");
+                await _module.DisposeAsync();
+            } catch (JSDisconnectedException) {
+            }
+        }
+    }
+}

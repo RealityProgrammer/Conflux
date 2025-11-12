@@ -1,0 +1,65 @@
+﻿@using System.Globalization
+@using Microsoft.AspNetCore.Components.Sections
+
+@implements IAsyncDisposable
+
+@inject IJSRuntime js
+
+@* Have to anchor the slot like a loser *@
+<section @ref="_target" data-tooltip-target="@Id">
+    @Target
+</section>
+
+<div class="absolute inset-0 pointer-events-none" hidden="@(!ShowTooltip)">
+    <div class="absolute top-0 left-0 w-max @_class" @attributes="AdditionalAttributes" @ref="_tooltip" data-component-type="tooltip" data-tooltip-for="@Id" data-tooltip-placement="@TooltipPlacement" data-tooltip-offset="@TooltipOffset">
+        @Tooltip
+
+        <div class="absolute size-2 rotate-45 @ArrowCssClass" @ref="_arrow" data-tooltip-arrow-for="@Id"></div>
+    </div>
+</div>
+
+@code {
+    private IJSObjectReference? _componentsModule;
+    
+    [Parameter] public RenderFragment? Target { get; set; }
+    [Parameter] public RenderFragment? Tooltip { get; set; }
+    [Parameter] public string? ArrowCssClass { get; set; }
+    [Parameter] public bool ShowTooltip { get; set; } = false;
+    [Parameter] public string TooltipPlacement { get; set; } = "bottom";
+    [Parameter] public int TooltipOffset { get; set; } = 0;
+    [Parameter] public string Id { get; set; }
+    
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string? _class;
+
+    private ElementReference _target, _tooltip, _arrow;
+
+    private int _tooltipId;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            _componentsModule = await js.InvokeAsync<IJSObjectReference>("import", "./scripts/components.ts");
+            _tooltipId = await _componentsModule.InvokeAsync<int>("registerTooltip", _target, _tooltip, _arrow, TooltipPlacement, TooltipOffset);
+        }
+    }
+
+    protected override void OnParametersSet() {
+        if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
+            _class = Convert.ToString(obj, CultureInfo.InvariantCulture);
+        }
+
+        AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key != "class").ToDictionary();
+    }
+
+    public async ValueTask DisposeAsync() {
+        if (_componentsModule != null) {
+            try {
+                await _componentsModule.InvokeVoidAsync("unregisterTooltip", _tooltipId);
+                await _componentsModule.DisposeAsync();
+            } catch (JSDisconnectedException) {
+            }
+        }
+    }
+}

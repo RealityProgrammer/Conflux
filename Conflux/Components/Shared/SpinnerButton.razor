@@ -1,0 +1,39 @@
+﻿<button class="cursor-pointer @_cssClass" @attributes="AdditionalAttributes">
+    @if (IsShowingSpinner) {
+        <div class="flex flex-row justify-center items-center">
+            <Spinner class="size-8 fill-white mr-2"/>
+        </div>
+    } else {
+        @ChildContent
+    }
+</button>
+
+@code {
+    [Parameter] public bool IsShowingSpinner { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string? _cssClass;
+    
+    protected override void OnParametersSet() {
+        if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
+            _cssClass = Convert.ToString(obj);
+        }
+
+        AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "class").ToDictionary();
+    }
+
+    public void ShowSpinner() {
+        if (IsShowingSpinner) return;
+
+        IsShowingSpinner = true;
+        StateHasChanged();
+    }
+
+    public void HideSpinner() {
+        if (!IsShowingSpinner) return;
+
+        IsShowingSpinner = false;
+        StateHasChanged();
+    }
+}
