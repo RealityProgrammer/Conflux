@@ -1,0 +1,31 @@
+﻿<div @attributes="AdditionalAttributes">
+    <CascadingValue Value="this">
+        <div class="@ButtonContainerCssClass">
+            @Buttons(ActiveId)
+        </div>
+        
+        <div class="@ContentContainerCssClass">
+            @Contents(ActiveId)
+        </div>
+    </CascadingValue>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public required RenderFragment<string?> Buttons { get; set; }
+    [Parameter, EditorRequired] public required RenderFragment<string?> Contents { get; set; }
+    [Parameter] public string? ButtonContainerCssClass { get; set; }
+    [Parameter] public string? ContentContainerCssClass { get; set; }
+    [Parameter] public string? ActiveId { get; set; }
+    [Parameter] public EventCallback<string> OnActiveChanged { get; set; }
+    
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    public async Task SetActiveId(string id) {
+        if (ActiveId == id) return;
+        
+        ActiveId = id;
+        StateHasChanged();
+
+        await OnActiveChanged.InvokeAsync(id);
+    }
+}

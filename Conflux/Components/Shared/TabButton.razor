@@ -1,0 +1,30 @@
+﻿<button class="@_cssClass @(Parent.ActiveId == TabId ? ActiveCssClass : string.Empty)" @attributes="AdditionalAttributes" @onclick="OnTabClick">
+    @ChildContent
+</button>
+
+@code {
+    [Parameter, EditorRequired] public required string TabId { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? ActiveCssClass { get; set; }
+
+    [CascadingParameter] private TabContainer Parent { get; set; } = null!;
+
+    private string? _cssClass;
+
+    protected override void OnParametersSet() {
+        if (Parent == null) {
+            throw new InvalidOperationException("TabButton must be within a TabContainer");
+        }
+        
+        if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
+            _cssClass = Convert.ToString(obj);
+        }
+
+        AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "class").ToDictionary();
+    }
+
+    private async Task OnTabClick() {
+        await Parent.SetActiveId(TabId);
+    }
+}
