@@ -19,6 +19,7 @@
 @inject IUserStore<ApplicationUser> UserStore
 @inject ILogger<RegisterPage> Logger
 @inject ApplicationRedirectManager RedirectManager
+@inject AuthenticationStateProvider AuthStateProvider
 
 <div class="fixed bg-fixed inset-0 morph-gradient-bg">
     <svg xmlns="http://www.w3.org/2000/svg" class="size-0">
@@ -192,7 +193,13 @@
 
     [CascadingParameter] public HttpContext HttpContext { get; set; } = null!;
 
-    protected override void OnInitialized() {
+    protected override async Task OnInitializedAsync() {
+        // If already login, kick the user out.
+        if (await AuthStateProvider.GetAuthenticationStateAsync() is { User.Identity.IsAuthenticated: true }) {
+            RedirectManager.To("/").Execute();
+            return;
+        }
+        
         _editContext = new(Model);
         _messageStore = new(_editContext);
         

@@ -48,6 +48,11 @@
     }
     
     :root {
+        /* Application variables */
+        --bg-color-1: var(--color-gray-700);
+        --bg-color-2: var(--color-gray-800);
+        
+        /* Morph gradient background variables */
         --morph-bg-color-1: rgb(108, 0, 162);
         --morph-bg-color-2: rgb(0, 17, 82);
         
@@ -70,7 +75,7 @@
     }
     
     .morph-gradient-bg {
-        @apply overflow-hidden bg-linear-[60deg] from-(--bg-color-1) to-(--bg-color-2);
+        @apply overflow-hidden bg-linear-[60deg] from-(--morph-bg-color-1) to-(--morph-bg-color-2);
     }
     
     .morph-gradient-container {
@@ -82,36 +87,36 @@
     .gradient-element-1 {
         @apply absolute opacity-100
         bg-radial-[circle_at_center,var(--gradient-1-color-from)_0%,var(--gradient-1-color-to)_50%] mix-blend-hard-light
-        size-(--gradient-size)
-        top-[calc(50%-var(--gradient-size)/2)] left-[calc(50%-var(--gradient-size)/2)];
+        size-(--morph-gradient-size)
+        top-[calc(50%-var(--morph-gradient-size)/2)] left-[calc(50%-var(--morph-gradient-size)/2)];
     }
 
     .gradient-element-2 {
         @apply absolute opacity-100
         bg-radial-[circle_at_center,var(--gradient-2-color-from)_0%,var(--gradient-2-color-to)_50%] mix-blend-hard-light
-        size-(--gradient-size)
-        top-[calc(50%-var(--gradient-size)/2)] left-[calc(50%-var(--gradient-size)/2)];
+        size-(--morph-gradient-size)
+        top-[calc(50%-var(--morph-gradient-size)/2)] left-[calc(50%-var(--morph-gradient-size)/2)];
     }
 
     .gradient-element-3 {
         @apply absolute opacity-100
         bg-radial-[circle_at_center,var(--gradient-3-color-from)_0%,var(--gradient-3-color-to)_50%] mix-blend-hard-light
-        size-(--gradient-size)
-        top-[calc(50%-var(--gradient-size)/2)] left-[calc(50%-var(--gradient-size)/2)];
+        size-(--morph-gradient-size)
+        top-[calc(50%-var(--morph-gradient-size)/2)] left-[calc(50%-var(--morph-gradient-size)/2)];
     }
 
     .gradient-element-4 {
         @apply absolute opacity-100
         bg-radial-[circle_at_center,var(--gradient-4-color-from)_0%,var(--gradient-4-color-to)_50%] mix-blend-hard-light
-        size-(--gradient-size)
-        top-[calc(50%-var(--gradient-size)/2)] left-[calc(50%-var(--gradient-size)/2)];
+        size-(--morph-gradient-size)
+        top-[calc(50%-var(--morph-gradient-size)/2)] left-[calc(50%-var(--morph-gradient-size)/2)];
     }
 
     .gradient-element-5 {
         @apply absolute opacity-100
         bg-radial-[circle_at_center,var(--gradient-5-color-from)_0%,var(--gradient-5-color-to)_50%] mix-blend-hard-light
-        size-(--gradient-size)
-        top-[calc(50%-var(--gradient-size)/2)] left-[calc(50%-var(--gradient-size)/2)];
+        size-(--morph-gradient-size)
+        top-[calc(50%-var(--morph-gradient-size)/2)] left-[calc(50%-var(--morph-gradient-size)/2)];
     }
     
     .hide-reveal::-ms-reveal {
@@ -137,5 +142,10 @@
     
     .button-color-2 {
         @apply bg-linear-to-r from-emerald-600 to-green-400 hover:from-emerald-500 hover:to-green-300 active:from-emerald-700 active:to-green-500;
+    }
+    
+    /* For debugging purpose */
+    .bg-responsive-debug {
+        @apply bg-red-500 sm:bg-blue-500 md:bg-green-500 lg:bg-orange-500 xl:bg-purple-600 2xl:bg-emerald-600;
     }
 }

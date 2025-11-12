@@ -18,6 +18,7 @@
 @inject ApplicationRedirectManager RedirectManager
 @inject ILogger<LoginPage> Logger
 @inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthStateProvider
 
 <div class="fixed bg-fixed inset-0 morph-gradient-bg">
     <svg xmlns="http://www.w3.org/2000/svg" class="size-0">
@@ -140,11 +141,19 @@
     
     private EditContext _editContext = null!;
     [SupplyParameterFromForm(FormName = "Login")] private InputModel Model { get; set; } = new();
-    private string? _errorMessage = null!;
+    private string? _errorMessage;
 
     [CascadingParameter] public HttpContext HttpContext { get; set; } = null!;
 
-    protected override void OnInitialized() {
+    [SupplyParameterFromQuery(Name = "ReturnUrl")] private string? ReturnUrl { get; set; }
+
+    protected override async Task OnInitializedAsync() {
+        // If already login, kick the user out.
+        if (await AuthStateProvider.GetAuthenticationStateAsync() is { User.Identity.IsAuthenticated: true }) {
+            RedirectManager.To("/").Execute();
+            return;
+        }
+        
         _editContext = new(Model);
     }
     
@@ -160,7 +169,7 @@
 
         if (result.Succeeded) {
             if (await UserManager.IsEmailConfirmedAsync(user)) {
-                RedirectManager.To("/").Execute();
+                RedirectManager.To(ReturnUrl ?? "/").Execute();
             } else {
                 RedirectManager.To("/auth/verify-email").WithQuery("userId", user.Id).Execute();
             }

@@ -8,7 +8,6 @@
 
     <ItemGroup>
       <Folder Include="Client\public\" />
-      <Folder Include="Components\Shared\Guards\" />
       <Folder Include="Database\Migrations\" />
     </ItemGroup>
 
