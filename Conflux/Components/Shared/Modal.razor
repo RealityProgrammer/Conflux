@@ -1,26 +1,25 @@
-﻿@using Conflux.Helpers
-
-@if (ChildContent != null) {
-    <div class="absolute z-[1000] inset-0 flex flex-row justify-center items-center transition-colors duration-500 overflow-hidden @(Show ? "pointer-events-auto" : "pointer-events-none") @(Show ? "bg-gray-800/80" : "bg-transparent") @BackgroundCssClass" @onclick="EventUtils.AsNonRenderingEventHandler(InvokesClickOutside)">
-        <div class="absolute inset-0" @onclick:stopPropagation>
-            @ChildContent
-        </div>
+﻿<div class="fixed inset-0 z-1000 transition-colors duration-500 @(Show ? "pointer-events-auto bg-black/80" : "pointer-events-none bg-transparent") @_cssClass" @onclick="OnClickOutside" @attributes="AdditionalAttributes">
+    <div @onclick:stopPropagation>
+        @ChildContent
     </div>
-}
+</div>
 
 @code {
     [Parameter] public bool Show { get; set; }
-    [Parameter, EditorRequired] public RenderFragment? ChildContent { get; set; }
-    
-    [Parameter] public EventCallback OnClickOutside { get; set; }
-    
-    [Parameter] public string? BackgroundCssClass { get; set; }
-    [Parameter] public string? ContainerCssClass { get; set; }
+    [Parameter] public RenderFragment ChildContent { get; set; }
 
-    private async Task InvokesClickOutside() {
-        if (OnClickOutside.HasDelegate) {
-            await OnClickOutside.InvokeAsync();
+    [Parameter] public EventCallback<MouseEventArgs> OnClickOutside { get; set; }
+
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string? _cssClass;
+
+    protected override void OnParametersSet() {
+        if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
+            _cssClass = Convert.ToString(obj);
         }
+
+        AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "class").ToDictionary();
     }
 
     public void ShowModal() {

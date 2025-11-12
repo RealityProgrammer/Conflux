@@ -2,9 +2,9 @@
 
 @using Conflux.Components.Shared
 @using Microsoft.AspNetCore.Components.Sections
-@using Conflux.Helpers
 @using System.Diagnostics
 @using Conflux.Components.Shared.Icons
+@using Conflux.Helpers
 
 @implements IAsyncDisposable
 
@@ -12,6 +12,7 @@
 @inject IViteManifest ViteManifest
 @inject IViteDevServerStatus Vite
 @inject IJSRuntime JSRuntime
+@inject ILogger<HomePage> Logger
 
 <PageTitle>HomePage</PageTitle>
 
@@ -21,37 +22,37 @@
     <section class="flex-1 inline-flex flex-row justify-start items-center gap-4">
         <Logo/>
         
-        <Hamburger OnToggle="EventUtils.AsNonRenderingEventHandler<bool>(OnHamburgerToggle)" @ref="_navigationHamburger" class="lg:hidden"/>
+        <Hamburger OnToggle="EventUtils.AsNonRenderingEventHandler<bool>(OnPageNavigationHamburgerToggle)" @ref="_pageNavigationHamburger" class="lg:hidden"/>
         
-        <Modal @ref="_pageNavigationModal" BackgroundCssClass="lg:hidden" OnClickOutside="CloseHamburgerMenu">
+        <Modal @ref="_pageNavigationModal" class="lg:hidden" OnClickOutside="ClosePageNavigation">
             <div class="fixed h-full transition-transform duration-500 @(_pageNavigationModal.Show ? "translate-x-0" : "-translate-x-full") z-10 bg-[#071318] border-r-2 border-r-[#353535] w-2/3 sm:w-1/2 md:w-1/3 p-5 pointer-events-auto overflow-hidden flex flex-col gap-4">
                 <header class="flex-none">
-                    <button class="text-white inline-flex flex-row justify-center items-center gap-2 hover:bg-white/10 px-3 py-2 rounded-full cursor-pointer" @onclick="EventUtils.AsNonRenderingEventHandler(CloseHamburgerMenu)">
+                    <button class="text-white inline-flex flex-row justify-center items-center gap-2 hover:bg-white/10 px-3 py-2 rounded-full cursor-pointer" @onclick="EventUtils.AsNonRenderingEventHandler(ClosePageNavigation)">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16">
                             <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8"/>
                         </svg>
-
+            
                         Close
                     </button>
                 </header>
-                
+            
                 <nav class="flex-1 overflow-y-auto flex flex-col gap-2 px-10">
                     <NavLink class="text-white rounded-full px-7 py-2 font-bold border-2 border-indigo-500/30 shimmer flex-none" href="#" Match="NavLinkMatch.Prefix">
                         HomePage
                     </NavLink>
-
+            
                     <NavLink class="text-white rounded-full px-7 py-2 font-bold border-2 border-indigo-500/30 shimmer flex-none" href="#" Match="NavLinkMatch.Prefix">
                         Safety
                     </NavLink>
-
+            
                     <NavLink class="text-white rounded-full px-7 py-2 font-bold border-2 border-indigo-500/30 shimmer flex-none" href="#" Match="NavLinkMatch.Prefix">
                         Blog
                     </NavLink>
-
+            
                     <NavLink class="text-white rounded-full px-7 py-2 font-bold border-2 border-indigo-500/30 shimmer flex-none" href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" Match="NavLinkMatch.Prefix">
                         Download
                     </NavLink>
-
+            
                     <NavLink class="text-white rounded-full px-7 py-2 font-bold border-2 border-indigo-500/30 shimmer flex-none" href="#" Match="NavLinkMatch.Prefix">
                         About
                     </NavLink>
@@ -91,30 +92,30 @@
                 </button>
 
                 <Modal @ref="_userNavigationModal" OnClickOutside="CloseUserNavigationMenu">
-                    <div class="absolute top-0 right-0 h-full transition-transform duration-500 @(_userNavigationModal!.Show ? "translate-x-0" : "translate-x-full") z-10 bg-[#071318] border-l-2 border-l-[#353535] w-2/3 sm:w-1/2 md:w-1/3 p-5 pointer-events-auto overflow-hidden flex flex-col gap-4">
+                    <div class="fixed right-0 h-full transition-transform duration-500 @(_userNavigationModal!.Show ? "translate-x-0" : "translate-x-full") z-10 bg-[#071318] border-l-2 border-l-[#353535] w-2/3 sm:w-1/2 md:w-1/3 p-5 pointer-events-auto overflow-hidden flex flex-col gap-4">
                         <header class="flex-none">
                             <button class="text-white inline-flex flex-row justify-center items-center gap-2 hover:bg-white/10 px-3 py-2 rounded-full cursor-pointer" @onclick="EventUtils.AsNonRenderingEventHandler(CloseUserNavigationMenu)">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16">
                                     <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8"/>
                                 </svg>
-
+                
                                 Close
                             </button>
                         </header>
-
+                
                         <nav class="flex-1 overflow-y-auto flex flex-col gap-2 px-10">
                             <NavLink class="text-white rounded-full px-7 py-2 font-bold border-2 border-indigo-500/30 shimmer w-full flex flex-row justify-center items-center gap-3 flex-none" href="#" Match="NavLinkMatch.Prefix">
                                 <SpeechBubble Filled="false" ArrowDirection="ChatArrowDirection.Right" Content="ChatContent.Dots" class="size-5" fill="white"/>
-                                
+                
                                 Chatting
                             </NavLink>
-
+                
                             <NavLink class="text-white rounded-full px-7 py-2 font-bold border-2 border-indigo-500/30 shimmer w-full flex flex-row justify-center items-center gap-3 flex-none" href="/settings" Match="NavLinkMatch.Prefix">
                                 <Gear class="size-5" fill="white"/>
-
+                
                                 Settings
                             </NavLink>
-
+                
                             <LogoutButton/>
                         </nav>
                     </div>
@@ -153,7 +154,7 @@
     private IJSObjectReference? _module;
     private ElementReference _particlesBackground;
 
-    private Hamburger _navigationHamburger = null!;
+    private Hamburger _pageNavigationHamburger = null!;
     private Modal _pageNavigationModal = null!;
 
     private Modal? _userNavigationModal;
@@ -165,7 +166,7 @@
         }
     }
 
-    private void OnHamburgerToggle(bool show) {
+    private void OnPageNavigationHamburgerToggle(bool show) {
         if (show) {
             _pageNavigationModal.ShowModal();
         } else {
@@ -173,8 +174,8 @@
         }
     }
 
-    private async Task CloseHamburgerMenu() {
-        await _navigationHamburger.Trigger(false);
+    private async Task ClosePageNavigation() {
+        await _pageNavigationHamburger.Trigger(false);
     }
 
     private void OpenUserNavigationMenu() {
@@ -187,7 +188,6 @@
         Debug.Assert(_userNavigationModal != null);
         
         _userNavigationModal.HideModal();
-        Console.WriteLine("Close user navigation menu");
     }
 
     public async ValueTask DisposeAsync() {
