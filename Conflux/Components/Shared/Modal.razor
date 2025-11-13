@@ -1,12 +1,12 @@
-﻿<div class="fixed inset-0 z-1000 transition-colors duration-500 @(Show ? "pointer-events-auto bg-black/80" : "pointer-events-none bg-transparent") @_cssClass" @onclick="OnClickOutside" @attributes="AdditionalAttributes">
+﻿<div class="fixed inset-0 z-1000 transition-colors duration-500 @(IsShow ? "pointer-events-auto bg-black/80" : "pointer-events-none bg-transparent") @_cssClass" @onclick="OnClickOutside" @attributes="AdditionalAttributes">
     <div @onclick:stopPropagation>
-        @ChildContent
+        @ChildContent(IsShow)
     </div>
 </div>
 
 @code {
-    [Parameter] public bool Show { get; set; }
-    [Parameter] public RenderFragment ChildContent { get; set; }
+    [Parameter] public bool IsShow { get; set; }
+    [Parameter] public RenderFragment<bool> ChildContent { get; set; }
 
     [Parameter] public EventCallback<MouseEventArgs> OnClickOutside { get; set; }
 
@@ -23,16 +23,16 @@
     }
 
     public void ShowModal() {
-        if (Show) return;
+        if (IsShow) return;
 
-        Show = true;
+        IsShow = true;
         StateHasChanged();
     }
 
     public void HideModal() {
-        if (!Show) return;
+        if (!IsShow) return;
 
-        Show = false;
+        IsShow = false;
         StateHasChanged();
     }
 }

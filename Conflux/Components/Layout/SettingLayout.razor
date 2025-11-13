@@ -1,0 +1,151 @@
+﻿@using Conflux.Components.Shared
+@using Conflux.Components.Shared.Icons
+
+@inherits LayoutComponentBase
+
+@* TODO: Redesign the sidemenu trigger button *@
+<button class="absolute top-3 left-0 bg-(--bg-color-2) rounded-r-lg p-2 block cursor-pointer z-100 hover:pl-4 lg:hidden transition-all duration-500" @onclick="ToggleSidebar">
+    <Chevron Direction="ChevronDirection.Right" Mode="ChevronMode.Normal" class="size-6 fill-white"/>
+</button>
+
+<div class="h-screen bg-(--bg-color-1) flex flex-1">
+    @* Sidebar overlay *@
+    @if (IsSidebarVisible) {
+        <div class="lg:hidden fixed inset-0 bg-black/80 bg-opacity-50 z-30 transition-opacity duration-300" @onclick="CloseSidebar"></div>
+    }
+
+    @{
+        // w-4/5 sm:w-3/5 md:w-2/5 lg:w-64
+    
+        string sidebarClasses = "z-1000 w-64 flex-shrink-0 transform transition-transforms duration-300 ease-in-out z-30 fixed lg:static h-full lg:overflow-hidden " + (IsSidebarVisible ? "translate-x-0" : "-translate-x-full lg:translate-x-0");
+    }
+
+    <div class="@sidebarClasses">
+        <div class="h-full bg-(--bg-color-2) border-r border-gray-600 flex flex-col shadow-xl pl-3 overflow-hidden">
+            @* Close button at the top *@
+            <header class="flex-none px-1 pt-2 lg:hidden">
+                <button class="text-white inline-flex flex-row justify-center items-center gap-2 hover:bg-white/10 py-2 rounded-full cursor-pointer px-3" @onclick="CloseSidebar">
+                    <Arrow Direction="ArrowDirection.Left" class="size-6 fill-white"/>
+
+                    Close
+                </button>
+            </header>
+
+            <section class="flex-1 overflow-y-auto flex flex-col gap-2 py-3">
+                @* Navigation Sections *@
+                <section class="text-white flex-none mr-2">
+                    <header class="mb-3">
+                        <p class="font-bold">User Settings</p>
+                    </header>
+
+                    <nav class="flex flex-col gap-3">
+                        <NavLink href="/settings/account" class="flex flex-row justify-start items-center px-4 py-2 rounded-full w-full gap-3 flex-none cursor-pointer hover:bg-gray-500" ActiveClass="bg-gray-600" Match="NavLinkMatch.Prefix">
+                            <Shield class="size-6 flex-none fill-white"/>
+
+                            Account
+                        </NavLink>
+
+                        <NavLink href="/settings/profile" class="flex flex-row justify-start items-center px-4 py-2 rounded-full w-full gap-3 flex-none cursor-pointer hover:bg-gray-500" ActiveClass="bg-gray-600" Match="NavLinkMatch.Prefix">
+                            <Journal class="size-6 flex-none fill-white"/>
+
+                            Profile
+                        </NavLink>
+
+                        <NavLink href="/settings/social" class="flex flex-row justify-start items-center px-4 py-2 rounded-full w-full gap-3 flex-none cursor-pointer hover:bg-gray-500" ActiveClass="bg-gray-600" Match="NavLinkMatch.Prefix">
+                            <People class="size-6 flex-none fill-white"/>
+
+                            Social
+                        </NavLink>
+
+                        <NavLink href="/settings/connection" class="flex flex-row justify-start items-center px-4 py-2 rounded-full w-full gap-3 flex-none cursor-pointer hover:bg-gray-500" ActiveClass="bg-gray-600" Match="NavLinkMatch.Prefix">
+                            <Person class="size-6 flex-none fill-white"/>
+
+                            Connection
+                        </NavLink>
+
+                        <NavLink href="/settings/data_request" class="flex flex-row justify-start items-center px-4 py-2 rounded-full w-full gap-3 flex-none cursor-pointer hover:bg-gray-500" ActiveClass="bg-gray-600" Match="NavLinkMatch.Prefix">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="size-6 fill-white" viewBox="0 0 16 16">
+                                <path d="M4.406 1.342A5.53 5.53 0 0 1 8 0c2.69 0 4.923 2 5.166 4.579C14.758 4.804 16 6.137 16 7.773 16 9.569 14.502 11 12.687 11H10a.5.5 0 0 1 0-1h2.688C13.979 10 15 8.988 15 7.773c0-1.216-1.02-2.228-2.313-2.228h-.5v-.5C12.188 2.825 10.328 1 8 1a4.53 4.53 0 0 0-2.941 1.1c-.757.652-1.153 1.438-1.153 2.055v.448l-.445.049C2.064 4.805 1 5.952 1 7.318 1 8.785 2.23 10 3.781 10H6a.5.5 0 0 1 0 1H3.781C1.708 11 0 9.366 0 7.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383"/>
+                                <path d="M7.646 15.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 14.293V5.5a.5.5 0 0 0-1 0v8.793l-2.146-2.147a.5.5 0 0 0-.708.708z"/>
+                            </svg>
+
+                            Data Request
+                        </NavLink>
+                    </nav>
+                </section>
+
+                <hr class="my-3 h-px border-t border-t-gray-600"/>
+
+                <section class="text-white flex-none mr-2">
+                    <header class="mb-3">
+                        <p class="font-bold">Application Settings</p>
+                    </header>
+
+                    <nav class="flex flex-col gap-3">
+                        <NavLink href="/settings/appearance" class="flex flex-row justify-start items-center px-4 py-2 rounded-full w-full gap-3 flex-none cursor-pointer hover:bg-gray-500" ActiveClass="bg-gray-600" Match="NavLinkMatch.Prefix">
+                            <Palette class="size-6 flex-none fill-white"/>
+
+                            Appearance
+                        </NavLink>
+
+                        <NavLink href="/settings/peripheral" class="flex flex-row justify-start items-center px-4 py-2 rounded-full w-full gap-3 flex-none cursor-pointer hover:bg-gray-500" ActiveClass="bg-gray-600" Match="NavLinkMatch.Prefix">
+                            <Microphone class="size-6 flex-none fill-white"/>
+
+                            Peripheral
+                        </NavLink>
+
+                        <NavLink href="/settings/chatting" class="flex flex-row justify-start items-center px-4 py-2 rounded-full w-full gap-3 flex-none cursor-pointer hover:bg-gray-500" ActiveClass="bg-gray-600" Match="NavLinkMatch.Prefix">
+                            <SpeechBubble ArrowDirection="ChatArrowDirection.Middle" Content="ChatContent.Text" Filled="false" class="size-6 flex-none fill-white"/>
+
+                            Chatting
+                        </NavLink>
+
+                        <NavLink href="/settings/notification" class="flex flex-row justify-start items-center px-4 py-2 rounded-full w-full gap-3 flex-none cursor-pointer hover:bg-gray-500" ActiveClass="bg-gray-600" Match="NavLinkMatch.Prefix">
+                            <Bell class="size-6 flex-none fill-white"/>
+
+                            Notification
+                        </NavLink>
+
+                        <NavLink href="/settings/languages" class="flex flex-row justify-start items-center px-4 py-2 rounded-full w-full gap-3 flex-none cursor-pointer hover:bg-gray-500" ActiveClass="bg-gray-600" Match="NavLinkMatch.Prefix">
+                            <Alphabet class="size-6 flex-none fill-white"/>
+
+                            Language
+                        </NavLink>
+
+                        <NavLink href="/settings/others" class="flex flex-row justify-start items-center px-4 py-2 rounded-full w-full gap-3 flex-none cursor-pointer hover:bg-gray-500" ActiveClass="bg-gray-600" Match="NavLinkMatch.Prefix">
+                            <ThreeDots class="size-6 flex-none fill-white"/>
+
+                            Others
+                        </NavLink>
+                    </nav>
+                </section>
+
+                <hr class="my-3 h-px border-t border-t-gray-600"/>
+
+                <section class="text-white flex-none mr-2">
+                    <header class="mb-3">
+                        <p class="font-bold text-red-600">Danger Zone</p>
+                    </header>
+
+                    <LogoutButton/>
+                </section>
+            </section>
+        </div>
+    </div>
+
+    <main class="h-full flex-1 w-full min-w-0 transition-all duration-300 px-16 py-5 bg-(--bg-color-1)">
+        @Body
+    </main>
+</div>
+
+@code {
+    private bool IsSidebarVisible { get; set; }
+
+    private void ToggleSidebar() {
+        IsSidebarVisible = !IsSidebarVisible;
+    }
+
+    private void CloseSidebar() {
+        IsSidebarVisible = false;
+    }
+}

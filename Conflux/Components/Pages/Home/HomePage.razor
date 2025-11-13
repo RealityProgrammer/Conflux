@@ -22,10 +22,20 @@
     <section class="flex-1 inline-flex flex-row justify-start items-center gap-4">
         <Logo/>
         
-        <Hamburger OnToggle="EventUtils.AsNonRenderingEventHandler<bool>(OnPageNavigationHamburgerToggle)" @ref="_pageNavigationHamburger" class="lg:hidden"/>
+        <button class="border-2 border-indigo-500/30 size-12 py-2 rounded-full flex flex-col justify-around items-center cursor-pointer lg:hidden" @onclick="OpenPageNavigationMenu">
+            @if (_showPageNavigationMenu) {
+                <svg xmlns="http://www.w3.org/2000/svg" fill="#4e4e4e" class="size-3/5" viewBox="0 0 16 16" stroke="#4e4e4e" stroke-width="1">
+                    <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/>
+                </svg>
+            } else {
+                <span class="w-3/5 h-[3px] bg-[#4e4e4e]"></span>
+                <span class="w-3/5 h-[3px] bg-[#4e4e4e]"></span>
+                <span class="w-3/5 h-[3px] bg-[#4e4e4e]"></span>
+            }
+        </button>
         
         <Modal @ref="_pageNavigationModal" class="lg:hidden" OnClickOutside="ClosePageNavigation">
-            <div class="fixed h-full transition-transform duration-500 @(_pageNavigationModal.Show ? "translate-x-0" : "-translate-x-full") z-10 bg-[#071318] border-r-2 border-r-[#353535] w-2/3 sm:w-1/2 md:w-1/3 p-5 pointer-events-auto overflow-hidden flex flex-col gap-4">
+            <div class="fixed h-full transition-transform duration-500 @(_pageNavigationModal.IsShow ? "translate-x-0" : "-translate-x-full") z-10 bg-[#071318] border-r-2 border-r-[#353535] w-2/3 sm:w-1/2 md:w-1/3 p-5 pointer-events-auto overflow-hidden flex flex-col gap-4">
                 <header class="flex-none">
                     <button class="text-white inline-flex flex-row justify-center items-center gap-2 hover:bg-white/10 px-3 py-2 rounded-full cursor-pointer" @onclick="EventUtils.AsNonRenderingEventHandler(ClosePageNavigation)">
                         <Arrow Direction="ArrowDirection.Left" class="size-6 fill-white"/>
@@ -89,8 +99,8 @@
                     <p class="text-white">@context.User.Identity?.Name</p>
                 </button>
 
-                <Modal @ref="_userNavigationModal" OnClickOutside="CloseUserNavigationMenu">
-                    <div class="fixed right-0 h-full transition-transform duration-500 @(_userNavigationModal!.Show ? "translate-x-0" : "translate-x-full") z-10 bg-[#071318] border-l-2 border-l-[#353535] w-2/3 sm:w-1/2 md:w-1/3 p-5 pointer-events-auto overflow-hidden flex flex-col gap-4">
+                <Modal @ref="_userNavigationModal" OnClickOutside="CloseUserNavigationMenu" Context="_isOpened">
+                    <div class="fixed right-0 h-full transition-transform duration-500 @(_userNavigationModal!.IsShow ? "translate-x-0" : "translate-x-full") z-10 bg-[#071318] border-l-2 border-l-[#353535] w-2/3 sm:w-1/2 md:w-1/3 p-5 pointer-events-auto overflow-hidden flex flex-col gap-4">
                         <header class="flex-none">
                             <button class="text-white inline-flex flex-row items-center gap-2 hover:bg-white/10 px-3 py-2 rounded-full cursor-pointer float-end" @onclick="EventUtils.AsNonRenderingEventHandler(CloseUserNavigationMenu)">
                                 Close
@@ -106,7 +116,7 @@
                                 Chatting
                             </NavLink>
                 
-                            <NavLink class="text-white rounded-full px-7 py-2 font-bold border-2 border-indigo-500/30 shimmer w-full flex flex-row justify-center items-center gap-3 flex-none" href="/settings" Match="NavLinkMatch.Prefix">
+                            <NavLink class="text-white rounded-full px-7 py-2 font-bold border-2 border-indigo-500/30 shimmer w-full flex flex-row justify-center items-center gap-3 flex-none" href="/settings/account" Match="NavLinkMatch.Prefix">
                                 <Gear class="size-5 fill-white flex-none"/>
                 
                                 Settings
@@ -150,7 +160,7 @@
     private IJSObjectReference? _module;
     private ElementReference _particlesBackground;
 
-    private Hamburger _pageNavigationHamburger = null!;
+    private bool _showPageNavigationMenu;
     private Modal _pageNavigationModal = null!;
 
     private Modal? _userNavigationModal;
@@ -162,16 +172,18 @@
         }
     }
 
-    private void OnPageNavigationHamburgerToggle(bool show) {
-        if (show) {
-            _pageNavigationModal.ShowModal();
-        } else {
-            _pageNavigationModal.HideModal();
-        }
+    private void OpenPageNavigationMenu() {
+        _showPageNavigationMenu = true;
+        _pageNavigationModal.ShowModal();
+        
+        StateHasChanged();
     }
 
-    private async Task ClosePageNavigation() {
-        await _pageNavigationHamburger.Trigger(false);
+    private void ClosePageNavigation() {
+        _showPageNavigationMenu = false;
+        _pageNavigationModal.HideModal();
+        
+        StateHasChanged();
     }
 
     private void OpenUserNavigationMenu() {
