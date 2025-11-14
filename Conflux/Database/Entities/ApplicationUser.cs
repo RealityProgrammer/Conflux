@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Conflux.Database.Entities;
 
-public class ApplicationUser : IdentityUser {
+public class ApplicationUser : IdentityUser, ICreatedAtColumn {
     [StringLength(64), Required]
     public required string DisplayName { get; set; }
     
