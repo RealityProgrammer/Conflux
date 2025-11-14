@@ -1,4 +1,5 @@
 using Conflux.Database;
+using Conflux.Database.Entities;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server;
 using Microsoft.AspNetCore.Identity;

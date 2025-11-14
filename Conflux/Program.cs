@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Conflux.Components.Account;
 using Conflux.Components.Services;
+using Conflux.Components.Services.Abstracts;
+using Conflux.Database.Entities;
 using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -49,6 +51,7 @@ builder.Services.AddIdentityCore<ApplicationUser>(options => {
 
 // System services.
 builder.Services.AddScoped<ApplicationRedirectManager>();
+builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddViteServices();
 
 // Controllers.

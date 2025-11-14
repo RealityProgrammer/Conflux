@@ -7,6 +7,7 @@
 @using Conflux.Database
 @using System.ComponentModel.DataAnnotations
 @using Conflux.Components.Shared.Icons
+@using Conflux.Database.Entities
 @using System.Text.Json
 @using Microsoft.AspNetCore.Components.Sections
 
@@ -210,7 +211,9 @@
     }
     
     private async Task OnValidSubmit() {
-        var user = new ApplicationUser();
+        var user = new ApplicationUser {
+            DisplayName = Model.Email[..Model.Email.IndexOf('@')],
+        };
         
         await UserStore.SetUserNameAsync(user, Model.Email, CancellationToken.None);
         await ((IUserEmailStore<ApplicationUser>)UserStore).SetEmailAsync(user, Model.Email, CancellationToken.None);
