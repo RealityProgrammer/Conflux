@@ -1,0 +1,62 @@
+﻿<p class="@TextCssClass @(IsEditing ? "hidden" : string.Empty)" @onclick="StartEditing">
+    @Text
+</p>
+
+@if (IsEditing) {
+    <input @ref="InputElement"
+           @bind="EditText" 
+           @bind:event="oninput"
+           @onkeydown="HandleKeyDown"
+           @onblur="SaveChanges"
+           class="px-2 py-1 border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-200 w-full">
+}
+
+@code {
+    private ElementReference InputElement;
+    private bool IsEditing;
+    private string EditText = "";
+
+    [Parameter] public string? TextCssClass { get; set; }
+    [Parameter] public string Text { get; set; } = "";
+    [Parameter] public EventCallback<string> TextChanged { get; set; }
+
+    protected override void OnParametersSet() {
+        EditText = Text;
+        base.OnParametersSet();
+    }
+
+    private async Task StartEditing() {
+        IsEditing = true;
+        EditText = Text;
+
+        StateHasChanged();
+        await Task.Yield();
+
+        await InputElement.FocusAsync();
+    }
+
+    private async Task SaveChanges() {
+        IsEditing = false;
+
+        if (EditText != Text) {
+            Text = EditText;
+            await TextChanged.InvokeAsync(Text);
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e) {
+        switch (e.Key) {
+            case "Enter":
+                await SaveChanges();
+                break;
+
+            case "Escape":
+                IsEditing = false;
+                EditText = Text;
+                StateHasChanged();
+                break;
+        }
+    }
+}

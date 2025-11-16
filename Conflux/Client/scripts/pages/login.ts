@@ -9,8 +9,6 @@ export function onLoad() {
     initBackground();
     initTooltipContainers();
     initializeSensitiveInputComponents();
-    
-    console.log("login: onLoad.");
 }
 export function onDispose() {
     animations.forEach(animation => {

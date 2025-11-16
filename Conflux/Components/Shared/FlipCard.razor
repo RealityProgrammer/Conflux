@@ -2,11 +2,11 @@
 
 <div class="perspective-distant transform-3d @_class" @attributes="AdditionalAttributes">
     <div class="relative size-full transform-3d" style="transition-duration: @FlipDuration">
-        <div class="@(IsFlipped ? "rotate-y-180" : "rotate-y-0") backface-hidden transform-3d absolute inset-0 z-[1] transition-transform" style="-webkit-backface-visibility: hidden; transition-duration: @FlipDuration">
+        <div class="@(InitiallyIsFlipped ? "rotate-y-180" : "rotate-y-0") backface-hidden transform-3d absolute inset-0 z-[1] transition-transform" style="-webkit-backface-visibility: hidden; transition-duration: @FlipDuration">
             @Front
         </div>
         
-        <div class="@(IsFlipped ? "rotate-y-0" : "-rotate-y-180") backface-hidden transform-3d absolute inset-0 transition-transform" style="-webkit-backface-visibility: hidden; transition-duration: @FlipDuration">
+        <div class="@(InitiallyIsFlipped ? "rotate-y-0" : "-rotate-y-180") backface-hidden transform-3d absolute inset-0 transition-transform" style="-webkit-backface-visibility: hidden; transition-duration: @FlipDuration">
             @Back
         </div>
     </div>
@@ -18,7 +18,9 @@
     [Parameter] public RenderFragment? Front { get; set; }
     [Parameter] public RenderFragment? Back { get; set; }
 
-    [Parameter] public bool IsFlipped { get; set; }
+    [Parameter] public bool InitiallyIsFlipped { get; set; }
+    
+    public bool IsFlipped { get; set; }
 
     private string? _class;
 
@@ -30,6 +32,7 @@
         }
 
         AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key != "class").ToDictionary();
+        IsFlipped = InitiallyIsFlipped;
     }
 
     public void Flip() {

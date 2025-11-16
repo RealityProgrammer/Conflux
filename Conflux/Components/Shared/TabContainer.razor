@@ -1,8 +1,8 @@
 ﻿<div @attributes="AdditionalAttributes">
     <CascadingValue Value="this">
-        <div class="@ButtonContainerCssClass">
+        <ul class="@ButtonContainerCssClass">
             @Buttons(ActiveId)
-        </div>
+        </ul>
         
         <div class="@ContentContainerCssClass">
             @Contents(ActiveId)
@@ -15,17 +15,23 @@
     [Parameter, EditorRequired] public required RenderFragment<string?> Contents { get; set; }
     [Parameter] public string? ButtonContainerCssClass { get; set; }
     [Parameter] public string? ContentContainerCssClass { get; set; }
-    [Parameter] public string? ActiveId { get; set; }
-    [Parameter] public EventCallback<string> OnActiveChanged { get; set; }
+    [Parameter] public string? InitiallyActiveId { get; set; }
+    [Parameter] public EventCallback<string> OnActiveTabChanged { get; set; }
+    
+    public string? ActiveId { get; private set; }
     
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    protected override void OnParametersSet() {
+        ActiveId = InitiallyActiveId;
+    }
 
     public async Task SetActiveId(string id) {
         if (ActiveId == id) return;
         
         ActiveId = id;
-        StateHasChanged();
+        await OnActiveTabChanged.InvokeAsync(id);
 
-        await OnActiveChanged.InvokeAsync(id);
+        StateHasChanged();
     }
 }

@@ -7,7 +7,7 @@
 @code {
     [Parameter, EditorRequired] public required string TabId { get; set; }
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
-    [Parameter, EditorRequired] public required RenderFragment ChildContent { get; set; }
+    [Parameter] public RenderFragment ChildContent { get; set; }
     
     [CascadingParameter] private TabContainer Parent { get; set; } = null!;
 

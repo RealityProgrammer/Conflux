@@ -2,15 +2,23 @@
 
 @using Conflux.Components.Services
 @using Conflux.Components.Services.Abstracts
-@using Conflux.Database
+@using Conflux.Components.Shared
 @using Conflux.Database.Entities
-@using System.Diagnostics
+@using Conflux.Helpers
+@using Markdig
+@using Markdig.Parsers
+@using Markdig.Syntax
+@using Markdig.Syntax.Inlines
+@using Microsoft.AspNetCore.Components.Sections
+@using Microsoft.AspNetCore.Identity
+@using System.ComponentModel.DataAnnotations
 
 @inject IWebHostEnvironment Environment
 @inject IAccountService AccountService
 @inject ApplicationRedirectManager RedirectManager
-@inject ILogger<ProfilePage> Logger
-@inject PersistentComponentState ApplicationState
+@inject UserManager<ApplicationUser> UserManager
+@inject MarkdownPipeline MarkdownPipeline
+@inject ProfileSanitizingService SanitizingService
 
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 
@@ -28,87 +36,210 @@
     return;
 }
 
-<h1 class="font-bold text-3xl">Profile Management</h1>
-
-<div class="mt-3 mx-0 w-full md:mx-auto md:w-2/3 lg:w-3/4 grid grid-cols-1 lg:grid-cols-[40%_60%] border border-gray-800 shadow-lg rounded-lg">
-    @* <section class="w-full h-16 border-r border-r-gray-600"> *@
-    @*     <div class="relative w-full h-32"> *@
-    @*         <img src="https://picsum.dev/300/200" alt="Banner Image" class="object-cover size-full"> *@
-    @*     </div> *@
-    @* </section> *@
+<div class="relative h-full">
+    <h1 class="font-bold text-3xl">Profile Management</h1>
+                
+    <TabContainer class="mt-2" ButtonContainerCssClass="flex flex-row justify-start gap-3 border-b border-gray-600" InitiallyActiveId="@_activeTabId" OnActiveTabChanged="EventUtils.AsNonRenderingEventHandler<string>(HandleActiveTabChanged)">
+        <Buttons Context="_">
+            <TabButton TabId="preview" class="p-3 text-gray-400 bg-transparent hover:text-gray-200 hover:bg-gray-400 rounded-t-lg cursor-pointer" ActiveCssClass="text-blue-400! cursor-default! hover:bg-transparent!">
+                Preview
+            </TabButton>
     
-    <section class="pb-2 border-r border-r-gray-600">
-        @* Banner and Profile Picture *@
-        <div class="relative h-32">
-            <div class="absolute inset-0 bg-cover bg-center bg-black rounded-tl-lg">
-            </div>
-
-            <div class="absolute -bottom-8 left-4">
-                <div class="relative">
-                    <div class="w-20 h-20 rounded-full border-4 border-gray-800 bg-gray-700 overflow-hidden">
-                        @{
-                            int id = Random.Shared.Next(0, 100);
-
+            <TabButton TabId="edit" class="p-3 text-gray-400 bg-transparent hover:text-gray-200 hover:bg-gray-400 rounded-t-lg cursor-pointer" ActiveCssClass="text-blue-400! cursor-default! hover:bg-transparent!">
+                Edit
+            </TabButton>
+        </Buttons>
+    
+        <Contents Context="_">
+            <TabContent TabId="preview">
+                <div class="mt-3 mx-0 w-full md:mx-auto md:w-2/3 lg:w-3/4 grid grid-cols-1 lg:grid-cols-[40%_60%] border border-gray-800 shadow-lg rounded-lg">
+                    <section class="pb-2 border-b border-b-gray-600 lg:border-r lg:border-r-gray-600 lg:border-b-0">
+                        @* Banner and Profile Picture *@
+                        <div class="relative h-32">
+                            <div class="absolute inset-0 bg-cover bg-center bg-black rounded-tl-lg rounded-tr-lg lg:rounded-tr-none"></div>
+    
+                            <div class="absolute -bottom-8 left-4">
+                                <div class="relative">
+                                    <div class="w-20 h-20 rounded-full border-4 border-gray-700 bg-gray-700 overflow-hidden">
+                                        @{
+                                            int id = Random.Shared.Next(0, 100);
+                                        }
+    
+                                        <img src="https://randomuser.me/api/portraits/men/@(id).jpg"
+                                             alt="Profile"
+                                             class="w-full h-full object-cover">
+                                    </div>
+    
+                                    @* TODO: Status indicator *@
+                                </div>
+                            </div>
+                        </div>
+    
+                        @* Username, Bio, etc... *@
+                        <div class="px-2 pt-10">
+                            <p class="text-2xl font-bold">@Model.DisplayName</p>
+                            <p class="text-sm">@_user.UserName</p>
+    
+                            <p class="mt-2 text-sm">
+                                <span class="font-semibold">Joined since:</span> @_user.CreatedAt.ToString("yyyy/MM/dd")
+                            </p>
+    
+                            @if (Model.Pronouns is { } pronouns) {
+                                <p class="text-sm mt-2">
+                                    <span class="font-semibold">Pronouns:</span>
+    
+                                    @pronouns
+                                </p>
+                            }
+                        </div>
+                    </section>
+    
+                    <section class="w-full p-4">
+                        @if (!string.IsNullOrEmpty(_markupBio.Value)) {
+                            @_markupBio
+                        } else {
+                            <div class="size-full flex justify-center items-center">
+                                <p class="text-sm text-gray-400">Well this is awkward...</p>
+                            </div>
                         }
-
-                        <img src="https://randomuser.me/api/portraits/men/@(id).jpg"
-                             alt="Profile"
-                             class="w-full h-full object-cover">
-                    </div>
-
-                    @* TODO: Status indicator *@
+                    </section>
                 </div>
-            </div>
-        </div>
-        
-        @* Username, Bio, etc... *@
-        <div class="px-2 mt-10">
-            <p class="font-semibold text-xl">@_user.DisplayName</p>
-            <p class="mt-1 text-base">@_user.UserName</p>
-        </div>
-    </section>
+            </TabContent>
     
-    <section class="w-full h-16">
-        <p>Content</p>
-    </section>
+            <TabContent TabId="edit">
+                <div class="mt-3 mx-0 w-full md:mx-auto md:w-2/3 lg:w-3/4">
+                    <EditForm class="grid grid-cols-1 lg:grid-cols-2 gap-2" EditContext="_editContext" FormName="Profile">
+                        <AntiforgeryToken/>
+                        <DataAnnotationsValidator/>
+                        
+                        <div>
+                            <label class="font-semibold">Profile Picture</label>
+                            <div class="mt-2">
+                                <div class="w-2/3 aspect-square bg-red-500 mx-auto rounded-full">
+                                    
+                                </div>
+                            </div>
+                        </div>
+    
+                        <div>
+                            <label class="font-semibold">Username</label>
+                            <input type="text" readonly value="@_user.UserName" class="mt-2 input-field h-11 w-full" disabled>
+                        </div>
+    
+                        <div>
+                            <label class="font-semibold">Display Name</label>
+                            <InputText type="text" @bind-Value="Model.DisplayName" class="mt-2 input-field h-11 w-full" placeholder="Display Name"/>
+                        </div>
+    
+                        <div>
+                            <label class="font-semibold">Pronouns</label>
+                            <InputText type="text" @bind-Value="Model.Pronouns" class="mt-2 input-field h-11 w-full" placeholder="Pronouns"/>
+                        </div>
+    
+                        <div class="col-start-1 col-end-2 lg:col-end-3">
+                            <label class="font-semibold">About me</label>
+                            <InputTextArea type="text" @bind-Value="Model.Bio" class="mt-2 input-field h-44 w-full py-1 resize-none"/>
+                        </div>
+                    </EditForm>
+                </div>
+            </TabContent>
+        </Contents>
+    </TabContainer>
 </div>
+
+<SectionContent SectionName="OutsideContainer">
+    <UnsavedChangesPopup @ref="_unsavedPopup" OnCancelRequest="CancelEdit" OnSaveRequest="SaveProfile"/>
+</SectionContent>
 
 @code {
     private ApplicationUser? _user;
 
+    [SupplyParameterFromForm(FormName = "Profile")]
+    private InputModel Model { get; set; } = new() {
+        DisplayName = string.Empty
+    };
+
+    private EditContext _editContext;
+
+    private MarkupString _markupBio;
+    
+    // pain
+    private string _activeTabId = "preview";
+
+    private UnsavedChangesPopup _unsavedPopup = null!;
+
     protected override async Task OnInitializedAsync() {
-        Logger.LogInformation("OnInitialized");
-        
         if (Environment.IsDevelopment()) {
             await Task.Delay(1500);
         }
-        
+
         if (await AccountService.GetCurrentUserAsync() is not { } user) {
             // How did we get here? Pretty sure [Authorize] at _Imports.razor should redirect to login if there is no
             // current user.
             RedirectManager.To("/auth/login").Execute();
             return;
         }
-        
+
         _user = user;
+        Model.DisplayName = _user.DisplayName;
+        Model.Pronouns = _user.Pronouns;
+        Model.Bio = _user.Bio;
+        ParseMarkdownBio(Model.Bio ?? string.Empty);
+
+        _editContext = new(Model);
+        _editContext.OnFieldChanged += (sender, args) => {
+            _unsavedPopup.ShowPopup();
+
+            if (args.FieldIdentifier.FieldName == nameof(Model.Bio)) {
+                ParseMarkdownBio(Model.Bio ?? string.Empty);
+            }
+        };
     }
 
-    // protected override async Task OnAfterRenderAsync(bool firstRender) {
-    //     if (!firstRender) {
-    //         if (Environment.IsDevelopment()) {
-    //             await Task.Delay(1500);
-    //         }
-    //
-    //         if (await AccountService.GetCurrentUserAsync() is not { } user) {
-    //             // How did we get here? Pretty sure [Authorize] at _Imports.razor should redirect to login if there is no
-    //             // current user.
-    //
-    //             RedirectManager.To("/auth/login").Execute();
-    //             return;
-    //         }
-    //
-    //         _user = user;
-    //         Logger.LogInformation("User Loaded");
-    //     }
-    // }
+    private void HandleActiveTabChanged(string tabId) {
+        _activeTabId = tabId;
+    }
+
+    private async Task SaveProfile() {
+        if (Environment.IsDevelopment()) {
+            await Task.Delay(1500);
+        }
+
+        if (await AccountService.GetCurrentUserAsync() is not { } user) {
+            // Whoop, session expiration, never seen you before.
+
+            RedirectManager.To("/").Execute();
+            return;
+        }
+
+        _user = user;
+
+        _user!.DisplayName = Model.DisplayName;
+        _user.Pronouns = Model.Pronouns;
+        _user.Bio = Model.Bio;
+
+        await UserManager.UpdateAsync(_user);
+    }
+
+    private void CancelEdit() {
+        Model.DisplayName = _user!.DisplayName;
+        Model.Pronouns = _user.Pronouns;
+        Model.Bio = _user.Bio;
+    }
+
+    private void ParseMarkdownBio(string bio) {
+        if (string.IsNullOrWhiteSpace(bio)) {
+            _markupBio = new(string.Empty);
+            return;
+        }
+        
+        var document = Markdown.Parse(bio, MarkdownPipeline);
+        _markupBio = (MarkupString)SanitizingService.Sanitize(document.ToHtml(MarkdownPipeline));
+    }
+
+    private sealed class InputModel {
+        [StringLength(64), Required] public required string DisplayName { get; set; }
+        [StringLength(maximumLength: 32)] public string? Pronouns { get; set; }
+        [StringLength(255)] public string? Bio { get; set; }
+    }
 }

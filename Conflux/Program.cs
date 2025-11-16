@@ -9,6 +9,7 @@ using Conflux.Components.Account;
 using Conflux.Components.Services;
 using Conflux.Components.Services.Abstracts;
 using Conflux.Database.Entities;
+using Markdig;
 using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -53,6 +54,14 @@ builder.Services.AddIdentityCore<ApplicationUser>(options => {
 builder.Services.AddScoped<ApplicationRedirectManager>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddViteServices();
+builder.Services.AddScoped<MarkdownPipeline>(services => {
+    var pipeline = new MarkdownPipelineBuilder()
+        .UseAdvancedExtensions()
+        .Build();
+
+    return pipeline;
+});
+builder.Services.AddScoped<ProfileSanitizingService>();
 
 // Controllers.
 builder.Services.AddControllers();

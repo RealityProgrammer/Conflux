@@ -63,7 +63,7 @@
                             <TooltipContainer ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="right" TooltipOffset="8" ShowTooltip="@(!_editContext.IsValid(_emailField))" Id="register-panel-email">
                                 <Target>
                                     @{
-                                        string classes = $"w-full h-11 mt-2 px-3 input-field {(_editContext.IsValid(_emailField) ? string.Empty : "border-red-700")}";
+                                        string classes = $"w-full h-11 mt-2 input-field {(_editContext.IsValid(_emailField) ? string.Empty : "border-red-700")}";
                                     }
 
                                     <InputText type="text" @bind-Value="Model.Email" placeholder="Enter Email" class="@classes"/>
@@ -83,7 +83,7 @@
                                     @{
                                         bool isValid = _editContext.IsValid(_passwordField);
 
-                                        string inputClass = $"w-full h-11 px-3 input-field {(isValid ? string.Empty : "border-red-700")} rounded-r-none border-r-0";
+                                        string inputClass = $"w-full h-11 input-field {(isValid ? string.Empty : "border-red-700")} rounded-r-none border-r-0";
                                         string buttonClass = $"{(isValid ? string.Empty : "border-y-red-700 border-r-red-700")} transition duration-300";
                                     }
 
@@ -112,7 +112,7 @@
                                     @{
                                         bool isValid = _editContext.IsValid(_confirmationPasswordField);
 
-                                        string inputClass = $"w-full h-11 px-3 input-field {(isValid ? string.Empty : "border-red-700")} rounded-r-none border-r-0";
+                                        string inputClass = $"w-full h-11 input-field {(isValid ? string.Empty : "border-red-700")} rounded-r-none border-r-0";
                                         string buttonClass = $"{(isValid ? string.Empty : "border-y-red-700 border-r-red-700")} transition duration-300";
                                     }
 
