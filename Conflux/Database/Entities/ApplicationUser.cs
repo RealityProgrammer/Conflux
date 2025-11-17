@@ -14,4 +14,10 @@ public class ApplicationUser : IdentityUser, ICreatedAtColumn {
     public string? Bio { get; set; }
     
     public DateTime CreatedAt { get; set; }
+    
+    [StringLength(255)]
+    public string? ProfilePicturePath { get; set; }
+    
+    [StringLength(255)]
+    public string? BannerPicturePath { get; set; }
 }

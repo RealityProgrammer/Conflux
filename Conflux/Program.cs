@@ -69,6 +69,9 @@ builder.Services.AddControllers();
 // OpenAPI
 builder.Services.AddOpenApi();
 
+// Nuget Packages
+// ...
+
 var app = builder.Build();
 
 app.MapControllers();

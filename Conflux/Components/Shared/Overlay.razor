@@ -1,0 +1,23 @@
+﻿@using System.Linq.Expressions
+
+<div class="absolute inset-0 transition-colors duration-500 @_cssClass @(Open ? $"pointer-events-auto {ActiveCssClass}" : "pointer-events-none")" @onclick="OnClick"></div>
+
+@code {
+    [Parameter] public bool Open { get; set; }
+    [Parameter] public EventCallback<bool> OpenChanged { get; set; }
+    [Parameter] public Expression<Func<bool>>? OpenExpression { get; set; }
+    
+    [Parameter] public EventCallback<MouseEventArgs> OnClick { get; set; }
+    [Parameter] public string? ActiveCssClass { get; set; }
+    
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+    private string? _cssClass;
+
+    protected override void OnParametersSet() {
+        if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
+            _cssClass = Convert.ToString(obj);
+        }
+
+        AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "class").ToDictionary();
+    }
+}

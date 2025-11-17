@@ -12,6 +12,7 @@
 
 @code {
     [Parameter] public bool IsShowingSpinner { get; set; }
+    
     [Parameter] public RenderFragment? ChildContent { get; set; }
     [Parameter] public string? SpinnerCssClass { get; set; }
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }

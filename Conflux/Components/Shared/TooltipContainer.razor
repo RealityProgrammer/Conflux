@@ -21,8 +21,8 @@
 @code {
     private IJSObjectReference? _componentsModule;
     
-    [Parameter] public RenderFragment? Target { get; set; }
-    [Parameter] public RenderFragment? Tooltip { get; set; }
+    [Parameter, EditorRequired] public required RenderFragment Target { get; set; }
+    [Parameter, EditorRequired] public required RenderFragment Tooltip { get; set; }
     [Parameter] public string? ArrowCssClass { get; set; }
     [Parameter] public bool ShowTooltip { get; set; } = false;
     [Parameter] public string TooltipPlacement { get; set; } = "bottom";

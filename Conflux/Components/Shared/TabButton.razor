@@ -1,6 +1,9 @@
 ﻿@using Conflux.Helpers
+
 <button class="@_cssClass @(Parent.ActiveId == TabId ? ActiveCssClass : string.Empty)" @attributes="AdditionalAttributes" @onclick="EventUtils.AsNonRenderingEventHandler(OnTabClick)">
-    @ChildContent
+    @if (ChildContent != null) {
+        @ChildContent
+    }
 </button>
 
 @code {
