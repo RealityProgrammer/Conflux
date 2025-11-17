@@ -11,14 +11,22 @@
 @using Markdig.Syntax.Inlines
 @using Microsoft.AspNetCore.Components.Sections
 @using Microsoft.AspNetCore.Identity
+@using System.ComponentModel
 @using System.ComponentModel.DataAnnotations
+@using System.Runtime.CompilerServices
+
+@implements IAsyncDisposable
 
 @inject IWebHostEnvironment Environment
+@inject IViteManifest ViteManifest
+@inject IViteDevServerStatus Vite
 @inject IAccountService AccountService
 @inject ApplicationRedirectManager RedirectManager
 @inject UserManager<ApplicationUser> UserManager
 @inject MarkdownPipeline MarkdownPipeline
 @inject ProfileSanitizingService SanitizingService
+@inject ILogger<ProfilePage> Logger
+@inject IJSRuntime JSRuntime
 
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 
@@ -112,30 +120,67 @@
                         <AntiforgeryToken/>
                         <DataAnnotationsValidator/>
 
-                        <div>
+                        <div class="lg:col-span-2">
                             <label class="font-semibold">Profile Picture</label>
                             
                             <div class="mt-2">
-                                <div class="w-2/3 aspect-square mx-auto rounded-full border-4 border-gray-600 bg-black group cursor-pointer overflow-hidden">
-                                    @if (!string.IsNullOrEmpty(_user.ProfilePicturePath)) {
-                                        <img src="@_user.ProfilePicturePath" alt="Profile Picture">
+                                <div class="relative w-2/3 aspect-square mx-auto rounded-full border-4 border-gray-600 bg-black group cursor-pointer overflow-hidden">
+                                    @if (!string.IsNullOrEmpty(_profilePicturePreviewUrl)) {
+                                        <img src="@_profilePicturePreviewUrl" alt="Profile Picture" class="absolute inset-0 object-cover pointer-events-none rounded-full" style="transform: scaleX(@Model.ProfilePictureAdjustment.ZoomX) scaleY(@Model.ProfilePictureAdjustment.ZoomY);">
+                                    } else if (!string.IsNullOrEmpty(_user.ProfilePicturePath)) {
+                                        <img src="@_user.ProfilePicturePath" alt="Profile Picture" class="absolute inset-0 object-cover pointer-events-none rounded-full">
                                     }
+                                    
+                                    @* @if (!string.IsNullOrEmpty(_user.ProfilePicturePath)) { *@
+                                    @*     <img src="@_user.ProfilePicturePath" alt="Profile Picture"> *@
+                                    @* } *@
                             
-                                    <p class="hidden group-hover:flex size-full flex-row justify-center items-center" @onclick="EventUtils.AsNonRenderingEventHandler(ShowProfilePictureModal)">
+                                    <p class="absolute inset-0 hidden group-hover:flex size-full flex-row justify-center items-center" @onclick="OpenProfilePictureModal">
                                         Click to change Profile Picture
                                     </p>
-                                    
-                                    <Dialog @bind-Open="_showProfilePictureModal" OnClickOutside="HideProfilePictureModal" Context="__">
-                                        <div class="fixed">
-                                            
-                                        </div>
-                                        <div class="fixed transition-transform duration-500 z-10 bg-[#071318] border-l-2 border-l-[#353535] w-2/3 sm:w-1/2 md:w-1/3 p-5 pointer-events-auto overflow-hidden flex flex-col gap-4">
-                                            <h1 class="font-bold text-2xl">Profile Picture</h1>
-
-
-                                        </div>
-                                    </Dialog>
                                 </div>
+                                
+                                <Dialog @bind-Open="_showProfilePictureModal" @bind-DisplayContent="_renderProfilePictureModal" OnClickOutside="CloseProfilePictureModal" class="flex flex-row justify-center items-center">
+                                    <div class="absolute inset-5 lg:static transition-transform duration-500 z-10 bg-(--bg-color-1) p-5 pointer-events-auto rounded-xl overflow-y-auto">
+                                        <h1 class="font-bold text-2xl text-center">Profile Picture</h1>
+
+                                        <div class="grid grid-cols-1 lg:grid-cols-2 lg:mt-2">
+                                            <section class="w-full lg:border-r lg:border-r-gray-600 lg:p-3">
+                                                <div class="relative size-96 mt-2 bg-black mx-auto rounded-full overflow-hidden border-4 border-gray-600 group">
+                                                    <img @ref="_profileImagePreviewElement" src="" alt="" class="absolute inset-0 object-cover pointer-events-none rounded-full" style="transform: scaleX(@Model.ProfilePictureAdjustment.ZoomX) scaleY(@Model.ProfilePictureAdjustment.ZoomY);">
+                                                    
+                                                    @if (!string.IsNullOrEmpty(_profilePicturePreviewUrl)) {
+                                                        <img @ref="_profileImagePreviewElement" src="@_profilePicturePreviewUrl" alt="Profile Picture" class="absolute inset-0 object-cover pointer-events-none rounded-full" style="transform: scaleX(@Model.ProfilePictureAdjustment.ZoomX) scaleY(@Model.ProfilePictureAdjustment.ZoomY);">
+                                                    } else if (!string.IsNullOrEmpty(_user.ProfilePicturePath)) {
+                                                        <img @ref="_profileImagePreviewElement" src="@_user.ProfilePicturePath" alt="Profile Picture" class="absolute inset-0 object-cover pointer-events-none rounded-full">
+                                                    } else {
+                                                        <img @ref="_profileImagePreviewElement" src="" alt="Profile Picture" class="absolute inset-0 object-cover pointer-events-none rounded-full">
+                                                    }
+                                                    
+                                                    <label class="absolute inset-0 hidden group-hover:flex size-full flex-row justify-center items-center cursor-pointer z-10 bg-black/40">
+                                                        Click to change Profile Picture
+                                                        
+                                                        <InputFile @ref="_profileImageInputFile" type="file" class="hidden" OnChange="HandleProfilePictureChange"/>
+                                                    </label>
+                                                </div>
+                                            </section>
+                                            
+                                            <section class="mt-2 lg:mt-0 lg:p-3 text-white">
+                                                <p class="font-semibold text-xl">Adjustments</p>
+                                                
+                                                <div class="mt-2 flex flex-col">
+                                                    <label>Horizontal Scale (@Model.ProfilePictureAdjustment.ZoomX.ToString("P0"))</label>
+                                                    <AdjustmentSlider type="range" min="0.25" max="5" step="0.01" @bind-Value="Model.ProfilePictureAdjustment.ZoomX"/>
+                                                </div>
+                                                
+                                                <div class="flex flex-col">
+                                                    <label>Vertical Scale (@Model.ProfilePictureAdjustment.ZoomY.ToString("P0"))</label>
+                                                    <AdjustmentSlider type="range" min="0.25" max="5" step="0.01" @bind-Value="Model.ProfilePictureAdjustment.ZoomY"/>
+                                                </div>
+                                            </section>
+                                        </div>
+                                    </div>
+                                </Dialog>
                             </div>
                         </div>
 
@@ -169,6 +214,24 @@
     <UnsavedChangesPopup @ref="_unsavedPopup" OnCancelRequest="CancelEdit" OnSaveRequest="SaveProfile"/>
 </SectionContent>
 
+<SectionContent SectionName="javascript">
+    @if (Environment.IsDevelopment() && Vite.IsMiddlewareEnable) {
+        <script type="module" src="scripts/pages/settings/profile.ts"></script>
+    } else {
+        if (ViteManifest["scripts/pages/settings/profile.ts"] is { } chunk) {
+            <script type="module" src="@chunk.File"></script>
+
+            if (chunk.Imports != null) {
+                foreach (string import in chunk.Imports) {
+                    if (!ViteManifest.ContainsKey(import)) continue;
+
+                    <script type="module" src="@ViteManifest[import]!.File"></script>
+                }
+            }
+        }
+    }
+</SectionContent>
+
 @code {
     private ApplicationUser? _user;
 
@@ -186,7 +249,15 @@
 
     private UnsavedChangesPopup _unsavedPopup = null!;
 
-    private bool _showProfilePictureModal;
+    private bool _showProfilePictureModal, _renderProfilePictureModal = false;
+
+    private InputFile _profileImageInputFile;
+    private ElementReference _profileImagePreviewElement;
+
+    private IJSObjectReference _module;
+
+    private IBrowserFile? _profilePictureFile;
+    private string? _profilePicturePreviewUrl;
 
     protected override async Task OnInitializedAsync() {
         if (Environment.IsDevelopment()) {
@@ -214,6 +285,12 @@
                 ParseMarkdownBio(Model.Bio ?? string.Empty);
             }
         };
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            _module = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./scripts/pages/settings/profile.ts");
+        }
     }
 
     private void HandleActiveTabChanged(string tabId) {
@@ -257,17 +334,77 @@
         _markupBio = (MarkupString)SanitizingService.Sanitize(document.ToHtml(MarkdownPipeline));
     }
 
-    private void ShowProfilePictureModal() {
+    private async Task OpenProfilePictureModal() {
         _showProfilePictureModal = true;
+
+        await Task.Delay(500);
+        
+        _renderProfilePictureModal = true;
+        StateHasChanged();
     }
 
-    private void HideProfilePictureModal() {
+    private void CloseProfilePictureModal() {
         _showProfilePictureModal = false;
+        _renderProfilePictureModal = false;
+    }
+
+    private async Task HandleProfilePictureChange(InputFileChangeEventArgs args) {
+        if (_profileImageInputFile.Element is not { } inputFileElement) {
+            return;
+        }
+        
+        string url = await _module.InvokeAsync<string>("previewImage", inputFileElement, _profileImagePreviewElement);
+        _profilePictureFile = args.File;
+        _profilePicturePreviewUrl = url;
+    }
+    
+    public async ValueTask DisposeAsync() {
+        if (_module != null!) {
+            try {
+                await _module.DisposeAsync();
+            } catch (JSDisconnectedException) {
+            }
+        }
     }
 
     private sealed class InputModel {
         [StringLength(64), Required] public required string DisplayName { get; set; }
         [StringLength(maximumLength: 32)] public string? Pronouns { get; set; }
         [StringLength(255)] public string? Bio { get; set; }
+
+        public ProfilePictureAdjustmentModel ProfilePictureAdjustment { get; set; } = new();
+    }
+    
+    public sealed class ProfilePictureAdjustmentModel : INotifyPropertyChanged {
+        private double zoomX = 1.0;
+        private double zoomY = 1.0;
+
+        [Range(0.25, 5)]
+        public double ZoomX {
+            get => Math.Round(zoomX, 2);
+            set {
+                if (Math.Abs(value - zoomX) > 0.01) {
+                    zoomX = Math.Clamp(value, 0.25, 5);
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        [Range(0.25, 5)]
+        public double ZoomY {
+            get => Math.Round(zoomY, 2);
+            set {
+                if (Math.Abs(value - zoomY) > 0.01) {
+                    zoomY = Math.Clamp(value, 0.25, 5);
+                    OnPropertyChanged();
+                }
+            }
+        }
+        
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        private void OnPropertyChanged([CallerMemberName] string? propertyName = null) {
+            PropertyChanged?.Invoke(this, new(propertyName));
+        }
     }
 }

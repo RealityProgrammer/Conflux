@@ -1,6 +1,6 @@
 ﻿@using System.Linq.Expressions
 
-<div class="absolute inset-0 transition-colors duration-500 @_cssClass @(Open ? $"pointer-events-auto {ActiveCssClass}" : "pointer-events-none")" @onclick="OnClick"></div>
+<div class="cursor-default absolute inset-0 transition-colors duration-500 @_cssClass @(Open ? $"pointer-events-auto {ActiveCssClass}" : "pointer-events-none")" @onclick="OnClick"></div>
 
 @code {
     [Parameter] public bool Open { get; set; }

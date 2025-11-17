@@ -3,7 +3,7 @@
 
 @inject IJSRuntime JSRuntime
 
-<div class="fixed inset-0 z-1000 pointer-events-none @_cssClass">
+<div class="cursor-default fixed inset-0 z-1000 pointer-events-none @_cssClass">
     @* Dark Overlay *@
     <Overlay class="bg-transparent" ActiveCssClass="bg-black/80!" OnClick="@OnClickOutside" @bind-Open="Open"></Overlay>
     
@@ -26,8 +26,6 @@
 
     [Parameter] public EventCallback<MouseEventArgs> OnClickOutside { get; set; }
     
-    [Parameter] public string? ContainerCssClass { get; set; }
-
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
     private string? _cssClass;
 
