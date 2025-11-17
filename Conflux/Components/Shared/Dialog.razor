@@ -1,5 +1,4 @@
 ﻿@using System.Linq.Expressions
-
 @implements IAsyncDisposable
 
 @inject IJSRuntime JSRuntime
@@ -9,26 +8,30 @@
     <Overlay class="bg-transparent" ActiveCssClass="bg-black/80!" OnClick="@OnClickOutside" @bind-Open="Open"></Overlay>
     
     @* Contents *@
-    <div class="absolute inset-0 @ContainerCssClass">
+    @if (DisplayContent) {
         @ChildContent
-    </div>
+    }
 </div>
 
 @code {
     [Parameter] public bool Open { get; set; }
     [Parameter] public EventCallback<bool> OpenChanged { get; set; }
     [Parameter] public Expression<Func<bool>>? OpenExpression { get; set; }
+
+    [Parameter] public bool DisplayContent { get; set; } = true;
+    [Parameter] public EventCallback<bool> DisplayContentChanged { get; set; }
+    [Parameter] public Expression<Func<bool>>? DisplayContentExpression { get; set; }
     
-    [Parameter] public string? ContainerCssClass { get; set; }
     [Parameter, EditorRequired] public required RenderFragment ChildContent { get; set; }
 
     [Parameter] public EventCallback<MouseEventArgs> OnClickOutside { get; set; }
+    
+    [Parameter] public string? ContainerCssClass { get; set; }
 
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
-
     private string? _cssClass;
 
-    private IJSObjectReference _module;
+    internal IJSObjectReference Module { get; private set; } = null!;
 
     protected override void OnParametersSet() {
         if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
@@ -40,14 +43,14 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
-            _module = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./scripts/components/modal.ts");
+            Module = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./scripts/components/modal.ts");
         }
     }
 
     public async ValueTask DisposeAsync() {
-        if (_module != null!) {
+        if (Module != null!) {
             try {
-                await _module.DisposeAsync();
+                await Module.DisposeAsync();
             } catch (JSDisconnectedException) {
             }
         }
