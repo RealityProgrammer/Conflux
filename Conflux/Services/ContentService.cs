@@ -1,6 +1,6 @@
-﻿using Conflux.Components.Services.Abstracts;
+﻿using Conflux.Services.Abstracts;
 
-namespace Conflux.Components.Services;
+namespace Conflux.Services;
 
 public class ContentService(IWebHostEnvironment environment) : IContentService {
     public string GetAbsoluteContentPath(string relativePath) {

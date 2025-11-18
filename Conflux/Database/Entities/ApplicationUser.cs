@@ -4,6 +4,8 @@ using System.ComponentModel.DataAnnotations;
 namespace Conflux.Database.Entities;
 
 public class ApplicationUser : IdentityUser, ICreatedAtColumn {
+    public bool IsProfileSetup { get; set; }
+    
     [MinLength(8), MaxLength(32), Required] public required string DisplayName { get; set; }
     
     [MaxLength(32)] public string? Pronouns { get; set; }

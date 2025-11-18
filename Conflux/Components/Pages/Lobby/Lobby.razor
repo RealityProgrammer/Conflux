@@ -1,0 +1,20 @@
+﻿@page "/lobby"
+@using Conflux.Components.Guards
+@using Conflux.Services.Abstracts
+
+@inject AuthenticationStateProvider AuthStateProvider
+@inject ILogger<Lobby> Logger
+@inject IAccountService AccountService
+
+<RedirectToProfileSetup/>
+
+<button class="button-primary" @onclick="Test">Test</button>
+
+@code {
+    public async Task Test() {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        
+        Logger.LogInformation("Has Setup: {r}.", await AccountService.IsProfileSetup(user));
+    }
+}

@@ -1,4 +1,4 @@
-﻿namespace Conflux.Components.Services.Abstracts;
+﻿namespace Conflux.Services.Abstracts;
 
 public interface IContentService {
     string GetAbsoluteContentPath(string relativePath);

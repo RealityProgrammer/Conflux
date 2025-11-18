@@ -5,10 +5,9 @@ using Vite.AspNetCore;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Conflux.Components.Account;
-using Conflux.Components.Services;
-using Conflux.Components.Services.Abstracts;
 using Conflux.Database.Entities;
+using Conflux.Services;
+using Conflux.Services.Abstracts;
 using Markdig;
 using System.Security.Claims;
 
@@ -20,7 +19,7 @@ builder.Services.AddRazorComponents()
 
 // Adding authentication services.
 builder.Services.AddCascadingAuthenticationState();
-builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider, ApplicationAuthenticationStateProvider>();
 
 builder.Services.AddAuthentication(options => {
     options.DefaultScheme = IdentityConstants.ApplicationScheme;

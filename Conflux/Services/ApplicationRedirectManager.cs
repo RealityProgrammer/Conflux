@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using System.Collections.Frozen;
 
-namespace Conflux.Components.Services;
+namespace Conflux.Services;
 
 internal sealed class ApplicationRedirectManager(NavigationManager navigationManager, ProtectedSessionStorage sessionStorage)  {
     private static readonly CookieBuilder ShortLivedCookieBuilder = new() {

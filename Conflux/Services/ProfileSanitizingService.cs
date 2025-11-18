@@ -1,6 +1,6 @@
 ﻿using Vereyon.Web;
 
-namespace Conflux.Components.Services;
+namespace Conflux.Services;
 
 public sealed class ProfileSanitizingService {
     private readonly HtmlSanitizer _sanitizer;
