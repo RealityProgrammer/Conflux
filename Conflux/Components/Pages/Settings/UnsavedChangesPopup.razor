@@ -32,7 +32,6 @@
 
         try {
             await OnSaveRequest.InvokeAsync();
-            _showPopup = false;
         } finally {
             _spinnerButton.HideSpinner();
         }

@@ -9,6 +9,7 @@
     <ItemGroup>
       <Folder Include="Client\public\" />
       <Folder Include="Database\Migrations\" />
+      <Folder Include="wwwroot\profile\images\" />
     </ItemGroup>
 
     <ItemGroup>

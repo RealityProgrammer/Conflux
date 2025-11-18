@@ -62,6 +62,7 @@ builder.Services.AddScoped<MarkdownPipeline>(services => {
     return pipeline;
 });
 builder.Services.AddScoped<ProfileSanitizingService>();
+builder.Services.AddScoped<IContentService, ContentService>();
 
 // Controllers.
 builder.Services.AddControllers();
