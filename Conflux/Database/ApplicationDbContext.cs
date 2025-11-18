@@ -19,7 +19,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     private void InsertTimestamps() {
         var entries = ChangeTracker.Entries().Where(e => e is { State: EntityState.Added, Entity: ICreatedAtColumn });
 
-        DateTime now = DateTime.Now;
+        DateTime now = DateTime.UtcNow;
         
         foreach (var entry in entries) {
             Unsafe.As<ICreatedAtColumn>(entry.Entity).CreatedAt = now;

@@ -368,7 +368,7 @@
                 using var destStream = File.OpenWrite(profileImageAbsolutePath);
                 destStream.Position = 0;
                 await destStream.FlushAsync();
-
+                
                 using var srcStream = imageFile.OpenReadStream(ApplicationConstants.ProfileImageMaxSize);
 
                 await srcStream.CopyToAsync(destStream);
