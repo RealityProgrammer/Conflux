@@ -2,19 +2,21 @@
 @using Conflux.Components.Guards
 @using Conflux.Services.Abstracts
 
-@inject AuthenticationStateProvider AuthStateProvider
+@* @inject AuthenticationStateProvider AuthStateProvider *@
 @inject ILogger<Lobby> Logger
-@inject IAccountService AccountService
+@inject IUserService UserService
 
 <RedirectToProfileSetup/>
 
 <button class="button-primary" @onclick="Test">Test</button>
 
 @code {
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+    
     public async Task Test() {
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var authState = await AuthenticationState;
         var user = authState.User;
         
-        Logger.LogInformation("Has Setup: {r}.", await AccountService.IsProfileSetup(user));
+        Logger.LogInformation("Has Setup: {r}.", await UserService.IsProfileSetup(user));
     }
 }

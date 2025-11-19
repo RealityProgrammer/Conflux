@@ -6,15 +6,15 @@ namespace Conflux.Components.Guards;
 
 public class RedirectToProfileSetup : ComponentBase {
     [Inject] private NavigationManager Navigation { get; set; } = null!;
-    [Inject] private AuthenticationStateProvider AuthStateProvider { get; set; } = null!;
-    [Inject] private IAccountService AccountService { get; set; } = null!;
+    [Inject] private IUserService UserService { get; set; } = null!;
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; }
 
     protected override async Task OnInitializedAsync() {
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var authState = await AuthenticationState;
         var user = authState.User;
 
         if (user.Identity is { IsAuthenticated: true }) {
-            if (!await AccountService.IsProfileSetup(user)) {
+            if (!await UserService.IsProfileSetup(user)) {
                 Navigation.NavigateTo("/settings/profile");
             }
         }

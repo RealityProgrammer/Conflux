@@ -13,13 +13,16 @@
 @using System.ComponentModel
 @using System.ComponentModel.DataAnnotations
 @using System.Runtime.CompilerServices
+@using System.Security.Claims
 
 @implements IAsyncDisposable
+
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 
 @inject IWebHostEnvironment Environment
 @inject IViteManifest ViteManifest
 @inject IViteDevServerStatus Vite
-@inject IAccountService AccountService
+@inject IUserService UserService
 @inject ApplicationRedirectManager RedirectManager
 @inject UserManager<ApplicationUser> UserManager
 @inject MarkdownPipeline MarkdownPipeline
@@ -27,8 +30,6 @@
 @inject ILogger<ProfilePage> Logger
 @inject IJSRuntime JSRuntime
 @inject IContentService ContentService
-
-@rendermode @(new InteractiveServerRenderMode(prerender: false))
 
 @if (_user == null) {
     <div class="flex flex-col h-full">
@@ -301,15 +302,19 @@
     private FieldIdentifier _displayNameField, _pronounsField, _bioField;
     private ValidationMessageStore _validationMessages;
 
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+
     protected override async Task OnInitializedAsync() {
-        if (await AccountService.GetCurrentUserAsync() is not { } user) {
+        ClaimsPrincipal claimsPrincipal = (await AuthenticationState).User;
+        _user = await UserManager.GetUserAsync(claimsPrincipal);
+        
+        if (_user == null) {
             // How did we get here? Pretty sure [Authorize] at _Imports.razor should redirect to login if there is no
             // current user.
             RedirectManager.To("/auth/login").Execute();
             return;
         }
 
-        _user = user;
         CopyUserDataToProfileModel();
         ParseMarkdownBio(Model.Bio ?? string.Empty);
 
@@ -343,8 +348,11 @@
     }
 
     private async Task SaveProfile() {
-        if (await AccountService.GetCurrentUserAsync() is not { } user) {
-            // Whoop, session expiration, never seen you before.
+        ClaimsPrincipal claimsPrincipal = (await AuthenticationState).User;
+        ApplicationUser? user = await UserManager.GetUserAsync(claimsPrincipal);
+        
+        if (user == null) {
+            // Just in case...
 
             RedirectManager.To("/").Execute();
             return;

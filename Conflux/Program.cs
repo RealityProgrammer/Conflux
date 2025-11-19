@@ -20,6 +20,7 @@ builder.Services.AddRazorComponents()
 // Adding authentication services.
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<AuthenticationStateProvider, ApplicationAuthenticationStateProvider>();
+builder.Services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, ApplicationUserClaimsPrincipalFactory>();
 
 builder.Services.AddAuthentication(options => {
     options.DefaultScheme = IdentityConstants.ApplicationScheme;
@@ -51,7 +52,7 @@ builder.Services.AddIdentityCore<ApplicationUser>(options => {
 
 // System services.
 builder.Services.AddScoped<ApplicationRedirectManager>();
-builder.Services.AddScoped<IAccountService, AccountService>();
+builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddViteServices();
 builder.Services.AddScoped<MarkdownPipeline>(services => {
     var pipeline = new MarkdownPipelineBuilder()

@@ -20,7 +20,7 @@
 @inject IUserStore<ApplicationUser> UserStore
 @inject ILogger<RegisterPage> Logger
 @inject ApplicationRedirectManager RedirectManager
-@inject AuthenticationStateProvider AuthStateProvider
+@* @inject AuthenticationStateProvider AuthStateProvider *@
 
 <div class="fixed bg-fixed inset-0 morph-gradient-bg">
     <svg xmlns="http://www.w3.org/2000/svg" class="size-0">
@@ -193,10 +193,11 @@
     private FieldIdentifier _emailField, _passwordField, _confirmationPasswordField, _acceptTermsField;
 
     [CascadingParameter] public HttpContext HttpContext { get; set; } = null!;
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
 
     protected override async Task OnInitializedAsync() {
         // If already login, kick the user out.
-        if (await AuthStateProvider.GetAuthenticationStateAsync() is { User.Identity.IsAuthenticated: true }) {
+        if (await AuthenticationState is { User.Identity.IsAuthenticated: true }) {
             RedirectManager.To("/").Execute();
             return;
         }

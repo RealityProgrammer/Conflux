@@ -19,7 +19,7 @@
 @inject ApplicationRedirectManager RedirectManager
 @inject ILogger<LoginPage> Logger
 @inject NavigationManager NavigationManager
-@inject AuthenticationStateProvider AuthStateProvider
+@* @inject AuthenticationStateProvider AuthStateProvider *@
 
 <div class="fixed bg-fixed inset-0 morph-gradient-bg">
     <svg xmlns="http://www.w3.org/2000/svg" class="size-0">
@@ -148,9 +148,11 @@
 
     [SupplyParameterFromQuery(Name = "ReturnUrl")] private string? ReturnUrl { get; set; }
 
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+
     protected override async Task OnInitializedAsync() {
         // If already login, kick the user out.
-        if (await AuthStateProvider.GetAuthenticationStateAsync() is { User.Identity.IsAuthenticated: true }) {
+        if (await AuthenticationState is { User.Identity.IsAuthenticated: true }) {
             RedirectManager.To("/").Execute();
             return;
         }

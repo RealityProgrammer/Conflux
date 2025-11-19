@@ -11,8 +11,8 @@ namespace Conflux.Services;
 internal sealed class ApplicationAuthenticationStateProvider(
     ILoggerFactory loggerFactory,
     IServiceScopeFactory scopeFactory,
-    IOptions<IdentityOptions> options)
-    : RevalidatingServerAuthenticationStateProvider(loggerFactory) {
+    IOptions<IdentityOptions> options
+) : RevalidatingServerAuthenticationStateProvider(loggerFactory) {
     protected override TimeSpan RevalidationInterval => TimeSpan.FromMinutes(30);
 
     protected override async Task<bool> ValidateAuthenticationStateAsync(
@@ -23,47 +23,79 @@ internal sealed class ApplicationAuthenticationStateProvider(
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
         ClaimsPrincipal claimsPrinciple = authenticationState.User;
-        
+
         var applicationUser = await userManager.GetUserAsync(claimsPrinciple);
-        
+
         if (applicationUser is null) {
             return false;
         }
 
-        if (!userManager.SupportsUserSecurityStamp) {
-            return true;
-        }
+        if (userManager.SupportsUserSecurityStamp) {
+            var principalStamp = claimsPrinciple.FindFirstValue(options.Value.ClaimsIdentity.SecurityStampClaimType);
+            var securityStamp = await userManager.GetSecurityStampAsync(applicationUser);
 
-        var principalStamp = claimsPrinciple.FindFirstValue(options.Value.ClaimsIdentity.SecurityStampClaimType);
-        var securityStamp = await userManager.GetSecurityStampAsync(applicationUser);
-        return principalStamp == securityStamp;
-    }
-
-    public override async Task<AuthenticationState> GetAuthenticationStateAsync() {
-        var authState = await base.GetAuthenticationStateAsync();
-        var user = authState.User;
-
-        if (user.Identity?.IsAuthenticated ?? false) {
-            await using var scope = scopeFactory.CreateAsyncScope();
-            var userProfileService = scope.ServiceProvider.GetRequiredService<IAccountService>();
-
-            var isProfileSetup = await userProfileService.IsProfileSetup(user);
-
-            // Add profile setup claim if not present or changed
-            var existingClaim = user.FindFirst("ProfileSetup");
-
-            if (existingClaim == null || existingClaim.Value != isProfileSetup.ToString()) {
-                var claims = new List<Claim>(user.Claims);
-
-                // Replacing the claim
-                claims.RemoveAll(c => c.Type == "ProfileSetup");
-                claims.Add(new("ProfileSetup", isProfileSetup.ToString()));
-
-                var identity = new ClaimsIdentity(claims, "ServerAuthentication");
-                return new(new(identity));
+            if (principalStamp != securityStamp) {
+                return false;
             }
         }
 
-        return authState;
+        return true;
+
+        // var profileSetupClaim = claimsPrinciple.FindFirst("ProfileSetup");
+        //
+        // if (profileSetupClaim == null || profileSetupClaim.Value != applicationUser.IsProfileSetup.ToString()) {
+        //     return false;
+        // }
+        //
+        // return true;
     }
+
+    // public override async Task<AuthenticationState> GetAuthenticationStateAsync() {
+    //     var authState = await base.GetAuthenticationStateAsync();
+    //     var claimsPrinciple = authState.User;
+    //
+    //     if (claimsPrinciple.Identity?.IsAuthenticated ?? false) {
+    //         await using var scope = scopeFactory.CreateAsyncScope();
+    //         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+    //         
+    //         var applicationUser = await userManager.GetUserAsync(claimsPrinciple);
+    //
+    //         if (applicationUser is null) {
+    //             return authState;
+    //         }
+    //         
+    //         var isProfileSetup = applicationUser.IsProfileSetup;
+    //
+    //         // Add profile setup claim if not present or changed
+    //         var profileSetupClaim = claimsPrinciple.FindFirst("ProfileSetup");
+    //
+    //         if (profileSetupClaim == null || profileSetupClaim.Value != isProfileSetup.ToString()) {
+    //             var identity = claimsPrinciple.Identity as ClaimsIdentity;
+    //             
+    //             // Remove existing claim if present
+    //             var existingClaim = identity!.FindFirst("ProfileSetup");
+    //
+    //             if (existingClaim != null) {
+    //                 identity.RemoveClaim(existingClaim);
+    //             }
+    //
+    //             // Add new claim
+    //             identity.AddClaim(new("ProfileSetup", isProfileSetup.ToString()));
+    //             
+    //             // Return new authentication state with modified principal
+    //             return new(claimsPrinciple);
+    //             
+    //             // var claims = new List<Claim>(claimsPrinciple.Claims);
+    //             //
+    //             // // Replacing the claim
+    //             // claims.RemoveAll(c => c.Type == "ProfileSetup");
+    //             // claims.Add(new("ProfileSetup", isProfileSetup.ToString()));
+    //             //
+    //             // var identity = new ClaimsIdentity(claims, IdentityConstants.ApplicationScheme);
+    //             // return new(new(identity));
+    //         }
+    //     }
+    //
+    //     return authState;
+    // }
 }

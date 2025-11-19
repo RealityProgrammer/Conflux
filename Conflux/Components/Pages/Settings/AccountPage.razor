@@ -1,8 +1,12 @@
 ﻿@page "/settings/account"
 @using Conflux.Components.Shared
 @using Conflux.Services.Abstracts
+@using System.Security.Claims
 
-@inject IAccountService AccountService
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+@inject IUserService UserService
+@inject AuthenticationStateProvider AuthStateProvider
 
 <h1 class="font-bold text-3xl">Account Management</h1>
 
@@ -104,8 +108,10 @@
 
 @code {
     private bool _enabled2FA;
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
     
     protected override async Task OnAfterRenderAsync(bool firstRender) {
-        _enabled2FA = await AccountService.IsTwoFactorEnabled();
+        var authState = await AuthenticationState;
+        _enabled2FA = await UserService.IsTwoFactorEnabled(authState.User);
     }
 }
