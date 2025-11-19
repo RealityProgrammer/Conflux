@@ -3,15 +3,22 @@
 namespace Conflux.Services;
 
 public class ContentService(IWebHostEnvironment environment) : IContentService {
-    public string GetAbsoluteContentPath(string relativePath) {
-        return Path.Combine(environment.WebRootPath, relativePath);
+    public async Task<string> UploadAvatarAsync(Stream stream, string userId) {
+        string path = Path.Combine("images", "avatar", userId);
+        string physicalPath = Path.Combine(environment.ContentRootPath, "Uploads", path);
+        await using var destinationStream = File.OpenWrite(physicalPath);
+        
+        await stream.CopyToAsync(destinationStream);
+
+        return Path.Join("uploads", path);
     }
 
-    public string GetAbsoluteContentPath(string purpose, string type, string path) {
-        return Path.Combine(environment.WebRootPath, purpose, type, path);
-    }
+    public Task DeleteAvatarAsync(string userId) {
+        string path = Path.Combine("images", "avatar", userId);
+        string physicalPath = Path.Combine(environment.ContentRootPath, "Uploads", path);
+        
+        File.Delete(physicalPath);
 
-    public string GetRelativeContentPath(string purpose, string resourceType, string path) {
-        return Path.Join(purpose, resourceType, path);
+        return Task.CompletedTask;
     }
 }

@@ -1,0 +1,50 @@
+﻿@page "/setup-profile"
+@using Conflux.Components.Shared
+@using Conflux.Services
+@using Conflux.Services.Abstracts
+
+@inject IUserService UserService
+@inject ApplicationRedirectManager RedirectManager
+
+<div class="fixed bg-fixed inset-0 mesh-bg-1"></div>
+
+<div class="h-screen w-screen grid grid-cols-1 px-4 md:px-0 md:grid-cols-4 lg:grid-cols-3">
+    <div class="col-start-1 col-span-1 md:col-start-2 md:col-span-2 lg:col-start-2 lg:col-span-1">
+        <div class="size-full flex flex-row justify-center items-center">
+            <div class="bg-gray-700 w-full rounded-3xl shadow-xl text-white overflow-visible relative">
+                <div class="absolute rounded-t-3xl h-12 w-full overflow-hidden">
+                    <div class="h-1 panel-accent-color-1"></div>
+                </div>
+
+                <section class="p-6 overflow-hidden">
+                    <h1 class="text-center font-bold text-3xl text-white">Setup Profile</h1>
+                    <p class="text-center text-gray-400 text-sm mt-2">Make yourself look special</p>
+                    
+                    <section class="overflow-y-auto mt-3">
+                        <Avatar class="size-80 border-4 border-gray-600 mx-auto group">
+                            <div class="absolute inset-0 hidden group-hover:flex flex-row justify-center items-center bg-gray-600/40 cursor-pointer">
+                                Click to select Avatar
+                            </div>
+                        </Avatar>
+                    </section>
+                </section>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "ReturnUrl")] private string? ReturnUrl { get; set; }
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+
+    protected override async Task OnInitializedAsync() {
+        var authState = await AuthenticationState;
+
+        if (await UserService.IsProfileSetup(authState.User)) {
+            RedirectManager.To("/").Execute();
+            return;
+        }
+        
+        
+    }
+}

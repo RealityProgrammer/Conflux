@@ -9,6 +9,8 @@ using Conflux.Database.Entities;
 using Conflux.Services;
 using Conflux.Services.Abstracts;
 using Markdig;
+using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.Extensions.FileProviders;
 using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -96,6 +98,17 @@ app.UseAuthorization();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
+
+PhysicalFileProvider uploadsFileProvider = new PhysicalFileProvider(Path.Combine(builder.Environment.ContentRootPath, "Uploads"));
+
+app.Environment.WebRootFileProvider = new CompositeFileProvider(app.Environment.WebRootFileProvider, uploadsFileProvider);
+
+app.UseStaticFiles(new StaticFileOptions {
+    FileProvider = uploadsFileProvider,
+    RequestPath = "/uploads",
+    ContentTypeProvider = new ApplicationContentTypeProvider(),
+});
+
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 

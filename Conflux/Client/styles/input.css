@@ -119,6 +119,11 @@
         top-[calc(50%-var(--morph-gradient-size)/2)] left-[calc(50%-var(--morph-gradient-size)/2)];
     }
     
+    .mesh-bg-1 {
+        background-color: #240750;
+        background-image: radial-gradient(at 41% 23%, #240750 0%, transparent 60%), radial-gradient(at 56% 89%, #344c64 0%, transparent 50%), radial-gradient(at 1% 49%, #577b8d 0%, transparent 40%), radial-gradient(at 46% 31%, #57a6a1 0%, transparent 30%);
+    }
+    
     .hide-reveal::-ms-reveal {
         @apply hidden;
     }

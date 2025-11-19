@@ -10,7 +10,8 @@
       <Folder Include="Client\public\" />
       <Folder Include="Database\Migrations\" />
       <Folder Include="Services\Policies\" />
-      <Folder Include="wwwroot\profile\images\" />
+      <Folder Include="Uploads\" />
+      <Folder Include="Uploads\images\avatar\" />
     </ItemGroup>
 
     <ItemGroup>

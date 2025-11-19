@@ -1,5 +1,5 @@
 ﻿namespace Conflux;
 
 public static class ApplicationConstants {
-    public const int ProfileImageMaxSize = 128000;   // 128KB
+    public const int UserAvatarMaxSize = 128000;   // 128KB
 }

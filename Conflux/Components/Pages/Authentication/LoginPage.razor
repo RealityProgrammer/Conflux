@@ -7,6 +7,7 @@
 @using Conflux.Components.Shared.Icons
 @using Conflux.Database.Entities
 @using Conflux.Services
+@using Conflux.Services.Abstracts
 @using Microsoft.AspNetCore.Components.Sections
 
 @attribute [ExcludeFromInteractiveRouting]
@@ -18,8 +19,7 @@
 @inject UserManager<ApplicationUser> UserManager
 @inject ApplicationRedirectManager RedirectManager
 @inject ILogger<LoginPage> Logger
-@inject NavigationManager NavigationManager
-@* @inject AuthenticationStateProvider AuthStateProvider *@
+@inject IUserService UserService
 
 <div class="fixed bg-fixed inset-0 morph-gradient-bg">
     <svg xmlns="http://www.w3.org/2000/svg" class="size-0">
@@ -103,20 +103,6 @@
     </div>
 </div>
 
-@* TODO: Implement register successfully modal *@
-@* @if (HttpContext.Request.Cookies["Application.RegisterResult"] is { } result) { *@
-@*     <div class="bg-gray-700 w-full rounded-3xl shadow-xl text-white overflow-hidden relative"> *@
-@*         <div class="absolute rounded-t-3xl w-full h-1 panel-accent-color-1"></div> *@
-@* *@
-@*         <div class="p-10 flex flex-col justify-center items-center"> *@
-@*             <h1 class="text-center font-bold text-3xl text-white">Registered Successful</h1> *@
-@*             <p class="text-center text-gray-400 text-sm mt-2">Login to confirm your account</p> *@
-@* *@
-@*             <button class="w-full h-11 text-white p-1 mt-4 rounded-lg cursor-pointer button-color-2" onclick="">Close</button> *@
-@*         </div> *@
-@*     </div> *@
-@* } *@
-
 <SectionContent SectionName="javascript">
     @if (Environment.IsDevelopment() && Vite.IsMiddlewareEnable) {
         <StaticPageScript Src="scripts/pages/login.ts"></StaticPageScript>
@@ -172,7 +158,11 @@
 
         if (result.Succeeded) {
             if (await UserManager.IsEmailConfirmedAsync(user)) {
-                RedirectManager.To(ReturnUrl ?? "/").Execute();
+                if (user.IsProfileSetup) {
+                    RedirectManager.To(ReturnUrl ?? "/").Execute();
+                } else {
+                    RedirectManager.To("/setup-profile").WithQuery("ReturnUrl", ReturnUrl).Execute();
+                }
             } else {
                 RedirectManager.To("/auth/verify-email").WithQuery("userId", user.Id).Execute();
             }
