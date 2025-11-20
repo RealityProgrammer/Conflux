@@ -1,5 +1,4 @@
 ﻿@using System.Globalization
-@using Microsoft.AspNetCore.Components.Sections
 
 @implements IAsyncDisposable
 
@@ -11,7 +10,7 @@
 </section>
 
 <div class="absolute inset-0 pointer-events-none" hidden="@(!ShowTooltip)">
-    <div class="absolute top-0 left-0 w-max @_class" @attributes="AdditionalAttributes" @ref="_tooltip" data-component-type="tooltip" data-tooltip-for="@Id" data-tooltip-placement="@TooltipPlacement" data-tooltip-offset="@TooltipOffset">
+    <div class="absolute top-0 left-0 @_class" @attributes="AdditionalAttributes" @ref="_tooltip" data-component-type="tooltip" data-tooltip-for="@Id" data-tooltip-placement="@TooltipPlacement" data-tooltip-offset="@TooltipOffset">
         @Tooltip
 
         <div class="absolute size-2 rotate-45 @ArrowCssClass" @ref="_arrow" data-tooltip-arrow-for="@Id"></div>

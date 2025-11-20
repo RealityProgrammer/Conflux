@@ -1,41 +1,242 @@
 ﻿@page "/setup-profile"
+
 @using Conflux.Components.Shared
+@using Conflux.Components.Shared.Icons
+@using Conflux.Database.Entities
 @using Conflux.Services
 @using Conflux.Services.Abstracts
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Components.Web
+@using System.ComponentModel.DataAnnotations
+@using System.Security.Claims
+
+@attribute [Authorize]
 
 @inject IUserService UserService
 @inject ApplicationRedirectManager RedirectManager
+@inject UserManager<ApplicationUser> UserManager
+@inject IContentService ContentService
+@inject ILogger<SetupProfilePage> Logger
+
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+@* TODO: Deferring Edit *@
 
 <div class="fixed bg-fixed inset-0 mesh-bg-1"></div>
 
-<div class="h-screen w-screen grid grid-cols-1 px-4 md:px-0 md:grid-cols-4 lg:grid-cols-3">
-    <div class="col-start-1 col-span-1 md:col-start-2 md:col-span-2 lg:col-start-2 lg:col-span-1">
-        <div class="size-full flex flex-row justify-center items-center">
-            <div class="bg-gray-700 w-full rounded-3xl shadow-xl text-white overflow-visible relative">
-                <div class="absolute rounded-t-3xl h-12 w-full overflow-hidden">
-                    <div class="h-1 panel-accent-color-1"></div>
-                </div>
+@if (_user == null) {
+    <div class="absolute inset-0 overflow-hidden flex flex-row justify-center items-center">
+        <section class="bg-gray-700 rounded-3xl shadow-xl text-white overflow-visible relative p-6">
+            <Spinner class="mx-auto size-16 fill-white"/>
 
-                <section class="p-6 overflow-hidden">
-                    <h1 class="text-center font-bold text-3xl text-white">Setup Profile</h1>
-                    <p class="text-center text-gray-400 text-sm mt-2">Make yourself look special</p>
-                    
-                    <section class="overflow-y-auto mt-3">
-                        <Avatar class="size-80 border-4 border-gray-600 mx-auto group">
-                            <div class="absolute inset-0 hidden group-hover:flex flex-row justify-center items-center bg-gray-600/40 cursor-pointer">
-                                Click to select Avatar
-                            </div>
-                        </Avatar>
-                    </section>
-                </section>
-            </div>
+            <p class="text-sm text-gray-400 text-center mt-2">Please hold...</p>
+        </section>
+    </div>
+} else {
+    <div class="fixed inset-0 overflow-hidden grid grid-cols-12 transition-transform duration-500 ease-in-out @(_showPrompt ? "translate-x-0" : "-translate-x-full!")">
+        <div class="col-start-1 col-end-13 md:col-start-2 md:col-end-12 lg:col-start-3 lg:col-end-11 xl:col-start-4 xl:col-end-10 flex flex-row justify-center items-center">
+            <section class="bg-gray-700 sm:m-5 w-full rounded-3xl shadow-xl text-white overflow-visible relative p-6">
+                <h1 class="text-center font-bold text-3xl text-white">Hold up</h1>
+
+                <p class="mt-2 text-center">Before going further, you need to setup your profile first!</p>
+                <p class="text-sm text-gray-400 text-center mt-2">You don't want to be an unknown, don't you?</p>
+
+                <div class="flex flex-row justify-center mt-2">
+                    <button class="button-primary inline-flex flex-row items-center" @onclick="HidePrompt">
+                        Show me the way
+
+                        <Arrow Direction="ArrowDirection.Right" class="ml-2 size-6 fill-white"/>
+                    </button>
+                </div>
+            </section>
         </div>
     </div>
-</div>
+    
+    <div class="fixed inset-0 overflow-hidden grid grid-cols-12 transition-transform duration-500 ease-in-out @(_showPrompt ? "translate-x-full" : _stage == SetupStage.Avatar ? "translate-x-0" : "-translate-x-full")">
+        <div class="col-start-1 col-end-13 md:col-start-2 md:col-end-12 lg:col-start-3 lg:col-end-11 xl:col-start-4 xl:col-end-10 flex flex-row justify-center items-center">
+            <section class="bg-gray-700 sm:m-5 w-full rounded-3xl shadow-xl text-white overflow-visible relative p-6">
+                <h1 class="text-center font-bold text-3xl text-white">Setup Avatar</h1>
+                <p class="text-center text-gray-400 text-sm mt-2">Make yourself look special</p>
+
+                <EditForm FormName="Avatar" class="mt-2" EditContext="_avatarEditContext" method="post">
+                    <AntiforgeryToken/>
+                    
+                    <InputFile class="hidden" id="avatar" OnChange="HandleAvatarUpload"/>
+
+                    <TooltipContainer ShowTooltip="!_avatarEditContext.IsValid(_avatarFileField)" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" Id="avatar">
+                        <Target>
+                            @{
+                                string avatarCssClass = $"mx-auto size-64 border-4 {(_avatarEditContext.IsValid(_avatarFileField) ? "border-gray-700" : "border-red-700")}";
+                                string? imageSource = _processingAvatar || string.IsNullOrEmpty(_user.ProfilePicturePath) ? null : $"{_user.ProfilePicturePath}?v={ContentService.GetAvatarUploadTime(_user.Id):yyyyMMddHHmmssffff}";
+                            }
+
+                            <Avatar class="@avatarCssClass" ImageSrc="@imageSource">
+                                @if (_processingAvatar) {
+                                    <div class="absolute inset-0 flex flex-col justify-center items-center">
+                                        <Spinner class="size-1/2 fill-white"/>
+                                    </div>
+                                } else {
+                                    <label for="avatar" class="absolute inset-0 flex group bg-transparent flex-col justify-center items-center hover:bg-gray-600/40 cursor-pointer rounded-full">
+                                        <p class="hidden group-hover:block">Click to select Avatar</p>
+                                    </label>
+                                }
+
+                                @if (!string.IsNullOrEmpty(imageSource)) {
+                                    <button class="absolute top-0 right-0 p-2 rounded-full bg-red-600 shadow-lg hover:bg-red-500 active:bg-red-700 cursor-pointer" @onclick="HandleAvatarDelete">
+                                        <Cross class="size-5 fill-white"/>
+                                    </button>
+                                }
+                            </Avatar>
+                        </Target>
+
+                        <Tooltip>
+                            <ValidationMessage For="() => AvatarModel.File" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"/>
+                        </Tooltip>
+                    </TooltipContainer>
+                </EditForm>
+
+                <div class="flex flex-row justify-center">
+                    <button class="mt-2 button-primary inline-flex flex-row items-center" @onclick="ToSetupProfile" disabled="@_processingAvatar">
+                        Next
+
+                        <Arrow Direction="ArrowDirection.Right" class="ml-2 size-6 fill-white"/>
+                    </button>
+                </div>
+            </section>
+        </div>
+    </div>
+    
+    <div class="fixed inset-0 overflow-hidden grid grid-cols-12 transition-transform duration-500 ease-in-out @(_showPrompt ? "translate-x-full" : _stage == SetupStage.Profile ? "translate-x-0" : "translate-x-full")">
+        <div class="col-start-1 col-end-13 md:col-start-2 md:col-end-12 lg:col-start-3 lg:col-end-11 xl:col-start-4 xl:col-end-10 flex flex-row justify-center items-center">
+            <section class="bg-gray-700 m-0 max-h-screen sm:m-5 sm:max-h-[calc(100vh-2.5rem)] w-full rounded-3xl shadow-xl text-white relative py-6 flex flex-col overflow-hidden">
+                <div class="flex-none">
+                    <h1 class="text-center font-bold text-3xl text-white">Setup Profile</h1>
+                    <p class="text-center text-gray-400 text-sm mt-2">Make a name of yourself, literally</p>
+                </div>
+                
+                <EditForm EditContext="_profileEditContext" method="post" FormName="Profile" class="mt-2 overflow-auto flex-auto px-8">
+                    <DataAnnotationsValidator/>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="relative">
+                            <label class="font-semibold">Username</label>
+
+                            <TooltipContainer ShowTooltip="!_profileEditContext.IsValid(_usernameField)" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" Id="username" class="max-w-[90%]">
+                                <Target>
+                                    <InputText @bind-Value="ProfileModel!.UserName" class="mt-2 input-field h-11 w-full" maxlength="32"/>
+                                </Target>
+
+                                <Tooltip>
+                                    <ValidationMessage For="() => ProfileModel!.UserName" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"/>
+                                </Tooltip>
+                            </TooltipContainer>
+                            
+                            <p class="text-sm text-red-500 mt-1 text-center">Warning: Username is immutable!</p>
+                        </div>
+
+                        <div>
+                            <label class="font-semibold">Display Name</label>
+
+                            <TooltipContainer ShowTooltip="!_profileEditContext.IsValid(_displayNameField)" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" Id="username" class="max-w-[90%]">
+                                <Target>
+                                    <InputText @bind-Value="ProfileModel!.DisplayName" class="mt-2 input-field h-11 w-full" maxlength="32"/>
+                                </Target>
+
+                                <Tooltip>
+                                    <ValidationMessage For="() => ProfileModel!.DisplayName" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md]"/>
+                                </Tooltip>
+                            </TooltipContainer>
+                        </div>
+
+                        <div>
+                            <label class="font-semibold">Pronouns</label>
+
+                            <TooltipContainer ShowTooltip="!_profileEditContext.IsValid(_pronounsField)" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" Id="username" class="max-w-[90%]">
+                                <Target>
+                                    <InputText @bind-Value="ProfileModel!.Pronouns" class="mt-2 input-field h-11 w-full" maxlength="32"/>
+                                </Target>
+
+                                <Tooltip>
+                                    <ValidationMessage For="() => ProfileModel!.Pronouns" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"/>
+                                </Tooltip>
+                            </TooltipContainer>
+                        </div>
+
+                        <div class="col-start-1 col-end-2 md:col-end-3">
+                            <label class="font-semibold">About Me</label>
+
+                            <TooltipContainer ShowTooltip="!string.IsNullOrEmpty(_usernameError) || !_profileEditContext.IsValid(_bioField)" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" Id="username" class="max-w-[90%]">
+                                <Target>
+                                    <InputTextArea @bind-Value="ProfileModel!.Bio" class="mt-2 input-field h-55 w-full" maxlength="255"/>
+                                </Target>
+
+                                <Tooltip>
+                                    @if (!string.IsNullOrEmpty(_usernameError)) {
+                                        <p class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md">Username has been taken.</p>
+                                    } else {
+                                        <ValidationMessage For="() => ProfileModel!.Bio" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"/>
+                                    }
+                                </Tooltip>
+                            </TooltipContainer>
+                        </div>
+                    </div>
+                </EditForm>
+
+                <div class="flex flex-row justify-around items-center flex-none">
+                    <button class="mt-2 button-primary inline-flex flex-row justify-center items-center gap-2 w-36" @onclick="ToSetupAvatar">
+                        <Arrow Direction="ArrowDirection.Left" class="size-6 fill-white"/>
+
+                        Previous
+                    </button>
+
+                    <SpinnerButton @bind-IsSpinning="_isProcessingProfile" type="submit" class="mt-2 button-primary inline-flex flex-row justify-center items-center gap-2 w-36" @onclick="HandleProfileSubmit" SpinnerCssClass="size-6 fill-white">
+                        Next
+
+                        <Arrow Direction="ArrowDirection.Right" class="size-6 fill-white"/>
+                    </SpinnerButton>
+                </div>
+            </section>
+        </div>
+    </div>
+    
+    <div class="fixed inset-0 overflow-hidden grid grid-cols-12 transition-transform duration-500 ease-in-out @(_showPrompt ? "translate-x-full" : _stage == SetupStage.Complete ? "translate-x-0" : "-translate-x-full")">
+        <div class="col-start-1 col-end-13 md:col-start-2 md:col-end-12 lg:col-start-3 lg:col-end-11 xl:col-start-4 xl:col-end-10 flex flex-row justify-center items-center">
+            <section class="bg-gray-700 sm:m-5 w-full rounded-3xl shadow-xl text-white overflow-visible relative p-6">
+                <h1 class="text-center font-bold text-3xl text-white">Setup Complete</h1>
+                <p class="text-center text-gray-400 text-sm mt-2">One of us, one of us...</p>
+
+                <div class="flex flex-row justify-center">
+                    <button class="mt-2 button-primary inline-flex flex-row items-center" @onclick="FinishSetup" disabled="@_processingAvatar">
+                        Complete
+                    </button>
+                </div>
+            </section>
+        </div>
+    </div>
+}
 
 @code {
     [SupplyParameterFromQuery(Name = "ReturnUrl")] private string? ReturnUrl { get; set; }
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+
+    private ApplicationUser? _user;
+    
+    private bool _showPrompt = true;
+    private SetupStage _stage;
+
+    [SupplyParameterFromForm(FormName = "Avatar")] private AvatarInputModel? AvatarModel { get; set; }
+    private EditContext _avatarEditContext;
+    private ValidationMessageStore _avatarMessageStore;
+    private bool _processingAvatar;
+    private FieldIdentifier _avatarFileField;
+
+    [SupplyParameterFromForm(FormName = "Profile")] private ProfileInputModel? ProfileModel { get; set; }
+    private EditContext _profileEditContext;
+    private ValidationMessageStore _profileMessageStore;
+    private FieldIdentifier _usernameField, _displayNameField, _pronounsField, _bioField;
+    private string? _usernameError;
+
+    private bool _isProcessingProfile;
 
     protected override async Task OnInitializedAsync() {
         var authState = await AuthenticationState;
@@ -44,7 +245,196 @@
             RedirectManager.To("/").Execute();
             return;
         }
+
+        AvatarModel ??= new();
+        ProfileModel ??= new();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            var authState = await AuthenticationState;
+            
+            _user = (await UserManager.GetUserAsync(authState.User))!;
+            if (_user == null!) {
+                RedirectManager.To("/").Execute();
+                return;
+            }
+
+            _stage = SetupStage.Avatar;
+
+            _avatarEditContext = new(AvatarModel!);
+            _avatarMessageStore = new(_avatarEditContext);
+
+            _avatarEditContext.OnValidationRequested += ValidateAvatar;
+
+            _avatarFileField = FieldIdentifier.Create(() => AvatarModel!.File);
+
+            _profileEditContext = new(ProfileModel!);
+            _profileMessageStore = new(_profileEditContext);
+
+            _profileEditContext.OnValidationRequested += ValidateProfile;
+            
+            _usernameField = FieldIdentifier.Create(() => ProfileModel!.UserName);
+            _displayNameField = FieldIdentifier.Create(() => ProfileModel!.DisplayName);
+            _pronounsField = FieldIdentifier.Create(() => ProfileModel!.Pronouns);
+            _bioField = FieldIdentifier.Create(() => ProfileModel!.Bio);
+            
+            StateHasChanged();
+        }
+    }
+
+    private void HidePrompt() {
+        _showPrompt = false;
+    }
+
+    private void ToSetupAvatar() {
+        _stage = SetupStage.Avatar;
+    }
+
+    private void ToSetupProfile() {
+        if (_processingAvatar) return;
         
+        _stage = SetupStage.Profile;
+    }
+
+    private async Task FinishSetup() {
+        // TODO: Move updating IsProfileSetup here?
         
+        // Modify user claims
+        var claimsPrincipal = (await AuthenticationState).User;
+        ClaimsIdentity identity = (ClaimsIdentity)claimsPrincipal.Identity!;
+            
+        var existingClaim = identity.FindFirst("ProfileSetup");
+            
+        if (existingClaim != null) {
+            identity.RemoveClaim(existingClaim);
+        }
+            
+        identity.AddClaim(new("ProfileSetup", bool.TrueString));
+        
+        RedirectManager.To(ReturnUrl ?? "/").Execute();
+    }
+
+    private async Task HandleAvatarUpload(InputFileChangeEventArgs args) {
+        AvatarModel!.File = args.File;
+        
+        if (!_avatarEditContext.Validate()) {
+            return;
+        }
+        
+        _processingAvatar = true;
+
+        try {
+            using var imageStream = AvatarModel.File.OpenReadStream(ApplicationConstants.UserAvatarMaxSize);
+
+            string databasePath = await ContentService.UploadAvatarAsync(imageStream, _user!.Id);
+            _user.ProfilePicturePath = databasePath;
+
+            await UserManager.UpdateAsync(_user);
+        } finally {
+            _processingAvatar = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleAvatarDelete() {
+        _processingAvatar = true;
+        
+        try {
+            await ContentService.DeleteAvatarAsync(_user!.Id);
+            _user.ProfilePicturePath = null;
+
+            await UserManager.UpdateAsync(_user);
+        } finally {
+            _processingAvatar = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleProfileSubmit() {
+        if (!_profileEditContext.Validate()) {
+            return;
+        }
+        
+        _isProcessingProfile = true;
+
+        try {
+            // Grab the latest user because some field might have been modified.
+            var authState = await AuthenticationState;
+            ApplicationUser? user = await UserManager.GetUserAsync(authState.User);
+            
+            if (user == null!) {
+                RedirectManager.To("/").Execute();
+                return;
+            }
+
+            user!.UserName = ProfileModel!.UserName;
+            user.DisplayName = ProfileModel.DisplayName;
+            user.Pronouns = ProfileModel.Pronouns;
+            user.Bio = ProfileModel.Bio;
+            user.IsProfileSetup = true;
+            
+            var result = await UserManager.UpdateAsync(user);
+
+            if (result.Succeeded) {
+                _stage = SetupStage.Complete;
+                
+                return;
+            }
+
+            if (result.Errors.FirstOrDefault(x => x.Code.Contains("UserName")) is { } usernameError) {
+                _usernameError = usernameError.Description;
+            }
+        } finally {
+            _isProcessingProfile = false;
+        }
+    }
+
+    private void ValidateAvatar(object? sender, ValidationRequestedEventArgs args) {
+        _avatarMessageStore.Clear();
+        
+        if (AvatarModel!.File is { } browserFile) {
+            if (browserFile.ContentType is not "image/png" and not "image/jpeg" and not "image/jpg") {
+                _avatarMessageStore.Add(_avatarFileField, "Avatar file is not valid PNG or JPEG.");
+                return;
+            }
+
+            if (browserFile.Size > ApplicationConstants.UserAvatarMaxSize) {
+                _avatarMessageStore.Add(_avatarFileField, $"Avatar surpassed maximum allowed size of {ApplicationConstants.UserAvatarMaxSize} bytes.");
+                return;
+            }
+        }
+    }
+    
+    private void ValidateProfile(object? sender, ValidationRequestedEventArgs args) {
+        _profileMessageStore.Clear();
+        _usernameError = string.Empty;
+    }
+
+    private enum SetupStage {
+        Initialize,
+        Avatar,
+        Profile,
+        Complete,
+    }
+
+    private sealed class AvatarInputModel {
+        public IBrowserFile? File { get; set; }
+    }
+
+    private sealed class ProfileInputModel {
+        [StringLength(32, MinimumLength = 8, ErrorMessage = "Username must be between {2} and {1} characters.")]
+        [Required(ErrorMessage = "Username is required.")]
+        public string UserName { get; set; } = null!;
+        
+        [StringLength(32, MinimumLength = 8, ErrorMessage = "Display Name must be between {2} and {1} characters.")]
+        [Required(ErrorMessage = "Display Name is required.")]
+        public string DisplayName { get; set; } = null!;
+        
+        [StringLength(32, ErrorMessage = "Pronouns can only have maximum length of {1} characters.")]
+        public string? Pronouns { get; set; } = null!;
+        
+        [StringLength(255, ErrorMessage = "About Me can only have maximum length of {1} characters.")]
+        public string? Bio { get; set; } = null!;
     }
 }

@@ -1,18 +1,17 @@
-﻿using Conflux.Database.Entities;
+﻿using Conflux.Database;
+using Conflux.Database.Entities;
 using Conflux.Services.Abstracts;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace Conflux.Services;
 
-public class UserService(UserManager<ApplicationUser> userManager, AuthenticationStateProvider authStateProvider) : IUserService {
-    // public async Task<ApplicationUser?> GetCurrentUserAsync() {
-    //     var authState = await authStateProvider.GetAuthenticationStateAsync();
-    //     var user = await userManager.GetUserAsync(authState.User);
-    //
-    //     return user;
-    // }
+public class UserService(UserManager<ApplicationUser> userManager, ApplicationDbContext DbContext) : IUserService {
+    public Task<bool> IsUserNameTaken(string username) {
+        return DbContext.Users.AnyAsync(user => username.Equals(user.UserName, StringComparison.InvariantCultureIgnoreCase));
+    }
 
     public async Task<bool> IsTwoFactorEnabled(ClaimsPrincipal claimsPrincipal) {
         var user = await userManager.GetUserAsync(claimsPrincipal);

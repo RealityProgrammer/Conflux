@@ -14,6 +14,7 @@ public class ApplicationUser : IdentityUser, ICreatedAtColumn {
     
     public DateTime CreatedAt { get; set; }
     
+    // TODO: Question ourself why is this needed while the avatars always at "images/avatar/{Id}"
     [MaxLength(255)] public string? ProfilePicturePath { get; set; }
 
     [Range(0.25, 5)] public double ProfilePictureScaleX { get; set; } = 1;

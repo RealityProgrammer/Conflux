@@ -1,7 +1,8 @@
 ﻿@using Conflux.Components.Shared.Icons
+@using System.Linq.Expressions
 
 <button @attributes="AdditionalAttributes">
-    @if (IsShowingSpinner) {
+    @if (IsSpinning) {
         <div class="flex flex-row justify-center items-center">
             <Spinner class="@SpinnerCssClass"/>
         </div>
@@ -11,23 +12,11 @@
 </button>
 
 @code {
-    [Parameter] public bool IsShowingSpinner { get; set; }
+    [Parameter] public bool IsSpinning { get; set; }
+    [Parameter] public EventCallback<bool> IsSpinningChanged { get; set; }
+    [Parameter] public Expression<Func<bool>>? IsSpinningExpression { get; set; }
     
     [Parameter] public RenderFragment? ChildContent { get; set; }
     [Parameter] public string? SpinnerCssClass { get; set; }
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
-
-    public void ShowSpinner() {
-        if (IsShowingSpinner) return;
-
-        IsShowingSpinner = true;
-        StateHasChanged();
-    }
-
-    public void HideSpinner() {
-        if (!IsShowingSpinner) return;
-
-        IsShowingSpinner = false;
-        StateHasChanged();
-    }
 }

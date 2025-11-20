@@ -8,7 +8,7 @@
             Cancel
         </button>
             
-        <SpinnerButton @ref="_spinnerButton" class="button-success w-18 px-0 py-0 h-10 flex justify-center items-center" SpinnerCssClass="size-4 fill-white" @onclick="HandleSaveClick">
+        <SpinnerButton @bind-IsSpinning="_isSpinning" class="button-success w-18 px-0 py-0 h-10 flex justify-center items-center" SpinnerCssClass="size-4 fill-white" @onclick="HandleSaveClick">
             Save
         </SpinnerButton>
     </div>
@@ -19,8 +19,7 @@
     [Parameter] public EventCallback OnCancelRequest { get; set; }
     
     private bool _showPopup;
-
-    private SpinnerButton _spinnerButton = null!;
+    private bool _isSpinning;
 
     private async Task HandleCancelClick() {
         await OnCancelRequest.InvokeAsync();
@@ -28,12 +27,12 @@
     }
 
     private async Task HandleSaveClick() {
-        _spinnerButton.ShowSpinner();
+        _isSpinning = true;
 
         try {
             await OnSaveRequest.InvokeAsync();
         } finally {
-            _spinnerButton.HideSpinner();
+            _isSpinning = false;
         }
     }
 

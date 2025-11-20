@@ -8,6 +8,9 @@ public class ContentService(IWebHostEnvironment environment) : IContentService {
         string physicalPath = Path.Combine(environment.ContentRootPath, "Uploads", path);
         await using var destinationStream = File.OpenWrite(physicalPath);
         
+        destinationStream.SetLength(0);
+        
+        await destinationStream.FlushAsync();
         await stream.CopyToAsync(destinationStream);
 
         return Path.Join("uploads", path);
@@ -20,5 +23,12 @@ public class ContentService(IWebHostEnvironment environment) : IContentService {
         File.Delete(physicalPath);
 
         return Task.CompletedTask;
+    }
+
+    public DateTime GetAvatarUploadTime(string userId) {
+        string path = Path.Combine("images", "avatar", userId);
+        string physicalPath = Path.Combine(environment.ContentRootPath, "Uploads", path);
+        
+        return File.GetLastWriteTimeUtc(physicalPath);
     }
 }
