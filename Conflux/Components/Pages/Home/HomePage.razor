@@ -114,10 +114,11 @@
                         </header>
                 
                         <nav class="flex-1 overflow-y-auto flex flex-col gap-2 px-6">
-                            <NavLink class="text-white rounded-full px-7 py-2 font-bold border-2 border-indigo-500/30 shimmer w-full flex flex-row justify-center items-center gap-3 flex-none" href="#" Match="NavLinkMatch.Prefix">
-                                <SpeechBubble Filled="false" ArrowDirection="ChatArrowDirection.Right" Content="ChatContent.Dots" class="size-5 flex-none fill-white"/>
-                
-                                Chatting
+                            <NavLink class="text-white rounded-full px-7 py-2 font-bold border-2 border-indigo-500/30 shimmer w-full flex flex-row justify-center items-center gap-3 flex-none group" href="/lobby" Match="NavLinkMatch.Prefix">
+                                <Door Filled="false" Open="false" class="size-5 fill-white flex-none block group-hover:hidden"/>
+                                <Door Filled="false" Open="true" class="size-5 fill-white flex-none hidden group-hover:block"/>
+                                
+                                Lobby
                             </NavLink>
                 
                             <NavLink class="text-white rounded-full px-7 py-2 font-bold border-2 border-indigo-500/30 shimmer w-full flex flex-row justify-center items-center gap-3 flex-none" href="/settings/account" Match="NavLinkMatch.Prefix">

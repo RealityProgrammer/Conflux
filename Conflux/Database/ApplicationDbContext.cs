@@ -25,4 +25,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             Unsafe.As<ICreatedAtColumn>(entry.Entity).CreatedAt = now;
         }
     }
+
+    public override void Dispose() {
+        base.Dispose();
+    }
+
+    public override ValueTask DisposeAsync() {
+        return base.DisposeAsync();
+    }
 }

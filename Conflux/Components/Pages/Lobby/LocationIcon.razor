@@ -1,0 +1,18 @@
+﻿<div class="aspect-square rounded-full overflow-hidden @_cssClass">
+    @ChildContent
+</div>
+
+@code {
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+    private string? _cssClass;
+    
+    [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; }
+    
+    protected override void OnParametersSet() {
+        if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
+            _cssClass = Convert.ToString(obj);
+        }
+
+        AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "class").ToDictionary();
+    }
+}
