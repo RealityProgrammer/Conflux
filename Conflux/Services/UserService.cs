@@ -9,6 +9,10 @@ using System.Security.Claims;
 namespace Conflux.Services;
 
 public class UserService(UserManager<ApplicationUser> userManager, ApplicationDbContext DbContext) : IUserService {
+    public Task<ApplicationUser?> GetUserAsync(ClaimsPrincipal claimsPrincipal) {
+        return userManager.GetUserAsync(claimsPrincipal);
+    }
+    
     public Task<bool> IsUserNameTaken(string username) {
         return DbContext.Users.AnyAsync(user => username.Equals(user.UserName, StringComparison.InvariantCultureIgnoreCase));
     }

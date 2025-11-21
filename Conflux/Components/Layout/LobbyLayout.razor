@@ -5,25 +5,23 @@
 
 <RedirectToProfileSetup/>
 
-<div class="fixed inset-0">
-    <section class="absolute top-0 inset-x-0 h-16 bg-(--bg-color-1) shadow-lg overflow-hidden transition-all duration-500 @(_drawerIsExpanding ? "translate-y-0" : "-translate-y-full")">
-        <div class="overflow-x-auto flex flex-row items-center gap-2 h-full p-2">
-            <NavLink class="bg-gray-800 hover:shadow-md rounded-full h-full aspect-square flex-none cursor-pointer overflow-hidden flex flex-row justify-center items-center" ActiveClass="border-2 border-blue-700!" href="/lobby" Match="NavLinkMatch.All">
-                <House class="size-6 fill-white"></House>
-            </NavLink>
-        </div>
-    </section>
+<section class="absolute top-0 inset-x-0 h-16 bg-(--bg-color-1) shadow-lg overflow-hidden transition-all duration-500 @(_drawerIsExpanding ? "translate-y-0" : "-translate-y-full")">
+    <div class="overflow-x-auto flex flex-row items-center gap-2 h-full p-2">
+        <NavLink class="bg-gray-800 hover:shadow-md rounded-full h-full aspect-square flex-none cursor-pointer overflow-hidden flex flex-row justify-center items-center" ActiveClass="border-2 border-blue-700!" href="/lobby" Match="NavLinkMatch.All">
+            <House class="size-6 fill-white"></House>
+        </NavLink>
+    </div>
+</section>
 
-    <button class="absolute @(_drawerIsExpanding ? "top-16" : "top-0") left-1/2 -translate-x-1/2 rounded-b-lg bg-gray-600 shadow-md px-5 py-0.5 cursor-pointer transition-all duration-500" @onclick="ToggleDrawer">
-        @if (_drawerIsExpanding) {
-            <Chevron Direction="ChevronDirection.Up" Mode="ChevronMode.Compact" class="animate-bounce size-5 fill-white"/>
-        } else {
-            <Chevron Direction="ChevronDirection.Down" Mode="ChevronMode.Compact" class="animate-bounce size-5 fill-white"/>
-        }
-    </button>
-</div>
+<button class="absolute @(_drawerIsExpanding ? "top-16" : "top-0") left-1/2 -translate-x-1/2 rounded-b-lg bg-gray-600 shadow-md px-5 py-0.5 cursor-pointer transition-all duration-500" @onclick="ToggleDrawer">
+    @if (_drawerIsExpanding) {
+        <Chevron Direction="ChevronDirection.Up" Mode="ChevronMode.Compact" class="animate-bounce size-5 fill-white"/>
+    } else {
+        <Chevron Direction="ChevronDirection.Down" Mode="ChevronMode.Compact" class="animate-bounce size-5 fill-white"/>
+    }
+</button>
 
-<div class="h-screen w-screen bg-(--bg-color-1) grid grid-cols-1">
+<div class="h-screen w-screen">
     @Body
 </div>
 
