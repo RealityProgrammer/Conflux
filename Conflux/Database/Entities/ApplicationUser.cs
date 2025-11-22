@@ -21,4 +21,7 @@ public class ApplicationUser : IdentityUser, ICreatedAtColumn {
     [Range(0.25, 5)] public double ProfilePictureScaleY { get; set; } = 1;
     
     [MaxLength(255)] public string? BannerPicturePath { get; set; }
+    
+    [MaxLength(128)]
+    public string? StatusText { get; set; }
 }

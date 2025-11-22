@@ -2,13 +2,17 @@
 
 @using Conflux.Components.Shared
 @using Conflux.Components.Shared.Icons
+@using Conflux.Database
 @using Conflux.Database.Entities
 @using Conflux.Services
 @using Conflux.Services.Abstracts
+@using Microsoft.EntityFrameworkCore
+@using System.ComponentModel.DataAnnotations
 
 @inject IUserService UserService
 @inject ApplicationRedirectManager RedirectManager
 @inject ILogger<Activity> Logger
+@inject ApplicationDbContext ApplicationDatabase
 
 @if (_user == null) {
     <div class="size-full flex flex-row justify-center items-center">
@@ -25,33 +29,74 @@
     <section class="mt-2 border-t border-t-gray-600 py-2">
         <h1 class="text-xl font-semibold">Status</h1>
         <p class="text-sm text-gray-400 mb-3">Let others know you are or aren't up for conversation.</p>
-
-        <div class="relative h-16 z-10 block sm:hidden">
-            <div class="absolute inset-0 bg-white rounded-full flex flex-row justify-center items-center p-4">
-                <p class="text-black text-center">google “magnesium iron silicate hydroxide”</p>
+        
+        <div class="flex flex-col sm:flex-col justify-center items-center w-full md:w-160 mx-auto">
+            <div class="relative h-16 z-10 w-full group" @onclick="() => _openStatusDialog = true">
+                <div class="absolute inset-0 bg-white group-hover:bg-gray-300 rounded-full flex flex-row justify-center items-center p-4 cursor-pointer">
+                    @if (string.IsNullOrEmpty(_user.StatusText)) {
+                        <p class="text-sm text-gray-700 animate-bounce">&lt;No thoughts head empty...&gt;</p>
+                    } else {
+                        <p class="text-black text-center">@_user.StatusText</p>
+                    }
+                </div>
+        
+                <div class="absolute left-1/2 bottom-0 -translate-x-1/2 translate-y-1/2 rotate-45 size-4 border-r-2 bg-white group-hover:bg-gray-300"></div>
             </div>
             
-            <div class="absolute left-1/2 bottom-0 -translate-x-1/2 translate-y-1/2 rotate-45 size-4 border-r-2 bg-white"></div>
+            <Avatar class="size-64 mt-2 shadow-lg flex-none mx-auto" ImageSrc="@_user.ProfilePicturePath"/>
         </div>
         
-        <div class="flex flex-row justify-start items-center">
-            <Avatar class="size-64 mx-auto sm:ml-4 mt-2 shadow-lg flex-none" ImageSrc="@_user.ProfilePicturePath"/>
+        <Dialog @bind-Open="_openStatusDialog" @bind-DisplayContent="_openStatusDialog" OnClickOutside="() => _openStatusDialog = false" class="flex flex-row justify-center items-center">
+            <Card class="transition-transform duration-500 w-lg z-10">
+                <CardHeader Title="Status" Subtext="Thinking about what to think..." OnCloseRequested="() => _openStatusDialog = false"/>
                 
-            <div class="relative h-20 z-10 hidden sm:block flex-1">
-                <div class="absolute inset-0 bg-white rounded-full flex flex-row justify-center items-center p-4">
-                    <p class="text-black text-center">google “magnesium iron silicate hydroxide”</p>
-                </div>
-            
-                <div class="absolute left-0 top-1/2 translate-x-[-40%] -translate-y-1/2 rotate-45 size-4 border-r-2 bg-white"></div>
-            </div>
-        </div>
+                <CardContent class="basis-64">
+                    <EditForm EditContext="_statusEditContext" FormName="Status" method="post" class="w-full">
+                        <DataAnnotationsValidator/>
+                        
+                        <div class="flex flex-col gap-2">
+                            <label class="font-bold text-gray-300">Status</label>
+
+                            <TooltipContainer ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" ShowTooltip="@(!_statusEditContext.IsValid(_statusTextField))" Id="status">
+                                <Target>
+                                    @{
+                                        string classes = $"w-full h-11 mt-2 input-field {(_statusEditContext.IsValid(_statusTextField) ? string.Empty : "border-red-700")}";
+                                    }
+
+                                    <InputText type="text" @bind-Value="StatusModel!.StatusText" placeholder="Hmmm..." class="@classes"/>
+                                </Target>
+
+                                <Tooltip>
+                                    <ValidationMessage For="() => StatusModel!.StatusText" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"></ValidationMessage>
+                                </Tooltip>
+                            </TooltipContainer>
+                        </div>
+                    </EditForm>
+                    
+                    @for (int i = 0; i < 100; i++) {
+                        <p>@i</p>
+                    }
+                </CardContent>
+                
+                <CardFooter class="border-t-0 flex flex-row justify-end gap-3">
+                    <SpinnerButton @bind-IsSpinning="_isProcessingStatus" class="button-primary" @onclick="UpdateStatus" SpinnerCssClass="size-6 fill-white">Apply</SpinnerButton>
+                    <button class="button-danger" @onclick="CancelStatus">Cancel</button>
+                </CardFooter>
+            </Card>
+        </Dialog>
     </section>
 </div>
 
 @code {
     private ApplicationUser? _user;
+    private bool _openStatusDialog, _isProcessingStatus;
 
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+
+    [SupplyParameterFromForm(FormName = "Status")] private StatusInputModel? StatusModel { get; set; }
+    private EditContext _statusEditContext;
+    private FieldIdentifier _statusTextField;
+    
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
@@ -63,7 +108,43 @@
                 return;
             }
 
+            StatusModel ??= new();
+            _statusEditContext = new(StatusModel);
+            
+            _statusTextField = FieldIdentifier.Create(() => StatusModel.StatusText);
+
             StateHasChanged();
         }
+    }
+
+    private async Task UpdateStatus() {
+        if (!_statusEditContext.Validate()) {
+            return;
+        }
+
+        _isProcessingStatus = true;
+
+        try {
+            _user!.StatusText = StatusModel!.StatusText;
+            await ApplicationDatabase.Users
+                .Where(r => r.Id == _user.Id)
+                .ExecuteUpdateAsync(
+                    b => b.SetProperty(r => r.StatusText, StatusModel.StatusText)
+                );
+
+            _openStatusDialog = false;
+        } finally {
+            _isProcessingStatus = false;
+        }
+    }
+
+    private void CancelStatus() {
+        StatusModel!.StatusText = _user!.StatusText;
+        _openStatusDialog = false;
+    }
+
+    private sealed class StatusInputModel {
+        [MaxLength(128, ErrorMessage = "Status Text can only have maximum length of {1} characters.")]
+        public string? StatusText { get; set; }
     }
 }

@@ -133,7 +133,7 @@
         outline-none
         border rounded-lg
         text-gray-200 placeholder-gray-500 bg-gray-700/60 border-gray-600
-        focus:ring-2 focus:ring-indigo-500
+        focus:ring-2 focus:ring-red-500
         disabled:text-gray-400 disabled:placeholder-gray-600 disabled:bg-gray-800/40 disabled:border-gray-700 disabled:cursor-not-allowed
         disabled:opacity-70
             
@@ -176,11 +176,57 @@
 
 @layer utilities {
     .scrollbar-hide::-webkit-scrollbar {
-        display: none; /* For Chrome, Safari, and Opera */
+        display: none;
     }
     
     .scrollbar-hide {
-        -ms-overflow-style: none; /* For IE and Edge */
-        scrollbar-width: none; /* For Firefox */
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+}
+
+@layer base {
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: var(--color-zinc-500) transparent;
+    }
+
+    *::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    *::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    *::-webkit-scrollbar-thumb {
+        background: var(--color-zinc-500);
+        border-radius: 4px;
+    }
+
+    *::-webkit-scrollbar-thumb:hover {
+        background: var(--color-zinc-300);
+    }
+
+    *::-webkit-scrollbar-button {
+        display: none;
+    }
+
+    *::-webkit-scrollbar-button:horizontal {
+        display: none;
+    }
+
+    *::-webkit-scrollbar-button:vertical {
+        display: none;
+    }
+
+    *::-webkit-scrollbar-button:vertical:decrement,
+    *::-webkit-scrollbar-button:vertical:increment,
+    *::-webkit-scrollbar-button:horizontal:decrement,
+    *::-webkit-scrollbar-button:horizontal:increment {
+        display: none;
+        width: 0;
+        height: 0;
     }
 }
