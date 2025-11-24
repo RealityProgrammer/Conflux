@@ -1,3 +1,4 @@
+using Bogus;
 using Microsoft.EntityFrameworkCore;
 using Conflux.Components;
 using Conflux.Database;
@@ -22,7 +23,6 @@ builder.Services.AddRazorComponents()
 // Adding authentication services.
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<AuthenticationStateProvider, ApplicationAuthenticationStateProvider>();
-builder.Services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, ApplicationUserClaimsPrincipalFactory>();
 
 builder.Services.AddAuthentication(options => {
     options.DefaultScheme = IdentityConstants.ApplicationScheme;
@@ -41,13 +41,25 @@ builder.Services.AddAuthorization(options => {
 
 // Add database services.
 builder.Services.AddDbContext<ApplicationDbContext>(options => {
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+    options
+        .UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 
 // More authentication services.
-builder.Services.AddIdentityCore<ApplicationUser>(options => {
-    options.SignIn.RequireConfirmedAccount = false;
-}).AddEntityFrameworkStores<ApplicationDbContext>().AddSignInManager().AddDefaultTokenProviders();
+builder.Services
+    .AddIdentityCore<ApplicationUser>(options => {
+        options.SignIn.RequireConfirmedAccount = false;
+        options.User.RequireUniqueEmail = true;
+        options.User.AllowedUserNameCharacters += ' ';
+    })
+    .AddRoles<IdentityRole>()
+    .AddRoleManager<RoleManager<IdentityRole>>()
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddSignInManager()
+    .AddDefaultTokenProviders()
+    .AddClaimsPrincipalFactory<ApplicationUserClaimsPrincipalFactory>();
+
+builder.Services.AddScoped<RoleManager<IdentityRole>>();
 
 // TODO: Email sending services.
 // builder.Services.AddSingleton<IEmailSender<ApplicationUser>, ...>();
@@ -55,6 +67,7 @@ builder.Services.AddIdentityCore<ApplicationUser>(options => {
 // System services.
 builder.Services.AddScoped<ApplicationRedirectManager>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddViteServices();
 builder.Services.AddScoped<MarkdownPipeline>(services => {
     var pipeline = new MarkdownPipelineBuilder()
@@ -112,9 +125,97 @@ app.UseStaticFiles(new StaticFileOptions {
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-app.MapPost("/auth/logout", async (ClaimsPrincipal claims, [FromServices] SignInManager<ApplicationUser> signInManager, [FromForm(Name = "ReturnUrl")] string returnUrl) => {
-    await signInManager.SignOutAsync();
+app.MapPost("/auth/logout", async (ClaimsPrincipal claims, [FromServices] ICurrentUserService UserService, [FromForm(Name = "ReturnUrl")] string returnUrl) => {
+    await UserService.LogoutAsync();
     return TypedResults.LocalRedirect($"~/{returnUrl}");
 });
 
+// Setup Application stuffs.
+using (var scope = app.Services.CreateScope()) {
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    
+    await CreateRoles(roleManager);
+
+    var environment = scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>();
+
+    if (environment.IsDevelopment()) {
+        await CreateFakeUsers(scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>());
+    }
+}
+
+// Add Roles, and assign to users.
 app.Run();
+return;
+
+async Task CreateRoles(RoleManager<IdentityRole> roleManager) {
+    string[] roles = [
+        "Moderator",
+        "Admin",
+        "SystemDeveloper",
+    ];
+
+    foreach (var role in roles) {
+        if (!await roleManager.RoleExistsAsync(role)) {
+            await roleManager.CreateAsync(new(role));
+        }
+    }
+}
+
+async Task CreateFakeUsers(UserManager<ApplicationUser> userManager) {
+    if (!await userManager.Users.AnyAsync(u => u.Email == "test@example.com")) {
+        var result = await userManager.CreateAsync(new ApplicationUser {
+            Email = "test@example.com",
+            UserName = "TestUser",
+            DisplayName = "TestUser",
+            EmailConfirmed = true,
+            IsProfileSetup = true,
+        }, "Password1!");
+        
+        GC.KeepAlive(result);
+    }
+    
+    if (!await userManager.Users.AnyAsync(u => u.Email == "test2@example.com")) {
+        var result = await userManager.CreateAsync(new ApplicationUser {
+            Email = "test2@example.com",
+            UserName = "TestUser 2",
+            DisplayName = "TestUser 2",
+            EmailConfirmed = true,
+            IsProfileSetup = true,
+        }, "Password1!");
+        
+        GC.KeepAlive(result);
+    }
+    
+    // var fakeUser = new Faker<ApplicationUser>()
+    //     .RuleFor(u => u.Id, f => {
+    //         UInt128 id = (UInt128)(f.IndexFaker + 1);
+    //
+    //         Span<byte> buffer = stackalloc byte[16];
+    //         BitConverter.TryWriteBytes(buffer, id);
+    //
+    //         return new Guid(buffer).ToString();
+    //     })
+    //     .RuleFor(u => u.UserName, f => f.Internet.UserName())
+    //     .RuleFor(u => u.DisplayName, (f, u) => u.UserName)
+    //     .RuleFor(u => u.Pronouns, f => f.PickRandom("he/him", "she/her", "they/them"))
+    //     .RuleFor(u => u.Bio, f => {
+    //         var lorem = f.Lorem.Paragraph();
+    //         return lorem[..int.Min(255, lorem.Length)];
+    //     })
+    //     .RuleFor(u => u.Email, f => f.Internet.Email())
+    //     .RuleFor(u => u.CreatedAt, f => f.Date.Between(DateTime.UtcNow.AddYears(-5), DateTime.UtcNow))
+    //     .RuleFor(u => u.StatusText, f => {
+    //         string str = string.Join(' ', f.Lorem.Words(16));
+    //         return str[..int.Min(128, str.Length)];
+    //     })
+    //     .RuleFor(u => u.IsProfileSetup, f => true)
+    //     .RuleFor(u => u.EmailConfirmed, f => true);
+    //
+    // var users = fakeUser.Generate(64);
+    //
+    // for (int i = 0; i < users.Count; i++) {
+    //     if (await userManager.FindByIdAsync(users[i].Id) != null) continue;
+    //     
+    //     await userManager.CreateAsync(users[i], "Password1!");
+    // }
+}

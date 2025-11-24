@@ -1,4 +1,5 @@
 ﻿using Conflux.Database.Entities;
+using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
 
 namespace Conflux.Services.Abstracts;
@@ -12,4 +13,8 @@ public interface IUserService {
     Task<bool> IsTwoFactorEnabled(ApplicationUser user);
 
     Task<bool> IsProfileSetup(ClaimsPrincipal claimsPrincipal);
+
+    Task<IdentityResult> AssignRoleAsync(ApplicationUser user, string roleName);
+    Task<IdentityResult> RemoveRoleAsync(ApplicationUser user, string roleName);
+    Task<IList<string>> GetRolesAsync(ApplicationUser user);
 }

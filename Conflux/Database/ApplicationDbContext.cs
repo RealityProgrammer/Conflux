@@ -1,4 +1,5 @@
 ﻿using Conflux.Database.Entities;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using System.Runtime.CompilerServices;
@@ -24,6 +25,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         foreach (var entry in entries) {
             Unsafe.As<ICreatedAtColumn>(entry.Entity).CreatedAt = now;
         }
+    }
+
+    protected override void OnModelCreating(ModelBuilder builder) {
+        base.OnModelCreating(builder);
     }
 
     public override void Dispose() {

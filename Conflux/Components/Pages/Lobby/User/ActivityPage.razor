@@ -1,4 +1,4 @@
-﻿@page "/lobby/user/activity"
+﻿@page "/lobby/activity"
 
 @using Conflux.Components.Shared
 @using Conflux.Components.Shared.Icons
@@ -9,9 +9,9 @@
 @using Microsoft.EntityFrameworkCore
 @using System.ComponentModel.DataAnnotations
 
-@inject IUserService UserService
+@inject ICurrentUserService CurrentUserService
 @inject ApplicationRedirectManager RedirectManager
-@inject ILogger<Activity> Logger
+@inject ILogger<ActivityPage> Logger
 @inject ApplicationDbContext ApplicationDatabase
 
 @if (_user == null) {
@@ -50,7 +50,7 @@
             <Card class="transition-transform duration-500 w-lg z-10">
                 <CardHeader Title="Status" Subtext="Thinking about what to think..." OnCloseRequested="() => _openStatusDialog = false"/>
                 
-                <CardContent class="basis-64">
+                <CardContent class="pb-3">
                     <EditForm EditContext="_statusEditContext" FormName="Status" method="post" class="w-full">
                         <DataAnnotationsValidator/>
                         
@@ -72,10 +72,6 @@
                             </TooltipContainer>
                         </div>
                     </EditForm>
-                    
-                    @for (int i = 0; i < 100; i++) {
-                        <p>@i</p>
-                    }
                 </CardContent>
                 
                 <CardFooter class="border-t-0 flex flex-row justify-end gap-3">
@@ -91,8 +87,6 @@
     private ApplicationUser? _user;
     private bool _openStatusDialog, _isProcessingStatus;
 
-    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
-
     [SupplyParameterFromForm(FormName = "Status")] private StatusInputModel? StatusModel { get; set; }
     private EditContext _statusEditContext;
     private FieldIdentifier _statusTextField;
@@ -100,8 +94,7 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
-            var authState = await AuthenticationState;
-            _user = await UserService.GetUserAsync(authState.User);
+            _user = await CurrentUserService.GetCurrentUserAsync();
 
             if (_user == null) {
                 RedirectManager.To("/").Execute();

@@ -1,12 +1,12 @@
 ﻿@using Conflux.Components.Shared.Icons
 @using Conflux.Helpers
 
-<footer class="pt-3 px-5 pb-5 border-t border-t-gray-600 flex-none @_cssClass" @attributes="AdditionalAttributes">
+<footer class="pb-3 px-5 border-t border-t-gray-600 flex-none @_cssClass" @attributes="AdditionalAttributes">
     @ChildContent
 </footer>
 
 @code {
-    [Parameter] public RenderFragment ChildContent { get; set; }
+    [Parameter, EditorRequired] public required RenderFragment ChildContent { get; set; }
     
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
     private string? _cssClass;

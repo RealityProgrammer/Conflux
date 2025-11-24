@@ -1,28 +1,37 @@
-﻿@using Conflux.Components.Shared.Icons
+﻿@using Conflux.Components.Shared
+@using Conflux.Components.Shared.Icons
 
 @inherits LayoutComponentBase
 
 @layout LobbyLayout
 
 <div class="flex flex-row size-full overflow-hidden">
-    <section class="col-span-2 bg-gray-700 h-full overflow-auto text-white py-2 px-2 flex flex-col gap-2 border-r border-r-gray-600 flex-none basis-20 lg:basis-64">
-        <NavLink href="/lobby/user/activity" class="flex flex-row justify-center lg:justify-start items-center px-0 lg:px-4 py-2 rounded-lg w-full gap-3 flex-none cursor-pointer hover:bg-gray-500" ActiveClass="bg-gray-600" Match="NavLinkMatch.Prefix">
-            <Airplane class="size-6 flex-none fill-white"/>
+    <section class="col-span-2 bg-gray-700 h-full overflow-hidden text-white flex flex-col border-r border-r-gray-600 flex-none basis-20 lg:basis-64">
+        <div class="flex-1 flex flex-col p-2 overflow-y-auto">
+            <NavLink href="/lobby/activity" class="flex flex-row justify-center lg:justify-start items-center px-0 lg:px-4 py-2 rounded-lg w-full gap-3 flex-none cursor-pointer hover:bg-gray-500 active:bg-[#303b4c]" ActiveClass="bg-gray-600" Match="NavLinkMatch.Prefix">
+                <Airplane class="size-6 flex-none fill-white"/>
 
-            <p class="hidden lg:block">Activity</p>
-        </NavLink>
+                <p class="hidden lg:block">Activity</p>
+            </NavLink>
+            
+            <NavLink href="/lobby/social" class="mt-2 flex flex-row justify-center lg:justify-start items-center pl-0 lg:pl-4 py-2 rounded-lg w-full gap-3 flex-none cursor-pointer hover:bg-gray-500" ActiveClass="bg-gray-600" Match="NavLinkMatch.Prefix">
+                <People class="size-6 flex-none fill-white"/>
+                
+                <p class="hidden lg:block">Social</p>
+            </NavLink>
+            
+            <NavLink href="/lobby/messages" class="mt-2 flex flex-row justify-center lg:justify-start items-center pl-0 lg:pl-4 py-2 rounded-lg w-full gap-3 flex-none cursor-pointer hover:bg-gray-500" ActiveClass="bg-gray-600" Match="NavLinkMatch.Prefix">
+                <SpeechBubble Content="ChatContent.Text" Filled="false" class="size-6 flex-none fill-white"/>
+
+                <p class="hidden lg:block">Messages</p>
+            </NavLink>
+        </div>
         
-        <NavLink href="/lobby/user/social" class="flex flex-row justify-center lg:justify-start items-center px-0 lg:px-4 py-2 rounded-lg w-full gap-3 flex-none cursor-pointer hover:bg-gray-500" ActiveClass="bg-gray-600" Match="NavLinkMatch.Prefix">
-            <People class="size-6 flex-none fill-white"/>
-
-            <p class="hidden lg:block">Social</p>
-        </NavLink>
-        
-        <NavLink href="/lobby/user/messages" class="flex flex-row justify-center lg:justify-start items-center px-0 lg:px-4 py-2 rounded-lg w-full gap-3 flex-none cursor-pointer hover:bg-gray-500" ActiveClass="bg-gray-600" Match="NavLinkMatch.Prefix">
-            <SpeechBubble Content="ChatContent.Text" Filled="false" class="size-6 flex-none fill-white"/>
-
-            <p class="hidden lg:block">Messages</p>
-        </NavLink>
+        <div class="flex-none h-16 border-t border-t-gray-600 p-2">
+            <Avatar class="h-full">
+                
+            </Avatar>
+        </div>
     </section>
     
     <section class="col-span-10 bg-gray-700 h-full overflow-hidden flex-1">

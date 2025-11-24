@@ -404,15 +404,11 @@
     }
 
     private async Task CancelEdit() {
-        // Recreate model to reset all the Validation messages
-        Model = new() {
-            DisplayName = string.Empty,
-        };
+        CopyUserDataToProfileModel();
 
         await _module.InvokeVoidAsync("revokePreviewImageUrl", _avatarPreviewUrl);
         _avatarPreviewUrl = null;
 
-        CopyUserDataToProfileModel();
         Model.Avatar.RequestDelete = false;
         
         ResetProfileForm();

@@ -13,6 +13,7 @@
 @attribute [Authorize]
 
 @inject IUserService UserService
+@inject ICurrentUserService CurrentUserService
 @inject ApplicationRedirectManager RedirectManager
 @inject UserManager<ApplicationUser> UserManager
 @inject IContentService ContentService
@@ -121,13 +122,17 @@
                         <div class="relative">
                             <label class="font-semibold">Username</label>
 
-                            <TooltipContainer ShowTooltip="!_profileEditContext.IsValid(_usernameField)" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" Id="username" class="max-w-[90%]">
+                            <TooltipContainer ShowTooltip="!string.IsNullOrEmpty(_usernameError) || !_profileEditContext.IsValid(_usernameField)" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" Id="username" class="max-w-[90%]">
                                 <Target>
                                     <InputText @bind-Value="ProfileModel!.UserName" class="mt-2 input-field h-11 w-full" maxlength="32"/>
                                 </Target>
 
                                 <Tooltip>
-                                    <ValidationMessage For="() => ProfileModel!.UserName" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"/>
+                                    @if (string.IsNullOrEmpty(_usernameError)) {
+                                        <ValidationMessage For="() => ProfileModel!.UserName" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"/>
+                                    } else {
+                                        <p class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md">@_usernameError</p>
+                                    }
                                 </Tooltip>
                             </TooltipContainer>
                             
@@ -165,17 +170,13 @@
                         <div class="col-start-1 col-end-2 md:col-end-3">
                             <label class="font-semibold">About Me</label>
 
-                            <TooltipContainer ShowTooltip="!string.IsNullOrEmpty(_usernameError) || !_profileEditContext.IsValid(_bioField)" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" Id="username" class="max-w-[90%]">
+                            <TooltipContainer ShowTooltip="!_profileEditContext.IsValid(_bioField)" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" Id="username" class="max-w-[90%]">
                                 <Target>
                                     <InputTextArea @bind-Value="ProfileModel!.Bio" class="mt-2 input-field h-55 w-full" maxlength="255"/>
                                 </Target>
 
                                 <Tooltip>
-                                    @if (!string.IsNullOrEmpty(_usernameError)) {
-                                        <p class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md">Username has been taken.</p>
-                                    } else {
-                                        <ValidationMessage For="() => ProfileModel!.Bio" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"/>
-                                    }
+                                    <ValidationMessage For="() => ProfileModel!.Bio" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"/>
                                 </Tooltip>
                             </TooltipContainer>
                         </div>
@@ -217,7 +218,8 @@
 
 @code {
     [SupplyParameterFromQuery(Name = "ReturnUrl")] private string? ReturnUrl { get; set; }
-    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+    
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; }
 
     private ApplicationUser? _user;
     
@@ -240,11 +242,13 @@
 
     protected override async Task OnInitializedAsync() {
         var authState = await AuthenticationState;
-
+        
         if (await UserService.IsProfileSetup(authState.User)) {
             RedirectManager.To("/").Execute();
             return;
         }
+        
+        _user = await CurrentUserService.GetCurrentUserAsync();
 
         AvatarModel ??= new();
         ProfileModel ??= new();
@@ -382,8 +386,26 @@
                 return;
             }
 
-            if (result.Errors.FirstOrDefault(x => x.Code.Contains("UserName")) is { } usernameError) {
-                _usernameError = usernameError.Description;
+            foreach (var error in result.Errors) {
+                switch (error.Code) {
+                    case nameof(IdentityErrorDescriber.DuplicateUserName):
+                        if (string.IsNullOrEmpty(_usernameError)) {
+                            _usernameError = "This username has been taken.";
+                        }
+                        break;
+                        
+                    case nameof(IdentityErrorDescriber.InvalidUserName):
+                        if (string.IsNullOrEmpty(_usernameError)) {
+                            _usernameError = "Username contains invalid character.";
+                        }
+                        break;
+                        
+                    case var _ when error.Code.Contains("UserName"):
+                        if (string.IsNullOrEmpty(_usernameError)) {
+                            _usernameError = error.Description;
+                        }
+                        break;
+                }
             }
         } finally {
             _isProcessingProfile = false;

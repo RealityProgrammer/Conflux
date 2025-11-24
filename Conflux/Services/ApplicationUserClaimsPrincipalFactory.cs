@@ -11,9 +11,9 @@ public sealed class ApplicationUserClaimsPrincipalFactory : UserClaimsPrincipalF
 
     protected override async Task<ClaimsIdentity> GenerateClaimsAsync(ApplicationUser user) {
         var identity = await base.GenerateClaimsAsync(user);
-
+    
         identity.AddClaim(new("ProfileSetup", user.IsProfileSetup.ToString()));
-
+        
         return identity;
     }
 }
