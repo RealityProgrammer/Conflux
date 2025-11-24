@@ -16,7 +16,3 @@
     
     return url;
 }
-
-export function revokePreviewImageUrl(url: string) {
-    URL.revokeObjectURL(url);
-}

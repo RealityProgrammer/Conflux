@@ -1,0 +1,18 @@
+﻿@using Conflux.Components.Shared
+@using Conflux.Database.Entities
+
+<TabContent TabId="preview">
+    <ProfilePreview Model="Model" User="User" AvatarPreviewUrl="@_avatarPreviewUrl"/>
+</TabContent>
+
+<TabContent TabId="edit">
+    <ProfileEdit Model="Model" User="User" @bind-AvatarPreviewUrl="_avatarPreviewUrl" PageModule="PageModule"/>
+</TabContent>
+
+@code {
+    [Parameter, EditorRequired] public required ProfileInputModel Model { get; set; }
+    [Parameter, EditorRequired] public required ApplicationUser User { get; set; }
+    [Parameter, EditorRequired] public required IJSObjectReference PageModule { get; set; }
+
+    private string? _avatarPreviewUrl;
+}

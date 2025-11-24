@@ -133,7 +133,7 @@
         outline-none
         border rounded-lg
         text-gray-200 placeholder-gray-500 bg-gray-700/60 border-gray-600
-        focus:ring-2 focus:ring-red-500
+        focus:ring-2 focus:ring-indigo-600
         disabled:text-gray-400 disabled:placeholder-gray-600 disabled:bg-gray-800/40 disabled:border-gray-700 disabled:cursor-not-allowed
         disabled:opacity-70
             

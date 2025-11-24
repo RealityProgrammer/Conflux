@@ -1,0 +1,330 @@
+﻿@using Conflux.Components.Shared
+@using Conflux.Database.Entities
+@using Conflux.Services
+@using Conflux.Services.Abstracts
+@using Microsoft.AspNetCore.Components.Sections
+@using Microsoft.AspNetCore.Identity
+@using System.Security.Claims
+
+@using System.Linq.Expressions
+
+@inject UserManager<ApplicationUser> UserManager
+@inject IContentService ContentService
+@inject ILogger<ProfileEdit> Logger
+
+<div class="mt-3 mx-0 w-full md:mx-auto md:w-2/3 lg:w-3/4">
+    <EditForm class="grid grid-cols-1 lg:grid-cols-2 gap-2" EditContext="_editContext" FormName="Profile">
+        <AntiforgeryToken/>
+        <DataAnnotationsValidator/>
+
+        <div>
+            <label class="font-semibold">Avatar</label>
+                            
+            @* Hidden InputFile *@
+            <InputFile @ref="_avatarInputFile" type="file" class="hidden" accept="image/png, image/jpeg" OnChange="HandleAvatarChange" id="avatar"/>
+                            
+            <div class="mt-2">
+                <TooltipContainer ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" ShowTooltip="@(!_editContext.IsValid(_avatarFileField))" Id="avatar" class="max-w-[90%]">
+                    <Target>
+                        @{
+                            string? displayImageSrc = Model.Avatar.RequestDelete ? null : AvatarPreviewUrl ?? User.ProfilePicturePath;
+                        }
+                                        
+                        <Avatar class="size-96 mx-auto group" ImageSrc="@displayImageSrc" @bind-ScaleX="Model.Avatar.ZoomX" @bind-ScaleY="Model.Avatar.ZoomY">
+                            <p class="absolute inset-0 hidden group-hover:flex size-full text-center flex-row justify-center items-center cursor-pointer" @onclick="OpenAvatarModal">
+                                Click to change Avatar
+                            </p>
+                        </Avatar>
+                    </Target>
+                                    
+                    <Tooltip>
+                        <ValidationMessage For="() => Model.Avatar.File" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"></ValidationMessage>
+                    </Tooltip>
+                </TooltipContainer>
+                                
+                <Dialog @bind-Open="_showAvatarModal" @bind-DisplayContent="_showAvatarModal" OnClickOutside="CloseAvatarModal" class="flex flex-row justify-center items-center overflow-hidden">
+                    <Card class="lg:static transition-transform duration-500 z-10">
+                        <CardHeader Title="Avatar Adjustment" OnCloseRequested="CloseAvatarModal"/>
+                                    
+                        <CardContent class="grid grid-cols-1 lg:grid-cols-2 lg:mt-2">
+                            <section class="w-full lg:border-r lg:border-r-gray-600 lg:p-3">
+                                @{
+                                    string? displayImageSrc = Model.Avatar.RequestDelete ? null : AvatarPreviewUrl ?? User.ProfilePicturePath;
+                                }
+                                    
+                                <Avatar @ref="_selectableAvatar" class="size-64 sm:size-80 lg:size-96 mt-2 mx-auto group" ImageSrc="@displayImageSrc" @bind-ScaleX="Model.Avatar.ZoomX" @bind-ScaleY="Model.Avatar.ZoomY">
+                                    <label class="absolute inset-0 hidden group-hover:flex size-full flex-row justify-center items-center cursor-pointer z-10 bg-black/40 rounded-full" for="avatar">
+                                        Click to change Avatar
+                                    </label>
+                                </Avatar>
+                            </section>
+                                    
+                            <section class="mt-2 lg:mt-0 lg:p-3 text-white">
+                                <p class="font-semibold text-xl">Adjustments</p>
+                                    
+                                <div class="mt-2 flex flex-col">
+                                    <label>Horizontal Scale (@Model.Avatar.ZoomX.ToString("P0"))</label>
+                                    <AdjustmentSlider type="range" min="0.25" max="5" step="0.01" @bind-Value="Model.Avatar.ZoomX"/>
+                                </div>
+                                    
+                                <div class="flex flex-col">
+                                    <label>Vertical Scale (@Model.Avatar.ZoomY.ToString("P0"))</label>
+                                    <AdjustmentSlider type="range" min="0.25" max="5" step="0.01" @bind-Value="Model.Avatar.ZoomY"/>
+                                </div>
+                                    
+                                @if (!string.IsNullOrEmpty(AvatarPreviewUrl) || !string.IsNullOrEmpty(User.ProfilePicturePath)) {
+                                    @if (Model.Avatar.RequestDelete) {
+                                        <button class="button-primary mt-2 w-full" @onclick="MarkAvatarNotDelete">
+                                            Restore
+                                        </button>
+                                    } else {
+                                        <button class="button-danger mt-2 w-full" @onclick="MarkAvatarDelete">
+                                            Delete
+                                        </button>
+                                    }
+                                }
+                            </section>
+                        </CardContent>
+                    </Card>
+                </Dialog>
+            </div>
+        </div>
+
+        <div>
+            <label class="font-semibold">Username</label>
+            <input type="text" readonly value="@User.UserName" class="mt-2 input-field h-11 w-full" disabled>
+        </div>
+
+        <div class="relative">
+            <label class="font-semibold">Display Name</label>
+                            
+            <TooltipContainer ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" ShowTooltip="@(!_editContext.IsValid(_displayNameField))" Id="displayname" class="max-w-[90%]">
+                <Target>
+                    @{
+                        string classes = $"w-full h-11 mt-2 input-field {(_editContext.IsValid(_displayNameField) ? string.Empty : "border-red-700")}";
+                    }
+
+                    <InputText type="text" @bind-Value="Model.DisplayName" placeholder="Display Name" class="@classes" maxlength="32"/>
+                </Target>
+
+                <Tooltip>
+                    <ValidationMessage For="() => Model.DisplayName" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"></ValidationMessage>
+                </Tooltip>
+            </TooltipContainer>
+        </div>
+
+        <div class="relative">
+            <label class="font-semibold">Pronouns</label>
+                            
+            <TooltipContainer ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" ShowTooltip="@(!_editContext.IsValid(_pronounsField))" Id="pronouns" class="max-w-[90%]">
+                <Target>
+                    @{
+                        string classes = $"w-full h-11 mt-2 input-field {(_editContext.IsValid(_pronounsField) ? string.Empty : "border-red-700")}";
+                    }
+
+                    <InputText type="text" @bind-Value="Model.Pronouns" placeholder="Pronouns" class="@classes" maxlength="32"/>
+                </Target>
+
+                <Tooltip>
+                    <ValidationMessage For="() => Model.Pronouns" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"></ValidationMessage>
+                </Tooltip>
+            </TooltipContainer>
+        </div>
+
+        <div class="col-start-1 col-end-2 lg:col-end-3">
+            <label class="font-semibold">About me</label>
+                            
+            <TooltipContainer ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" ShowTooltip="@(!_editContext.IsValid(_bioField))" Id="bio" class="max-w-[90%]">
+                <Target>
+                    @{
+                        string classes = $"w-full h-55 mt-2 input-field {(_editContext.IsValid(_bioField) ? string.Empty : "border-red-700")}";
+                    }
+
+                    <InputTextArea type="text" @bind-Value="Model.Bio" class="@classes" placeholder="Biography"/>
+                </Target>
+
+                <Tooltip>
+                    <ValidationMessage For="() => Model.Bio" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"></ValidationMessage>
+                </Tooltip>
+            </TooltipContainer>
+        </div>
+    </EditForm>
+</div>
+
+<SectionContent SectionName="OutsideContainer">
+    <UnsavedChangesPopup @ref="_unsavedPopup" OnCancelRequest="CancelEdit" OnSaveRequest="SaveProfile"/>
+</SectionContent>
+
+@code {
+    [Parameter, EditorRequired] public required ProfileInputModel Model { get; set; }
+    [Parameter, EditorRequired] public required ApplicationUser User { get; set; }
+    [Parameter, EditorRequired] public required IJSObjectReference PageModule { get; set; }
+
+    [Parameter] public string? AvatarPreviewUrl { get; set; }
+    [Parameter] public EventCallback<string?> AvatarPreviewUrlChanged { get; set; }
+    [Parameter] public Expression<Func<string?>>? AvatarPreviewUrlExpression { get; set; }
+
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+
+    private EditContext _editContext = null!;
+
+    private bool _showAvatarModal;
+
+    private InputFile _avatarInputFile = null!;
+    private Avatar _selectableAvatar = null!;
+
+    private FieldIdentifier _displayNameField, _pronounsField, _bioField, _avatarFileField, _requestDeleteAvatarField;
+    private ValidationMessageStore _validationMessages = null!;
+
+    private UnsavedChangesPopup _unsavedPopup = null!;
+
+    protected override void OnInitialized() {
+        ResetProfileForm();
+    }
+
+    protected override void OnParametersSet() {
+        _displayNameField = FieldIdentifier.Create(() => Model.DisplayName);
+        _pronounsField = FieldIdentifier.Create(() => Model.Pronouns);
+        _bioField = FieldIdentifier.Create(() => Model.Bio);
+        _avatarFileField = FieldIdentifier.Create(() => Model.Avatar.File);
+        _requestDeleteAvatarField = FieldIdentifier.Create(() => Model.Avatar.RequestDelete);
+    }
+
+    private void ResetProfileForm() {
+        _editContext = new(Model);
+        _editContext.OnFieldChanged += (sender, args) => {
+            if (_editContext.IsValid(args.FieldIdentifier)) {
+                _unsavedPopup.ShowPopup();
+            }
+        };
+
+        _validationMessages = new(_editContext);
+        _editContext.OnValidationRequested += ValidationRequested;
+    }
+
+    private void ValidationRequested(object? sender, ValidationRequestedEventArgs args) {
+        _validationMessages.Clear();
+
+        if (Model.Avatar.File is { } avatarFile) {
+            string extension = Path.GetExtension(avatarFile.Name).ToLowerInvariant();
+
+            string[] allowedExtensions = [".jpeg", ".jpg", ".png"];
+
+            if (string.IsNullOrEmpty(extension) || !allowedExtensions.Contains(extension)) {
+                _validationMessages.Add(_avatarFileField, "Invalid file format.");
+            }
+
+            if (avatarFile.Size > ApplicationConstants.UserAvatarMaxSize) {
+                _validationMessages.Add(_avatarFileField, $"Avatar surpassed maximum allowed size of {ApplicationConstants.UserAvatarMaxSize} bytes.");
+            }
+        }
+    }
+
+    private void OpenAvatarModal() {
+        _showAvatarModal = true;
+        StateHasChanged();
+    }
+
+    private void MarkAvatarDelete() {
+        Model.Avatar.RequestDelete = true;
+        _editContext.NotifyFieldChanged(_requestDeleteAvatarField);
+    }
+
+    private void MarkAvatarNotDelete() {
+        Model.Avatar.RequestDelete = false;
+        _editContext.NotifyFieldChanged(_requestDeleteAvatarField);
+    }
+
+    private void CloseAvatarModal() {
+        _showAvatarModal = false;
+    }
+
+    private async Task SaveProfile() {
+        ClaimsPrincipal claimsPrincipal = (await AuthenticationState).User;
+
+        if (!_editContext.Validate()) {
+            return;
+        }
+
+        try {
+            // Copy model properties into user instance
+            User.DisplayName = Model.DisplayName;
+            User.Pronouns = Model.Pronouns;
+            User.Bio = Model.Bio;
+            User.ProfilePictureScaleX = Model.Avatar.ZoomX;
+            User.ProfilePictureScaleY = Model.Avatar.ZoomY;
+
+            // Process Avatar.
+            if (Model.Avatar.File is { } imageFile) {
+                using var srcStream = imageFile.OpenReadStream(ApplicationConstants.UserAvatarMaxSize);
+
+                string databasePath = await ContentService.UploadAvatarAsync(srcStream, User.Id);
+
+                User.ProfilePicturePath = databasePath;
+            } else if (Model.Avatar.RequestDelete && !string.IsNullOrEmpty(User.ProfilePicturePath)) {
+                // User.ProfilePicturePath has form "upload/images/avatar"
+
+                await ContentService.DeleteAvatarAsync(User.Id);
+                User.ProfilePicturePath = null;
+            }
+
+            User.IsProfileSetup = true; // Mark user as profile setup, vibe checked.
+
+            var updateResult = await UserManager.UpdateAsync(User);
+
+            if (!updateResult.Succeeded) {
+                // TODO: Report.
+            }
+
+            // Update claims
+            ClaimsIdentity identity = (ClaimsIdentity)claimsPrincipal.Identity!;
+
+            var existingClaim = identity.FindFirst("ProfileSetup");
+
+            if (existingClaim != null) {
+                identity.RemoveClaim(existingClaim);
+            }
+
+            identity.AddClaim(new("ProfileSetup", bool.TrueString));
+
+            AvatarPreviewUrl = null;
+            Model.Avatar.File = null!;
+        } finally {
+            _unsavedPopup.HidePopup();
+        }
+
+        await AvatarPreviewUrlChanged.InvokeAsync();
+    }
+
+    private async Task CancelEdit() {
+        Model.DisplayName = User.DisplayName;
+        Model.Pronouns = User.Pronouns;
+        Model.Bio = User.Bio;
+        Model.Avatar.ZoomX = User.ProfilePictureScaleX;
+        Model.Avatar.ZoomY = User.ProfilePictureScaleY;
+        Model.Avatar.RequestDelete = false;
+
+        AvatarPreviewUrl = null;
+        await AvatarPreviewUrlChanged.InvokeAsync(null);
+
+        ResetProfileForm();
+    }
+
+    private async Task HandleAvatarChange(InputFileChangeEventArgs args) {
+        if (_avatarInputFile.Element is not { } inputFileElement) {
+            return;
+        }
+
+        Model.Avatar.RequestDelete = false;
+
+        string url = await PageModule.InvokeAsync<string>("previewImage", inputFileElement, _selectableAvatar.ImageElement);
+        Model.Avatar.File = args.File;
+        AvatarPreviewUrl = url;
+
+        _unsavedPopup.ShowPopup();
+        
+        Logger.LogInformation("HandleAvatarChange: {name}.", args.File.Name);
+        
+        await AvatarPreviewUrlChanged.InvokeAsync(url);
+    }
+}
