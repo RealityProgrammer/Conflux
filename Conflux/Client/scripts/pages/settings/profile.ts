@@ -5,13 +5,14 @@
         return null;
     }
     
-    console.log(inputElement);
-    
     const file: File | undefined = inputElement.files?.[0];
     if (!file) return null;
     
     const url = URL.createObjectURL(file);
-    imageElement.addEventListener('load', () => URL.revokeObjectURL(url), { once: true });
+    // imageElement.addEventListener('load', () => {
+    //     URL.revokeObjectURL(url);
+    //     console.log('revokeObjectURL.');
+    // }, { once: true });
     imageElement.src = url;
     
     return url;

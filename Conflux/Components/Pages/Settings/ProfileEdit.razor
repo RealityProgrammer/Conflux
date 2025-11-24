@@ -8,6 +8,7 @@
 
 @using System.Linq.Expressions
 
+@inject IJSRuntime JavascriptRuntime
 @inject UserManager<ApplicationUser> UserManager
 @inject IContentService ContentService
 @inject ILogger<ProfileEdit> Logger
@@ -287,6 +288,7 @@
 
             identity.AddClaim(new("ProfileSetup", bool.TrueString));
 
+            await JavascriptRuntime.InvokeVoidAsync("URL.revokeObjectURL", AvatarPreviewUrl);
             AvatarPreviewUrl = null;
             Model.Avatar.File = null!;
         } finally {
@@ -305,6 +307,8 @@
         Model.Avatar.RequestDelete = false;
 
         AvatarPreviewUrl = null;
+        
+        await JavascriptRuntime.InvokeVoidAsync("URL.revokeObjectURL", AvatarPreviewUrl);
         await AvatarPreviewUrlChanged.InvokeAsync(null);
 
         ResetProfileForm();
@@ -317,13 +321,13 @@
 
         Model.Avatar.RequestDelete = false;
 
+        await JavascriptRuntime.InvokeVoidAsync("URL.revokeObjectURL", AvatarPreviewUrl);
+
         string url = await PageModule.InvokeAsync<string>("previewImage", inputFileElement, _selectableAvatar.ImageElement);
         Model.Avatar.File = args.File;
         AvatarPreviewUrl = url;
 
         _unsavedPopup.ShowPopup();
-        
-        Logger.LogInformation("HandleAvatarChange: {name}.", args.File.Name);
         
         await AvatarPreviewUrlChanged.InvokeAsync(url);
     }
