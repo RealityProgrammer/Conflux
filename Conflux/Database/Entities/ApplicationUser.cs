@@ -22,6 +22,8 @@ public class ApplicationUser : IdentityUser, ICreatedAtColumn {
     
     [MaxLength(255)] public string? BannerPicturePath { get; set; }
     
-    [MaxLength(128)]
-    public string? StatusText { get; set; }
+    [MaxLength(128)] public string? StatusText { get; set; }
+    
+    public ICollection<FriendRequest> SentFriendRequests { get; }
+    public ICollection<FriendRequest> ReceivedFriendRequests { get; }
 }

@@ -9,7 +9,7 @@
 @using Microsoft.EntityFrameworkCore
 @using System.ComponentModel.DataAnnotations
 
-@inject ICurrentUserService CurrentUserService
+@inject IUserService UserService
 @inject ApplicationRedirectManager RedirectManager
 @inject ILogger<ActivityPage> Logger
 @inject ApplicationDbContext ApplicationDatabase
@@ -90,12 +90,14 @@
     [SupplyParameterFromForm(FormName = "Status")] private StatusInputModel? StatusModel { get; set; }
     private EditContext _statusEditContext;
     private FieldIdentifier _statusTextField;
-    
+
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
-            _user = await CurrentUserService.GetCurrentUserAsync();
-
+            var authState = await AuthenticationState;
+            _user = await UserService.GetUserAsync(authState.User);
+            
             if (_user == null) {
                 RedirectManager.To("/").Execute();
                 return;

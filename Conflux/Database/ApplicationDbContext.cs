@@ -7,6 +7,8 @@ using System.Runtime.CompilerServices;
 namespace Conflux.Database;
 
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : IdentityDbContext<ApplicationUser>(options) {
+    public DbSet<FriendRequest> FriendRequests { get; set; } = default!;
+    
     public override int SaveChanges() {
         InsertTimestamps();
         return base.SaveChanges();
@@ -29,6 +31,26 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     protected override void OnModelCreating(ModelBuilder builder) {
         base.OnModelCreating(builder);
+
+        builder.Entity<ApplicationUser>(entity => {
+            entity
+                .HasMany(user => user.SentFriendRequests)
+                .WithOne(request => request.Sender)
+                .HasForeignKey(request => request.SenderId)
+                .HasPrincipalKey(user => user.Id)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            entity
+                .HasMany(user => user.ReceivedFriendRequests)
+                .WithOne(request => request.Receiver)
+                .HasForeignKey(request => request.ReceiverId)
+                .HasPrincipalKey(user => user.Id)
+                .OnDelete(DeleteBehavior.Cascade);
+        }).Entity<FriendRequest>(entity => {
+            entity
+                .HasIndex(request => new { request.SenderId, request.ReceiverId })
+                .IsUnique();
+        });
     }
 
     public override void Dispose() {

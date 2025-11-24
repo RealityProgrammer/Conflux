@@ -13,7 +13,6 @@
 @attribute [Authorize]
 
 @inject IUserService UserService
-@inject ICurrentUserService CurrentUserService
 @inject ApplicationRedirectManager RedirectManager
 @inject UserManager<ApplicationUser> UserManager
 @inject IContentService ContentService
@@ -218,11 +217,11 @@
 
 @code {
     [SupplyParameterFromQuery(Name = "ReturnUrl")] private string? ReturnUrl { get; set; }
-    
-    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; }
+
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
 
     private ApplicationUser? _user;
-    
+
     private bool _showPrompt = true;
     private SetupStage _stage;
 
@@ -248,8 +247,6 @@
             return;
         }
         
-        _user = await CurrentUserService.GetCurrentUserAsync();
-
         AvatarModel ??= new();
         ProfileModel ??= new();
     }
@@ -363,22 +360,15 @@
         _isProcessingProfile = true;
 
         try {
-            // Grab the latest user because some field might have been modified.
             var authState = await AuthenticationState;
-            ApplicationUser? user = await UserManager.GetUserAsync(authState.User);
             
-            if (user == null!) {
-                RedirectManager.To("/").Execute();
-                return;
-            }
-
-            user!.UserName = ProfileModel!.UserName;
-            user.DisplayName = ProfileModel.DisplayName;
-            user.Pronouns = ProfileModel.Pronouns;
-            user.Bio = ProfileModel.Bio;
-            user.IsProfileSetup = true;
+            _user!.UserName = ProfileModel!.UserName;
+            _user.DisplayName = ProfileModel.DisplayName;
+            _user.Pronouns = ProfileModel.Pronouns;
+            _user.Bio = ProfileModel.Bio;
+            _user.IsProfileSetup = true;
             
-            var result = await UserManager.UpdateAsync(user);
+            var result = await UserManager.UpdateAsync(_user);
 
             if (result.Succeeded) {
                 _stage = SetupStage.Complete;

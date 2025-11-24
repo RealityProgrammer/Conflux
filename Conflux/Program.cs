@@ -67,7 +67,6 @@ builder.Services.AddScoped<RoleManager<IdentityRole>>();
 // System services.
 builder.Services.AddScoped<ApplicationRedirectManager>();
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddViteServices();
 builder.Services.AddScoped<MarkdownPipeline>(services => {
     var pipeline = new MarkdownPipelineBuilder()
@@ -125,8 +124,8 @@ app.UseStaticFiles(new StaticFileOptions {
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-app.MapPost("/auth/logout", async (ClaimsPrincipal claims, [FromServices] ICurrentUserService UserService, [FromForm(Name = "ReturnUrl")] string returnUrl) => {
-    await UserService.LogoutAsync();
+app.MapPost("/auth/logout", async (ClaimsPrincipal claims, [FromServices] SignInManager<ApplicationUser> signInManager, [FromForm(Name = "ReturnUrl")] string returnUrl) => {
+    await signInManager.SignOutAsync();
     return TypedResults.LocalRedirect($"~/{returnUrl}");
 });
 
