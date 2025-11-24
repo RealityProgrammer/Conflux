@@ -15,18 +15,25 @@
 @inject ApplicationDbContext ApplicationDatabase
 
 @if (_user == null) {
-    <div class="size-full flex flex-row justify-center items-center">
-        <Spinner class="size-16 fill-white"></Spinner>
+    <div class="p-4 text-white flex flex-col h-full">
+        <header class="flex-none border-b border-b-gray-600 pb-2">
+            <h1 class="text-2xl font-bold">Activity</h1>
+        </header>
+    
+        <div class="flex-1 flex flex-row justify-center items-center">
+            <Spinner class="size-16 fill-white"></Spinner>
+        </div>
     </div>
 
     return;
 }
 
 <div class="p-4 text-white">
-    <h1 class="text-3xl font-bold">Activity</h1>
-    <p class="text-sm text-gray-400">Your activities will be displayed here.</p>
+    <header class="flex-none border-b border-b-gray-600 pb-2">
+        <h1 class="text-2xl font-bold">Activity</h1>
+    </header>
 
-    <section class="mt-2 border-t border-t-gray-600 py-2">
+    <main class="mt-3">
         <h1 class="text-xl font-semibold">Status</h1>
         <p class="text-sm text-gray-400 mb-3">Let others know you are or aren't up for conversation.</p>
         
@@ -80,7 +87,7 @@
                 </CardFooter>
             </Card>
         </Dialog>
-    </section>
+    </main>
 </div>
 
 @code {
