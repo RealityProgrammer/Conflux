@@ -10,6 +10,7 @@ public class FriendRequest : ICreatedAtColumn {
     [Required] public required FriendRequestStatus Status { get; set; }
     
     public DateTime CreatedAt { get; set; }
+    public DateTime ResponseAt { get; set; }
     
     public required ApplicationUser Sender { get; init; }
     public required ApplicationUser Receiver { get; init; }
