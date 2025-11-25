@@ -24,6 +24,8 @@ public class ApplicationUser : IdentityUser, ICreatedAtColumn {
     
     [MaxLength(128)] public string? StatusText { get; set; }
     
-    public ICollection<FriendRequest> SentFriendRequests { get; }
-    public ICollection<FriendRequest> ReceivedFriendRequests { get; }
+    public ICollection<FriendRequest> SentFriendRequests { get; } = new List<FriendRequest>();
+    public ICollection<FriendRequest> ReceivedFriendRequests { get; } = new List<FriendRequest>();
+
+    public ICollection<ApplicationUser> Friends { get; } = new List<ApplicationUser>();
 }

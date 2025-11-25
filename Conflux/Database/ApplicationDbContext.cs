@@ -8,6 +8,7 @@ namespace Conflux.Database;
 
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : IdentityDbContext<ApplicationUser>(options) {
     public DbSet<FriendRequest> FriendRequests { get; set; } = default!;
+    public DbSet<Friendship> Friendships { get; set; } = default!;
     
     public override int SaveChanges() {
         InsertTimestamps();
@@ -46,10 +47,18 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey(request => request.ReceiverId)
                 .HasPrincipalKey(user => user.Id)
                 .OnDelete(DeleteBehavior.Cascade);
-        }).Entity<FriendRequest>(entity => {
+
             entity
-                .HasIndex(request => new { request.SenderId, request.ReceiverId })
-                .IsUnique();
+                .HasMany(user => user.Friends)
+                .WithMany()
+                .UsingEntity<Friendship>(
+                    r => r.HasOne<ApplicationUser>().WithMany().HasForeignKey(nameof(ApplicationUser.Id)),
+                    l => l.HasOne<ApplicationUser>().WithMany().HasForeignKey(nameof(ApplicationUser.Id))
+                );
+        }).Entity<FriendRequest>(entity => {
+            entity.HasKey(request => new { request.SenderId, request.ReceiverId });
+        }).Entity<Friendship>(entity => {
+            entity.HasKey(friendship => new { friendship.UserId, friendship.FriendId });
         });
     }
 
