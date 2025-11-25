@@ -5,117 +5,66 @@
 
 @inject ApplicationDbContext ApplicationDatabase
 
-@if (false) {
-    <div class="p-4 text-white flex flex-col h-full">
-        <header class="flex-none border-b border-b-gray-600 pb-2">
-            <h1 class="text-2xl font-bold">Social</h1>
-        </header>
-
-        <div class="flex-1 flex flex-row justify-center items-center">
-            <Spinner class="size-16 fill-white"></Spinner>
-        </div>
-    </div>
-    
-    return;
-}
-
 <TabContainer @key="this" class="p-4 text-white h-full" ButtonContainerCssClass="border-b border-b-gray-600 pb-2 flex flex-row justify-between" ContentContainerCssClass="mt-3" InitiallyActiveId="friends">
     <Buttons Context="_">
         <h1 class="text-2xl font-bold">Social</h1>
         
         <div class="inline-flex flex-row gap-1">
             <TabButton TabId="friends" class="inline-flex flex-row justify-center items-center px-3 py-1 text-white bg-transparent hover:bg-gray-400/40 active:bg-gray-700/40 rounded-lg cursor-pointer" ActiveCssClass="bg-gray-600/70! cursor-default!">
-                <Person Addition="PersonAddition.Check" class="size-6 fill-white lg:mr-2"/>
+                <Person Addition="PersonAddition.Check" class="size-6 fill-white md:mr-2"/>
                 
-                <span class="hidden lg:block">Friends</span>
+                <span class="hidden md:block">Friends</span>
             </TabButton>
             
             <TabButton TabId="sent_requests" class="inline-flex flex-row items-center px-3 py-1 text-white bg-transparent hover:bg-gray-400/40 active:bg-gray-700/40 rounded-lg cursor-pointer" ActiveCssClass="bg-gray-600/70! cursor-default!">
-                <Person Addition="PersonAddition.Up" class="size-6 fill-white lg:mr-2"/>
+                <Person Addition="PersonAddition.Up" class="size-6 fill-white md:mr-2"/>
                 
-                <span class="hidden lg:block">Sent Requests</span>
+                <span class="hidden md:block">Sent</span>
             </TabButton>
             
             <TabButton TabId="received_requests" class="inline-flex flex-row items-center px-3 py-1 text-white bg-transparent hover:bg-gray-400/40 active:bg-gray-700/40 rounded-lg cursor-pointer" ActiveCssClass="bg-gray-600/70! cursor-default!">
-                <Person Addition="PersonAddition.Down" class="size-6 fill-white lg:mr-2"/>
+                <Person Addition="PersonAddition.Down" class="size-6 fill-white md:mr-2"/>
                 
-                <span class="hidden lg:block">Received Requests</span>
+                <span class="hidden md:block">Received</span>
             </TabButton>
             
             <TabButton TabId="blocked" class="inline-flex flex-row items-center px-3 py-1 text-white bg-transparent hover:bg-gray-400/40 active:bg-gray-700/40 rounded-lg cursor-pointer" ActiveCssClass="bg-gray-600/70! cursor-default!">
-                <Person Addition="PersonAddition.Slash" class="size-6 fill-white lg:mr-2"/>
+                <Person Addition="PersonAddition.Slash" class="size-6 fill-white md:mr-2"/>
                 
-                <span class="hidden lg:block">Blocked Requests</span>
+                <span class="hidden md:block">Blocked</span>
+            </TabButton>
+            
+            <TabButton TabId="add" class="inline-flex flex-row items-center px-3 py-1 text-white bg-transparent hover:bg-gray-400/40 active:bg-gray-700/40 rounded-lg cursor-pointer" ActiveCssClass="bg-gray-600/70! cursor-default!">
+                <Person Addition="PersonAddition.Add" class="size-6 fill-white md:mr-2"/>
+                
+                <span class="hidden md:block">Add</span>
             </TabButton>
         </div>
     </Buttons>
         
     <Contents Context="_">
         <TabContent TabId="friends">
-            Friends
-            
-            <button class="button-primary" @onclick="Test">
-                Button
-            </button>
+            <FriendsTabContent/>
         </TabContent>
         
         <TabContent TabId="sent_requests">
             Sent Requests
-            
-            <button class="button-primary" @onclick="Test">
-                Button
-            </button>
         </TabContent>
         
         <TabContent TabId="received_requests">
             Received Requests
-            
-            <button class="button-primary" @onclick="Test">
-                Button
-            </button>
         </TabContent>
         
         <TabContent TabId="blocked">
             Blocked
-            
-            <button class="button-primary" @onclick="Test">
-                Button
-            </button>
+        </TabContent>
+        
+        <TabContent TabId="add">
+            <AddFriendTabContent/>
         </TabContent>
     </Contents>
 </TabContainer>
 
-@* <div class="p-4 text-white h-full"> *@
-@*     $1$ <header class="border-b border-b-gray-600 pb-2 flex flex-row justify-between"> #1# *@
-@*     $1$     <h1 class="text-2xl font-bold">Social</h1> #1# *@
-@*     $1$      #1# *@
-@*     $1$     <button class="button-primary">Test</button> #1# *@
-@*     $1$ </header> #1# *@
-@*      *@
-@*     <TabContainer> *@
-@*         <Buttons> *@
-@*              *@
-@*         </Buttons> *@
-@*          *@
-@*         <Contents> *@
-@*              *@
-@*         </Contents> *@
-@*     </TabContainer> *@
-@*      *@
-@*     <main> *@
-@*          *@
-@*     </main> *@
-@* </div> *@
-
 @code {
-    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
 
-    protected override async Task OnAfterRenderAsync(bool firstRender) {
-        if (firstRender) {
-            var authState = await AuthenticationState;
-        }
-    }
-
-    private void Test() {
-    }
 }

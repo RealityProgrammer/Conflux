@@ -9,10 +9,6 @@
     if (!file) return null;
     
     const url = URL.createObjectURL(file);
-    // imageElement.addEventListener('load', () => {
-    //     URL.revokeObjectURL(url);
-    //     console.log('revokeObjectURL.');
-    // }, { once: true });
     imageElement.src = url;
     
     return url;
