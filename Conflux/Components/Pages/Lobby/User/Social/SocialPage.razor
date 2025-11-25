@@ -5,7 +5,7 @@
 
 @inject ApplicationDbContext ApplicationDatabase
 
-<TabContainer @key="this" class="p-4 text-white h-full" ButtonContainerCssClass="border-b border-b-gray-600 pb-2 flex flex-row justify-between" ContentContainerCssClass="mt-3" InitiallyActiveId="friends">
+<TabContainer @key="this" class="h-full px-4 py-4 flex flex-col text-white" ButtonContainerCssClass="flex-none border-b border-b-gray-600 pb-2 flex flex-row justify-between" ContentContainerCssClass="min-h-0 flex-1 mt-3" InitiallyActiveId="friends">
     <Buttons Context="_">
         <h1 class="text-2xl font-bold">Social</h1>
         
@@ -43,23 +43,23 @@
     </Buttons>
         
     <Contents Context="_">
-        <TabContent TabId="friends">
+        <TabContent TabId="friends" class="h-full flex flex-col">
             <FriendsTabContent/>
         </TabContent>
         
-        <TabContent TabId="sent_requests">
+        <TabContent TabId="sent_requests" class="h-full flex flex-col">
             Sent Requests
         </TabContent>
         
-        <TabContent TabId="received_requests">
+        <TabContent TabId="received_requests" class="h-full flex flex-col">
             Received Requests
         </TabContent>
         
-        <TabContent TabId="blocked">
+        <TabContent TabId="blocked" class="h-full flex flex-col">
             Blocked
         </TabContent>
         
-        <TabContent TabId="add">
+        <TabContent TabId="add" class="h-full flex flex-col">
             <AddFriendTabContent/>
         </TabContent>
     </Contents>

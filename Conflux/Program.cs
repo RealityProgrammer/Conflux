@@ -161,30 +161,20 @@ async Task CreateRoles(RoleManager<IdentityRole> roleManager) {
 }
 
 async Task CreateFakeUsers(UserManager<ApplicationUser> userManager) {
-    if (!await userManager.Users.AnyAsync(u => u.Email == "test@example.com")) {
-        var result = await userManager.CreateAsync(new ApplicationUser {
-            Email = "test@example.com",
-            UserName = "TestUser",
-            DisplayName = "TestUser",
-            EmailConfirmed = true,
-            IsProfileSetup = true,
-        }, "Password1!");
+    for (int i = 0; i < 200; i++) {
+        string email = $"test{i}@example.com";
         
-        GC.KeepAlive(result);
+        if (!await userManager.Users.AnyAsync(u => userManager.NormalizeEmail(email) == u.NormalizedEmail)) {
+            await userManager.CreateAsync(new() {
+                Email = email,
+                UserName = $"TestUser{i}",
+                DisplayName = $"TestUser{i}",
+                EmailConfirmed = true,
+                IsProfileSetup = true,
+            }, "Password1!");
+        }
     }
-    
-    if (!await userManager.Users.AnyAsync(u => u.Email == "test2@example.com")) {
-        var result = await userManager.CreateAsync(new ApplicationUser {
-            Email = "test2@example.com",
-            UserName = "TestUser 2",
-            DisplayName = "TestUser 2",
-            EmailConfirmed = true,
-            IsProfileSetup = true,
-        }, "Password1!");
-        
-        GC.KeepAlive(result);
-    }
-    
+
     // var fakeUser = new Faker<ApplicationUser>()
     //     .RuleFor(u => u.Id, f => {
     //         UInt128 id = (UInt128)(f.IndexFaker + 1);
