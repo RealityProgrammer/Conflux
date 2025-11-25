@@ -14,7 +14,7 @@ public class UserService(UserManager<ApplicationUser> userManager, RoleManager<I
     }
     
     public Task<bool> IsUserNameTaken(string username) {
-        return DbContext.Users.AnyAsync(user => username.Equals(user.UserName, StringComparison.InvariantCultureIgnoreCase));
+        return DbContext.Users.AnyAsync(user => userManager.NormalizeName(username).Equals(user.NormalizedUserName, StringComparison.InvariantCultureIgnoreCase));
     }
 
     public async Task<bool> IsTwoFactorEnabled(ClaimsPrincipal claimsPrincipal) {
