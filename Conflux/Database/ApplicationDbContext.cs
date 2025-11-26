@@ -38,15 +38,16 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasMany(user => user.SentFriendRequests)
                 .WithOne(request => request.Sender)
                 .HasForeignKey(request => request.SenderId)
-                .HasPrincipalKey(user => user.Id)
-                .OnDelete(DeleteBehavior.Cascade);
-            
-            entity
-                .HasMany(user => user.ReceivedFriendRequests)
-                .WithOne(request => request.Receiver)
-                .HasForeignKey(request => request.ReceiverId)
-                .HasPrincipalKey(user => user.Id)
-                .OnDelete(DeleteBehavior.Cascade);
+                .HasPrincipalKey(u => u.Id)
+                .OnDelete(DeleteBehavior.Cascade)
+                .IsRequired();
+            //
+            // entity
+            //     .HasMany(user => user.ReceivedFriendRequests)
+            //     .WithOne(request => request.Receiver)
+            //     .HasForeignKey(request => request.ReceiverId)
+            //     .OnDelete(DeleteBehavior.Cascade)
+            //     .IsRequired();
 
             entity
                 .HasMany(user => user.Friends)
@@ -57,6 +58,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 );
         }).Entity<FriendRequest>(entity => {
             entity.HasKey(request => new { request.SenderId, request.ReceiverId });
+
+            // entity
+            //     .HasOne(request => request.Sender)
+            //     .WithMany(u => u.SentFriendRequests)
+            //     .HasPrincipalKey(u => u.Id)
+            //     .HasForeignKey(request => request.SenderId)
+            //     .IsRequired()
+            //     .OnDelete(DeleteBehavior.Cascade);
         }).Entity<Friendship>(entity => {
             entity.HasKey(friendship => new { friendship.UserId, friendship.FriendId });
         });

@@ -1,10 +1,17 @@
 ﻿namespace Conflux.Components.Pages.Lobby.User.Social;
 
+public enum FriendStatus {
+    Stranger,
+    Pending,
+    Friend,
+}
+
 public class UserSearchResult {
-    public required string UserName { get; init; }
-    public required string DisplayName { get; init; }
-    public required string? AvatarImagePath { get; init; }
-    public required double AvatarScaleX { get; init; }
-    public required double AvatarScaleY { get; init; }
-    public required bool CanSendFriendRequest { get; init; }
+    public required string Id { get; set; }
+    public required string UserName { get; set; }
+    public required string DisplayName { get; set; }
+    public required string? AvatarImagePath { get; set; }
+    public required double AvatarScaleX { get; set; }
+    public required double AvatarScaleY { get; set; }
+    public FriendStatus FriendStatus { get; set; }
 }

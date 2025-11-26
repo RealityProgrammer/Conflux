@@ -2,8 +2,12 @@
 @using Conflux.Components.Shared
 @using Conflux.Components.Shared.Icons
 @using Conflux.Database
+@using Conflux.Services
+@using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
 
 @inject ApplicationDbContext ApplicationDatabase
+@inject ApplicationRedirectManager RedirectManager
 
 <TabContainer @key="this" class="h-full px-4 py-4 flex flex-col text-white" ButtonContainerCssClass="flex-none border-b border-b-gray-600 pb-2 flex flex-row justify-between" ContentContainerCssClass="min-h-0 flex-1 mt-3" InitiallyActiveId="friends">
     <Buttons Context="_">
@@ -48,7 +52,7 @@
         </TabContent>
         
         <TabContent TabId="sent_requests" class="h-full flex flex-col">
-            Sent Requests
+            <SentFriendRequestTabContent/>
         </TabContent>
         
         <TabContent TabId="received_requests" class="h-full flex flex-col">
@@ -66,5 +70,4 @@
 </TabContainer>
 
 @code {
-
 }

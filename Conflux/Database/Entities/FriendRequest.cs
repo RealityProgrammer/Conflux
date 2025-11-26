@@ -1,6 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace Conflux.Database.Entities;
 
@@ -10,8 +8,8 @@ public class FriendRequest : ICreatedAtColumn {
     [Required] public required FriendRequestStatus Status { get; set; }
     
     public DateTime CreatedAt { get; set; }
-    public DateTime ResponseAt { get; set; }
+    public DateTime? ResponseAt { get; set; }
     
-    public required ApplicationUser Sender { get; init; }
-    public required ApplicationUser Receiver { get; init; }
+    public ApplicationUser Sender { get; set; } = null!;
+    public ApplicationUser Receiver { get; set; } = null!;
 }

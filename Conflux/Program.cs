@@ -67,6 +67,7 @@ builder.Services.AddScoped<RoleManager<IdentityRole>>();
 // System services.
 builder.Services.AddScoped<ApplicationRedirectManager>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IFriendshipService, FriendshipService>();
 builder.Services.AddViteServices();
 builder.Services.AddScoped<MarkdownPipeline>(services => {
     var pipeline = new MarkdownPipelineBuilder()

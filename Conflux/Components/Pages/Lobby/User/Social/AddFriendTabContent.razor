@@ -1,5 +1,4 @@
-﻿@using Conflux.Components.Shared
-@using Conflux.Components.Shared.Icons
+﻿@using Conflux.Components.Shared.Icons
 @using Conflux.Database
 @using Conflux.Database.Entities
 @using Conflux.Helpers
@@ -7,7 +6,6 @@
 @using Microsoft.EntityFrameworkCore
 @using System.Diagnostics
 @using System.Security.Claims
-@using System.Timers
 
 @implements IDisposable
 
@@ -22,26 +20,9 @@
 </div>
 
 <div class="flex-1 overflow-auto mt-2 border border-gray-600 rounded-lg">
-    <Virtualize @ref="_virtualizeContainer" ItemsProvider="LoadProvider" Context="item" OverscanCount="20">
-        <ChildContent>
-            <div class="h-16 px-4 py-1 border-b border-b-gray-600 flex flex-row items-center hover:bg-gray-600/40 group">
-                <Avatar ImageSrc="@item.AvatarImagePath" ImageAlt="@(item.AvatarImagePath != null ? "Avatar" : string.Empty)" ScaleX="item.AvatarScaleX" ScaleY="item.AvatarScaleY" class="flex-none h-12 mr-2"/>
-
-                <div class="flex-1 flex flex-col">
-                    <p class="font-semibold">@item.DisplayName</p>
-                    <p class="text-sm">@item.UserName</p>
-                </div>
-                
-                <div class="flex-none flex-row gap-1 hidden group-hover:flex">
-                    <button class="p-2 rounded-full hover:bg-gray-400/50 cursor-pointer">
-                        <Person Addition="PersonAddition.Plus" class="size-6 fill-white"/>
-                    </button>
-                    
-                    <button class="p-2 rounded-full hover:bg-gray-400/50 cursor-pointer">
-                        <ThreeDots class="size-6 fill-white"/>
-                    </button>
-                </div>
-            </div>
+    <Virtualize @ref="_virtualizeContainer" ItemsProvider="LoadProvider" OverscanCount="3">
+        <ChildContent Context="item">
+            <UserSearchResultElement Item="item" UserId="@_userId"/>
         </ChildContent>
         
         <EmptyContent>
@@ -60,20 +41,19 @@
     // later searches?
     private Debouncer _searchDebouncer = null!;
 
-    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
-    private string _currentUserId;
+    private Virtualize<UserSearchResult> _virtualizeContainer = null!;
 
-    private Virtualize<UserSearchResult> _virtualizeContainer;
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+    private string _userId = null!;
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
             _searchDebouncer = new(Logger, OnDebounceEnd, TimeSpan.FromMilliseconds(250));
 
             var authState = await AuthenticationState;
-
-            _currentUserId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
             
-            Debug.Assert(_currentUserId != null);
+            Debug.Assert(_userId != null);
         }
     }
 
@@ -91,31 +71,36 @@
         // Double roundtrip to the database, but it gets the job done.
         
         if (string.IsNullOrEmpty(_normalizedNameSearch)) {
-            StateHasChanged();
             return new([], 0);
         }
-
+        
+        // TODO: Filter user blocking.
         var query = ApplicationDatabase.Users
-            .Where(u => u.IsProfileSetup && u.Id != _currentUserId && u.NormalizedUserName!.Contains(_normalizedNameSearch))
+            .Where(u => u.IsProfileSetup && u.EmailConfirmed && u.Id != _userId && (u.NormalizedUserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(u.DisplayName, $"%{_normalizedNameSearch}%")))
             .OrderBy(u => u.CreatedAt);
-
+        
         int totalCount = await query.CountAsync();
-
+        
         if (totalCount == 0) return new([], 0);
-
+        
         List<UserSearchResult> results = 
             await query
                 .Skip(request.StartIndex)
                 .Take(request.Count)
-                .Select(u => new UserSearchResult {
-                    AvatarImagePath = u.ProfilePicturePath,
-                    UserName = u.UserName!,
-                    DisplayName = u.DisplayName,
-                    AvatarScaleX = u.ProfilePictureScaleX,
-                    AvatarScaleY = u.ProfilePictureScaleY,
-                    CanSendFriendRequest = true,
-                }).ToListAsync();
-        
+                .Select(user => new UserSearchResult {
+                    Id = user.Id,
+                    AvatarImagePath = user.ProfilePicturePath,
+                    UserName = user.UserName!,
+                    DisplayName = user.DisplayName,
+                    AvatarScaleX = user.ProfilePictureScaleX,
+                    AvatarScaleY = user.ProfilePictureScaleY,
+                    FriendStatus = ApplicationDatabase.FriendRequests
+                        .Where(fr => fr.SenderId == _userId && fr.ReceiverId == user.Id)
+                        .Select(fr => fr.Status == FriendRequestStatus.Accepted ? FriendStatus.Friend : fr.Status == FriendRequestStatus.Pending ? FriendStatus.Pending : FriendStatus.Stranger)
+                        .FirstOrDefault(),
+                })
+                .ToListAsync();
+
         return new(results, totalCount);
     }
 
