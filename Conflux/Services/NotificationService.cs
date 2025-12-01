@@ -13,8 +13,16 @@ public sealed class NotificationService(
     NavigationManager navigationManager,
     IHttpContextAccessor httpContextAccessor
 ) : INotificationService {
+    
+    public const string FriendRequestReceivedMethodName = "Social.ReceivedFriendRequest";
+    public const string FriendRequestRejectedMethodName = "Social.RejectedFriendRequest";
+    public const string FriendRequestCanceledMethodName = "Social.CanceledFriendRequest";
 
     private HubConnection? _hubConnection;
+
+    public event Action<FriendRequestReceivedNotification>? OnFriendRequestReceived;
+    public event Action<FriendRequestRejectedNotification>? OnFriendRequestRejected;
+    public event Action<FriendRequestCanceledNotification>? OnFriendRequestCanceled;
 
     public async Task InitializeConnection(CancellationToken cancellationToken) {
         if (_hubConnection != null) return;
@@ -50,17 +58,37 @@ public sealed class NotificationService(
             .WithAutomaticReconnect()
             .Build();
 
-        _hubConnection.On<string>("ReceiveFriendRequest", senderId => {
-            logger.LogInformation("Received friend request from {id}", senderId);
+        _hubConnection.On<FriendRequestReceivedNotification>(FriendRequestReceivedMethodName, notif => {
+            OnFriendRequestReceived?.Invoke(notif);
+        });
+
+        _hubConnection.On<FriendRequestRejectedNotification>(FriendRequestRejectedMethodName, notif => {
+            OnFriendRequestRejected?.Invoke(notif);
+        });
+
+        _hubConnection.On<FriendRequestCanceledNotification>(FriendRequestCanceledMethodName, notif => {
+            OnFriendRequestCanceled?.Invoke(notif);
         });
         
         await _hubConnection.StartAsync(cancellationToken);
     }
 
-    public async Task NotifyFriendRequestAsync(NotifyFriendRequestModel model) {
-        var user = hubContext.Clients.User(model.ReceiverId);
+    public async Task NotifyFriendRequestReceivedAsync(FriendRequestReceivedNotification notification) {
+        var user = hubContext.Clients.User(notification.ReceiverId);
         
-        await user.SendAsync("ReceiveFriendRequest", model.SenderId);
+        await user.SendAsync("ReceiveFriendRequest", notification);
+    }
+
+    public async Task NotifyFriendRequestCanceledAsync(FriendRequestCanceledNotification notification) {
+        var user = hubContext.Clients.User(notification.ReceiverId);
+        
+        await user.SendAsync("CanceledFriendRequest", notification);
+    }
+
+    public async Task NotifyFriendRequestRejectedAsync(FriendRequestRejectedNotification notification) {
+        var user = hubContext.Clients.User(notification.SenderId);
+
+        await user.SendAsync("RejectedFriendRequest", notification);
     }
 
     public async ValueTask DisposeAsync() {

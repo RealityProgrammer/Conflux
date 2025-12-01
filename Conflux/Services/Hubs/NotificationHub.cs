@@ -20,10 +20,6 @@ public sealed class NotificationHub : Hub {
         return base.OnConnectedAsync();
     }
 
-    public async Task SendFriendRequestNotification(string userId, string receiverId) {
-        await Clients.User(receiverId).SendAsync("ReceiveFriendRequest", userId);
-    }
-
     public override Task OnDisconnectedAsync(Exception? exception) {
         var userId = Context.UserIdentifier;
 
