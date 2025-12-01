@@ -17,10 +17,6 @@
 @inject ApplicationDbContext ApplicationDatabase
 @inject IFriendshipService FriendshipService
 
-<button class="mb-2 button-primary" @onclick="HandleTest">
-    Test
-</button>
-
 <div class="flex-none px-3 outline-none border rounded-lg bg-gray-700/60 border-gray-600 focus-within:ring-2 focus-within:ring-indigo-600 transition duration-300 flex flex-row items-center">
     <Search class="size-4 fill-white flex-none mr-2"/>
 
@@ -134,14 +130,6 @@
                 }
             }
         }
-    }
-
-    private async Task HandleTest() {
-        await FriendshipService.SendFriendRequest("39e4105a-03f7-4c10-b423-34e92ca971ca", "425faf85-4f96-4d03-afbb-90f5f8d6d253");
-        await Task.Delay(1000);
-        await FriendshipService.CancelFriendRequest("39e4105a-03f7-4c10-b423-34e92ca971ca", "425faf85-4f96-4d03-afbb-90f5f8d6d253");
-        await Task.Delay(1000);
-        await FriendshipService.SendFriendRequest("39e4105a-03f7-4c10-b423-34e92ca971ca", "425faf85-4f96-4d03-afbb-90f5f8d6d253");
     }
 
     public void Dispose() {

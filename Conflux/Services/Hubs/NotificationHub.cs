@@ -1,9 +1,10 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.SignalR;
 using System.Collections.Concurrent;
-using System.Security.Claims;
 
 namespace Conflux.Services.Hubs;
 
+[Authorize]
 public sealed class NotificationHub : Hub {
     // Hubs are transient.
     private static readonly ConcurrentDictionary<string, string> _userConnections = [];

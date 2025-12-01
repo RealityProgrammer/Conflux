@@ -57,6 +57,8 @@ public sealed class FriendshipService : IFriendshipService {
         if (request == null) return false;
         
         _database.FriendRequests.Remove(request);
+
+        await _database.SaveChangesAsync();
         
         return true;
     }

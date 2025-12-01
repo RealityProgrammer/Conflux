@@ -1,15 +1,9 @@
-﻿<Router AppAssembly="typeof(Program).Assembly">
+﻿<Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(NotFound)">
     <Found Context="routeData">
         <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
             <Authorizing>
                 Authorizing...
             </Authorizing>
         </AuthorizeRouteView>
-        
-        @* <FocusOnNavigate RouteData="routeData" Selector="h1"/> *@
     </Found>
-    
-    <NotFound>
-        <p>Nothing here, begone!</p>
-    </NotFound>
 </Router>

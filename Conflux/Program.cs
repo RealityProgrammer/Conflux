@@ -142,7 +142,7 @@ app.MapPost("/auth/logout", async (ClaimsPrincipal claims, [FromServices] SignIn
     return TypedResults.LocalRedirect($"~/{returnUrl}");
 });
 
-app.MapHub<NotificationHub>("/lobby/notification");
+app.MapHub<NotificationHub>("/hub/notification");
 
 // Setup Application stuffs.
 using (var scope = app.Services.CreateScope()) {
