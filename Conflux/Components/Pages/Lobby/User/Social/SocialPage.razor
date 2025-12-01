@@ -3,11 +3,16 @@
 @using Conflux.Components.Shared.Icons
 @using Conflux.Database
 @using Conflux.Services
+@using Microsoft.AspNetCore.SignalR.Client
 @using Microsoft.EntityFrameworkCore
 @using System.Security.Claims
 
 @inject ApplicationDbContext ApplicationDatabase
 @inject ApplicationRedirectManager RedirectManager
+@inject NavigationManager NavigationManager
+@inject ILogger<SocialPage> Logger
+
+@implements IAsyncDisposable
 
 <TabContainer @key="this" class="h-full px-4 py-4 flex flex-col text-white" ButtonContainerCssClass="flex-none border-b border-b-gray-600 pb-2 flex flex-row justify-between" ContentContainerCssClass="min-h-0 flex-1 mt-3" InitiallyActiveId="friends">
     <Buttons Context="_">
@@ -70,4 +75,23 @@
 </TabContainer>
 
 @code {
+    private HubConnection? _notificationHub;
+
+    protected override async Task OnInitializedAsync() {
+        _notificationHub = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/lobby/notification"))
+            .Build();
+
+        _notificationHub.On<string>("ReceiveFriendRequest", senderId => {
+            Logger.LogInformation("Received friend request from {src}.", senderId);
+        });
+
+        await _notificationHub.StartAsync();
+    }
+
+    public async ValueTask DisposeAsync() {
+        if (_notificationHub != null) {
+            await _notificationHub.DisposeAsync();
+        }
+    }
 }

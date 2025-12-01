@@ -1,4 +1,3 @@
-using Bogus;
 using Microsoft.EntityFrameworkCore;
 using Conflux.Components;
 using Conflux.Database;
@@ -9,8 +8,9 @@ using Microsoft.AspNetCore.Mvc;
 using Conflux.Database.Entities;
 using Conflux.Services;
 using Conflux.Services.Abstracts;
+using Conflux.Services.Hubs;
 using Markdig;
-using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.FileProviders;
 using System.Security.Claims;
 
@@ -40,9 +40,10 @@ builder.Services.AddAuthorization(options => {
 });
 
 // Add database services.
-builder.Services.AddDbContext<ApplicationDbContext>(options => {
+builder.Services.AddDbContextFactory<ApplicationDbContext>(options => {
     options
-        .UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+        .UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
+        .EnableSensitiveDataLogging();
 });
 
 // More authentication services.
@@ -78,6 +79,15 @@ builder.Services.AddScoped<MarkdownPipeline>(services => {
 });
 builder.Services.AddScoped<ProfileSanitizingService>();
 builder.Services.AddScoped<IContentService, ContentService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+
+// SignalR related services.
+builder.Services.AddSignalR(options => {
+    options.EnableDetailedErrors = true;
+});
+builder.Services.AddResponseCompression(option => {
+    option.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat([ "application/octet-stream" ]);
+});
 
 // Controllers.
 builder.Services.AddControllers();
@@ -89,6 +99,8 @@ builder.Services.AddOpenApi();
 // ...
 
 var app = builder.Build();
+
+app.UseResponseCompression();
 
 app.MapControllers();
 
@@ -129,6 +141,8 @@ app.MapPost("/auth/logout", async (ClaimsPrincipal claims, [FromServices] SignIn
     await signInManager.SignOutAsync();
     return TypedResults.LocalRedirect($"~/{returnUrl}");
 });
+
+app.MapHub<NotificationHub>("/lobby/notification");
 
 // Setup Application stuffs.
 using (var scope = app.Services.CreateScope()) {

@@ -95,7 +95,7 @@
     private bool _openStatusDialog, _isProcessingStatus;
 
     [SupplyParameterFromForm(FormName = "Status")] private StatusInputModel? StatusModel { get; set; }
-    private EditContext _statusEditContext;
+    private EditContext _statusEditContext = null!;
     private FieldIdentifier _statusTextField;
 
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;

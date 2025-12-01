@@ -337,7 +337,7 @@
         if (AvatarPreviewUrl != null) {
             try {
                 await JavascriptRuntime.InvokeVoidAsync("URL.revokeObjectURL", AvatarPreviewUrl);
-            } catch (JSDisconnectedException e) {
+            } catch (JSDisconnectedException) {
             }
         }
     }

@@ -1,9 +1,12 @@
-﻿@using Conflux.Components.Shared.Icons
+﻿@using Conflux.Components.Shared
+@using Conflux.Components.Shared.Icons
 @using Conflux.Database
 @using Conflux.Database.Entities
 @using Conflux.Helpers
+@using Conflux.Services.Abstracts
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
+@using System.Collections.Concurrent
 @using System.Diagnostics
 @using System.Security.Claims
 
@@ -12,6 +15,7 @@
 @inject ILogger<AddFriendTabContent> Logger
 @inject UserManager<ApplicationUser> UserManager
 @inject ApplicationDbContext ApplicationDatabase
+@inject IFriendshipService FriendshipService
 
 <div class="flex-none px-3 outline-none border rounded-lg bg-gray-700/60 border-gray-600 focus-within:ring-2 focus-within:ring-indigo-600 transition duration-300 flex flex-row items-center">
     <Search class="size-4 fill-white flex-none mr-2"/>
@@ -22,7 +26,42 @@
 <div class="flex-1 overflow-auto mt-2 border border-gray-600 rounded-lg">
     <Virtualize @ref="_virtualizeContainer" ItemsProvider="LoadProvider" OverscanCount="3">
         <ChildContent Context="item">
-            <UserSearchResultElement Item="item" UserId="@_userId"/>
+            @* <UserSearchResultElement Item="item" UserId="@_userId"/> *@
+            
+            <div class="h-16 px-4 py-1 border-b border-b-gray-600 flex flex-row items-center hover:bg-gray-600/40 group">
+                <Avatar ImageSrc="@item.AvatarImagePath" ImageAlt="@(item.AvatarImagePath != null ? "Avatar" : string.Empty)" ScaleX="item.AvatarScaleX" ScaleY="item.AvatarScaleY" class="flex-none h-12 mr-2"/>
+            
+                <div class="flex-1 flex flex-col">
+                    <p class="font-semibold">@item.DisplayName</p>
+                    <p class="text-sm">@item.UserName</p>
+                </div>
+            
+                <div class="flex-none flex-row gap-1 hidden group-hover:flex">
+                    @switch (item.FriendStatus) {
+                        case FriendStatus.Friend:
+                            <div class="p-2 rounded-full">
+                                <Person Addition="PersonAddition.Check" class="size-6 fill-red-400"/>
+                            </div>
+                            break;
+            
+                        case FriendStatus.Stranger:
+                            <SpinnerButton IsSpinning="_processingFriendRequests.ContainsKey(item.Id)" class="p-1.5 rounded-full hover:bg-gray-400/50 cursor-pointer" SpinnerCssClass="size-6 fill-white" @onclick="() => HandleFriendRequest(item)">
+                                <Person Addition = "PersonAddition.Add" class ="size-6 fill-white"/>
+                            </SpinnerButton>
+                            break;
+            
+                        case FriendStatus.Pending:
+                            <button class="p-1.5 rounded-full">
+                                <Person Addition="PersonAddition.Dash" class="size-6 fill-red-400"/>
+                            </button>
+                            break;
+                    }
+            
+                    <button class="p-2 rounded-full hover:bg-gray-400/50 cursor-pointer">
+                        <ThreeDots class="size-6 fill-white"/>
+                    </button>
+                </div>
+            </div>
         </ChildContent>
         
         <EmptyContent>
@@ -45,6 +84,8 @@
 
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
     private string _userId = null!;
+
+    private ConcurrentDictionary<string, byte> _processingFriendRequests = [];
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
@@ -102,6 +143,28 @@
                 .ToListAsync();
 
         return new(results, totalCount);
+    }
+    
+    private async Task HandleFriendRequest(UserSearchResult item) {
+        if (_processingFriendRequests.TryAdd(item.Id, 0)) {
+            try {
+                string receiverId = item.Id;
+
+                await Task.Delay(1000);
+
+                if (await FriendshipService.SendFriendRequest(_userId, receiverId)) {
+                    item.FriendStatus = FriendStatus.Pending;
+                } else {
+                    Logger.LogWarning("Failed to send request from user {f} to {r}.", _userId, receiverId);
+                }
+            } finally {
+                _processingFriendRequests.TryRemove(item.Id, out _);
+
+                if (_processingFriendRequests.Count == 0) {
+                    StateHasChanged();
+                }
+            }
+        }
     }
 
     public void Dispose() {

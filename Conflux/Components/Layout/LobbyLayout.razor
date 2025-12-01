@@ -1,7 +1,12 @@
 ﻿@using Conflux.Components.Guards
-@using Conflux.Components.Pages.Lobby
 @using Conflux.Components.Shared.Icons
+@using Microsoft.AspNetCore.SignalR.Client
+
 @inherits LayoutComponentBase
+@layout MainLayout
+
+@inject NavigationManager Navigation
+@inject ILogger<LobbyLayout> Logger
 
 <RedirectToProfileSetup/>
 
@@ -27,7 +32,7 @@
 
 @code {
     private bool _isDrawerExpanded;
-
+    
     private void ToggleDrawer() {
         _isDrawerExpanded ^= true;
     }

@@ -90,7 +90,7 @@
                         </Target>
 
                         <Tooltip>
-                            <ValidationMessage For="() => AvatarModel.File" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"/>
+                            <ValidationMessage For="() => AvatarModel!.File" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"/>
                         </Tooltip>
                     </TooltipContainer>
                 </EditForm>
@@ -226,14 +226,14 @@
     private SetupStage _stage;
 
     [SupplyParameterFromForm(FormName = "Avatar")] private AvatarInputModel? AvatarModel { get; set; }
-    private EditContext _avatarEditContext;
-    private ValidationMessageStore _avatarMessageStore;
+    private EditContext _avatarEditContext = null!;
+    private ValidationMessageStore _avatarMessageStore = null!;
     private bool _processingAvatar;
     private FieldIdentifier _avatarFileField;
 
     [SupplyParameterFromForm(FormName = "Profile")] private ProfileInputModel? ProfileModel { get; set; }
-    private EditContext _profileEditContext;
-    private ValidationMessageStore _profileMessageStore;
+    private EditContext _profileEditContext = null!;
+    private ValidationMessageStore _profileMessageStore = null!;
     private FieldIdentifier _usernameField, _displayNameField, _pronounsField, _bioField;
     private string? _usernameError;
 
