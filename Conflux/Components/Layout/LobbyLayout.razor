@@ -1,12 +1,8 @@
 ﻿@using Conflux.Components.Guards
 @using Conflux.Components.Shared.Icons
-@using Conflux.Services.Abstracts
-@using Microsoft.AspNetCore.SignalR.Client
 
 @inherits LayoutComponentBase
 @layout MainLayout
-
-@inject INotificationService NotificationService
 
 <RedirectToProfileSetup/>
 
@@ -32,10 +28,6 @@
 
 @code {
     private bool _isDrawerExpanded;
-
-    // protected override void OnInitialized() {
-    //     NotificationService.InitializeConnection(CancellationToken.None);
-    // }
 
     private void ToggleDrawer() {
         _isDrawerExpanded ^= true;

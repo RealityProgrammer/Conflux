@@ -1,9 +1,16 @@
 ﻿@using Conflux.Components.Shared
 @using Conflux.Components.Shared.Icons
+@using Conflux.Database
+@using Conflux.Services
+@using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
 
 @inherits LayoutComponentBase
 
 @layout LobbyLayout
+
+@inject ApplicationDbContext ApplicationDatabase
+@inject ApplicationRedirectManager RedirectManager
 
 <main class="flex flex-row size-full overflow-hidden">
     <aside class="col-span-2 bg-gray-700 h-full overflow-hidden text-white flex flex-col border-r border-r-gray-600 flex-none basis-20 lg:basis-64">
@@ -27,14 +34,69 @@
             </NavLink>
         </section>
         
-        <div class="flex-none h-16 border-t border-t-gray-600 p-2">
-            <Avatar class="h-full">
+        @if (string.IsNullOrEmpty(_userDisplayName)) {
+            <div class="flex-none h-16 border-t border-t-gray-600 p-2 flex flex-row justify-center items-center">
+                <Spinner class="size-8 mx-auto fill-white"/>
+            </div>
+        } else {
+            <div class="flex-none h-16 border-t border-t-gray-600 p-2 flex flex-row items-center">
+                <Avatar class="h-full flex-none" ImageSrc="@_avatarSrc" ImageAlt="@(string.IsNullOrEmpty(_avatarSrc) ? string.Empty : "User Avatar")"/>
                 
-            </Avatar>
-        </div>
+                <div class="ml-2 flex flex-col">
+                    <p>@_userDisplayName</p>
+                    <p class="text-xs">@_username</p>
+                </div>
+            </div>
+        }
+
+        @* <div class="flex-none h-16 border-t border-t-gray-600 p-2"> *@
+        @*     @if (string.IsNullOrEmpty(_userDisplayName)) { *@
+        @*          *@
+        @*     } *@
+        @*      *@
+        @*     <Spinner class="size-8 mx-auto fill-white"/> *@
+        @*      *@
+        @*     $1$ <Avatar class="h-full"> #1# *@
+        @*     $1$ #1# *@
+        @*     $1$ </Avatar> #1# *@
+        @* </div> *@
     </aside>
     
     <section class="col-span-10 bg-gray-700 h-full overflow-hidden flex-1">
         @Body
     </section>
 </main>
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+
+    private string _userDisplayName = null!, _username = null!;
+    private string? _avatarSrc;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            var authState = await AuthenticationState;
+            var nameIdentifier = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+            var data = 
+                await ApplicationDatabase.Users
+                    .Where(u => u.Id == nameIdentifier)
+                    .Select(u => new {
+                        DisplayName = u.DisplayName,
+                        UserName = u.UserName,
+                        AvatarSrc = u.ProfilePicturePath,
+                    }).FirstOrDefaultAsync();
+
+            if (data == null) {
+                RedirectManager.To("/").Execute();
+                return;
+            }
+
+            _userDisplayName = data.DisplayName;
+            _username = data.UserName!;
+            _avatarSrc = data.AvatarSrc;
+            
+            StateHasChanged();
+        }
+    }
+}
