@@ -13,21 +13,21 @@
 @inject ApplicationRedirectManager RedirectManager
 
 <main class="flex flex-row size-full overflow-hidden">
-    <aside class="col-span-2 bg-gray-700 h-full overflow-hidden text-white flex flex-col border-r border-r-gray-600 flex-none basis-20 lg:basis-64">
+    <aside class="col-span-2 bg-gray-750 h-full overflow-hidden text-white flex flex-col border-r border-r-gray-600 flex-none basis-20 lg:basis-64">
         <section class="flex-1 flex flex-col p-2 overflow-y-auto">
-            <NavLink href="/lobby/activity" class="flex flex-row justify-center lg:justify-start items-center px-0 lg:px-4 py-2 rounded-lg w-full gap-3 flex-none cursor-pointer hover:bg-gray-500 active:bg-[#303b4c]" ActiveClass="bg-gray-600" Match="NavLinkMatch.Prefix">
+            <NavLink href="/lobby/activity" class="flex flex-row justify-center lg:justify-start items-center px-0 lg:px-4 py-2 rounded-lg w-full gap-3 flex-none cursor-pointer bg-transparent hover:bg-white/15 active:bg-black/15" ActiveClass="bg-white/20" Match="NavLinkMatch.Prefix">
                 <Airplane class="size-6 flex-none fill-white"/>
 
                 <p class="hidden lg:block">Activity</p>
             </NavLink>
             
-            <NavLink href="/lobby/social" class="mt-2 flex flex-row justify-center lg:justify-start items-center pl-0 lg:pl-4 py-2 rounded-lg w-full gap-3 flex-none cursor-pointer hover:bg-gray-500" ActiveClass="bg-gray-600" Match="NavLinkMatch.Prefix">
+            <NavLink href="/lobby/social" class="mt-2 flex flex-row justify-center lg:justify-start items-center pl-0 lg:pl-4 py-2 rounded-lg w-full gap-3 flex-none cursor-pointer bg-transparent hover:bg-white/15 active:bg-black/15" ActiveClass="bg-white/20" Match="NavLinkMatch.Prefix">
                 <People class="size-6 flex-none fill-white"/>
                 
                 <p class="hidden lg:block">Social</p>
             </NavLink>
             
-            <NavLink href="/lobby/messages" class="mt-2 flex flex-row justify-center lg:justify-start items-center pl-0 lg:pl-4 py-2 rounded-lg w-full gap-3 flex-none cursor-pointer hover:bg-gray-500" ActiveClass="bg-gray-600" Match="NavLinkMatch.Prefix">
+            <NavLink href="/lobby/messages" class="mt-2 flex flex-row justify-center lg:justify-start items-center pl-0 lg:pl-4 py-2 rounded-lg w-full gap-3 flex-none cursor-pointer bg-transparent hover:bg-white/15 active:bg-black/15" ActiveClass="bg-white/20" Match="NavLinkMatch.Prefix">
                 <SpeechBubble Content="ChatContent.Text" Filled="false" class="size-6 flex-none fill-white"/>
 
                 <p class="hidden lg:block">Messages</p>
@@ -48,18 +48,6 @@
                 </div>
             </div>
         }
-
-        @* <div class="flex-none h-16 border-t border-t-gray-600 p-2"> *@
-        @*     @if (string.IsNullOrEmpty(_userDisplayName)) { *@
-        @*          *@
-        @*     } *@
-        @*      *@
-        @*     <Spinner class="size-8 mx-auto fill-white"/> *@
-        @*      *@
-        @*     $1$ <Avatar class="h-full"> #1# *@
-        @*     $1$ #1# *@
-        @*     $1$ </Avatar> #1# *@
-        @* </div> *@
     </aside>
     
     <section class="col-span-10 bg-gray-700 h-full overflow-hidden flex-1">

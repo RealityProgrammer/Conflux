@@ -1,0 +1,33 @@
+﻿@using Conflux.Helpers
+@using System.Linq.Expressions
+
+<button class="@_cssClass @(IsProcessing ? ProcessingCssClass : NormalCssClass)" @attributes="AdditionalAttributes">
+    @if (IsProcessing) {
+        @ProcessingContent
+    } else {
+        @ChildContent
+    }
+</button>
+
+@code {
+    [Parameter] public bool IsProcessing { get; set; }
+    [Parameter] public EventCallback<bool> IsProcessingChanged { get; set; }
+    [Parameter] public Expression<Func<bool>>? IsProcessingExpression { get; set; }
+    
+    [Parameter, EditorRequired] public required RenderFragment? ChildContent { get; set; }
+    [Parameter, EditorRequired] public required RenderFragment? ProcessingContent { get; set; }
+    
+    [Parameter] public string? NormalCssClass { get; set; }
+    [Parameter] public string? ProcessingCssClass { get; set; }
+    
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+    private string? _cssClass;
+    
+    protected override void OnParametersSet() {
+        if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
+            _cssClass = Convert.ToString(obj);
+        }
+
+        AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "class").ToDictionary();
+    }
+}

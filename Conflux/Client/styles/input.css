@@ -1,5 +1,9 @@
 ﻿@import "tailwindcss" source("../../Components");
 
+@theme {
+    --color-gray-750: oklch(33% 0.033 257.219);
+}
+
 @layer components {
     @keyframes shimmer-ltr-move {
         0% {

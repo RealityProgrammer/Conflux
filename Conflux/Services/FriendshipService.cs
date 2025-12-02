@@ -94,6 +94,28 @@ public sealed class FriendshipService : IFriendshipService {
             return false;
         }
     }
+    
+    public async Task<bool> AcceptFriendRequest(string senderId, string receiverId) {
+        await using (var database = await _databaseFactory.CreateDbContextAsync()) {
+            database.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+            
+            int numUpdatedRows = await database.FriendRequests
+                .Where(r => r.Status == FriendRequestStatus.Pending && r.SenderId == senderId && r.ReceiverId == receiverId)
+                .ExecuteUpdateAsync(builder => {
+                    builder
+                        .SetProperty(r => r.Status, FriendRequestStatus.Accepted)
+                        .SetProperty(r => r.ResponseAt, DateTime.UtcNow);
+                });
+
+            if (numUpdatedRows > 0) {
+                await _notificationService.NotifyFriendRequestRejectedAsync(new(senderId, receiverId));
+
+                return true;
+            }
+
+            return false;
+        }
+    }
 
     public async Task<Pageable<FriendRequest>> GetOutcomingPendingFriendRequests(string userId, PaginationRequest request) {
         await using (var database = await _databaseFactory.CreateDbContextAsync()) {
@@ -127,7 +149,7 @@ public sealed class FriendshipService : IFriendshipService {
             return new(totalCount, request.Offset, requests);
         }
     }
-    
+
     public async Task<Pageable<FriendRequest>> GetIncomingPendingFriendRequests(string userId, PaginationRequest request) {
         await using (var database = await _databaseFactory.CreateDbContextAsync()) {
             database.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;

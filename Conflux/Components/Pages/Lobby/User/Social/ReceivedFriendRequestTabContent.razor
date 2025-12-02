@@ -35,12 +35,35 @@
                 </div>
                 
                 <div class="flex-none flex-row gap-1 hidden group-hover:flex items-center">
-                    <SpinnerButton IsSpinning="_cancellingRequests.ContainsKey(item)" class="p-1.5 rounded-full hover:bg-gray-400/50 cursor-pointer" @onclick="@(() => HandleRejectFriendRequest(item))" SpinnerCssClass="size-6 fill-white">
-                        <Cross Size="CrossSize.Normal" class="size-6 fill-white"/>
-                    </SpinnerButton>
-                
-                    <button class="p-1.5 rounded-full hover:bg-gray-400/50 cursor-pointer">
-                        <ThreeDots class="size-6 fill-white"/>
+                    @{
+                        // 0: No action
+                        // 1: Accepting
+                        // 2: Cancelling
+                        int executionState = _cancellingRequests.ContainsKey(item) ? 2 : _acceptingRequests.ContainsKey(item) ? 1 : 0;
+                    }
+                    
+                    <ProcessingStateButton IsProcessing="@(executionState == 1)" class="p-1.5 rounded-full group" NormalCssClass="@(executionState == 0 ? "hover:bg-gray-400/50 cursor-pointer" : string.Empty)" disabled="@(executionState is not (0 or 1))" @onclick="@(() => HandleAcceptFriendRequest(item))">
+                        <ChildContent>
+                            <Check Variation="CheckVariation.Normal2" class="size-6 fill-white group-disabled:fill-gray-400"/>
+                        </ChildContent>
+                        
+                        <ProcessingContent>
+                            <Spinner class="size-6 fill-white group-disabled:fill-gray-400"/>
+                        </ProcessingContent>
+                    </ProcessingStateButton>
+                    
+                    <ProcessingStateButton IsProcessing="@(executionState == 2)" class="p-1.5 rounded-full group" NormalCssClass="@(executionState == 0 ? "hover:bg-gray-400/50 cursor-pointer" : string.Empty)" disabled="@(executionState is not (0 or 2))" @onclick="@(() => HandleRejectFriendRequest(item))">
+                        <ChildContent>
+                            <Cross Size="CrossSize.Normal" class="size-6 fill-white group-disabled:fill-gray-400"/>
+                        </ChildContent>
+                        
+                        <ProcessingContent>
+                            <Spinner class="size-6 fill-white group-disabled:fill-gray-400"/>
+                        </ProcessingContent>
+                    </ProcessingStateButton>
+                    
+                    <button class="p-1.5 rounded-full hover:bg-gray-400/50 cursor-pointer group" disabled="@(executionState is not 0)">
+                        <ThreeDots class="size-6 fill-white group-disabled:fill-gray-400"/>
                     </button>
                 </div>
             </div>
@@ -67,7 +90,7 @@
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
     private string _userId = null!;
 
-    private ConcurrentDictionary<FriendRequest, byte> _cancellingRequests = [];
+    private ConcurrentDictionary<FriendRequest, byte> _cancellingRequests = [], _acceptingRequests = [];
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
@@ -110,6 +133,8 @@
 
     private async Task HandleRejectFriendRequest(FriendRequest request) {
         if (_cancellingRequests.TryAdd(request, 0)) {
+            await Task.Delay(2000);
+            
             try {
                 if (!await FriendshipService.RejectFriendRequest(request.SenderId, request.ReceiverId)) {
                     Logger.LogInformation("Failed to reject friend request from user {from} to user {id}.", request.SenderId, request.ReceiverId);
@@ -118,6 +143,25 @@
                 _cancellingRequests.TryRemove(request, out _);
 
                 if (_cancellingRequests.IsEmpty) {
+                    await _virtualizeContainer.RefreshDataAsync();
+                    StateHasChanged();
+                }
+            }
+        }
+    }
+    
+    private async Task HandleAcceptFriendRequest(FriendRequest request) {
+        if (_acceptingRequests.TryAdd(request, 0)) {
+            await Task.Delay(2000);
+            
+            try {
+                if (!await FriendshipService.AcceptFriendRequest(request.SenderId, request.ReceiverId)) {
+                    Logger.LogInformation("Failed to accept friend request from user {from} to user {id}.", request.SenderId, request.ReceiverId);
+                }
+            } finally {
+                _acceptingRequests.TryRemove(request, out _);
+
+                if (_acceptingRequests.IsEmpty) {
                     await _virtualizeContainer.RefreshDataAsync();
                     StateHasChanged();
                 }
@@ -137,6 +181,10 @@
             await _virtualizeContainer.RefreshDataAsync();
             StateHasChanged();
         });
+    }
+
+    private async Task TestProcessingState() {
+        await Task.Delay(2000);
     }
 
     public void Dispose() {

@@ -8,7 +8,6 @@ namespace Conflux.Database;
 
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : IdentityDbContext<ApplicationUser>(options) {
     public DbSet<FriendRequest> FriendRequests { get; set; } = default!;
-    public DbSet<Friendship> Friendships { get; set; } = default!;
     
     public override int SaveChanges() {
         InsertTimestamps();
@@ -41,33 +40,16 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasPrincipalKey(u => u.Id)
                 .OnDelete(DeleteBehavior.Cascade)
                 .IsRequired();
-            //
-            // entity
-            //     .HasMany(user => user.ReceivedFriendRequests)
-            //     .WithOne(request => request.Receiver)
-            //     .HasForeignKey(request => request.ReceiverId)
-            //     .OnDelete(DeleteBehavior.Cascade)
-            //     .IsRequired();
-
+            
             entity
-                .HasMany(user => user.Friends)
-                .WithMany()
-                .UsingEntity<Friendship>(
-                    r => r.HasOne<ApplicationUser>().WithMany().HasForeignKey(nameof(ApplicationUser.Id)),
-                    l => l.HasOne<ApplicationUser>().WithMany().HasForeignKey(nameof(ApplicationUser.Id))
-                );
+                .HasMany(user => user.ReceivedFriendRequests)
+                .WithOne(request => request.Receiver)
+                .HasForeignKey(request => request.ReceiverId)
+                .HasPrincipalKey(u => u.Id)
+                .OnDelete(DeleteBehavior.Cascade)
+                .IsRequired();
         }).Entity<FriendRequest>(entity => {
             entity.HasKey(request => new { request.SenderId, request.ReceiverId });
-
-            // entity
-            //     .HasOne(request => request.Sender)
-            //     .WithMany(u => u.SentFriendRequests)
-            //     .HasPrincipalKey(u => u.Id)
-            //     .HasForeignKey(request => request.SenderId)
-            //     .IsRequired()
-            //     .OnDelete(DeleteBehavior.Cascade);
-        }).Entity<Friendship>(entity => {
-            entity.HasKey(friendship => new { friendship.UserId, friendship.FriendId });
         });
     }
 

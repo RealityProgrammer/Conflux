@@ -150,31 +150,21 @@ namespace Conflux.Database.Migrations
 
                     b.HasIndex("ReceiverId");
 
-                    b.ToTable("FriendRequests");
+                    b.ToTable("FriendRequests", (string)null);
                 });
 
             modelBuilder.Entity("Conflux.Database.Entities.Friendship", b =>
                 {
-                    b.Property<string>("UserId")
-                        .HasColumnType("text");
-
                     b.Property<string>("FriendId")
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<string>("Id")
-                        .IsRequired()
                         .HasColumnType("text");
 
-                    b.HasKey("UserId", "FriendId");
+                    b.Property<string>("UserId")
+                        .HasColumnType("text");
 
-                    b.HasIndex("FriendId");
-
-                    b.HasIndex("Id");
-
-                    b.ToTable("Friendships");
+                    b.ToTable("Friendship");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
