@@ -12,7 +12,7 @@
 @inject IUserService UserService
 @inject ApplicationRedirectManager RedirectManager
 @inject ILogger<ActivityPage> Logger
-@inject ApplicationDbContext ApplicationDatabase
+@inject IDbContextFactory<ApplicationDbContext> DatabaseFactory
 
 @if (_user == null) {
     <div class="p-4 text-white flex flex-col h-full">
@@ -127,14 +127,17 @@
         _isProcessingStatus = true;
 
         try {
-            // This might bite us later.
-            
             _user!.StatusText = StatusModel!.StatusText;
-            await ApplicationDatabase.Users
-                .Where(r => r.Id == _user.Id)
-                .ExecuteUpdateAsync(
-                    b => b.SetProperty(r => r.StatusText, StatusModel.StatusText)
-                );
+
+            await using (var database = await DatabaseFactory.CreateDbContextAsync()) {
+                database.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+                
+                await database.Users
+                    .Where(r => r.Id == _user.Id)
+                    .ExecuteUpdateAsync(b => {
+                        b.SetProperty(r => r.StatusText, StatusModel.StatusText);
+                    });
+            }
 
             _openStatusDialog = false;
         } finally {

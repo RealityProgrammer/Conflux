@@ -9,7 +9,7 @@
 
 @layout LobbyLayout
 
-@inject ApplicationDbContext ApplicationDatabase
+@inject IDbContextFactory<ApplicationDbContext> DatabaseFactory
 @inject ApplicationRedirectManager RedirectManager
 
 <main class="flex flex-row size-full overflow-hidden">
@@ -78,24 +78,27 @@
             var authState = await AuthenticationState;
             var nameIdentifier = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
-            var data = 
-                await ApplicationDatabase.Users
+            await using (var database = await DatabaseFactory.CreateDbContextAsync()) {
+                database.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+                
+                var data = await database.Users
                     .Where(u => u.Id == nameIdentifier)
                     .Select(u => new {
-                        DisplayName = u.DisplayName,
-                        UserName = u.UserName,
+                        u.DisplayName,
+                        u.UserName,
                         AvatarSrc = u.ProfilePicturePath,
                     }).FirstOrDefaultAsync();
 
-            if (data == null) {
-                RedirectManager.To("/").Execute();
-                return;
+                if (data == null) {
+                    RedirectManager.To("/").Execute();
+                    return;
+                }
+
+                _userDisplayName = data.DisplayName;
+                _username = data.UserName!;
+                _avatarSrc = data.AvatarSrc;
             }
 
-            _userDisplayName = data.DisplayName;
-            _username = data.UserName!;
-            _avatarSrc = data.AvatarSrc;
-            
             StateHasChanged();
         }
     }

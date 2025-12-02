@@ -53,6 +53,8 @@ public sealed class FriendshipService : IFriendshipService {
 
     public async Task<bool> CancelFriendRequest(string senderId, string receiverId) {
         await using (var database = await _databaseFactory.CreateDbContextAsync()) {
+            database.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+            
             int numUpdatedRows = await database.FriendRequests
                 .Where(r => r.Status == FriendRequestStatus.Pending && r.SenderId == senderId && r.ReceiverId == receiverId)
                 .ExecuteUpdateAsync(builder => {
@@ -73,6 +75,8 @@ public sealed class FriendshipService : IFriendshipService {
     
     public async Task<bool> RejectFriendRequest(string senderId, string receiverId) {
         await using (var database = await _databaseFactory.CreateDbContextAsync()) {
+            database.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+            
             int numUpdatedRows = await database.FriendRequests
                 .Where(r => r.Status == FriendRequestStatus.Pending && r.SenderId == senderId && r.ReceiverId == receiverId)
                 .ExecuteUpdateAsync(builder => {
@@ -82,7 +86,7 @@ public sealed class FriendshipService : IFriendshipService {
                 });
 
             if (numUpdatedRows > 0) {
-                await _notificationService.NotifyFriendRequestCanceledAsync(new(senderId, receiverId));
+                await _notificationService.NotifyFriendRequestRejectedAsync(new(senderId, receiverId));
 
                 return true;
             }

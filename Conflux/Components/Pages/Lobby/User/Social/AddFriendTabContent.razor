@@ -14,20 +14,12 @@
 
 @inject ILogger<AddFriendTabContent> Logger
 @inject UserManager<ApplicationUser> UserManager
+
+@* TODO: Change to use IDbContextFactory instead? *@
 @inject ApplicationDbContext ApplicationDatabase
 @inject IFriendshipService FriendshipService
 @inject IWebHostEnvironment Environment
 @inject INotificationService NotificationService
-
-<div class="flex flex-row gap-1">
-    <div class="button-primary flex-none" @onclick="TestAdd">
-        Add
-    </div>
-    
-    <div class="button-primary flex-none" @onclick="TestReject">
-        Reject
-    </div>
-</div>
 
 <div class="flex-none px-3 outline-none border rounded-lg bg-gray-700/60 border-gray-600 focus-within:ring-2 focus-within:ring-indigo-600 transition duration-300 flex flex-row items-center">
     <Search class="size-4 fill-white flex-none mr-2"/>
@@ -143,23 +135,22 @@
             return new([], 0);
         }
         
-        List<UserSearchResult> results = 
-            await query
-                .Skip(request.StartIndex)
-                .Take(request.Count)
-                .Select(user => new UserSearchResult {
-                    Id = user.Id,
-                    AvatarImagePath = user.ProfilePicturePath,
-                    UserName = user.UserName!,
-                    DisplayName = user.DisplayName,
-                    AvatarScaleX = user.ProfilePictureScaleX,
-                    AvatarScaleY = user.ProfilePictureScaleY,
-                    FriendStatus = ApplicationDatabase.FriendRequests
-                        .Where(fr => fr.SenderId == _userId && fr.ReceiverId == user.Id)
-                        .Select(fr => fr.Status == FriendRequestStatus.Accepted ? FriendStatus.Friend : fr.Status == FriendRequestStatus.Pending ? FriendStatus.Pending : FriendStatus.Stranger)
-                        .FirstOrDefault(),
-                })
-                .ToListAsync();
+        List<UserSearchResult> results = await query
+            .Skip(request.StartIndex)
+            .Take(request.Count)
+            .Select(user => new UserSearchResult {
+                Id = user.Id,
+                AvatarImagePath = user.ProfilePicturePath,
+                UserName = user.UserName!,
+                DisplayName = user.DisplayName,
+                AvatarScaleX = user.ProfilePictureScaleX,
+                AvatarScaleY = user.ProfilePictureScaleY,
+                FriendStatus = ApplicationDatabase.FriendRequests
+                    .Where(fr => fr.SenderId == _userId && fr.ReceiverId == user.Id)
+                    .Select(fr => fr.Status == FriendRequestStatus.Accepted ? FriendStatus.Friend : fr.Status == FriendRequestStatus.Pending ? FriendStatus.Pending : FriendStatus.Stranger)
+                    .FirstOrDefault(),
+            })
+            .ToListAsync();
 
         return new(results, totalCount);
     }
@@ -174,7 +165,7 @@
                 }
 
                 if (await FriendshipService.SendFriendRequest(_userId, receiverId)) {
-                    // item.FriendStatus = FriendStatus.Pending;
+                    item.FriendStatus = FriendStatus.Pending;
                 } else {
                     Logger.LogWarning("Failed to send friend request from user {f} to {r}.", _userId, receiverId);
                 }
@@ -224,18 +215,6 @@
             await _virtualizeContainer.RefreshDataAsync();
             StateHasChanged();
         });
-    }
-
-    private async Task TestAdd() {
-        var status = await FriendshipService.SendFriendRequest("39e4105a-03f7-4c10-b423-34e92ca971ca", "28ad3f4e-a967-44e6-abf8-409f438f3ac1");
-        
-        GC.KeepAlive(status);
-    }
-    
-    private async Task TestReject() {
-        var status = await FriendshipService.RejectFriendRequest("39e4105a-03f7-4c10-b423-34e92ca971ca", "28ad3f4e-a967-44e6-abf8-409f438f3ac1");
-        
-        GC.KeepAlive(status);
     }
 
     public void Dispose() {

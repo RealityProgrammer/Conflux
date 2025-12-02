@@ -95,7 +95,7 @@
     }
 
     private async ValueTask<ItemsProviderResult<FriendRequest>> LoadProvider(ItemsProviderRequest request) {
-        var result = await FriendshipService.GetOutcomingPendingFriendRequests(_userId, new(query => {
+        var result = await FriendshipService.GetIncomingPendingFriendRequests(_userId, new(query => {
             if (!string.IsNullOrEmpty(_normalizedNameSearch)) {
                 return query.Where(r => r.Sender.UserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(r.Sender.DisplayName, $"%{_normalizedNameSearch}%"));
             }
