@@ -76,19 +76,19 @@ public sealed class NotificationService(
     public async Task NotifyFriendRequestReceivedAsync(FriendRequestReceivedNotification notification) {
         var user = hubContext.Clients.User(notification.ReceiverId);
         
-        await user.SendAsync("ReceiveFriendRequest", notification);
+        await user.SendAsync(FriendRequestReceivedMethodName, notification);
     }
 
     public async Task NotifyFriendRequestCanceledAsync(FriendRequestCanceledNotification notification) {
         var user = hubContext.Clients.User(notification.ReceiverId);
         
-        await user.SendAsync("CanceledFriendRequest", notification);
+        await user.SendAsync(FriendRequestCanceledMethodName, notification);
     }
 
     public async Task NotifyFriendRequestRejectedAsync(FriendRequestRejectedNotification notification) {
         var user = hubContext.Clients.User(notification.SenderId);
 
-        await user.SendAsync("RejectedFriendRequest", notification);
+        await user.SendAsync(FriendRequestRejectedMethodName, notification);
     }
 
     public async ValueTask DisposeAsync() {

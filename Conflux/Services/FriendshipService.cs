@@ -7,12 +7,10 @@ using Microsoft.EntityFrameworkCore;
 namespace Conflux.Services;
 
 public sealed class FriendshipService : IFriendshipService {
-    private readonly UserManager<ApplicationUser> _userManager;
     private readonly ApplicationDbContext _database;
     private readonly INotificationService _notificationService;
 
-    public FriendshipService(UserManager<ApplicationUser> userManager, ApplicationDbContext database, INotificationService notificationService) {
-        _userManager = userManager;
+    public FriendshipService(ApplicationDbContext database, INotificationService notificationService) {
         _database = database;
         _notificationService = notificationService;
     }
@@ -20,24 +18,26 @@ public sealed class FriendshipService : IFriendshipService {
     public async Task<bool> SendFriendRequest(string senderId, string receiverId) {
         if (senderId == receiverId) return false;
 
-        var request = await _database.FriendRequests.FirstOrDefaultAsync(r => r.SenderId == senderId && r.ReceiverId == receiverId);
-        
+        var request = await _database.FriendRequests.AsNoTracking().FirstOrDefaultAsync(r => r.SenderId == senderId && r.ReceiverId == receiverId);
+
         if (request != null) {
-            if (request.Status == FriendRequestStatus.Rejected) {
+            if (request.Status is FriendRequestStatus.Rejected or FriendRequestStatus.Canceled) {
                 request.CreatedAt = DateTime.UtcNow;
                 request.ResponseAt = null;
                 request.Status = FriendRequestStatus.Pending;
-        
+                
                 _database.FriendRequests.Update(request);
                 await _database.SaveChangesAsync();
-        
+                
+                await _notificationService.NotifyFriendRequestReceivedAsync(new(senderId, receiverId));
+
                 return true;
             }
-        
+
             return false;
         }
         
-        await _database.FriendRequests.AddAsync(new() {
+        _database.FriendRequests.Add(new() {
             SenderId = senderId,
             ReceiverId = receiverId,
             Status = FriendRequestStatus.Pending,
@@ -45,20 +45,45 @@ public sealed class FriendshipService : IFriendshipService {
         
         await _database.SaveChangesAsync();
         
-        await _notificationService.NotifyFriendRequestAsync(new(senderId, receiverId));
+        await _notificationService.NotifyFriendRequestReceivedAsync(new(senderId, receiverId));
         
         return true;
     }
 
     public async Task<bool> CancelFriendRequest(string senderId, string receiverId) {
         var request = await _database.FriendRequests
+            .Where(x => x.Status == FriendRequestStatus.Pending)
             .FirstOrDefaultAsync(r => r.SenderId == senderId && r.ReceiverId == receiverId);
+
+        if (request == null) {
+            return false;
+        }
         
-        if (request == null) return false;
-        
-        _database.FriendRequests.Remove(request);
+        request.Status = FriendRequestStatus.Canceled;
+        request.ResponseAt = DateTime.UtcNow;
 
         await _database.SaveChangesAsync();
+
+        await _notificationService.NotifyFriendRequestCanceledAsync(new(senderId, receiverId));
+        
+        return true;
+    }
+    
+    public async Task<bool> RejectFriendRequest(string senderId, string receiverId) {
+        var request = await _database.FriendRequests
+            .Where(x => x.Status == FriendRequestStatus.Pending)
+            .FirstOrDefaultAsync(r => r.SenderId == senderId && r.ReceiverId == receiverId);
+
+        if (request == null) {
+            return false;
+        }
+        
+        request.Status = FriendRequestStatus.Rejected;
+        request.ResponseAt = DateTime.UtcNow;
+        
+        await _database.SaveChangesAsync();
+        
+        await _notificationService.NotifyFriendRequestRejectedAsync(new(senderId, receiverId));
         
         return true;
     }

@@ -127,6 +127,8 @@
         _isProcessingStatus = true;
 
         try {
+            // This might bite us later.
+            
             _user!.StatusText = StatusModel!.StatusText;
             await ApplicationDatabase.Users
                 .Where(r => r.Id == _user.Id)

@@ -16,6 +16,18 @@
 @inject UserManager<ApplicationUser> UserManager
 @inject ApplicationDbContext ApplicationDatabase
 @inject IFriendshipService FriendshipService
+@inject IWebHostEnvironment Environment
+@inject INotificationService NotificationService
+
+<div class="flex flex-row gap-1">
+    <div class="button-primary flex-none" @onclick="TestAdd">
+        Add
+    </div>
+    
+    <div class="button-primary flex-none" @onclick="TestReject">
+        Reject
+    </div>
+</div>
 
 <div class="flex-none px-3 outline-none border rounded-lg bg-gray-700/60 border-gray-600 focus-within:ring-2 focus-within:ring-indigo-600 transition duration-300 flex flex-row items-center">
     <Search class="size-4 fill-white flex-none mr-2"/>
@@ -45,15 +57,15 @@
                             break;
             
                         case FriendStatus.Stranger:
-                            <SpinnerButton IsSpinning="_processingFriendRequests.ContainsKey(item.Id)" class="p-1.5 rounded-full hover:bg-gray-400/50 cursor-pointer" SpinnerCssClass="size-6 fill-white" @onclick="() => HandleFriendRequest(item)">
+                            <SpinnerButton IsSpinning="_processingFriendRequestAdds.ContainsKey(item.Id)" class="p-1.5 rounded-full hover:bg-gray-400/50 cursor-pointer" SpinnerCssClass="size-6 fill-white" @onclick="@(() => HandleFriendRequest(item))">
                                 <Person Addition = "PersonAddition.Add" class ="size-6 fill-white"/>
                             </SpinnerButton>
                             break;
             
                         case FriendStatus.Pending:
-                            <button class="p-1.5 rounded-full">
+                            <SpinnerButton IsSpinning="_processingFriendRequestCancellations.ContainsKey(item.Id)" class="p-1.5 rounded-full hover:bg-gray-400/50 cursor-pointer" SpinnerCssClass="size-6 fill-white" @onclick="@(() => HandleCancelFriendRequest(item))">
                                 <Person Addition="PersonAddition.Dash" class="size-6 fill-red-400"/>
-                            </button>
+                            </SpinnerButton>
                             break;
                     }
             
@@ -85,7 +97,8 @@
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
     private string _userId = null!;
 
-    private ConcurrentDictionary<string, byte> _processingFriendRequests = [];
+    private ConcurrentDictionary<string, byte> _processingFriendRequestAdds = [];
+    private ConcurrentDictionary<string, byte> _processingFriendRequestCancellations = [];
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
@@ -95,6 +108,9 @@
             _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
             
             Debug.Assert(_userId != null);
+
+            NotificationService.OnFriendRequestCanceled += OnFriendRequestCanceledNotification;
+            NotificationService.OnFriendRequestRejected += OnFriendRequestRejectedNotification;
         }
     }
 
@@ -106,14 +122,15 @@
         _normalizedNameSearch = UserManager.NormalizeName(_nameSearch);
 
         await _virtualizeContainer.RefreshDataAsync();
+        StateHasChanged();
     }
 
     private async ValueTask<ItemsProviderResult<UserSearchResult>> LoadProvider(ItemsProviderRequest request) {
-        // Double roundtrip to the database, but it gets the job done.
-        
         if (string.IsNullOrEmpty(_normalizedNameSearch)) {
             return new([], 0);
         }
+        
+        // Double roundtrip to the database, but it gets the job done.
         
         // TODO: Filter user blocking.
         var query = ApplicationDatabase.Users
@@ -121,8 +138,10 @@
             .OrderBy(u => u.CreatedAt);
         
         int totalCount = await query.CountAsync();
-        
-        if (totalCount == 0) return new([], 0);
+
+        if (totalCount == 0) {
+            return new([], 0);
+        }
         
         List<UserSearchResult> results = 
             await query
@@ -146,28 +165,83 @@
     }
     
     private async Task HandleFriendRequest(UserSearchResult item) {
-        if (_processingFriendRequests.TryAdd(item.Id, 0)) {
+        if (_processingFriendRequestAdds.TryAdd(item.Id, 0)) {
             try {
                 string receiverId = item.Id;
 
-                await Task.Delay(1000);
+                if (Environment.IsDevelopment()) {
+                    await Task.Delay(1000);
+                }
 
                 if (await FriendshipService.SendFriendRequest(_userId, receiverId)) {
-                    item.FriendStatus = FriendStatus.Pending;
+                    // item.FriendStatus = FriendStatus.Pending;
                 } else {
-                    Logger.LogWarning("Failed to send request from user {f} to {r}.", _userId, receiverId);
+                    Logger.LogWarning("Failed to send friend request from user {f} to {r}.", _userId, receiverId);
                 }
             } finally {
-                _processingFriendRequests.TryRemove(item.Id, out _);
+                _processingFriendRequestAdds.TryRemove(item.Id, out _);
 
-                if (_processingFriendRequests.Count == 0) {
+                if (_processingFriendRequestAdds.Count == 0) {
                     StateHasChanged();
                 }
             }
         }
     }
 
+    private async Task HandleCancelFriendRequest(UserSearchResult item) {
+        if (_processingFriendRequestCancellations.TryAdd(item.Id, 0)) {
+            try {
+                string receiverId = item.Id;
+
+                if (Environment.IsDevelopment()) {
+                    await Task.Delay(1000);
+                }
+
+                if (await FriendshipService.CancelFriendRequest(_userId, receiverId)) {
+                    item.FriendStatus = FriendStatus.Stranger;
+                } else {
+                    Logger.LogWarning("Failed to cancel friend request from user {f} to {r}.", _userId, receiverId);
+                }
+            } finally {
+                _processingFriendRequestCancellations.TryRemove(item.Id, out _);
+
+                if (_processingFriendRequestCancellations.Count == 0) {
+                    StateHasChanged();
+                }
+            }
+        }
+    }
+    
+    private void OnFriendRequestRejectedNotification(FriendRequestRejectedNotification notification) {
+        InvokeAsync(async () => {
+            await _virtualizeContainer.RefreshDataAsync();
+            StateHasChanged();
+        });
+    }
+
+    private void OnFriendRequestCanceledNotification(FriendRequestCanceledNotification notification) {
+        InvokeAsync(async () => {
+            await _virtualizeContainer.RefreshDataAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task TestAdd() {
+        var status = await FriendshipService.SendFriendRequest("39e4105a-03f7-4c10-b423-34e92ca971ca", "28ad3f4e-a967-44e6-abf8-409f438f3ac1");
+        
+        GC.KeepAlive(status);
+    }
+    
+    private async Task TestReject() {
+        var status = await FriendshipService.RejectFriendRequest("39e4105a-03f7-4c10-b423-34e92ca971ca", "28ad3f4e-a967-44e6-abf8-409f438f3ac1");
+        
+        GC.KeepAlive(status);
+    }
+
     public void Dispose() {
         _searchDebouncer.Dispose();
+        
+        NotificationService.OnFriendRequestCanceled -= OnFriendRequestCanceledNotification;
+        NotificationService.OnFriendRequestRejected -= OnFriendRequestRejectedNotification;
     }
 }

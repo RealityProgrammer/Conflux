@@ -28,15 +28,15 @@
     <Virtualize @ref="_virtualizeContainer" ItemsProvider="LoadProvider" OverscanCount="3">
         <ChildContent Context="item">
             <div class="h-16 px-4 py-1 border-b border-b-gray-600 flex flex-row items-center hover:bg-gray-600/40 group">
-                <Avatar ImageSrc="@item.Receiver!.ProfilePicturePath" ImageAlt="@(item.Receiver!.ProfilePicturePath != null ? "Avatar" : string.Empty)" ScaleX="item.Receiver.ProfilePictureScaleX" ScaleY="item.Receiver.ProfilePictureScaleY" class="flex-none h-12 mr-2"/>
+                <Avatar ImageSrc="@item.Sender.ProfilePicturePath" ImageAlt="@(item.Sender.ProfilePicturePath != null ? "Avatar" : string.Empty)" ScaleX="item.Sender.ProfilePictureScaleX" ScaleY="item.Sender.ProfilePictureScaleY" class="flex-none h-12 mr-2"/>
                 
                 <div class="flex-1 flex flex-col">
-                    <p class="font-semibold">@item.Receiver.DisplayName</p>
-                    <p class="text-sm">@item.Receiver.UserName</p>
+                    <p class="font-semibold">@item.Sender.DisplayName</p>
+                    <p class="text-sm">@item.Sender.UserName</p>
                 </div>
                 
                 <div class="flex-none flex-row gap-1 hidden group-hover:flex items-center">
-                    <SpinnerButton IsSpinning="_cancellingRequests.ContainsKey(item)" class="p-1.5 rounded-full hover:bg-gray-400/50 cursor-pointer" @onclick="@(() => HandleCancelFriendRequest(item))" SpinnerCssClass="size-6 fill-white">
+                    <SpinnerButton IsSpinning="_cancellingRequests.ContainsKey(item)" class="p-1.5 rounded-full hover:bg-gray-400/50 cursor-pointer" @onclick="@(() => HandleRejectFriendRequest(item))" SpinnerCssClass="size-6 fill-white">
                         <Cross Size="CrossSize.Normal" class="size-6 fill-white"/>
                     </SpinnerButton>
                 
@@ -78,8 +78,9 @@
             _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
             
             Debug.Assert(_userId != null);
-            
-            NotificationService.OnFriendRequestRejected += OnFriendRequestRejectedNotification;
+
+            NotificationService.OnFriendRequestReceived += OnFriendRequestReceivedNotification;
+            NotificationService.OnFriendRequestCanceled += OnFriendRequestCanceledNotification;
         }
     }
 
@@ -97,13 +98,14 @@
     private async ValueTask<ItemsProviderResult<FriendRequest>> LoadProvider(ItemsProviderRequest request) {
         var query = ApplicationDatabase.Users
             .Where(u => u.Id == _userId)
-            .SelectMany(x => x.SentFriendRequests)
+            .AsNoTracking()
+            .SelectMany(x => x.ReceivedFriendRequests)
             .Where(x => x.Status == FriendRequestStatus.Pending)
             .AsNoTracking();
         
         if (!string.IsNullOrEmpty(_normalizedNameSearch)) {
             query = query.Where(req => 
-                req.Receiver.UserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(req.Receiver.DisplayName, $"%{_normalizedNameSearch}%"));
+                req.Sender.UserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(req.Sender.DisplayName, $"%{_normalizedNameSearch}%"));
         }
         
         int totalCount = await query.CountAsync();
@@ -116,17 +118,19 @@
             .OrderBy(x => x.CreatedAt)
             .Skip(request.StartIndex)
             .Take(request.Count)
-            .Include(r => r.Receiver)
+            .Include(r => r.Sender)
             .AsNoTracking()
             .ToListAsync();
         
         return new(requests, totalCount);
     }
 
-    private async Task HandleCancelFriendRequest(FriendRequest request) {
+    private async Task HandleRejectFriendRequest(FriendRequest request) {
         if (_cancellingRequests.TryAdd(request, 0)) {
             try {
-                await FriendshipService.CancelFriendRequest(request.SenderId, request.ReceiverId);
+                if (!await FriendshipService.RejectFriendRequest(request.SenderId, request.ReceiverId)) {
+                    Logger.LogInformation("Failed to reject friend request from user {from} to user {id}.", request.SenderId, request.ReceiverId);
+                }
             } finally {
                 _cancellingRequests.TryRemove(request, out _);
 
@@ -137,8 +141,15 @@
             }
         }
     }
+    
+    private void OnFriendRequestReceivedNotification(FriendRequestReceivedNotification notification) {
+        InvokeAsync(async () => {
+            await _virtualizeContainer.RefreshDataAsync();
+            StateHasChanged();
+        });
+    }
 
-    private void OnFriendRequestRejectedNotification(FriendRequestRejectedNotification notification) {
+    private void OnFriendRequestCanceledNotification(FriendRequestCanceledNotification notification) {
         InvokeAsync(async () => {
             await _virtualizeContainer.RefreshDataAsync();
             StateHasChanged();
@@ -147,6 +158,7 @@
 
     public void Dispose() {
         _searchDebouncer.Dispose();
-        NotificationService.OnFriendRequestRejected -= OnFriendRequestRejectedNotification;
+        NotificationService.OnFriendRequestReceived -= OnFriendRequestReceivedNotification;
+        NotificationService.OnFriendRequestCanceled -= OnFriendRequestCanceledNotification;
     }
 }

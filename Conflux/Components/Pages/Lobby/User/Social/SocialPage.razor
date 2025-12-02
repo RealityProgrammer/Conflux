@@ -4,9 +4,6 @@
 @using Conflux.Database
 @using Conflux.Services
 @using Conflux.Services.Abstracts
-@using Microsoft.AspNetCore.SignalR.Client
-@using Microsoft.EntityFrameworkCore
-@using System.Security.Claims
 
 @inject INotificationService NotificationService
 
@@ -57,7 +54,7 @@
         </TabContent>
         
         <TabContent TabId="received_requests" class="h-full flex flex-col">
-            Received Requests
+            <ReceivedFriendRequestTabContent/>
         </TabContent>
         
         <TabContent TabId="blocked" class="h-full flex flex-col">
