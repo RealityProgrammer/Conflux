@@ -14,7 +14,6 @@
 
 @inject ILogger<SentFriendRequestTabContent> Logger
 @inject UserManager<ApplicationUser> UserManager
-@inject ApplicationDbContext ApplicationDatabase
 @inject IFriendshipService FriendshipService
 @inject INotificationService NotificationService
 
@@ -96,33 +95,17 @@
     }
 
     private async ValueTask<ItemsProviderResult<FriendRequest>> LoadProvider(ItemsProviderRequest request) {
-        var query = ApplicationDatabase.Users
-            .Where(u => u.Id == _userId)
-            .AsNoTracking()
-            .SelectMany(x => x.ReceivedFriendRequests)
-            .Where(x => x.Status == FriendRequestStatus.Pending)
-            .AsNoTracking();
-        
-        if (!string.IsNullOrEmpty(_normalizedNameSearch)) {
-            query = query.Where(req => 
-                req.Sender.UserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(req.Sender.DisplayName, $"%{_normalizedNameSearch}%"));
-        }
-        
-        int totalCount = await query.CountAsync();
+        var result = await FriendshipService.GetOutcomingPendingFriendRequests(_userId, new(query => {
+            if (!string.IsNullOrEmpty(_normalizedNameSearch)) {
+                return query.Where(r => r.Sender.UserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(r.Sender.DisplayName, $"%{_normalizedNameSearch}%"));
+            }
 
-        if (totalCount == 0) {
-            return new([], 0);
-        }
-
-        var requests = await query
-            .OrderBy(x => x.CreatedAt)
-            .Skip(request.StartIndex)
-            .Take(request.Count)
-            .Include(r => r.Sender)
-            .AsNoTracking()
-            .ToListAsync();
+            return query;
+        }, null, query => {
+            return query.OrderByDescending(r => r.CreatedAt);
+        }, request.StartIndex, request.Count));
         
-        return new(requests, totalCount);
+        return new(result.Items, result.TotalItemCount);
     }
 
     private async Task HandleRejectFriendRequest(FriendRequest request) {

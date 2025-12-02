@@ -40,11 +40,11 @@ builder.Services.AddAuthorization(options => {
 });
 
 // Add database services.
-builder.Services.AddDbContext<ApplicationDbContext>(options => {
+builder.Services.AddDbContextFactory<ApplicationDbContext>(options => {
     options
         .UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
         .EnableSensitiveDataLogging();
-}, ServiceLifetime.Scoped);
+}, ServiceLifetime.Singleton);
 
 // More authentication services.
 builder.Services
