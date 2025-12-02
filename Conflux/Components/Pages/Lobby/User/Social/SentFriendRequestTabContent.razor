@@ -1,6 +1,5 @@
 ﻿@using Conflux.Components.Shared
 @using Conflux.Components.Shared.Icons
-@using Conflux.Database
 @using Conflux.Database.Entities
 @using Conflux.Helpers
 @using Conflux.Services.Abstracts
@@ -27,7 +26,7 @@
     <Virtualize @ref="_virtualizeContainer" ItemsProvider="LoadProvider" OverscanCount="3">
         <ChildContent Context="item">
             <div class="h-16 px-4 py-1 border-b border-b-gray-600 flex flex-row items-center hover:bg-gray-600/40 group">
-                <Avatar ImageSrc="@item.Receiver!.ProfilePicturePath" ImageAlt="@(item.Receiver!.ProfilePicturePath != null ? "Avatar" : string.Empty)" ScaleX="item.Receiver.ProfilePictureScaleX" ScaleY="item.Receiver.ProfilePictureScaleY" class="flex-none h-12 mr-2"/>
+                <Avatar ImageSrc="@item.Receiver.ProfilePicturePath" ImageAlt="@(item.Receiver.ProfilePicturePath != null ? "Avatar" : string.Empty)" ScaleX="item.Receiver.ProfilePictureScaleX" ScaleY="item.Receiver.ProfilePictureScaleY" class="flex-none h-12 mr-2"/>
                 
                 <div class="flex-1 flex flex-col">
                     <p class="font-semibold">@item.Receiver.DisplayName</p>
@@ -35,11 +34,17 @@
                 </div>
                 
                 <div class="flex-none flex-row gap-1 hidden group-hover:flex items-center">
-                    <SpinnerButton IsSpinning="_cancellingRequests.ContainsKey(item)" class="p-1.5 rounded-full hover:bg-gray-400/50 cursor-pointer" @onclick="@(() => HandleCancelFriendRequest(item))" SpinnerCssClass="size-6 fill-white">
-                        <Cross Size="CrossSize.Normal" class="size-6 fill-white"/>
-                    </SpinnerButton>
+                    <ProcessingStateButton IsProcessing="_cancellingRequests.ContainsKey(item)" class="p-2 rounded-full" NormalCssClass="hover:bg-gray-400/50 cursor-pointer" @onclick="@(() => HandleCancelFriendRequest(item))">
+                        <ChildContent>
+                            <Cross Size="CrossSize.Normal" class="size-6 fill-white"/>
+                        </ChildContent>
+                        
+                        <ProcessingContent>
+                            <Spinner class="size-6 fill-white"/>
+                        </ProcessingContent>
+                    </ProcessingStateButton>
                 
-                    <button class="p-1.5 rounded-full hover:bg-gray-400/50 cursor-pointer">
+                    <button class="p-2 rounded-full hover:bg-gray-400/50 cursor-pointer">
                         <ThreeDots class="size-6 fill-white"/>
                     </button>
                 </div>
@@ -67,7 +72,7 @@
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
     private string _userId = null!;
 
-    private ConcurrentDictionary<FriendRequest, byte> _cancellingRequests = [];
+    private readonly ConcurrentDictionary<FriendRequest, byte> _cancellingRequests = [];
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {

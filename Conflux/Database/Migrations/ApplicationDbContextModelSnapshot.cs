@@ -8,7 +8,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace Conflux.Database.Migrations
+namespace Conflux.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
     partial class ApplicationDbContextModelSnapshot : ModelSnapshot
@@ -29,6 +29,9 @@ namespace Conflux.Database.Migrations
 
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("integer");
+
+                    b.Property<string>("ApplicationUserId")
+                        .HasColumnType("text");
 
                     b.Property<string>("BannerPicturePath")
                         .HasMaxLength(255)
@@ -113,6 +116,8 @@ namespace Conflux.Database.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ApplicationUserId");
+
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
 
@@ -140,31 +145,11 @@ namespace Conflux.Database.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
-                    b.Property<byte[]>("Version")
-                        .IsConcurrencyToken()
-                        .IsRequired()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("bytea");
-
                     b.HasKey("SenderId", "ReceiverId");
 
                     b.HasIndex("ReceiverId");
 
-                    b.ToTable("FriendRequests", (string)null);
-                });
-
-            modelBuilder.Entity("Conflux.Database.Entities.Friendship", b =>
-                {
-                    b.Property<string>("FriendId")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
-
-                    b.Property<string>("UserId")
-                        .HasColumnType("text");
-
-                    b.ToTable("Friendship");
+                    b.ToTable("FriendRequests");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -299,6 +284,13 @@ namespace Conflux.Database.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("Conflux.Database.Entities.ApplicationUser", b =>
+                {
+                    b.HasOne("Conflux.Database.Entities.ApplicationUser", null)
+                        .WithMany("Friends")
+                        .HasForeignKey("ApplicationUserId");
+                });
+
             modelBuilder.Entity("Conflux.Database.Entities.FriendRequest", b =>
                 {
                     b.HasOne("Conflux.Database.Entities.ApplicationUser", "Receiver")
@@ -316,31 +308,6 @@ namespace Conflux.Database.Migrations
                     b.Navigation("Receiver");
 
                     b.Navigation("Sender");
-                });
-
-            modelBuilder.Entity("Conflux.Database.Entities.Friendship", b =>
-                {
-                    b.HasOne("Conflux.Database.Entities.ApplicationUser", "Friend")
-                        .WithMany()
-                        .HasForeignKey("FriendId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Conflux.Database.Entities.ApplicationUser", null)
-                        .WithMany()
-                        .HasForeignKey("Id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Conflux.Database.Entities.ApplicationUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Friend");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -396,6 +363,8 @@ namespace Conflux.Database.Migrations
 
             modelBuilder.Entity("Conflux.Database.Entities.ApplicationUser", b =>
                 {
+                    b.Navigation("Friends");
+
                     b.Navigation("ReceivedFriendRequests");
 
                     b.Navigation("SentFriendRequests");

@@ -41,26 +41,42 @@
                 </div>
             
                 <div class="flex-none flex-row gap-1 hidden group-hover:flex">
+                    @{
+                        FriendRequestProcessingAction action;
+                    }
+                    
                     @switch (item.FriendStatus) {
                         case FriendStatus.Friend:
                             <div class="p-2 rounded-full">
                                 <Person Addition="PersonAddition.Check" class="size-6 fill-red-400"/>
                             </div>
                             break;
-            
+
                         case FriendStatus.Stranger:
-                            <SpinnerButton IsSpinning="_processingFriendRequestAdds.ContainsKey(item.Id)" class="p-1.5 rounded-full hover:bg-gray-400/50 cursor-pointer" SpinnerCssClass="size-6 fill-white" @onclick="@(() => HandleFriendRequest(item))">
-                                <Person Addition = "PersonAddition.Add" class ="size-6 fill-white"/>
-                            </SpinnerButton>
+                            <ProcessingStateButton IsProcessing="@(_processingFriendRequests.TryGetValue(item.Id, out action) && action == FriendRequestProcessingAction.Sending)" class="p-2 rounded-full" NormalCssClass="hover:bg-gray-400/50 cursor-pointer" @onclick="@(() => HandleFriendRequest(item))">
+                                <ChildContent>
+                                    <Person Addition="PersonAddition.Add" class="size-6 fill-white"/>
+                                </ChildContent>
+
+                                <ProcessingContent>
+                                    <Spinner class="size-6 fill-white"/>
+                                </ProcessingContent>
+                            </ProcessingStateButton>
                             break;
-            
+
                         case FriendStatus.Pending:
-                            <SpinnerButton IsSpinning="_processingFriendRequestCancellations.ContainsKey(item.Id)" class="p-1.5 rounded-full hover:bg-gray-400/50 cursor-pointer" SpinnerCssClass="size-6 fill-white" @onclick="@(() => HandleCancelFriendRequest(item))">
-                                <Person Addition="PersonAddition.Dash" class="size-6 fill-red-400"/>
-                            </SpinnerButton>
+                            <ProcessingStateButton IsProcessing="@(_processingFriendRequests.TryGetValue(item.Id, out action) && action == FriendRequestProcessingAction.Cancelling)" class="p-2 rounded-full" NormalCssClass="hover:bg-gray-400/50 cursor-pointer" @onclick="@(() => HandleCancelFriendRequest(item))">
+                                <ChildContent>
+                                    <Person Addition="PersonAddition.Dash" class="size-6 fill-red-400"/>
+                                </ChildContent>
+
+                                <ProcessingContent>
+                                    <Spinner class="size-6 fill-white"/>
+                                </ProcessingContent>
+                            </ProcessingStateButton>
                             break;
                     }
-            
+
                     <button class="p-2 rounded-full hover:bg-gray-400/50 cursor-pointer">
                         <ThreeDots class="size-6 fill-white"/>
                     </button>
@@ -89,8 +105,7 @@
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
     private string _userId = null!;
 
-    private ConcurrentDictionary<string, byte> _processingFriendRequestAdds = [];
-    private ConcurrentDictionary<string, byte> _processingFriendRequestCancellations = [];
+    private ConcurrentDictionary<string, FriendRequestProcessingAction> _processingFriendRequests = [];
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
@@ -156,7 +171,7 @@
     }
     
     private async Task HandleFriendRequest(UserSearchResult item) {
-        if (_processingFriendRequestAdds.TryAdd(item.Id, 0)) {
+        if (_processingFriendRequests.TryAdd(item.Id, FriendRequestProcessingAction.Sending)) {
             try {
                 string receiverId = item.Id;
 
@@ -170,9 +185,9 @@
                     Logger.LogWarning("Failed to send friend request from user {f} to {r}.", _userId, receiverId);
                 }
             } finally {
-                _processingFriendRequestAdds.TryRemove(item.Id, out _);
+                _processingFriendRequests.TryRemove(item.Id, out _);
 
-                if (_processingFriendRequestAdds.Count == 0) {
+                if (_processingFriendRequests.IsEmpty) {
                     StateHasChanged();
                 }
             }
@@ -180,7 +195,7 @@
     }
 
     private async Task HandleCancelFriendRequest(UserSearchResult item) {
-        if (_processingFriendRequestCancellations.TryAdd(item.Id, 0)) {
+        if (_processingFriendRequests.TryAdd(item.Id, FriendRequestProcessingAction.Cancelling)) {
             try {
                 string receiverId = item.Id;
 
@@ -194,9 +209,9 @@
                     Logger.LogWarning("Failed to cancel friend request from user {f} to {r}.", _userId, receiverId);
                 }
             } finally {
-                _processingFriendRequestCancellations.TryRemove(item.Id, out _);
+                _processingFriendRequests.TryRemove(item.Id, out _);
 
-                if (_processingFriendRequestCancellations.Count == 0) {
+                if (_processingFriendRequests.IsEmpty) {
                     StateHasChanged();
                 }
             }
@@ -222,5 +237,10 @@
         
         NotificationService.OnFriendRequestCanceled -= OnFriendRequestCanceledNotification;
         NotificationService.OnFriendRequestRejected -= OnFriendRequestRejectedNotification;
+    }
+
+    private enum FriendRequestProcessingAction {
+        Sending,
+        Cancelling,
     }
 }

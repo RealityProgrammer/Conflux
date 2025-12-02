@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Conflux.Database.Entities;
 
@@ -13,6 +12,4 @@ public class FriendRequest : ICreatedAtColumn {
     
     public ApplicationUser Sender { get; set; } = null!;
     public ApplicationUser Receiver { get; set; } = null!;
-
-    [Timestamp] public byte[] Version { get; set; } = null!;
 }

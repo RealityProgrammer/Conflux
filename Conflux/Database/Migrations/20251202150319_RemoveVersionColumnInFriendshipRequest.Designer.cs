@@ -9,18 +9,18 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace Conflux.Database.Migrations
+namespace Conflux.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251126081421_AlterFriendRequestNullableResponseTime")]
-    partial class AlterFriendRequestNullableResponseTime
+    [Migration("20251202150319_RemoveVersionColumnInFriendshipRequest")]
+    partial class RemoveVersionColumnInFriendshipRequest
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.11")
+                .HasAnnotation("ProductVersion", "10.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -32,6 +32,9 @@ namespace Conflux.Database.Migrations
 
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("integer");
+
+                    b.Property<string>("ApplicationUserId")
+                        .HasColumnType("text");
 
                     b.Property<string>("BannerPicturePath")
                         .HasMaxLength(255)
@@ -115,6 +118,8 @@ namespace Conflux.Database.Migrations
                         .HasColumnType("character varying(256)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ApplicationUserId");
 
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
@@ -282,6 +287,13 @@ namespace Conflux.Database.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("Conflux.Database.Entities.ApplicationUser", b =>
+                {
+                    b.HasOne("Conflux.Database.Entities.ApplicationUser", null)
+                        .WithMany("Friends")
+                        .HasForeignKey("ApplicationUserId");
+                });
+
             modelBuilder.Entity("Conflux.Database.Entities.FriendRequest", b =>
                 {
                     b.HasOne("Conflux.Database.Entities.ApplicationUser", "Receiver")
@@ -300,7 +312,7 @@ namespace Conflux.Database.Migrations
 
                     b.Navigation("Sender");
                 });
-            
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -354,6 +366,8 @@ namespace Conflux.Database.Migrations
 
             modelBuilder.Entity("Conflux.Database.Entities.ApplicationUser", b =>
                 {
+                    b.Navigation("Friends");
+
                     b.Navigation("ReceivedFriendRequests");
 
                     b.Navigation("SentFriendRequests");
