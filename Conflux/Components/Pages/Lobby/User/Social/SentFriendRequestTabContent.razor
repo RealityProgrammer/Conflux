@@ -128,18 +128,6 @@
             
             return new(requests, totalCount);
         }
-        
-        // var result = await FriendshipService.GetOutcomingPendingFriendRequests(_userId, new(query => {
-        //     if (!string.IsNullOrEmpty(_normalizedNameSearch)) {
-        //         return query.Where(req => req.Receiver.UserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(req.Receiver.DisplayName, $"%{_normalizedNameSearch}%"));
-        //     }
-        //
-        //     return query;
-        // }, null, query => {
-        //     return query.OrderByDescending(r => r.CreatedAt);
-        // }, request.StartIndex, request.Count));
-        //
-        // return new(result.Items, result.TotalItemCount);
     }
 
     private async Task HandleCancelFriendRequest(FriendRequest request) {
