@@ -115,6 +115,7 @@
 
             NotificationService.OnFriendRequestCanceled += OnFriendRequestCanceledNotification;
             NotificationService.OnFriendRequestRejected += OnFriendRequestRejectedNotification;
+            NotificationService.OnFriendRequestAccepted += OnFriendRequestAcceptedNotification;
         }
     }
 
@@ -220,12 +221,20 @@
             StateHasChanged();
         });
     }
+    
+    private void OnFriendRequestAcceptedNotification(FriendRequestAcceptedNotification notification) {
+        InvokeAsync(async () => {
+            await _virtualizeContainer.RefreshDataAsync();
+            StateHasChanged();
+        });
+    }
 
     public void Dispose() {
         _searchDebouncer.Dispose();
         
         NotificationService.OnFriendRequestCanceled -= OnFriendRequestCanceledNotification;
         NotificationService.OnFriendRequestRejected -= OnFriendRequestRejectedNotification;
+        NotificationService.OnFriendRequestAccepted -= OnFriendRequestAcceptedNotification;
     }
 
     private enum FriendRequestProcessingAction {
