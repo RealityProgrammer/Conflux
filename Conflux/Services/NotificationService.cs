@@ -25,7 +25,7 @@ public sealed class NotificationService(
     public event Action<FriendRequestReceivedNotification>? OnFriendRequestReceived;
     public event Action<FriendRequestRejectedNotification>? OnFriendRequestRejected;
     public event Action<FriendRequestCanceledNotification>? OnFriendRequestCanceled;
-    public event Action<FriendRequestCanceledNotification>? OnFriendRequestAccepted;
+    public event Action<FriendRequestAcceptedNotification>? OnFriendRequestAccepted;
 
     public async Task InitializeConnection(CancellationToken cancellationToken) {
         if (_hubConnection != null) return;
@@ -82,7 +82,7 @@ public sealed class NotificationService(
             OnFriendRequestCanceled?.Invoke(notif);
         });
         
-        _hubConnection.On<FriendRequestCanceledNotification>(FriendRequestAcceptedMethodName, notif => {
+        _hubConnection.On<FriendRequestAcceptedNotification>(FriendRequestAcceptedMethodName, notif => {
             OnFriendRequestAccepted?.Invoke(notif);
         });
         
@@ -107,7 +107,7 @@ public sealed class NotificationService(
         return user.SendAsync(FriendRequestRejectedMethodName, notification);
     }
     
-    public Task NotifyFriendRequestAcceptedAsync(FriendRequestRejectedNotification notification) {
+    public Task NotifyFriendRequestAcceptedAsync(FriendRequestAcceptedNotification notification) {
         Task senderSendTask = hubContext.Clients.User(notification.SenderId).SendAsync(FriendRequestAcceptedMethodName, notification);
         Task receiverSendTask = hubContext.Clients.User(notification.ReceiverId).SendAsync(FriendRequestAcceptedMethodName, notification);
         

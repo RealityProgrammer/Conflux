@@ -1,4 +1,115 @@
-﻿<p>Friends</p>
+﻿@using Conflux.Components.Shared
+@using Conflux.Components.Shared.Icons
+@using Conflux.Database
+@using Conflux.Database.Entities
+@using Conflux.Helpers
+@using Conflux.Services.Abstracts
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@using System.Collections.Concurrent
+@using System.Diagnostics
+@using System.Security.Claims
+
+@implements IDisposable
+
+@inject ILogger<AddFriendTabContent> Logger
+@inject UserManager<ApplicationUser> UserManager
+@inject IFriendshipService FriendshipService
+@inject INotificationService NotificationService
+
+<div class="flex-none px-3 outline-none border rounded-lg bg-gray-700/60 border-gray-600 focus-within:ring-2 focus-within:ring-indigo-600 transition duration-300 flex flex-row items-center">
+    <Search class="size-4 fill-white flex-none mr-2"/>
+
+    <input type="text" class="flex-1 outline-none border-none w-full h-11 focus:outline-none" @bind="_nameSearch" @bind:after="HandleSearchDebouncing" maxlength="32">
+</div>
+
+<div class="flex-1 overflow-auto mt-2 border border-gray-600 rounded-lg">
+    <Virtualize @ref="_virtualizeContainer" ItemsProvider="LoadProvider" OverscanCount="3">
+        <ChildContent Context="item">
+            <div class="h-16 px-4 py-1 border-b border-b-gray-600 flex flex-row items-center hover:bg-gray-600/40 group">
+                <Avatar ImageSrc="@item.AvatarImagePath" ImageAlt="@(item.AvatarImagePath != null ? "Avatar" : string.Empty)" ScaleX="item.AvatarScaleX" ScaleY="item.AvatarScaleY" class="flex-none h-12 mr-2"/>
+            
+                <div class="flex-1 flex flex-col">
+                    <p class="font-semibold">@item.DisplayName</p>
+                    <p class="text-sm">@item.UserName</p>
+                </div>
+            
+                <div class="flex-none flex-row gap-1 hidden group-hover:flex">
+                    
+
+                    <button class="p-2 rounded-full hover:bg-gray-400/50 cursor-pointer">
+                        <ThreeDots class="size-6 fill-white"/>
+                    </button>
+                </div>
+            </div>
+        </ChildContent>
+        
+        <EmptyContent>
+            <div class="flex flex-row justify-center items-center h-full">
+                <p class="text-gray-400">Empty...</p>
+            </div>
+        </EmptyContent>
+    </Virtualize>
+</div>
 
 @code {
+    private string _nameSearch = string.Empty;
+    private string _normalizedNameSearch = string.Empty;
+
+    // TODO: First search always have to wait before result display, can we skip that and only wait on
+    // later searches?
+    private Debouncer _searchDebouncer = null!;
+
+    private Virtualize<UserSearchResult> _virtualizeContainer = null!;
+
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+    private string _userId = null!;
+
+    private ConcurrentDictionary<string, FriendRequestProcessingAction> _processingFriendRequests = [];
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            _searchDebouncer = new(Logger, OnDebounceEnd, TimeSpan.FromMilliseconds(250));
+
+            var authState = await AuthenticationState;
+            _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            
+            Debug.Assert(_userId != null);
+
+            NotificationService.OnFriendRequestAccepted += OnFriendRequestAcceptedNotification;
+        }
+    }
+
+    private async Task HandleSearchDebouncing() {
+        await _searchDebouncer.Start();
+    }
+
+    private async Task OnDebounceEnd(CancellationToken token) {
+        _normalizedNameSearch = UserManager.NormalizeName(_nameSearch);
+
+        await _virtualizeContainer.RefreshDataAsync();
+        StateHasChanged();
+    }
+
+    private async ValueTask<ItemsProviderResult<UserSearchResult>> LoadProvider(ItemsProviderRequest request) {
+        return new([], 0);
+    }
+    
+    private void OnFriendRequestAcceptedNotification(FriendRequestAcceptedNotification notification) {
+        InvokeAsync(async () => {
+            await _virtualizeContainer.RefreshDataAsync();
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose() {
+        _searchDebouncer.Dispose();
+        
+        NotificationService.OnFriendRequestAccepted -= OnFriendRequestAcceptedNotification;
+    }
+
+    private enum FriendRequestProcessingAction {
+        Sending,
+        Cancelling,
+    }
 }

@@ -118,7 +118,7 @@ public sealed class FriendshipService : IFriendshipService {
         }
     }
 
-    public async Task<Pageable<FriendRequest>> GetOutcomingPendingFriendRequests(string userId, PaginationRequest request) {
+    public async Task<Pageable<FriendRequest>> GetOutcomingPendingFriendRequests(string userId, QueryRequest request) {
         await using (var database = await _databaseFactory.CreateDbContextAsync()) {
             database.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
@@ -151,7 +151,7 @@ public sealed class FriendshipService : IFriendshipService {
         }
     }
 
-    public async Task<Pageable<FriendRequest>> GetIncomingPendingFriendRequests(string userId, PaginationRequest request) {
+    public async Task<Pageable<FriendRequest>> GetIncomingPendingFriendRequests(string userId, QueryRequest request) {
         await using (var database = await _databaseFactory.CreateDbContextAsync()) {
             database.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
