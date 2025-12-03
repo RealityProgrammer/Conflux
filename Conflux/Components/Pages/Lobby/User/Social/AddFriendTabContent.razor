@@ -18,7 +18,6 @@
 @* TODO: Change to use IDbContextFactory instead? *@
 @inject ApplicationDbContext ApplicationDatabase
 @inject IFriendshipService FriendshipService
-@inject IWebHostEnvironment Environment
 @inject INotificationService NotificationService
 
 <div class="flex-none px-3 outline-none border rounded-lg bg-gray-700/60 border-gray-600 focus-within:ring-2 focus-within:ring-indigo-600 transition duration-300 flex flex-row items-center">
@@ -137,8 +136,6 @@
             return new([], 0);
         }
         
-        // Double roundtrip to the database, but it gets the job done.
-        
         // TODO: Filter user blocking.
         var query = ApplicationDatabase.Users
             .Where(u => u.IsProfileSetup && u.EmailConfirmed && u.Id != _userId && (u.NormalizedUserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(u.DisplayName, $"%{_normalizedNameSearch}%")))
@@ -175,10 +172,6 @@
             try {
                 string receiverId = item.Id;
 
-                if (Environment.IsDevelopment()) {
-                    await Task.Delay(1000);
-                }
-
                 if (await FriendshipService.SendFriendRequest(_userId, receiverId)) {
                     item.FriendStatus = FriendStatus.Pending;
                 } else {
@@ -198,10 +191,6 @@
         if (_processingFriendRequests.TryAdd(item.Id, FriendRequestProcessingAction.Cancelling)) {
             try {
                 string receiverId = item.Id;
-
-                if (Environment.IsDevelopment()) {
-                    await Task.Delay(1000);
-                }
 
                 if (await FriendshipService.CancelFriendRequest(_userId, receiverId)) {
                     item.FriendStatus = FriendStatus.Stranger;

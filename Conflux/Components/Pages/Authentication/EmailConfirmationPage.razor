@@ -2,7 +2,6 @@
 @using Microsoft.AspNetCore.WebUtilities
 @using Conflux.Components.Shared
 @using Conflux.Components.Shared.Icons
-@using Conflux.Database
 @using Conflux.Database.Entities
 @using Conflux.Services
 @using System.Text
@@ -69,8 +68,6 @@
             RedirectManager.To("/").Execute();
             return;
         }
-        
-        await Task.Delay(1500);
         
         var code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(Code));
         var result = await UserManager.ConfirmEmailAsync(_user, code);

@@ -1,9 +1,7 @@
 ﻿@page "/auth/register"
 
 @using Microsoft.AspNetCore.Identity
-@using Microsoft.AspNetCore.Identity.EntityFrameworkCore
 @using Conflux.Components.Shared
-@using Conflux.Database
 @using System.ComponentModel.DataAnnotations
 @using Conflux.Components.Shared.Icons
 @using Conflux.Database.Entities
@@ -245,11 +243,6 @@
             return;
         }
         
-        // TODO: Remove this once we got more work to do.
-        if (Environment.IsDevelopment()) {
-            await Task.Delay(1500);
-        }
-
         Model = new(); // Clear out form fields
         RedirectManager.To("/auth/login").WithCookie("Application.RegisterResult", JsonSerializer.Serialize(new {
             Status = "Success",

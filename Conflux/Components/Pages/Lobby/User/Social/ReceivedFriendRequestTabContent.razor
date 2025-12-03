@@ -130,8 +130,6 @@
 
     private async Task HandleRejectFriendRequest(FriendRequest request) {
         if (_processingRequests.TryAdd(request, FriendRequestProcessingAction.Rejecting)) {
-            await Task.Delay(2000);
-            
             try {
                 if (!await FriendshipService.RejectFriendRequest(request.SenderId, request.ReceiverId)) {
                     Logger.LogInformation("Failed to reject friend request from user {from} to user {id}.", request.SenderId, request.ReceiverId);
@@ -149,8 +147,6 @@
     
     private async Task HandleAcceptFriendRequest(FriendRequest request) {
         if (_processingRequests.TryAdd(request, FriendRequestProcessingAction.Accepting)) {
-            await Task.Delay(2000);
-            
             try {
                 if (!await FriendshipService.AcceptFriendRequest(request.SenderId, request.ReceiverId)) {
                     Logger.LogInformation("Failed to accept friend request from user {from} to user {id}.", request.SenderId, request.ReceiverId);
@@ -178,10 +174,6 @@
             await _virtualizeContainer.RefreshDataAsync();
             StateHasChanged();
         });
-    }
-
-    private async Task TestProcessingState() {
-        await Task.Delay(2000);
     }
 
     public void Dispose() {
