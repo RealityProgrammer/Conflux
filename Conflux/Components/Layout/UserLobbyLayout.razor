@@ -9,7 +9,7 @@
 
 @layout LobbyLayout
 
-@inject IDbContextFactory<ApplicationDbContext> DatabaseFactory
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject ApplicationRedirectManager RedirectManager
 
 <main class="flex flex-row size-full overflow-hidden">
@@ -70,7 +70,7 @@
             var authState = await AuthenticationState;
             var nameIdentifier = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
-            await using (var database = await DatabaseFactory.CreateDbContextAsync()) {
+            await using (var database = await DbContextFactory.CreateDbContextAsync()) {
                 database.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
                 
                 var data = await database.Users

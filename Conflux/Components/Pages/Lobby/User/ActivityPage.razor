@@ -12,7 +12,7 @@
 @inject IUserService UserService
 @inject ApplicationRedirectManager RedirectManager
 @inject ILogger<ActivityPage> Logger
-@inject IDbContextFactory<ApplicationDbContext> DatabaseFactory
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 
 @if (_user == null) {
     <div class="p-4 text-white flex flex-col h-full">
@@ -129,7 +129,7 @@
         try {
             _user!.StatusText = StatusModel!.StatusText;
 
-            await using (var database = await DatabaseFactory.CreateDbContextAsync()) {
+            await using (var database = await DbContextFactory.CreateDbContextAsync()) {
                 database.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
                 
                 await database.Users

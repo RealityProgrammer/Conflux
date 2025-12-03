@@ -14,7 +14,7 @@
 
 @inject ILogger<AddFriendTabContent> Logger
 @inject UserManager<ApplicationUser> UserManager
-@inject IDbContextFactory<ApplicationDbContext> DatabaseFactory
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject IFriendshipService FriendshipService
 @inject INotificationService NotificationService
 
@@ -157,7 +157,7 @@
         }
         
         // TODO: Filter blocked users.
-        await using (var database = await DatabaseFactory.CreateDbContextAsync()) {
+        await using (var database = await DbContextFactory.CreateDbContextAsync()) {
             var query = database.Users
                 .Where(u => u.IsProfileSetup && u.EmailConfirmed && u.Id != _userId && (u.NormalizedUserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(u.DisplayName, $"%{_normalizedNameSearch}%")))
                 .OrderBy(u => u.CreatedAt);
@@ -339,5 +339,22 @@
         Cancelling,
         Rejecting,
         Accepting,
+    }
+    
+    public enum FriendStatus {
+        Stranger,
+        OutcomingPending,
+        IncomingPending,
+        Friend,
+    }
+
+    public sealed class UserSearchResult {
+        public required string Id { get; set; }
+        public required string UserName { get; set; }
+        public required string DisplayName { get; set; }
+        public required string? AvatarImagePath { get; set; }
+        public required double AvatarScaleX { get; set; }
+        public required double AvatarScaleY { get; set; }
+        public FriendStatus FriendStatus { get; set; }
     }
 }

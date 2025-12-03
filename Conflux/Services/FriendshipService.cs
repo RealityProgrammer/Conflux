@@ -8,12 +8,12 @@ using System.Diagnostics;
 namespace Conflux.Services;
 
 public sealed partial class FriendshipService : IFriendshipService {
-    private readonly IDbContextFactory<ApplicationDbContext> _databaseFactory;
+    private readonly IDbContextFactory<ApplicationDbContext> _DbContextFactory;
     private readonly INotificationService _notificationService;
     private readonly ILogger<FriendshipService> _logger;
 
-    public FriendshipService(IDbContextFactory<ApplicationDbContext> databaseFactory, INotificationService notificationService, ILogger<FriendshipService> logger) {
-        _databaseFactory = databaseFactory;
+    public FriendshipService(IDbContextFactory<ApplicationDbContext> DbContextFactory, INotificationService notificationService, ILogger<FriendshipService> logger) {
+        _DbContextFactory = DbContextFactory;
         _notificationService = notificationService;
         _logger = logger;
     }
@@ -23,7 +23,7 @@ public sealed partial class FriendshipService : IFriendshipService {
             return IFriendshipService.SendingStatus.Failed;
         }
 
-        await using (var database = await _databaseFactory.CreateDbContextAsync()) {
+        await using (var database = await _DbContextFactory.CreateDbContextAsync()) {
             var request = await database.FriendRequests
                 .AsNoTracking().FirstOrDefaultAsync(r => (r.SenderId == senderId && r.ReceiverId == receiverId) || (r.SenderId == receiverId && r.ReceiverId == senderId));
 
@@ -87,7 +87,7 @@ public sealed partial class FriendshipService : IFriendshipService {
     }
 
     public async Task<bool> CancelFriendRequest(string senderId, string receiverId) {
-        await using (var database = await _databaseFactory.CreateDbContextAsync()) {
+        await using (var database = await _DbContextFactory.CreateDbContextAsync()) {
             database.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
             
             int numUpdatedRows = await database.FriendRequests
@@ -109,7 +109,7 @@ public sealed partial class FriendshipService : IFriendshipService {
     }
     
     public async Task<bool> RejectFriendRequest(string senderId, string receiverId) {
-        await using (var database = await _databaseFactory.CreateDbContextAsync()) {
+        await using (var database = await _DbContextFactory.CreateDbContextAsync()) {
             database.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
             
             int numUpdatedRows = await database.FriendRequests
@@ -131,7 +131,7 @@ public sealed partial class FriendshipService : IFriendshipService {
     }
     
     public async Task<bool> AcceptFriendRequest(string senderId, string receiverId) {
-        await using (var database = await _databaseFactory.CreateDbContextAsync()) {
+        await using (var database = await _DbContextFactory.CreateDbContextAsync()) {
             database.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
             
             int numUpdatedRows = await database.FriendRequests
@@ -149,72 +149,6 @@ public sealed partial class FriendshipService : IFriendshipService {
             }
 
             return false;
-        }
-    }
-
-    public async Task<Pageable<FriendRequest>> GetOutcomingPendingFriendRequests(string userId, QueryRequest request) {
-        await using (var database = await _databaseFactory.CreateDbContextAsync()) {
-            database.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-
-            IQueryable<FriendRequest> query = database.Users
-                .Where(u => u.Id == userId)
-                .SelectMany(x => x.SentFriendRequests)
-                .Where(x => x.Status == FriendRequestStatus.Pending)
-                .Include(r => r.Receiver);
-
-            if (request.Includes is { } includes) {
-                query = includes(query);
-            }
-            
-            if (request.Filter is { } filter) {
-                query = filter(query);
-            }
-
-            int totalCount = await query.CountAsync();
-
-            if (totalCount == 0) {
-                return new(0, 0, []);
-            }
-
-            var requests = await request.Order(query)
-                .Skip(request.Offset)
-                .Take(request.Count)
-                .ToListAsync();
-
-            return new(totalCount, request.Offset, requests);
-        }
-    }
-
-    public async Task<Pageable<FriendRequest>> GetIncomingPendingFriendRequests(string userId, QueryRequest request) {
-        await using (var database = await _databaseFactory.CreateDbContextAsync()) {
-            database.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-
-            IQueryable<FriendRequest> query = database.Users
-                .Where(u => u.Id == userId)
-                .SelectMany(x => x.ReceivedFriendRequests)
-                .Where(x => x.Status == FriendRequestStatus.Pending)
-                .Include(r => r.Sender);
-
-            if (request.Includes is { } includes) {
-                query = includes(query);
-            }
-            
-            if (request.Filter is { } filter) {
-                query = filter(query);
-            }
-
-            int totalCount = await query.CountAsync();
-
-            if (totalCount == 0) {
-                return new(0, 0, []);
-            }
-
-            var requests = await request.Order(query)
-                .Skip(request.Offset)
-                .Take(request.Count)
-                .ToListAsync();
-
-            return new(totalCount, request.Offset, requests);
         }
     }
     

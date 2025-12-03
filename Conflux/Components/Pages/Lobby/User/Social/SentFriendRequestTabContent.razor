@@ -1,5 +1,6 @@
 ﻿@using Conflux.Components.Shared
 @using Conflux.Components.Shared.Icons
+@using Conflux.Database
 @using Conflux.Database.Entities
 @using Conflux.Helpers
 @using Conflux.Services.Abstracts
@@ -15,6 +16,7 @@
 @inject UserManager<ApplicationUser> UserManager
 @inject IFriendshipService FriendshipService
 @inject INotificationService NotificationService
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 
 <div class="flex-none px-3 outline-none border rounded-lg bg-gray-700/60 border-gray-600 focus-within:ring-2 focus-within:ring-indigo-600 transition duration-300 flex flex-row items-center">
     <Search class="size-4 fill-white flex-none mr-2"/>
@@ -100,17 +102,44 @@
     }
 
     private async ValueTask<ItemsProviderResult<FriendRequest>> LoadProvider(ItemsProviderRequest request) {
-        var result = await FriendshipService.GetOutcomingPendingFriendRequests(_userId, new(query => {
+        await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
+            IQueryable<FriendRequest> query = dbContext.FriendRequests
+                .Where(x => x.Status == FriendRequestStatus.Pending && x.SenderId == _userId)
+                .Include(r => r.Receiver);
+
             if (!string.IsNullOrEmpty(_normalizedNameSearch)) {
-                return query.Where(req => req.Receiver.UserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(req.Receiver.DisplayName, $"%{_normalizedNameSearch}%"));
+                query = query
+                    .Where(r => 
+                        r.Receiver.UserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(r.Receiver.DisplayName, $"%{_normalizedNameSearch}%")
+                    );
+            }
+            
+            int totalCount = await query.CountAsync();
+
+            if (totalCount == 0) {
+                return new([], 0);
             }
 
-            return query;
-        }, null, query => {
-            return query.OrderByDescending(r => r.CreatedAt);
-        }, request.StartIndex, request.Count));
+            var requests = await query
+                .OrderByDescending(r => r.CreatedAt)
+                .Skip(request.StartIndex)
+                .Take(request.Count)
+                .ToListAsync();
+            
+            return new(requests, totalCount);
+        }
         
-        return new(result.Items, result.TotalItemCount);
+        // var result = await FriendshipService.GetOutcomingPendingFriendRequests(_userId, new(query => {
+        //     if (!string.IsNullOrEmpty(_normalizedNameSearch)) {
+        //         return query.Where(req => req.Receiver.UserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(req.Receiver.DisplayName, $"%{_normalizedNameSearch}%"));
+        //     }
+        //
+        //     return query;
+        // }, null, query => {
+        //     return query.OrderByDescending(r => r.CreatedAt);
+        // }, request.StartIndex, request.Count));
+        //
+        // return new(result.Items, result.TotalItemCount);
     }
 
     private async Task HandleCancelFriendRequest(FriendRequest request) {
@@ -143,7 +172,7 @@
     }
 
     public void Dispose() {
-        _searchDebouncer.Dispose();
+        _searchDebouncer?.Dispose();
         NotificationService.OnFriendRequestRejected -= OnFriendRequestRejectedNotification;
         NotificationService.OnFriendRequestAccepted -= OnFriendRequestAcceptedNotification;
     }

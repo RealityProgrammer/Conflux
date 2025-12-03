@@ -8,9 +8,6 @@ public interface IFriendshipService {
     Task<bool> RejectFriendRequest(string senderId, string receiverId);
     Task<bool> AcceptFriendRequest(string senderId, string receiverId);
 
-    Task<Pageable<FriendRequest>> GetOutcomingPendingFriendRequests(string userId, QueryRequest request);
-    Task<Pageable<FriendRequest>> GetIncomingPendingFriendRequests(string userId, QueryRequest request);
-
     public enum SendingStatus {
         Success,
         IncomingPending,

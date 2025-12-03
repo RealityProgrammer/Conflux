@@ -60,12 +60,10 @@
     // later searches?
     private Debouncer _searchDebouncer = null!;
 
-    private Virtualize<UserSearchResult> _virtualizeContainer = null!;
+    private Virtualize<FriendSearchResult> _virtualizeContainer = null!;
 
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
     private string _userId = null!;
-
-    private ConcurrentDictionary<string, FriendRequestProcessingAction> _processingFriendRequests = [];
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
@@ -91,7 +89,13 @@
         StateHasChanged();
     }
 
-    private async ValueTask<ItemsProviderResult<UserSearchResult>> LoadProvider(ItemsProviderRequest request) {
+    private async ValueTask<ItemsProviderResult<FriendSearchResult>> LoadProvider(ItemsProviderRequest request) {
+        // var result = await FriendshipService.GetFriends(_userId, new(null, null, query => {
+        //     return query.OrderByDescending(r => r.ResponseAt);
+        // }, request.StartIndex, request.Count));
+        //
+        // return new(result.Items, result.TotalItemCount);
+
         return new([], 0);
     }
     
@@ -108,8 +112,12 @@
         NotificationService.OnFriendRequestAccepted -= OnFriendRequestAcceptedNotification;
     }
 
-    private enum FriendRequestProcessingAction {
-        Sending,
-        Cancelling,
+    private sealed class FriendSearchResult {
+        public required string Id { get; set; }
+        public required string UserName { get; set; }
+        public required string DisplayName { get; set; }
+        public required string? AvatarImagePath { get; set; }
+        public required double AvatarScaleX { get; set; }
+        public required double AvatarScaleY { get; set; }
     }
 }
