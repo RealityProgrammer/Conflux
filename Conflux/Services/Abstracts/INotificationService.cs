@@ -10,10 +10,12 @@ public interface INotificationService : IAsyncDisposable {
     event Action<FriendRequestReceivedNotification>? OnFriendRequestReceived;
     event Action<FriendRequestRejectedNotification>? OnFriendRequestRejected;
     event Action<FriendRequestCanceledNotification>? OnFriendRequestCanceled;
+    event Action<FriendRequestCanceledNotification>? OnFriendRequestAccepted;
     
     Task InitializeConnection(CancellationToken cancellationToken);
     
     Task NotifyFriendRequestReceivedAsync(FriendRequestReceivedNotification notification);
     Task NotifyFriendRequestCanceledAsync(FriendRequestCanceledNotification notification);
     Task NotifyFriendRequestRejectedAsync(FriendRequestRejectedNotification notification);
+    Task NotifyFriendRequestAcceptedAsync(FriendRequestRejectedNotification notification);
 }

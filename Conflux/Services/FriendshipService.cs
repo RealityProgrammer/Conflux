@@ -100,15 +100,16 @@ public sealed class FriendshipService : IFriendshipService {
             database.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
             
             int numUpdatedRows = await database.FriendRequests
-                .Where(r => r.Status == FriendRequestStatus.Pending && r.SenderId == senderId && r.ReceiverId == receiverId)
+                .Where(r => r.Status == FriendRequestStatus.Pending && ((r.SenderId == senderId && r.ReceiverId == receiverId) || (r.SenderId == receiverId && r.ReceiverId == senderId)))
                 .ExecuteUpdateAsync(builder => {
                     builder
                         .SetProperty(r => r.Status, FriendRequestStatus.Accepted)
                         .SetProperty(r => r.ResponseAt, DateTime.UtcNow);
                 });
+            
 
             if (numUpdatedRows > 0) {
-                await _notificationService.NotifyFriendRequestRejectedAsync(new(senderId, receiverId));
+                await _notificationService.NotifyFriendRequestAcceptedAsync(new(senderId, receiverId));
 
                 return true;
             }

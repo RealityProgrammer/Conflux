@@ -8,6 +8,7 @@ using System.Net;
 namespace Conflux.Services;
 
 public sealed class NotificationService(
+    IWebHostEnvironment environment,
     ILogger<NotificationService> logger,
     IHubContext<NotificationHub> hubContext,
     NavigationManager navigationManager,
@@ -17,12 +18,14 @@ public sealed class NotificationService(
     public const string FriendRequestReceivedMethodName = "Social.ReceivedFriendRequest";
     public const string FriendRequestRejectedMethodName = "Social.RejectedFriendRequest";
     public const string FriendRequestCanceledMethodName = "Social.CanceledFriendRequest";
+    public const string FriendRequestAcceptedMethodName = "Social.AcceptedFriendRequest";
 
     private HubConnection? _hubConnection;
 
     public event Action<FriendRequestReceivedNotification>? OnFriendRequestReceived;
     public event Action<FriendRequestRejectedNotification>? OnFriendRequestRejected;
     public event Action<FriendRequestCanceledNotification>? OnFriendRequestCanceled;
+    public event Action<FriendRequestCanceledNotification>? OnFriendRequestAccepted;
 
     public async Task InitializeConnection(CancellationToken cancellationToken) {
         if (_hubConnection != null) return;
@@ -56,6 +59,15 @@ public sealed class NotificationService(
                 };
             })
             .WithAutomaticReconnect()
+            .ConfigureLogging(logging => {
+                if (environment.IsDevelopment()) {
+                    logging.AddConsole();
+                    
+                    logging.SetMinimumLevel(LogLevel.Information);
+                    logging.AddFilter("Microsoft.AspNetCore.SignalR", LogLevel.Debug);
+                    logging.AddFilter("Microsoft.AspNetCore.Http.Connections", LogLevel.Debug);
+                }
+            })
             .Build();
 
         _hubConnection.On<FriendRequestReceivedNotification>(FriendRequestReceivedMethodName, notif => {
@@ -70,25 +82,36 @@ public sealed class NotificationService(
             OnFriendRequestCanceled?.Invoke(notif);
         });
         
+        _hubConnection.On<FriendRequestCanceledNotification>(FriendRequestAcceptedMethodName, notif => {
+            OnFriendRequestAccepted?.Invoke(notif);
+        });
+        
         await _hubConnection.StartAsync(cancellationToken);
     }
 
-    public async Task NotifyFriendRequestReceivedAsync(FriendRequestReceivedNotification notification) {
+    public Task NotifyFriendRequestReceivedAsync(FriendRequestReceivedNotification notification) {
         var user = hubContext.Clients.User(notification.ReceiverId);
         
-        await user.SendAsync(FriendRequestReceivedMethodName, notification);
+        return user.SendAsync(FriendRequestReceivedMethodName, notification);
     }
 
-    public async Task NotifyFriendRequestCanceledAsync(FriendRequestCanceledNotification notification) {
+    public Task NotifyFriendRequestCanceledAsync(FriendRequestCanceledNotification notification) {
         var user = hubContext.Clients.User(notification.ReceiverId);
         
-        await user.SendAsync(FriendRequestCanceledMethodName, notification);
+        return user.SendAsync(FriendRequestCanceledMethodName, notification);
     }
 
-    public async Task NotifyFriendRequestRejectedAsync(FriendRequestRejectedNotification notification) {
+    public Task NotifyFriendRequestRejectedAsync(FriendRequestRejectedNotification notification) {
         var user = hubContext.Clients.User(notification.SenderId);
 
-        await user.SendAsync(FriendRequestRejectedMethodName, notification);
+        return user.SendAsync(FriendRequestRejectedMethodName, notification);
+    }
+    
+    public Task NotifyFriendRequestAcceptedAsync(FriendRequestRejectedNotification notification) {
+        Task senderSendTask = hubContext.Clients.User(notification.SenderId).SendAsync(FriendRequestAcceptedMethodName, notification);
+        Task receiverSendTask = hubContext.Clients.User(notification.ReceiverId).SendAsync(FriendRequestAcceptedMethodName, notification);
+        
+        return Task.WhenAll(senderSendTask, receiverSendTask);
     }
 
     public async ValueTask DisposeAsync() {
