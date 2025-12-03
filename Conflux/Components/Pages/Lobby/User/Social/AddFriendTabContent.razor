@@ -14,9 +14,7 @@
 
 @inject ILogger<AddFriendTabContent> Logger
 @inject UserManager<ApplicationUser> UserManager
-
-@* TODO: Change to use IDbContextFactory instead? *@
-@inject ApplicationDbContext ApplicationDatabase
+@inject IDbContextFactory<ApplicationDbContext> DatabaseFactory
 @inject IFriendshipService FriendshipService
 @inject INotificationService NotificationService
 
@@ -136,35 +134,37 @@
             return new([], 0);
         }
         
-        // TODO: Filter user blocking.
-        var query = ApplicationDatabase.Users
-            .Where(u => u.IsProfileSetup && u.EmailConfirmed && u.Id != _userId && (u.NormalizedUserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(u.DisplayName, $"%{_normalizedNameSearch}%")))
-            .OrderBy(u => u.CreatedAt);
-        
-        int totalCount = await query.CountAsync();
+        // TODO: Filter blocked users.
+        await using (var database = await DatabaseFactory.CreateDbContextAsync()) {
+            var query = database.Users
+                .Where(u => u.IsProfileSetup && u.EmailConfirmed && u.Id != _userId && (u.NormalizedUserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(u.DisplayName, $"%{_normalizedNameSearch}%")))
+                .OrderBy(u => u.CreatedAt);
 
-        if (totalCount == 0) {
-            return new([], 0);
+            int totalCount = await query.CountAsync();
+
+            if (totalCount == 0) {
+                return new([], 0);
+            }
+
+            List<UserSearchResult> results = await query
+                .Skip(request.StartIndex)
+                .Take(request.Count)
+                .Select(user => new UserSearchResult {
+                    Id = user.Id,
+                    AvatarImagePath = user.ProfilePicturePath,
+                    UserName = user.UserName!,
+                    DisplayName = user.DisplayName,
+                    AvatarScaleX = user.ProfilePictureScaleX,
+                    AvatarScaleY = user.ProfilePictureScaleY,
+                    FriendStatus = user.SentFriendRequests
+                        .Where(fr => fr.SenderId == _userId && fr.ReceiverId == user.Id)
+                        .Select(fr => fr.Status == FriendRequestStatus.Accepted ? FriendStatus.Friend : fr.Status == FriendRequestStatus.Pending ? FriendStatus.Pending : FriendStatus.Stranger)
+                        .FirstOrDefault(),
+                })
+                .ToListAsync();
+
+            return new(results, totalCount);
         }
-        
-        List<UserSearchResult> results = await query
-            .Skip(request.StartIndex)
-            .Take(request.Count)
-            .Select(user => new UserSearchResult {
-                Id = user.Id,
-                AvatarImagePath = user.ProfilePicturePath,
-                UserName = user.UserName!,
-                DisplayName = user.DisplayName,
-                AvatarScaleX = user.ProfilePictureScaleX,
-                AvatarScaleY = user.ProfilePictureScaleY,
-                FriendStatus = ApplicationDatabase.FriendRequests
-                    .Where(fr => fr.SenderId == _userId && fr.ReceiverId == user.Id)
-                    .Select(fr => fr.Status == FriendRequestStatus.Accepted ? FriendStatus.Friend : fr.Status == FriendRequestStatus.Pending ? FriendStatus.Pending : FriendStatus.Stranger)
-                    .FirstOrDefault(),
-            })
-            .ToListAsync();
-
-        return new(results, totalCount);
     }
     
     private async Task HandleFriendRequest(UserSearchResult item) {
