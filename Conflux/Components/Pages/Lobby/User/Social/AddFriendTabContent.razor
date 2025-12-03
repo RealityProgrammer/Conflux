@@ -41,14 +41,8 @@
                     }
                     
                     @switch (item.FriendStatus) {
-                        case FriendStatus.Friend:
-                            <div class="p-2 rounded-full">
-                                <Person Addition="PersonAddition.Check" class="size-6 fill-red-400"/>
-                            </div>
-                            break;
-
                         case FriendStatus.Stranger:
-                            <ProcessingStateButton IsProcessing="@(_processingFriendRequests.TryGetValue(item.Id, out action) && action == FriendRequestProcessingAction.Sending)" class="p-2 rounded-full" NormalCssClass="hover:bg-gray-400/50 cursor-pointer" @onclick="@(() => HandleFriendRequest(item))">
+                            <ProcessingStateButton IsProcessing="@(_processingFriendRequests.TryGetValue(item.Id, out action) && action == FriendRequestProcessingAction.Sending)" class="p-2 rounded-full" NormalCssClass="hover:bg-gray-400/50 cursor-pointer" @onclick="@(() => HandleSendFriendRequest(item))">
                                 <ChildContent>
                                     <Person Addition="PersonAddition.Add" class="size-6 fill-white"/>
                                 </ChildContent>
@@ -58,17 +52,45 @@
                                 </ProcessingContent>
                             </ProcessingStateButton>
                             break;
-
-                        case FriendStatus.Pending:
+                            
+                        case FriendStatus.OutcomingPending:
                             <ProcessingStateButton IsProcessing="@(_processingFriendRequests.TryGetValue(item.Id, out action) && action == FriendRequestProcessingAction.Cancelling)" class="p-2 rounded-full" NormalCssClass="hover:bg-gray-400/50 cursor-pointer" @onclick="@(() => HandleCancelFriendRequest(item))">
                                 <ChildContent>
-                                    <Person Addition="PersonAddition.Dash" class="size-6 fill-red-400"/>
+                                    <Cross class="size-6 fill-white"/>
                                 </ChildContent>
 
                                 <ProcessingContent>
                                     <Spinner class="size-6 fill-white"/>
                                 </ProcessingContent>
                             </ProcessingStateButton>
+                            break;
+                            
+                        case FriendStatus.IncomingPending:
+                            <ProcessingStateButton IsProcessing="@(_processingFriendRequests.TryGetValue(item.Id, out action) && action == FriendRequestProcessingAction.Accepting)" class="p-2 rounded-full" NormalCssClass="hover:bg-gray-400/50 cursor-pointer" @onclick="@(() => HandleAcceptFriendRequest(item))">
+                                <ChildContent>
+                                    <Person Addition="PersonAddition.Check" class="size-6 fill-green-400"/>
+                                </ChildContent>
+
+                                <ProcessingContent>
+                                    <Spinner class="size-6 fill-white"/>
+                                </ProcessingContent>
+                            </ProcessingStateButton>
+                            
+                            <ProcessingStateButton IsProcessing="@(_processingFriendRequests.TryGetValue(item.Id, out action) && action == FriendRequestProcessingAction.Rejecting)" class="p-2 rounded-full" NormalCssClass="hover:bg-gray-400/50 cursor-pointer" @onclick="@(() => HandleRejectFriendRequest(item))">
+                                <ChildContent>
+                                    <Cross class="size-6 fill-red-500"/>
+                                </ChildContent>
+
+                                <ProcessingContent>
+                                    <Spinner class="size-6 fill-white"/>
+                                </ProcessingContent>
+                            </ProcessingStateButton>
+                            break;
+                            
+                        case FriendStatus.Friend:
+                            <div class="p-2 rounded-full">
+                                <Person Addition="PersonAddition.Check" class="size-6 fill-red-400"/>
+                            </div>
                             break;
                     }
 
@@ -111,6 +133,7 @@
             
             Debug.Assert(_userId != null);
 
+            NotificationService.OnFriendRequestReceived += OnFriendRequestReceivedNotification;
             NotificationService.OnFriendRequestCanceled += OnFriendRequestCanceledNotification;
             NotificationService.OnFriendRequestRejected += OnFriendRequestRejectedNotification;
             NotificationService.OnFriendRequestAccepted += OnFriendRequestAcceptedNotification;
@@ -156,8 +179,22 @@
                     AvatarScaleX = user.ProfilePictureScaleX,
                     AvatarScaleY = user.ProfilePictureScaleY,
                     FriendStatus = user.SentFriendRequests
-                        .Where(fr => fr.SenderId == _userId && fr.ReceiverId == user.Id)
-                        .Select(fr => fr.Status == FriendRequestStatus.Accepted ? FriendStatus.Friend : fr.Status == FriendRequestStatus.Pending ? FriendStatus.Pending : FriendStatus.Stranger)
+                        .Where(fr => fr.ReceiverId == _userId)
+                        .Select(fr => 
+                            fr.Status == FriendRequestStatus.Accepted ? 
+                                FriendStatus.Friend : 
+                                fr.Status == FriendRequestStatus.Pending ? 
+                                    FriendStatus.IncomingPending : 
+                                    FriendStatus.Stranger)
+                        .Concat(user.ReceivedFriendRequests
+                            .Where(fr => fr.SenderId == _userId)
+                            .Select(fr => 
+                                fr.Status == FriendRequestStatus.Accepted ? 
+                                    FriendStatus.Friend : 
+                                    fr.Status == FriendRequestStatus.Pending ? 
+                                        FriendStatus.OutcomingPending : 
+                                        FriendStatus.Stranger)
+                        )
                         .FirstOrDefault(),
                 })
                 .ToListAsync();
@@ -166,15 +203,33 @@
         }
     }
     
-    private async Task HandleFriendRequest(UserSearchResult item) {
+    private async Task HandleSendFriendRequest(UserSearchResult item) {
         if (_processingFriendRequests.TryAdd(item.Id, FriendRequestProcessingAction.Sending)) {
             try {
                 string receiverId = item.Id;
 
-                if (await FriendshipService.SendFriendRequest(_userId, receiverId)) {
-                    item.FriendStatus = FriendStatus.Pending;
-                } else {
-                    Logger.LogWarning("Failed to send friend request from user {f} to {r}.", _userId, receiverId);
+                var sendStatus = await FriendshipService.SendFriendRequest(_userId, receiverId);
+
+                switch (sendStatus) {
+                    case IFriendshipService.SendingStatus.Success:
+                        item.FriendStatus = FriendStatus.OutcomingPending;
+                        break;
+                        
+                    case IFriendshipService.SendingStatus.IncomingPending:
+                        item.FriendStatus = FriendStatus.IncomingPending;
+                        break;
+                        
+                    case IFriendshipService.SendingStatus.OutcomingPending:
+                        // Already send a friend request, how the hell did we get here?
+                        break;
+                        
+                    case IFriendshipService.SendingStatus.Failed:
+                        Logger.LogWarning("Failed to send friend request from user {f} to {r}.", _userId, receiverId);
+                        break;
+                        
+                    case IFriendshipService.SendingStatus.Friended:
+                        item.FriendStatus = FriendStatus.Friend;
+                        break;
                 }
             } finally {
                 _processingFriendRequests.TryRemove(item.Id, out _);
@@ -191,11 +246,11 @@
             try {
                 string receiverId = item.Id;
 
-                if (await FriendshipService.CancelFriendRequest(_userId, receiverId)) {
-                    item.FriendStatus = FriendStatus.Stranger;
-                } else {
+                if (!await FriendshipService.CancelFriendRequest(_userId, receiverId)) {
                     Logger.LogWarning("Failed to cancel friend request from user {f} to {r}.", _userId, receiverId);
                 }
+                
+                item.FriendStatus = FriendStatus.Stranger;
             } finally {
                 _processingFriendRequests.TryRemove(item.Id, out _);
 
@@ -204,6 +259,49 @@
                 }
             }
         }
+    }
+    
+    private async Task HandleRejectFriendRequest(UserSearchResult item) {
+        if (_processingFriendRequests.TryAdd(item.Id, FriendRequestProcessingAction.Rejecting)) {
+            try {
+                if (!await FriendshipService.RejectFriendRequest(item.Id, _userId)) {
+                    Logger.LogWarning("Failed to reject friend request from user {f} to {r}.", item.Id, _userId);
+                }
+                
+                item.FriendStatus = FriendStatus.Stranger;
+            } finally {
+                _processingFriendRequests.TryRemove(item.Id, out _);
+
+                if (_processingFriendRequests.IsEmpty) {
+                    StateHasChanged();
+                }
+            }
+        }
+    }
+    
+    private async Task HandleAcceptFriendRequest(UserSearchResult item) {
+        if (_processingFriendRequests.TryAdd(item.Id, FriendRequestProcessingAction.Accepting)) {
+            try {
+                if (!await FriendshipService.RejectFriendRequest(item.Id, _userId)) {
+                    Logger.LogWarning("Failed to accept friend request from user {f} to {r}.", item.Id, _userId);
+                }
+                
+                item.FriendStatus = FriendStatus.Friend;
+            } finally {
+                _processingFriendRequests.TryRemove(item.Id, out _);
+
+                if (_processingFriendRequests.IsEmpty) {
+                    StateHasChanged();
+                }
+            }
+        }
+    }
+    
+    private void OnFriendRequestReceivedNotification(FriendRequestReceivedNotification notification) {
+        InvokeAsync(async () => {
+            await _virtualizeContainer.RefreshDataAsync();
+            StateHasChanged();
+        });
     }
     
     private void OnFriendRequestRejectedNotification(FriendRequestRejectedNotification notification) {
@@ -230,6 +328,7 @@
     public void Dispose() {
         _searchDebouncer.Dispose();
         
+        NotificationService.OnFriendRequestReceived -= OnFriendRequestReceivedNotification;
         NotificationService.OnFriendRequestCanceled -= OnFriendRequestCanceledNotification;
         NotificationService.OnFriendRequestRejected -= OnFriendRequestRejectedNotification;
         NotificationService.OnFriendRequestAccepted -= OnFriendRequestAcceptedNotification;
@@ -238,5 +337,7 @@
     private enum FriendRequestProcessingAction {
         Sending,
         Cancelling,
+        Rejecting,
+        Accepting,
     }
 }

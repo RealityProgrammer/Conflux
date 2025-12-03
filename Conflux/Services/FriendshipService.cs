@@ -3,38 +3,73 @@ using Conflux.Database.Entities;
 using Conflux.Services.Abstracts;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
 
 namespace Conflux.Services;
 
-public sealed class FriendshipService : IFriendshipService {
+public sealed partial class FriendshipService : IFriendshipService {
     private readonly IDbContextFactory<ApplicationDbContext> _databaseFactory;
     private readonly INotificationService _notificationService;
+    private readonly ILogger<FriendshipService> _logger;
 
-    public FriendshipService(IDbContextFactory<ApplicationDbContext> databaseFactory, INotificationService notificationService) {
+    public FriendshipService(IDbContextFactory<ApplicationDbContext> databaseFactory, INotificationService notificationService, ILogger<FriendshipService> logger) {
         _databaseFactory = databaseFactory;
         _notificationService = notificationService;
+        _logger = logger;
     }
 
-    public async Task<bool> SendFriendRequest(string senderId, string receiverId) {
-        if (senderId == receiverId) return false;
+    public async Task<IFriendshipService.SendingStatus> SendFriendRequest(string senderId, string receiverId) {
+        if (senderId == receiverId) {
+            return IFriendshipService.SendingStatus.Failed;
+        }
 
         await using (var database = await _databaseFactory.CreateDbContextAsync()) {
-            var request = await database.FriendRequests.FirstOrDefaultAsync(r => r.SenderId == senderId && r.ReceiverId == receiverId);
+            var request = await database.FriendRequests
+                .AsNoTracking().FirstOrDefaultAsync(r => (r.SenderId == senderId && r.ReceiverId == receiverId) || (r.SenderId == receiverId && r.ReceiverId == senderId));
 
+            // Determine whether exists a friend request between 2 user ids, order doesn't matter.
             if (request != null) {
-                if (request.Status is FriendRequestStatus.Rejected or FriendRequestStatus.Canceled) {
-                    request.CreatedAt = DateTime.UtcNow;
-                    request.ResponseAt = null;
-                    request.Status = FriendRequestStatus.Pending;
-                    
-                    await database.SaveChangesAsync();
+                switch (request.Status) {
+                    case FriendRequestStatus.Canceled or FriendRequestStatus.Rejected:
+                        // There was a friend request, but has been canceled or rejected. Populate it with new data.
 
-                    await _notificationService.NotifyFriendRequestReceivedAsync(new(senderId, receiverId));
+                        int numUpdatedRows = await database.FriendRequests
+                            .AsNoTracking()
+                            .Where(r => (r.SenderId == senderId && r.ReceiverId == receiverId) || (r.SenderId == receiverId && r.ReceiverId == senderId))
+                            .ExecuteUpdateAsync(builder => {
+                                builder
+                                    .SetProperty(r => r.SenderId, senderId)
+                                    .SetProperty(r => r.ReceiverId, receiverId)
+                                    .SetProperty(r => r.CreatedAt, DateTime.UtcNow)
+                                    .SetProperty(r => r.ResponseAt, (DateTime?)null)
+                                    .SetProperty(r => r.Status, FriendRequestStatus.Pending);
+                            });
 
-                    return true;
+                        switch (numUpdatedRows) {
+                            case 0:
+                                return IFriendshipService.SendingStatus.Failed;
+
+                            case 1:
+                                await _notificationService.NotifyFriendRequestReceivedAsync(new(senderId, receiverId));
+                                return IFriendshipService.SendingStatus.Success;
+
+                            default:
+                                // I blame concurrency. Still returns Success for the time being.
+                                LogUnexpectedNumberOfRowsUpdateWhenRetryFriendRequest(senderId, receiverId, numUpdatedRows);
+
+                                await _notificationService.NotifyFriendRequestReceivedAsync(new(senderId, receiverId));
+                                return IFriendshipService.SendingStatus.Success;
+                        }
+
+                    case FriendRequestStatus.Accepted:
+                        return IFriendshipService.SendingStatus.Friended;
+
+                    case FriendRequestStatus.Pending:
+                        return request.SenderId == senderId ? IFriendshipService.SendingStatus.OutcomingPending : IFriendshipService.SendingStatus.IncomingPending;
+
+                    default:
+                        throw new UnreachableException("Unknown FriendRequestStatus value.");
                 }
-
-                return false;
             }
 
             database.FriendRequests.Add(new() {
@@ -46,9 +81,9 @@ public sealed class FriendshipService : IFriendshipService {
             await database.SaveChangesAsync();
 
             await _notificationService.NotifyFriendRequestReceivedAsync(new(senderId, receiverId));
-        }
 
-        return true;
+            return IFriendshipService.SendingStatus.Success;
+        }
     }
 
     public async Task<bool> CancelFriendRequest(string senderId, string receiverId) {
@@ -100,13 +135,12 @@ public sealed class FriendshipService : IFriendshipService {
             database.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
             
             int numUpdatedRows = await database.FriendRequests
-                .Where(r => r.Status == FriendRequestStatus.Pending && ((r.SenderId == senderId && r.ReceiverId == receiverId) || (r.SenderId == receiverId && r.ReceiverId == senderId)))
+                .Where(r => r.Status == FriendRequestStatus.Pending && r.SenderId == senderId && r.ReceiverId == receiverId)
                 .ExecuteUpdateAsync(builder => {
                     builder
                         .SetProperty(r => r.Status, FriendRequestStatus.Accepted)
                         .SetProperty(r => r.ResponseAt, DateTime.UtcNow);
                 });
-            
 
             if (numUpdatedRows > 0) {
                 await _notificationService.NotifyFriendRequestAcceptedAsync(new(senderId, receiverId));
@@ -183,4 +217,7 @@ public sealed class FriendshipService : IFriendshipService {
             return new(totalCount, request.Offset, requests);
         }
     }
+    
+    [LoggerMessage(LogLevel.Error, "Updating FriendRequest between user {from} to {user} cause {numRows} rows to be modified.")]
+    private partial void LogUnexpectedNumberOfRowsUpdateWhenRetryFriendRequest(string from, string user, int numRows);
 }

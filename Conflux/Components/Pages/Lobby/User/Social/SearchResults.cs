@@ -2,7 +2,8 @@
 
 public enum FriendStatus {
     Stranger,
-    Pending,
+    OutcomingPending,
+    IncomingPending,
     Friend,
 }
 

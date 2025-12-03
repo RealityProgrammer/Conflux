@@ -26,6 +26,4 @@ public class ApplicationUser : IdentityUser, ICreatedAtColumn {
     
     public ICollection<FriendRequest> SentFriendRequests { get; set; } = null!;
     public ICollection<FriendRequest> ReceivedFriendRequests { get; set; } = null!;
-
-    public ICollection<ApplicationUser> Friends { get; } = new List<ApplicationUser>();
 }
