@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Conflux.Database.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251204071402_AddBasicConversationSchema")]
-    partial class AddBasicConversationSchema
+    [Migration("20251204074941_AddBasicConversationTables")]
+    partial class AddBasicConversationTables
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -122,81 +122,7 @@ namespace Conflux.Database.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("Conflux.Database.Entities.Conversation", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("ConversationId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ConversationId");
-
-                    b.ToTable("Conversation");
-                });
-
-            modelBuilder.Entity("Conflux.Database.Entities.ConversationMember", b =>
-                {
-                    b.Property<Guid>("ConversationId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("UserId")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("ConversationId", "UserId");
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
-                    b.ToTable("ConversationMember");
-                });
-
-            modelBuilder.Entity("Conflux.Database.Entities.FriendRequest", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("ReceiverId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("ResponseAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("SenderId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ReceiverId");
-
-                    b.HasIndex("SenderId", "ReceiverId")
-                        .IsUnique();
-
-                    b.ToTable("FriendRequests");
-                });
-
-            modelBuilder.Entity("Conflux.Database.Entities.Message", b =>
+            modelBuilder.Entity("Conflux.Database.Entities.ChatMessage", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -235,7 +161,73 @@ namespace Conflux.Database.Migrations
 
                     b.HasIndex("ConversationId", "CreatedAt");
 
-                    b.ToTable("Message");
+                    b.ToTable("ChatMessages");
+                });
+
+            modelBuilder.Entity("Conflux.Database.Entities.Conversation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Conversations");
+                });
+
+            modelBuilder.Entity("Conflux.Database.Entities.ConversationMember", b =>
+                {
+                    b.Property<Guid>("ConversationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("ConversationId", "UserId");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("ConversationMembers");
+                });
+
+            modelBuilder.Entity("Conflux.Database.Entities.FriendRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ReceiverId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ResponseAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("SenderId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReceiverId");
+
+                    b.HasIndex("SenderId", "ReceiverId")
+                        .IsUnique();
+
+                    b.ToTable("FriendRequests");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -370,11 +362,30 @@ namespace Conflux.Database.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("Conflux.Database.Entities.Conversation", b =>
+            modelBuilder.Entity("Conflux.Database.Entities.ChatMessage", b =>
                 {
-                    b.HasOne("Conflux.Database.Entities.Conversation", null)
-                        .WithMany("DirectConversations")
-                        .HasForeignKey("ConversationId");
+                    b.HasOne("Conflux.Database.Entities.Conversation", "Conversation")
+                        .WithMany("Messages")
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Conflux.Database.Entities.ChatMessage", "ReplyMessage")
+                        .WithMany()
+                        .HasForeignKey("ReplyMessageId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Conflux.Database.Entities.ApplicationUser", "Sender")
+                        .WithMany()
+                        .HasForeignKey("SenderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Conversation");
+
+                    b.Navigation("ReplyMessage");
+
+                    b.Navigation("Sender");
                 });
 
             modelBuilder.Entity("Conflux.Database.Entities.ConversationMember", b =>
@@ -411,32 +422,6 @@ namespace Conflux.Database.Migrations
                         .IsRequired();
 
                     b.Navigation("Receiver");
-
-                    b.Navigation("Sender");
-                });
-
-            modelBuilder.Entity("Conflux.Database.Entities.Message", b =>
-                {
-                    b.HasOne("Conflux.Database.Entities.Conversation", "Conversation")
-                        .WithMany("Messages")
-                        .HasForeignKey("ConversationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Conflux.Database.Entities.Message", "ReplyMessage")
-                        .WithMany()
-                        .HasForeignKey("ReplyMessageId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("Conflux.Database.Entities.ApplicationUser", "Sender")
-                        .WithMany()
-                        .HasForeignKey("SenderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Conversation");
-
-                    b.Navigation("ReplyMessage");
 
                     b.Navigation("Sender");
                 });
@@ -501,8 +486,6 @@ namespace Conflux.Database.Migrations
 
             modelBuilder.Entity("Conflux.Database.Entities.Conversation", b =>
                 {
-                    b.Navigation("DirectConversations");
-
                     b.Navigation("Members");
 
                     b.Navigation("Messages");

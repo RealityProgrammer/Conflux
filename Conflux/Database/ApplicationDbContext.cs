@@ -7,7 +7,10 @@ using System.Runtime.CompilerServices;
 namespace Conflux.Database;
 
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : IdentityDbContext<ApplicationUser>(options) {
-    public DbSet<FriendRequest> FriendRequests { get; set; } = default!;
+    public DbSet<FriendRequest> FriendRequests { get; set; } = null!;
+    public DbSet<Conversation> Conversations { get; set; } = null!;
+    public DbSet<ConversationMember> ConversationMembers { get; set; } = null!;
+    public DbSet<ChatMessage> ChatMessages { get; set; } = null!;
     
     public override int SaveChanges() {
         InsertTimestamps();
@@ -56,32 +59,25 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         builder.Entity<Conversation>(entity => {
             entity.HasKey(conversation => conversation.Id);
+
+            entity.HasMany(conversation => conversation.Messages)
+                .WithOne(message => message.Conversation)
+                .HasForeignKey(conversation => conversation.ConversationId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
         }).Entity<ConversationMember>(entity => {
             entity.HasKey(member => new { member.ConversationId, member.UserId });
 
             entity.HasIndex(member => member.UserId).IsUnique();
-
+            
             entity.HasOne(member => member.Conversation)
                 .WithMany(conversation => conversation.Members)
                 .HasForeignKey(member => member.ConversationId)
                 .OnDelete(DeleteBehavior.Cascade);
-            
-            entity.HasOne(member => member.User)
-                .WithMany()
-                .HasForeignKey(member => member.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
-        }).Entity<Message>(entity => {
+        }).Entity<ChatMessage>(entity => {
             entity.HasKey(message => message.Id);
-
-            // Does indexing with CreatedAt increase pagination performance?
-            entity.HasIndex(message => new { message.ConversationId, message.CreatedAt });
-
-            entity.HasIndex(message => message.SenderId);
             
-            entity.HasOne(message => message.Conversation)
-                .WithMany(conversation => conversation.Messages)
-                .HasForeignKey(message => message.ConversationId)
-                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(message => new { message.ConversationId, message.CreatedAt });
             
             entity.HasOne(message => message.Sender)
                 .WithMany()
