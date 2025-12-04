@@ -59,9 +59,15 @@
             <div class="flex-none h-16 border-t border-t-gray-600 p-2 flex flex-row items-center">
                 <Avatar class="h-full flex-none" ImageSrc="@_avatarSrc" ImageAlt="@(string.IsNullOrEmpty(_avatarSrc) ? string.Empty : "User Avatar")" ScaleX="_avatarScaleX" ScaleY="_avatarScaleY"/>
                 
-                <div class="ml-2 flex flex-col">
+                <div class="ml-2 flex-1 flex flex-col">
                     <p>@_userDisplayName</p>
                     <p class="text-xs">@_username</p>
+                </div>
+                
+                <div class="flex-none flex flex-row items-center">
+                    <NavLink class="rounded-full p-2 flex-none hover:bg-white/15 active:bg-black/15" href="/settings/account" Match="NavLinkMatch.Prefix">
+                        <Gear class="size-5 fill-white flex-none"/>
+                    </NavLink>
                 </div>
             </div>
         }
