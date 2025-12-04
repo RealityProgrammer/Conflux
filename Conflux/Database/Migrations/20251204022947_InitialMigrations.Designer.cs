@@ -9,11 +9,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace Conflux.Migrations
+namespace Conflux.Database.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251202150319_RemoveVersionColumnInFriendshipRequest")]
-    partial class RemoveVersionColumnInFriendshipRequest
+    [Migration("20251204022947_InitialMigrations")]
+    partial class InitialMigrations
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -33,12 +33,15 @@ namespace Conflux.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("integer");
 
-                    b.Property<string>("ApplicationUserId")
-                        .HasColumnType("text");
-
-                    b.Property<string>("BannerPicturePath")
+                    b.Property<string>("AvatarProfilePath")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
+
+                    b.Property<double>("AvatarScaleX")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("AvatarScaleY")
+                        .HasColumnType("double precision");
 
                     b.Property<string>("Bio")
                         .HasMaxLength(255)
@@ -89,16 +92,6 @@ namespace Conflux.Migrations
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("boolean");
 
-                    b.Property<string>("ProfilePicturePath")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.Property<double>("ProfilePictureScaleX")
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("ProfilePictureScaleY")
-                        .HasColumnType("double precision");
-
                     b.Property<string>("Pronouns")
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
@@ -119,8 +112,6 @@ namespace Conflux.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ApplicationUserId");
-
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
 
@@ -133,24 +124,33 @@ namespace Conflux.Migrations
 
             modelBuilder.Entity("Conflux.Database.Entities.FriendRequest", b =>
                 {
-                    b.Property<string>("SenderId")
-                        .HasColumnType("text");
-
-                    b.Property<string>("ReceiverId")
-                        .HasColumnType("text");
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("ReceiverId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<DateTime?>("ResponseAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("SenderId")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
-                    b.HasKey("SenderId", "ReceiverId");
+                    b.HasKey("Id");
 
                     b.HasIndex("ReceiverId");
+
+                    b.HasIndex("SenderId", "ReceiverId")
+                        .IsUnique();
 
                     b.ToTable("FriendRequests");
                 });
@@ -287,13 +287,6 @@ namespace Conflux.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("Conflux.Database.Entities.ApplicationUser", b =>
-                {
-                    b.HasOne("Conflux.Database.Entities.ApplicationUser", null)
-                        .WithMany("Friends")
-                        .HasForeignKey("ApplicationUserId");
-                });
-
             modelBuilder.Entity("Conflux.Database.Entities.FriendRequest", b =>
                 {
                     b.HasOne("Conflux.Database.Entities.ApplicationUser", "Receiver")
@@ -366,8 +359,6 @@ namespace Conflux.Migrations
 
             modelBuilder.Entity("Conflux.Database.Entities.ApplicationUser", b =>
                 {
-                    b.Navigation("Friends");
-
                     b.Navigation("ReceivedFriendRequests");
 
                     b.Navigation("SentFriendRequests");

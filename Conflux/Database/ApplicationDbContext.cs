@@ -49,7 +49,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .OnDelete(DeleteBehavior.Cascade)
                 .IsRequired();
         }).Entity<FriendRequest>(entity => {
-            entity.HasKey(request => new { request.SenderId, request.ReceiverId });
+            entity.HasKey(request => request.Id);
+            
+            entity.HasIndex(request => new { request.SenderId, request.ReceiverId }).IsUnique();
         });
     }
 

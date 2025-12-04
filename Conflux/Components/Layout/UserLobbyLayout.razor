@@ -27,12 +27,6 @@
                 <p class="hidden lg:block">Social</p>
             </NavLink>
             
-            <NavLink href="/lobby/messages" class="mt-2 flex flex-row justify-center lg:justify-start items-center pl-0 lg:pl-4 py-2 rounded-lg w-full gap-3 flex-none cursor-pointer bg-transparent hover:bg-white/15 active:bg-black/15" ActiveClass="bg-white/20" Match="NavLinkMatch.Prefix">
-                <SpeechBubble Content="ChatContent.Text" Filled="false" class="size-6 flex-none fill-white"/>
-
-                <p class="hidden lg:block">Messages</p>
-            </NavLink>
-            
             <hr class="border-b border-b-gray-500 mt-2"/>
             
             <p>Test</p>
@@ -78,7 +72,7 @@
                     .Select(u => new {
                         u.DisplayName,
                         u.UserName,
-                        AvatarSrc = u.ProfilePicturePath,
+                        AvatarSrc = u.AvatarProfilePath,
                     }).FirstOrDefaultAsync();
 
                 if (data == null) {

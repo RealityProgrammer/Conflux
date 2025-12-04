@@ -8,6 +8,7 @@
 
     <ItemGroup>
       <Folder Include="Client\public\" />
+      <Folder Include="Database\Migrations\" />
       <Folder Include="Services\Policies\" />
       <Folder Include="Uploads\" />
       <Folder Include="Uploads\images\avatar\" />

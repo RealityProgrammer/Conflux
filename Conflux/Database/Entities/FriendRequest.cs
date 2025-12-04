@@ -3,6 +3,8 @@
 namespace Conflux.Database.Entities;
 
 public class FriendRequest : ICreatedAtColumn {
+    public Guid Id { get; set; }
+    
     [Required] public required string SenderId { get; set; }
     [Required] public required string ReceiverId { get; set; }
     [Required] public required FriendRequestStatus Status { get; set; }

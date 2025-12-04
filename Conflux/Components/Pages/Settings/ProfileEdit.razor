@@ -29,7 +29,7 @@
                 <TooltipContainer ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" ShowTooltip="@(!_editContext.IsValid(_avatarFileField))" Id="avatar" class="max-w-[90%]">
                     <Target>
                         @{
-                            string? displayImageSrc = Model.Avatar.RequestDelete ? null : AvatarPreviewUrl ?? User.ProfilePicturePath;
+                            string? displayImageSrc = Model.Avatar.RequestDelete ? null : AvatarPreviewUrl ?? User.AvatarProfilePath;
                         }
                                         
                         <Avatar class="size-96 mx-auto group" ImageSrc="@displayImageSrc" @bind-ScaleX="Model.Avatar.ZoomX" @bind-ScaleY="Model.Avatar.ZoomY">
@@ -51,7 +51,7 @@
                         <CardContent class="grid grid-cols-1 lg:grid-cols-2 lg:mt-2">
                             <section class="w-full lg:border-r lg:border-r-gray-600 lg:p-3">
                                 @{
-                                    string? displayImageSrc = Model.Avatar.RequestDelete ? null : AvatarPreviewUrl ?? User.ProfilePicturePath;
+                                    string? displayImageSrc = Model.Avatar.RequestDelete ? null : AvatarPreviewUrl ?? User.AvatarProfilePath;
                                 }
                                     
                                 <Avatar @ref="_selectableAvatar" class="size-64 sm:size-80 lg:size-96 mt-2 mx-auto group" ImageSrc="@displayImageSrc" @bind-ScaleX="Model.Avatar.ZoomX" @bind-ScaleY="Model.Avatar.ZoomY">
@@ -74,7 +74,7 @@
                                     <AdjustmentSlider type="range" min="0.25" max="5" step="0.01" @bind-Value="Model.Avatar.ZoomY"/>
                                 </div>
                                     
-                                @if (!string.IsNullOrEmpty(AvatarPreviewUrl) || !string.IsNullOrEmpty(User.ProfilePicturePath)) {
+                                @if (!string.IsNullOrEmpty(AvatarPreviewUrl) || !string.IsNullOrEmpty(User.AvatarProfilePath)) {
                                     @if (Model.Avatar.RequestDelete) {
                                         <button class="button-primary mt-2 w-full" @onclick="MarkAvatarNotDelete">
                                             Restore
@@ -253,8 +253,8 @@
             User.DisplayName = Model.DisplayName;
             User.Pronouns = Model.Pronouns;
             User.Bio = Model.Bio;
-            User.ProfilePictureScaleX = Model.Avatar.ZoomX;
-            User.ProfilePictureScaleY = Model.Avatar.ZoomY;
+            User.AvatarScaleX = Model.Avatar.ZoomX;
+            User.AvatarScaleY = Model.Avatar.ZoomY;
 
             // Process Avatar.
             if (Model.Avatar.File is { } imageFile) {
@@ -262,12 +262,12 @@
 
                 string databasePath = await ContentService.UploadAvatarAsync(srcStream, User.Id);
 
-                User.ProfilePicturePath = databasePath;
-            } else if (Model.Avatar.RequestDelete && !string.IsNullOrEmpty(User.ProfilePicturePath)) {
+                User.AvatarProfilePath = databasePath;
+            } else if (Model.Avatar.RequestDelete && !string.IsNullOrEmpty(User.AvatarProfilePath)) {
                 // User.ProfilePicturePath has form "upload/images/avatar"
 
                 await ContentService.DeleteAvatarAsync(User.Id);
-                User.ProfilePicturePath = null;
+                User.AvatarProfilePath = null;
             }
 
             User.IsProfileSetup = true; // Mark user as profile setup, vibe checked.
@@ -303,8 +303,8 @@
         Model.DisplayName = User.DisplayName;
         Model.Pronouns = User.Pronouns;
         Model.Bio = User.Bio;
-        Model.Avatar.ZoomX = User.ProfilePictureScaleX;
-        Model.Avatar.ZoomY = User.ProfilePictureScaleY;
+        Model.Avatar.ZoomX = User.AvatarScaleX;
+        Model.Avatar.ZoomY = User.AvatarScaleY;
         Model.Avatar.RequestDelete = false;
 
         AvatarPreviewUrl = null;

@@ -4,10 +4,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace Conflux.Migrations
+namespace Conflux.Database.Migrations
 {
     /// <inheritdoc />
-    public partial class Initial : Migration
+    public partial class InitialMigrations : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -36,12 +36,10 @@ namespace Conflux.Migrations
                     Pronouns = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: true),
                     Bio = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ProfilePicturePath = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    ProfilePictureScaleX = table.Column<double>(type: "double precision", nullable: false),
-                    ProfilePictureScaleY = table.Column<double>(type: "double precision", nullable: false),
-                    BannerPicturePath = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    AvatarProfilePath = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    AvatarScaleX = table.Column<double>(type: "double precision", nullable: false),
+                    AvatarScaleY = table.Column<double>(type: "double precision", nullable: false),
                     StatusText = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: true),
-                    ApplicationUserId = table.Column<string>(type: "text", nullable: true),
                     UserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
@@ -60,11 +58,6 @@ namespace Conflux.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_AspNetUsers", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_AspNetUsers_AspNetUsers_ApplicationUserId",
-                        column: x => x.ApplicationUserId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -177,16 +170,16 @@ namespace Conflux.Migrations
                 name: "FriendRequests",
                 columns: table => new
                 {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
                     SenderId = table.Column<string>(type: "text", nullable: false),
                     ReceiverId = table.Column<string>(type: "text", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ResponseAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    Version = table.Column<byte[]>(type: "bytea", rowVersion: true, nullable: false)
+                    ResponseAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_FriendRequests", x => new { x.SenderId, x.ReceiverId });
+                    table.PrimaryKey("PK_FriendRequests", x => x.Id);
                     table.ForeignKey(
                         name: "FK_FriendRequests_AspNetUsers_ReceiverId",
                         column: x => x.ReceiverId,
@@ -233,11 +226,6 @@ namespace Conflux.Migrations
                 column: "NormalizedEmail");
 
             migrationBuilder.CreateIndex(
-                name: "IX_AspNetUsers_ApplicationUserId",
-                table: "AspNetUsers",
-                column: "ApplicationUserId");
-
-            migrationBuilder.CreateIndex(
                 name: "UserNameIndex",
                 table: "AspNetUsers",
                 column: "NormalizedUserName",
@@ -247,6 +235,12 @@ namespace Conflux.Migrations
                 name: "IX_FriendRequests_ReceiverId",
                 table: "FriendRequests",
                 column: "ReceiverId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_FriendRequests_SenderId_ReceiverId",
+                table: "FriendRequests",
+                columns: new[] { "SenderId", "ReceiverId" },
+                unique: true);
         }
 
         /// <inheritdoc />

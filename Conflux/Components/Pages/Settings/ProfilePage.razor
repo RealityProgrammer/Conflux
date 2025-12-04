@@ -94,8 +94,8 @@
         Model.DisplayName = _user!.DisplayName;
         Model.Pronouns = _user.Pronouns;
         Model.Bio = _user.Bio;
-        Model.Avatar.ZoomX = _user.ProfilePictureScaleX;
-        Model.Avatar.ZoomY = _user.ProfilePictureScaleY;
+        Model.Avatar.ZoomX = _user.AvatarScaleX;
+        Model.Avatar.ZoomY = _user.AvatarScaleY;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {

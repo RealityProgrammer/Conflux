@@ -15,10 +15,10 @@
             <div class="absolute -bottom-8 left-4">
                 <div class="relative">
                     @{
-                        string? displayImageSrc = Model.Avatar.RequestDelete ? null : AvatarPreviewUrl ?? User.ProfilePicturePath;
+                        string? displayImageSrc = Model.Avatar.RequestDelete ? null : AvatarPreviewUrl ?? User.AvatarProfilePath;
                     }
                                     
-                    <Avatar class="size-20 border-4 border-gray-700" ImageSrc="@displayImageSrc" ScaleX="@User.ProfilePictureScaleX" ScaleY="@User.ProfilePictureScaleY"/>
+                    <Avatar class="size-20 border-4 border-gray-700" ImageSrc="@displayImageSrc" ScaleX="@User.AvatarScaleX" ScaleY="@User.AvatarScaleY"/>
 
                     @* TODO: Status indicator *@
                 </div>

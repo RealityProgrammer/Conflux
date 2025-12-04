@@ -28,7 +28,7 @@
     <Virtualize @ref="_virtualizeContainer" ItemsProvider="LoadProvider" OverscanCount="3">
         <ChildContent Context="item">
             <div class="h-16 px-4 py-1 border-b border-b-gray-600 flex flex-row items-center hover:bg-gray-600/40 group">
-                <Avatar ImageSrc="@item.Receiver.ProfilePicturePath" ImageAlt="@(item.Receiver.ProfilePicturePath != null ? "Avatar" : string.Empty)" ScaleX="item.Receiver.ProfilePictureScaleX" ScaleY="item.Receiver.ProfilePictureScaleY" class="flex-none h-12 mr-2"/>
+                <Avatar ImageSrc="@item.Receiver.AvatarProfilePath" ImageAlt="@(item.Receiver.AvatarProfilePath != null ? "Avatar" : string.Empty)" ScaleX="item.Receiver.AvatarScaleX" ScaleY="item.Receiver.AvatarScaleY" class="flex-none h-12 mr-2"/>
                 
                 <div class="flex-1 flex flex-col">
                     <p class="font-semibold">@item.Receiver.DisplayName</p>

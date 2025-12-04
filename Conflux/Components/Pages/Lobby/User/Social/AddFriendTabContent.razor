@@ -173,11 +173,11 @@
                 .Take(request.Count)
                 .Select(user => new UserSearchResult {
                     Id = user.Id,
-                    AvatarImagePath = user.ProfilePicturePath,
+                    AvatarImagePath = user.AvatarProfilePath,
                     UserName = user.UserName!,
                     DisplayName = user.DisplayName,
-                    AvatarScaleX = user.ProfilePictureScaleX,
-                    AvatarScaleY = user.ProfilePictureScaleY,
+                    AvatarScaleX = user.AvatarScaleX,
+                    AvatarScaleY = user.AvatarScaleY,
                     FriendStatus = user.SentFriendRequests
                         .Where(fr => fr.ReceiverId == _userId)
                         .Select(fr => 
