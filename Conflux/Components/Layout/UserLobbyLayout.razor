@@ -1,6 +1,7 @@
 ﻿@using Conflux.Components.Shared
 @using Conflux.Components.Shared.Icons
 @using Conflux.Database
+@using Conflux.Database.Entities
 @using Conflux.Services
 @using Microsoft.EntityFrameworkCore
 @using System.Security.Claims
@@ -14,22 +15,40 @@
 
 <main class="flex flex-row size-full overflow-hidden">
     <aside class="col-span-2 bg-gray-750 h-full overflow-hidden text-white flex flex-col border-r border-r-gray-600 flex-none basis-20 lg:basis-64">
-        <section class="flex-1 flex flex-col p-2 overflow-y-auto">
-            <NavLink href="/lobby/activity" class="flex flex-row justify-center lg:justify-start items-center px-0 lg:px-4 py-2 rounded-lg w-full gap-3 flex-none cursor-pointer bg-transparent hover:bg-white/15 active:bg-black/15" ActiveClass="bg-white/20" Match="NavLinkMatch.Prefix">
-                <Airplane class="size-6 flex-none fill-white"/>
+        <section class="flex-1 overflow-y-auto">
+            <div class="flex flex-col gap-2 p-2">
+                <NavLink href="/lobby/activity" class="flex flex-row justify-center lg:justify-start items-center px-0 lg:px-4 py-2 rounded-lg w-full gap-3 flex-none cursor-pointer bg-transparent hover:bg-white/15 active:bg-black/15" ActiveClass="bg-white/20" Match="NavLinkMatch.Prefix">
+                    <Airplane class="size-6 flex-none fill-white"/>
 
-                <p class="hidden lg:block">Activity</p>
-            </NavLink>
+                    <p class="hidden lg:block">Activity</p>
+                </NavLink>
+
+                <NavLink href="/lobby/social" class="flex flex-row justify-center lg:justify-start items-center pl-0 lg:pl-4 py-2 rounded-lg w-full gap-3 flex-none cursor-pointer bg-transparent hover:bg-white/15 active:bg-black/15" ActiveClass="bg-white/20" Match="NavLinkMatch.Prefix">
+                    <People class="size-6 flex-none fill-white"/>
+
+                    <p class="hidden lg:block">Social</p>
+                </NavLink>
+            </div>
             
-            <NavLink href="/lobby/social" class="mt-2 flex flex-row justify-center lg:justify-start items-center pl-0 lg:pl-4 py-2 rounded-lg w-full gap-3 flex-none cursor-pointer bg-transparent hover:bg-white/15 active:bg-black/15" ActiveClass="bg-white/20" Match="NavLinkMatch.Prefix">
-                <People class="size-6 flex-none fill-white"/>
+            <hr class="border-t border-t-gray-600 mx-2"/>
+            
+            <div class="bg-transparent pt-2 px-2 pb-1">
+                <header class="text-sm text-gray-400 font-semibold">Direct Messages</header>
+
+                <section class="mt-1">
+                    <Virtualize ItemsProvider="ConversationsLoadProvider" OverscanCount="8">
+                        <ItemContent Context="item">
+                            <div class="flex-none px-2 py-1 flex flex-row items-center bg-transparent hover:bg-white/15 active:bg-black/15 rounded-lg cursor-pointer">
+                                <Avatar class="h-10 flex-none" ImageSrc="@item.FriendAvatarSrc" ImageAlt="@(string.IsNullOrEmpty(item.FriendAvatarSrc) ? string.Empty : "User Avatar")" ScaleX="item.FriendAvatarScaleX" ScaleY="item.FriendAvatarScaleY"/>
                 
-                <p class="hidden lg:block">Social</p>
-            </NavLink>
-            
-            <hr class="border-b border-b-gray-500 mt-2"/>
-            
-            <p>Test</p>
+                                <div class="ml-2 flex flex-col">
+                                    <p>@item.FriendDisplayName</p>
+                                </div>
+                            </div>
+                        </ItemContent>
+                    </Virtualize>
+                </section>
+            </div>
         </section>
         
         @if (string.IsNullOrEmpty(_userDisplayName)) {
@@ -38,7 +57,7 @@
             </div>
         } else {
             <div class="flex-none h-16 border-t border-t-gray-600 p-2 flex flex-row items-center">
-                <Avatar class="h-full flex-none" ImageSrc="@_avatarSrc" ImageAlt="@(string.IsNullOrEmpty(_avatarSrc) ? string.Empty : "User Avatar")"/>
+                <Avatar class="h-full flex-none" ImageSrc="@_avatarSrc" ImageAlt="@(string.IsNullOrEmpty(_avatarSrc) ? string.Empty : "User Avatar")" ScaleX="_avatarScaleX" ScaleY="_avatarScaleY"/>
                 
                 <div class="ml-2 flex flex-col">
                     <p>@_userDisplayName</p>
@@ -48,7 +67,7 @@
         }
     </aside>
     
-    <section class="col-span-10 bg-gray-700 h-full overflow-hidden flex-1">
+    <section class="col-span-10 bg-gray-700 h-full overflow-hidden flex-1 text-white">
         @Body
     </section>
 </main>
@@ -56,23 +75,26 @@
 @code {
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
 
-    private string _userDisplayName = null!, _username = null!;
+    private string _userId, _userDisplayName = null!, _username = null!;
     private string? _avatarSrc;
+    private double _avatarScaleX, _avatarScaleY;
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
             var authState = await AuthenticationState;
-            var nameIdentifier = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
-            await using (var database = await DbContextFactory.CreateDbContextAsync()) {
-                database.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+            await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
+                dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
                 
-                var data = await database.Users
-                    .Where(u => u.Id == nameIdentifier)
+                var data = await dbContext.Users
+                    .Where(u => u.Id == _userId)
                     .Select(u => new {
                         u.DisplayName,
                         u.UserName,
                         AvatarSrc = u.AvatarProfilePath,
+                        u.AvatarScaleX,
+                        u.AvatarScaleY,
                     }).FirstOrDefaultAsync();
 
                 if (data == null) {
@@ -83,9 +105,50 @@
                 _userDisplayName = data.DisplayName;
                 _username = data.UserName!;
                 _avatarSrc = data.AvatarSrc;
+                _avatarScaleX = data.AvatarScaleX;
+                _avatarScaleY = data.AvatarScaleY;
             }
 
             StateHasChanged();
         }
+    }
+
+    private async ValueTask<ItemsProviderResult<ConversationElement>> ConversationsLoadProvider(ItemsProviderRequest request) {
+        await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
+            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+            var query = dbContext.Conversations
+                .Where(x => x.Type == ConversationType.DirectMessage && x.Members.Select(m => m.UserId).Contains(_userId));
+
+            int totalCount = await query.CountAsync();
+
+            if (totalCount == 0) {
+                return new([], 0);
+            }
+
+            List<ConversationElement> elements = await query
+                .OrderBy(x => x.CreatedAt)
+                .Skip(request.StartIndex)
+                .Take(request.Count)
+                .SelectMany(c => c.Members)
+                .Where(m => m.UserId != _userId)
+                .Select(m => new ConversationElement {
+                    ConversationId = m.ConversationId,
+                    FriendDisplayName = m.User.DisplayName,
+                    FriendAvatarSrc = m.User.AvatarProfilePath,
+                    FriendAvatarScaleX = m.User.AvatarScaleX,
+                    FriendAvatarScaleY = m.User.AvatarScaleY,
+                }).ToListAsync();
+
+            return new(elements, totalCount);
+        }
+    }
+
+    private sealed class ConversationElement {
+        public Guid ConversationId { get; init; }
+        public string FriendDisplayName { get; init; }
+        public string? FriendAvatarSrc { get; init; }
+        public double FriendAvatarScaleX { get; init; }
+        public double FriendAvatarScaleY { get; init; }
     }
 }
