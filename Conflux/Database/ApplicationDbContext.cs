@@ -68,7 +68,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         }).Entity<ConversationMember>(entity => {
             entity.HasKey(member => new { member.ConversationId, member.UserId });
 
-            entity.HasIndex(member => member.UserId).IsUnique();
+            entity.HasIndex(member => member.UserId);
             
             entity.HasOne(member => member.Conversation)
                 .WithMany(conversation => conversation.Members)
