@@ -3,6 +3,7 @@
 @using Conflux.Database
 @using Conflux.Database.Entities
 @using Conflux.Helpers
+@using Conflux.Services
 @using Conflux.Services.Abstracts
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
@@ -14,9 +15,10 @@
 
 @inject ILogger<AddFriendTabContent> Logger
 @inject UserManager<ApplicationUser> UserManager
-@inject IFriendshipService FriendshipService
 @inject INotificationService NotificationService
+@inject IConversationService ConversationService
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject ApplicationRedirectManager RedirectManager
 
 <div class="flex-none px-3 outline-none border rounded-lg bg-gray-700/60 border-gray-600 focus-within:ring-2 focus-within:ring-indigo-600 transition duration-300 flex flex-row items-center">
     <Search class="size-4 fill-white flex-none mr-2"/>
@@ -36,9 +38,9 @@
                 </div>
             
                 <div class="flex-none flex-row gap-1 hidden group-hover:flex">
-                    <NavLink class="p-2 rounded-full hover:bg-gray-400/50 cursor-pointer">
+                    <button class="p-2 rounded-full hover:bg-gray-400/50 cursor-pointer" @onclick="@(() => AccessFriendConversation(item.UserId))">
                         <SpeechBubble ArrowDirection="ChatArrowDirection.Right" Content="ChatContent.Text" class="size-6 fill-white"/>
-                    </NavLink>
+                    </button>
                     
                     <button class="p-2 rounded-full hover:bg-gray-400/50 cursor-pointer">
                         <ThreeDots class="size-6 fill-white"/>
@@ -117,7 +119,7 @@
                 .Skip(request.StartIndex)
                 .Take(request.Count)
                 .Join(dbContext.Users, r => r.SenderId == _userId ? r.ReceiverId : r.SenderId, user => user.Id, (id, user) => new FriendSearchResult {
-                    Id = user.Id,
+                    UserId = user.Id,
                     UserName = user.UserName!,
                     DisplayName = user.DisplayName,
                     AvatarImagePath = user.AvatarProfilePath,
@@ -128,6 +130,17 @@
             
             return new(requests, totalCount);
         }
+    }
+
+    private async Task AccessFriendConversation(string friendId) {
+        Conversation? conversation = await ConversationService.GetOrCreateDirectConversationAsync(_userId, friendId);
+        
+        if (conversation == null) {
+            Logger.LogWarning("Failed to create friend conversation between user {user} and {friend}.", _userId, friendId);
+            return;
+        }
+
+        RedirectManager.To($"/lobby/messages/{conversation.Id}").Execute();
     }
     
     private void OnFriendRequestAcceptedNotification(FriendRequestAcceptedNotification notification) {
@@ -144,7 +157,7 @@
     }
 
     private sealed class FriendSearchResult {
-        public required string Id { get; set; }
+        public required string UserId { get; set; }
         public required string UserName { get; set; }
         public required string DisplayName { get; set; }
         public required string? AvatarImagePath { get; set; }

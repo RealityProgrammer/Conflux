@@ -148,7 +148,7 @@
         if (_processingRequests.TryAdd(request, FriendRequestProcessingAction.Rejecting)) {
             try {
                 if (!await FriendshipService.RejectFriendRequest(request.SenderId, request.ReceiverId)) {
-                    Logger.LogInformation("Failed to reject friend request from user {from} to user {id}.", request.SenderId, request.ReceiverId);
+                    Logger.LogWarning("Failed to reject friend request from user {from} to user {id}.", request.SenderId, request.ReceiverId);
                 }
             } finally {
                 _processingRequests.TryRemove(request, out _);
@@ -165,7 +165,7 @@
         if (_processingRequests.TryAdd(request, FriendRequestProcessingAction.Accepting)) {
             try {
                 if (!await FriendshipService.AcceptFriendRequest(request.SenderId, request.ReceiverId)) {
-                    Logger.LogInformation("Failed to accept friend request from user {from} to user {id}.", request.SenderId, request.ReceiverId);
+                    Logger.LogWarning("Failed to accept friend request from user {from} to user {id}.", request.SenderId, request.ReceiverId);
                 }
             } finally {
                 _processingRequests.TryRemove(request, out _);

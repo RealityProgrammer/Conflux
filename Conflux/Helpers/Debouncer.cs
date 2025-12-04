@@ -8,8 +8,6 @@ public sealed class Debouncer(ILogger logger, Func<CancellationToken, Task> call
     public async Task Start() {
         try {
             if (_cts != null) {
-                logger.LogInformation("Cancel Debouncer");
-                
                 await _cts.CancelAsync();
                 _cts.Dispose();
             }

@@ -8,12 +8,12 @@ using System.Diagnostics;
 namespace Conflux.Services;
 
 public sealed partial class FriendshipService : IFriendshipService {
-    private readonly IDbContextFactory<ApplicationDbContext> _DbContextFactory;
+    private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
     private readonly INotificationService _notificationService;
     private readonly ILogger<FriendshipService> _logger;
 
     public FriendshipService(IDbContextFactory<ApplicationDbContext> DbContextFactory, INotificationService notificationService, ILogger<FriendshipService> logger) {
-        _DbContextFactory = DbContextFactory;
+        _dbContextFactory = DbContextFactory;
         _notificationService = notificationService;
         _logger = logger;
     }
@@ -23,7 +23,7 @@ public sealed partial class FriendshipService : IFriendshipService {
             return IFriendshipService.SendingStatus.Failed;
         }
 
-        await using (var database = await _DbContextFactory.CreateDbContextAsync()) {
+        await using (var database = await _dbContextFactory.CreateDbContextAsync()) {
             var request = await database.FriendRequests
                 .AsNoTracking().FirstOrDefaultAsync(r => (r.SenderId == senderId && r.ReceiverId == receiverId) || (r.SenderId == receiverId && r.ReceiverId == senderId));
 
@@ -87,7 +87,7 @@ public sealed partial class FriendshipService : IFriendshipService {
     }
 
     public async Task<bool> CancelFriendRequest(string senderId, string receiverId) {
-        await using (var database = await _DbContextFactory.CreateDbContextAsync()) {
+        await using (var database = await _dbContextFactory.CreateDbContextAsync()) {
             database.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
             
             int numUpdatedRows = await database.FriendRequests
@@ -109,7 +109,7 @@ public sealed partial class FriendshipService : IFriendshipService {
     }
     
     public async Task<bool> RejectFriendRequest(string senderId, string receiverId) {
-        await using (var database = await _DbContextFactory.CreateDbContextAsync()) {
+        await using (var database = await _dbContextFactory.CreateDbContextAsync()) {
             database.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
             
             int numUpdatedRows = await database.FriendRequests
@@ -131,7 +131,7 @@ public sealed partial class FriendshipService : IFriendshipService {
     }
     
     public async Task<bool> AcceptFriendRequest(string senderId, string receiverId) {
-        await using (var database = await _DbContextFactory.CreateDbContextAsync()) {
+        await using (var database = await _dbContextFactory.CreateDbContextAsync()) {
             database.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
             
             int numUpdatedRows = await database.FriendRequests
