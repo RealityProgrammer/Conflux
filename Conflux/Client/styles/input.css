@@ -1,7 +1,8 @@
 ﻿@import "tailwindcss" source("../../Components");
 
 @theme {
-    --color-gray-750: oklch(33% 0.033 257.219);
+    --color-gray-725: color-mix(in oklch, var(--color-gray-700) 50%, var(--color-gray-750) 50%);
+    --color-gray-750: color-mix(in oklch, var(--color-gray-700) 50%, var(--color-gray-800) 50%);
 }
 
 @layer components {

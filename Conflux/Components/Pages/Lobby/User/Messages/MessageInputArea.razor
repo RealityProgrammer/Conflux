@@ -1,0 +1,79 @@
+﻿@using Conflux.Components.Shared.Icons
+
+@implements IAsyncDisposable
+
+@inject IJSRuntime JavascriptRuntime
+
+<div @attributes="AdditionalAttributes">
+    <textarea @ref="_textareaElement"
+        class="flex-1 input-field w-full max-w-full py-2 max-h-96 overflow-x-hidden overflow-y-auto wrap-break-word break-all resize-none scrollbar-hide"
+        rows="1"
+        placeholder="Enter the message..."
+        disabled="@_disabled"
+        @bind="TextBody" @bind:event="oninput">
+    </textarea>
+
+    <button class="flex-none rounded-full bg-transparent hover:bg-white/15 active:bg-black/15 p-2 cursor-pointer group disabled:bg-transparent disabled:cursor-default" disabled="@_disabled">
+        <Paperclip class="size-6 fill-white group-disabled:fill-gray-400"/>
+    </button>
+
+    <button class="flex-none rounded-full bg-transparent hover:bg-white/15 active:bg-black/15 p-2 cursor-pointer group disabled:bg-transparent disabled:cursor-default" disabled="@_disabled">
+        <Media Type="MediaType.Gif" class="size-6 fill-none stroke-white group-disabled:stroke-gray-400"/>
+    </button>
+</div>
+
+@code {
+    [Parameter] public EventCallback<string> OnSubmit { get; set; }
+    
+    public string TextBody { get; set; } = string.Empty;
+
+    private ElementReference _textareaElement;
+    
+    private IJSObjectReference? module;
+    private DotNetObjectReference<MessageInputArea>? _objectReference;
+
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+    private bool _disabled;
+
+    protected override void OnParametersSet() {
+        if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("disabled", out object? obj)) {
+            _disabled = Convert.ToBoolean(obj);
+        }
+
+        AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key != "disabled").ToDictionary();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender && !_disabled) {
+            module = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import",
+                "./Components/Pages/Lobby/User/Messages/MessageInputArea.razor.js");
+            
+            _objectReference = DotNetObjectReference.Create(this);
+            await module.InvokeVoidAsync("initializeTextArea", _textareaElement, _objectReference);
+        }
+    }
+
+    [JSInvokable]
+    public async Task HandleMessageSubmit() {
+        if (string.IsNullOrEmpty(TextBody)) return;
+
+        if (OnSubmit.HasDelegate) {
+            await OnSubmit.InvokeAsync(TextBody);
+        }
+        
+        TextBody = string.Empty;
+        StateHasChanged();
+        await Task.Yield();
+    }
+
+    public async ValueTask DisposeAsync() {
+        if (module is not null) {
+            try {
+                await module.DisposeAsync();
+            } catch (JSDisconnectedException) {
+            }
+        }
+
+        _objectReference?.Dispose();
+    }
+}

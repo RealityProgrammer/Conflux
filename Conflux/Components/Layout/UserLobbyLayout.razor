@@ -36,13 +36,13 @@
                 <section class="mt-1">
                     <Virtualize ItemsProvider="ConversationsLoadProvider" OverscanCount="8">
                         <ItemContent Context="item">
-                            <div class="flex-none px-2 py-1 flex flex-row justify-center lg:justify-start items-center bg-transparent hover:bg-white/15 active:bg-black/15 rounded-lg cursor-pointer">
+                            <NavLink href="@($"/lobby/messages/{item.ConversationId}")" class="flex-none px-2 py-1.5 flex flex-row justify-center lg:justify-start items-center bg-transparent hover:bg-white/15 active:bg-black/15 rounded-lg cursor-pointer">
                                 <Avatar class="h-10 flex-none" ImageSrc="@item.FriendAvatarSrc" ImageAlt="@(string.IsNullOrEmpty(item.FriendAvatarSrc) ? string.Empty : "User Avatar")" ScaleX="item.FriendAvatarScaleX" ScaleY="item.FriendAvatarScaleY"/>
                 
                                 <div class="ml-2 hidden lg:flex flex-col justify-center">
                                     <p>@item.FriendDisplayName</p>
                                 </div>
-                            </div>
+                            </NavLink>
                         </ItemContent>
                     </Virtualize>
                 </section>

@@ -1,0 +1,103 @@
+﻿@page "/lobby/messages/{ConversationId}"
+
+@using Conflux.Components.Shared.Icons
+@using Conflux.Services
+
+@inject ApplicationRedirectManager RedirectManager
+@inject ILogger<DirectMessagingPage> Logger
+
+<div class="flex flex-col size-full overflow-hidden">
+    <header class="flex-none p-2 border-b border-b-gray-600 bg-gray-725">
+        @switch (_initializationState) {
+            case InitializationState.Initializing:
+                <p>Loading...</p>
+                break;
+    
+            case InitializationState.Invalid:
+                <p>But nobody came...</p>
+                break;
+    
+            case InitializationState.Success:
+                <p>@_headerText</p>
+                break;
+        }
+    </header>
+
+    <main class="flex-1 overflow-hidden">
+        <div class="flex flex-row h-full">
+            <div class="flex-1 border-r border-r-gray-600 flex flex-col">
+                <div class="flex-1">
+                    @switch (_initializationState) {
+                        case InitializationState.Initializing:
+                            <div class="size-full flex flex-row justify-center items-center">
+                                <Spinner class="size-12 fill-white"/>
+                            </div>
+                            break;
+
+                        case InitializationState.Invalid:
+                            <div class="size-full flex flex-row justify-center items-center">
+                                <p class="text-sm text-gray-400">Such a lonely place...</p>
+                            </div>
+                            break;
+                            
+                        case InitializationState.Success:
+                            <div class="size-full flex flex-row justify-center items-center">
+                                <p class="text-sm text-gray-400">Such a lonely place...</p>
+                            </div>
+                            break;
+                    }
+                </div>
+
+                <MessageInputArea class="flex-none p-2 flex flex-row items-center gap-1" disabled="@(_initializationState != InitializationState.Success)"/>
+            </div>
+    
+            <aside class="flex-none basis-80 hidden lg:block bg-gray-750"></aside>
+        </div>
+    </main>
+</div>
+
+@code {
+    [Parameter] public string? ConversationId { get; set; }
+
+    private string _headerText = string.Empty;
+
+    private InitializationState _initializationState = InitializationState.Initializing;
+
+    private string _textValue = string.Empty;
+
+    protected override void OnInitialized() {
+
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        // Validate that the ConversationID is valid.
+
+        if (firstRender) {
+            if (ConversationId == null || !Guid.TryParse(ConversationId, out _)) {
+                _initializationState = InitializationState.Invalid;
+                StateHasChanged();
+                return;
+            }
+
+            if (_initializationState == InitializationState.Initializing) {
+                _initializationState = InitializationState.Success;
+
+                _headerText = "<Insert other person username here>";
+                
+                StateHasChanged();
+            }
+        }
+    }
+
+    private async Task HandleSendMessage(KeyboardEventArgs args) {
+        if (args.Code is not "Enter" and "NumpadEnter") return;
+        
+        Logger.LogInformation("Send Message: {msg}", _textValue);
+    }
+
+    private enum InitializationState {
+        Initializing,
+        Invalid,
+        Success,
+    }
+}
