@@ -29,7 +29,7 @@
 
     private ElementReference _textareaElement;
     
-    private IJSObjectReference? module;
+    private IJSObjectReference? _module;
     private DotNetObjectReference<MessageInputArea>? _objectReference;
 
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
@@ -45,11 +45,11 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender && !_disabled) {
-            module = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import",
+            _module = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import",
                 "./Components/Shared/MessageInputArea.razor.js");
             
             _objectReference = DotNetObjectReference.Create(this);
-            await module.InvokeVoidAsync("initializeTextArea", _textareaElement, _objectReference);
+            await _module.InvokeVoidAsync("initializeTextArea", _textareaElement, _objectReference);
         }
     }
 
@@ -67,9 +67,9 @@
     }
 
     public async ValueTask DisposeAsync() {
-        if (module is not null) {
+        if (_module is not null) {
             try {
-                await module.DisposeAsync();
+                await _module.DisposeAsync();
             } catch (JSDisconnectedException) {
             }
         }
