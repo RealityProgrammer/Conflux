@@ -4,7 +4,7 @@
 
 @inject IJSRuntime JavascriptRuntime
 
-<div @attributes="AdditionalAttributes">
+<footer @attributes="AdditionalAttributes">
     <textarea @ref="_textareaElement"
         class="flex-1 input-field w-full max-w-full py-2 max-h-96 overflow-x-hidden overflow-y-auto wrap-break-word break-all resize-none scrollbar-hide"
         rows="1"
@@ -20,7 +20,7 @@
     <button class="flex-none rounded-full bg-transparent hover:bg-white/15 active:bg-black/15 p-2 cursor-pointer group disabled:bg-transparent disabled:cursor-default" disabled="@_disabled">
         <Media Type="MediaType.Gif" class="size-6 fill-none stroke-white group-disabled:stroke-gray-400"/>
     </button>
-</div>
+</footer>
 
 @code {
     [Parameter] public EventCallback<string> OnSubmit { get; set; }
@@ -46,7 +46,7 @@
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender && !_disabled) {
             module = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import",
-                "./Components/Pages/Lobby/User/Messages/MessageInputArea.razor.js");
+                "./Components/Shared/MessageInputArea.razor.js");
             
             _objectReference = DotNetObjectReference.Create(this);
             await module.InvokeVoidAsync("initializeTextArea", _textareaElement, _objectReference);

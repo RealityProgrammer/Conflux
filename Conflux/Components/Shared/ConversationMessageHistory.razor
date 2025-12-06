@@ -1,0 +1,132 @@
+﻿@using Conflux.Components.Shared.Icons
+@using Conflux.Database
+@using Conflux.Database.Entities
+@using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+
+@switch (_initStatus) {
+    case InitializationStatus.Initializing:
+        <div class="size-full flex flex-row justify-center items-center">
+            <Spinner class="size-16 fill-white"/>
+        </div>
+        break;
+        
+    case InitializationStatus.NoPermission:
+        <div class="size-full flex flex-row justify-center items-center">
+            <p class="text-sm text-gray-400">You have no permission to join this conversation.</p>
+        </div>
+        break;
+        
+    case InitializationStatus.Success:
+        <div class="overflow-y-auto px-2 @_cssClass" @ref="_scrollContainer">
+            <header class="p-3 pb-0 mb-2">
+                <p class="font-semibold text-white text-xl text-center">This is the message timeline. Be a part of it, or sneak in and listen...</p>
+        
+                <hr class="border-t border-t-gray-600 mt-2"/>
+            </header>
+    
+            @if (_loadingTop) {
+                <div class="flex flex-row items-center justify-center">
+                    <Spinner class="size-6 fill-white"/>
+                </div>
+            }
+    
+            <div>
+                @foreach (ChatMessage message in _visibleMessages) {
+                    <div class="group flex flex-row mb-2">
+                        <Avatar ImageSrc="@message.Sender.AvatarProfilePath" 
+                                ImageAlt="@(string.IsNullOrEmpty(message.Sender.AvatarProfilePath) ? string.Empty : "Sender Avatar")" 
+                                ScaleX="message.Sender.AvatarScaleX"
+                                ScaleY="message.Sender.AvatarScaleY"
+                                class="size-10 mr-2"/>
+                
+                        <div class="flex flex-col">
+                            <p>@message.Sender.DisplayName</p>
+                            <p>@message.Body</p>
+                        </div>
+                    </div>
+                }
+            </div>
+    
+            @if (_loadingBottom) {
+                <div class="flex flex-row items-center justify-center">
+                    <Spinner class="size-6 fill-white"/>
+                </div>
+            }
+        </div>
+        break;
+}
+
+@code {
+    [Parameter, EditorRequired] public required Guid ConversationId { get; set; }
+    [Parameter] public EventCallback<InitializationStatus> OnInitializeLoaded { get; set; }
+    private Conversation? _conversation;
+
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+    private string? _cssClass;
+    
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+    private string _userId = null!;
+
+    private InitializationStatus _initStatus = InitializationStatus.NoPermission;
+    private bool _loadingTop = true, _loadingBottom = true;
+    private ElementReference _scrollContainer;
+    private List<ChatMessage> _visibleMessages = [];
+
+    protected override void OnParametersSet() {
+        if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
+            _cssClass = Convert.ToString(obj);
+        }
+
+        AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "class").ToDictionary();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            try {
+                var authState = await AuthenticationState;
+                _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+                if (string.IsNullOrEmpty(_userId)) {
+                    _initStatus = InitializationStatus.NoPermission;
+                    return;
+                }
+
+                await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
+                    dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+                    
+                    // Load and validate conversation.
+                    _conversation = await dbContext.Conversations.Where(c => c.Id == ConversationId).FirstOrDefaultAsync();
+                
+                    // Load Initial messages
+                    IAsyncEnumerable<ChatMessage> initialMessages = dbContext.ChatMessages
+                        .Where(msg => msg.ConversationId == ConversationId)
+                        .OrderByDescending(msg => msg.CreatedAt)
+                        .Take(50)
+                        .Include(message => message.Sender)
+                        .AsAsyncEnumerable();
+
+                    await foreach (var message in initialMessages) {
+                        _visibleMessages.Add(message);
+                    }
+
+                    _initStatus = InitializationStatus.Success;
+                }
+            } finally {
+                StateHasChanged();
+
+                if (OnInitializeLoaded.HasDelegate) {
+                    await OnInitializeLoaded.InvokeAsync(_initStatus);
+                }
+            }
+        }
+    }
+
+    public enum InitializationStatus {
+        Initializing,
+        NoPermission,
+        Success,
+    }
+}

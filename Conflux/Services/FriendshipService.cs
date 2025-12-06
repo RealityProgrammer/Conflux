@@ -78,11 +78,13 @@ public sealed partial class FriendshipService : IFriendshipService {
                 Status = FriendRequestStatus.Pending,
             });
 
-            await database.SaveChangesAsync();
+            if (await database.SaveChangesAsync() > 0) {
+                await _notificationService.NotifyFriendRequestReceivedAsync(new(senderId, receiverId));
 
-            await _notificationService.NotifyFriendRequestReceivedAsync(new(senderId, receiverId));
+                return IFriendshipService.SendingStatus.Success;
+            }
 
-            return IFriendshipService.SendingStatus.Success;
+            return IFriendshipService.SendingStatus.Failed;
         }
     }
 

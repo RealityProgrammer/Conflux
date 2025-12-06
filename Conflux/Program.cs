@@ -44,7 +44,7 @@ builder.Services.AddDbContextFactory<ApplicationDbContext>(options => {
     options
         .UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
         .EnableSensitiveDataLogging();
-}, ServiceLifetime.Singleton);
+});
 
 // More authentication services.
 builder.Services
@@ -80,6 +80,7 @@ builder.Services.AddScoped<MarkdownPipeline>(services => {
 builder.Services.AddScoped<ProfileSanitizingService>();
 builder.Services.AddScoped<IContentService, ContentService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddSingleton<IConversationCacheService, ConversationCacheService>();
 builder.Services.AddScoped<IConversationService, ConversationService>();
 
 // SignalR related services.

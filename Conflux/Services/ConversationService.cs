@@ -49,4 +49,21 @@ public sealed class ConversationService : IConversationService {
             return conversation;
         }
     }
+
+    public async Task<bool> SendMessageAsync(Guid conversationId, string senderId, string body, Guid? replyMessageId) {
+        await using (var dbContext = await _dbContextFactory.CreateDbContextAsync()) {
+            dbContext.ChatMessages.Add(new() {
+                ConversationId = conversationId,
+                SenderId = senderId,
+                Body = body,
+                ReplyMessageId = null,
+            });
+
+            if (await dbContext.SaveChangesAsync() > 0) {
+                return true;
+            }
+
+            return false;
+        }
+    }
 }

@@ -1,0 +1,65 @@
+﻿@using Conflux.Components.Shared.Icons
+
+<section class="flex flex-col @_cssClass">
+    @switch (_initializationState) {
+        case InitializationState.Initializing:
+            <div class="flex-1 flex flex-row justify-center items-center">
+                <Spinner class="size-12 fill-white"/>
+            </div>
+            break;
+            
+        case InitializationState.NullConversationId or InitializationState.Failure:
+            <div class="flex-1 flex flex-row justify-center items-center">
+                <p class="text-sm text-gray-400">Such a lonely place...</p>
+            </div>
+            break;
+                        
+        case InitializationState.Success:
+            <ConversationMessageHistory @ref="MessageHistoryElement" 
+                                        class="flex-1 basis-auto"
+                                        ConversationId="ConversationId!.Value"
+                                        OnInitializeLoaded="HandleInitializeLoaded"/>
+            break;
+    }
+                
+    <MessageInputArea class="flex-none p-2 flex flex-row items-center gap-1"
+                      disabled="@(_initializationState != InitializationState.Success)"
+                      OnSubmit="@OnMessageSendRequest"/>
+</section>
+
+@code {
+    [Parameter] public EventCallback<string> OnMessageSendRequest { get; set; }
+    [Parameter, EditorRequired] public required Guid? ConversationId { get; set; }
+    
+    public ConversationMessageHistory? MessageHistoryElement { get; private set; }
+
+    private InitializationState _initializationState;
+    
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+    private string? _cssClass;
+    
+    protected override void OnParametersSet() {
+        if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
+            _cssClass = Convert.ToString(obj);
+        }
+
+        AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "class").ToDictionary();
+
+        _initializationState = ConversationId == null ? InitializationState.NullConversationId : InitializationState.Initializing;
+    }
+
+    private async Task HandleInitializeLoaded(ConversationMessageHistory.InitializationStatus status) {
+        switch (status) {
+            case ConversationMessageHistory.InitializationStatus.NoPermission:
+                
+                break;
+        }
+    }
+    
+    private enum InitializationState {
+        Initializing,
+        NullConversationId,
+        Failure,
+        Success,
+    }
+}
