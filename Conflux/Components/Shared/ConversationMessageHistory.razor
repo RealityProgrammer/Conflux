@@ -123,7 +123,7 @@
                         _visibleMessages.Add(message);
                     }
 
-                    _loadingTimestamp = _visibleMessages[0].CreatedAt;
+                    _loadingTimestamp = _visibleMessages[^1].CreatedAt;
                     _initStatus = InitializationStatus.Success;
                 }
 
@@ -159,6 +159,16 @@
                 .Take(20)
                 .Include(message => message.Sender)
                 .AsAsyncEnumerable();
+
+            List<ChatMessage> messages = await loadedMessages.ToListAsync();
+            
+            GC.KeepAlive(messages);
+            
+            foreach (var message in messages) {
+                _visibleMessages.Add(message);
+            }
+
+            _loadingTimestamp = _visibleMessages[^1].CreatedAt;
         }
         
         Interlocked.Exchange(ref _loadingBottom, false);
