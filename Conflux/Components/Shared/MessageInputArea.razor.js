@@ -1,17 +1,4 @@
-﻿// export function growTextArea(element) {
-//     this.style.height = 'auto';
-//     this.style.height = (this.scrollHeight + 1.6) + 'px';
-// }
-//
-// export function assignDotNetHelper(element, dotNetHelper) {
-//     element.dotNetHelper = dotNetHelper;
-// }
-//
-// export async function invokeMessageSend(element) {
-//     await element.dotNetHelper.invokeMethodAsync('HandleMessageSend');
-// }
-
-export function initializeTextArea(element, dotNetHelper) {
+﻿export function initializeTextArea(element, dotNetHelper) {
     element.addEventListener('input', e => {
         element.style.height = 'auto';
         element.style.height = (element.scrollHeight + 1.6) + 'px';

@@ -44,7 +44,7 @@
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
-        if (firstRender && !_disabled) {
+        if (firstRender) {
             _module = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import",
                 "./Components/Shared/MessageInputArea.razor.js");
             
@@ -55,7 +55,7 @@
 
     [JSInvokable]
     public async Task HandleMessageSubmit() {
-        if (string.IsNullOrEmpty(TextBody)) return;
+        if (_disabled || string.IsNullOrEmpty(TextBody)) return;
 
         if (OnSubmit.HasDelegate) {
             await OnSubmit.InvokeAsync(TextBody);
