@@ -8,7 +8,6 @@
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject IJSRuntime JavascriptRuntime
-@inject ILogger<ConversationMessageHistory> Logger
 
 @switch (_initStatus) {
     case InitializationStatus.Initializing:
@@ -24,43 +23,37 @@
         break;
         
     case InitializationStatus.Success:
-        <div class="overflow-y-auto px-2 @_cssClass" @ref="_scrollContainer">
-            @if (_loadingTop) {
-                <div class="flex flex-row items-center justify-center">
-                    <Spinner class="size-6 fill-white"/>
-                </div>
-            }
-    
-            <div class="py-2">
-                @for (int i = _visibleMessages.Count - 1; i >= 0; i--) {
-                    ChatMessage message = _visibleMessages[i];
-                    
-                    <div @key="message.Id" class="group flex flex-row mb-2">
-                        <Avatar ImageSrc="@message.Sender.AvatarProfilePath" 
-                                ImageAlt="@(string.IsNullOrEmpty(message.Sender.AvatarProfilePath) ? string.Empty : "Sender Avatar")" 
-                                ScaleX="message.Sender.AvatarScaleX"
-                                ScaleY="message.Sender.AvatarScaleY"
-                                class="size-10 mr-2"/>
-                
-                        <div class="flex flex-col">
-                            <p>@message.Sender.DisplayName</p>
-                            <p>@message.Body</p>
-                        </div>
-                    </div>
-                }
+        <div class="overflow-y-auto p-2 pb-0 @_cssClass" @ref="_scrollContainer">
+            <div class="flex flex-row items-center justify-center @(_loadingTop ? "block" : "hidden")">
+                <Spinner class="size-6 fill-white"/>
             </div>
-    
-            @if (_loadingBottom) {
-                <div class="flex flex-row items-center justify-center">
-                    <Spinner class="size-6 fill-white"/>
+
+            @foreach (ChatMessage message in _visibleMessages) {
+                <div @key="message.Id" class="group flex flex-row mb-2" data-message-id="@message.Id">
+                    <Avatar ImageSrc="@message.Sender.AvatarProfilePath"
+                            ImageAlt="@(string.IsNullOrEmpty(message.Sender.AvatarProfilePath) ? string.Empty : "Sender Avatar")"
+                            ScaleX="message.Sender.AvatarScaleX"
+                            ScaleY="message.Sender.AvatarScaleY"
+                            class="size-10 mr-2"/>
+            
+                    <div class="flex flex-col">
+                        <p>@message.Sender.DisplayName <span class="ml-1 text-xs text-gray-400">at @message.CreatedAt.ToString("yyyy/MM/dd HH:mm:ss")</span></p>
+                        <p>@message.Body</p>
+                    </div>
                 </div>
             }
+
+            <div class="flex flex-row items-center justify-center @(_loadingBottom ? "block" : "hidden")">
+                <Spinner class="size-6 fill-white"/>
+            </div>
         </div>
         break;
 }
 
 @code {
     [Parameter, EditorRequired] public required Guid ConversationId { get; set; }
+    [Parameter] public Guid? InitiallyFocusMessageId { get; set; }
+    [Parameter, EditorRequired] public required int OverloadCount { get; set; }
     [Parameter] public EventCallback<InitializationStatus> OnInitializeLoaded { get; set; }
 
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
@@ -70,15 +63,19 @@
     private string _userId = null!;
 
     private InitializationStatus _initStatus = InitializationStatus.Initializing;
-    private bool _loadingTop, _loadingBottom, _endTop;
+    private bool _loadingTop, _loadingBottom, _endTop, _endBottom;
     private ElementReference _scrollContainer;
+    
+    // Storing messages in time ascending order.
     private List<ChatMessage> _visibleMessages = [];
-    private DateTime _topLoadTimestamp;
+    private DateTime _topLoadTimestamp, _bottomLoadTimestamp;
     
     private IJSObjectReference? _module;
     private DotNetObjectReference<ConversationMessageHistory>? _objectReference;
 
-    private ScrollInfo? _savedScrollPosition;
+    private ScrollInfo? _savedScrollPositionForTop, _savedScrollPositionForBottom;
+    private bool _jumpToBottomOnLoad, _registeredScrollEvents;
+    private Guid? _jumpToMessageId;
 
     protected override void OnParametersSet() {
         if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
@@ -90,42 +87,72 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
-            _module = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import",  "./Components/Shared/ConversationMessageHistory.razor.js");
+            var authState = await AuthenticationState;
+            _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+            if (string.IsNullOrEmpty(_userId)) {
+                _initStatus = InitializationStatus.NoPermission;
+                return;
+            }
             
+            _module = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import",  "./Components/Shared/ConversationMessageHistory.razor.js");
+            _objectReference = DotNetObjectReference.Create(this);
+            
+            // Load messages.
             try {
-                var authState = await AuthenticationState;
-                _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+                await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
+                    dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+                    
+                    if (InitiallyFocusMessageId.HasValue) {
+                        _visibleMessages = await LoadAroundMessages(dbContext, InitiallyFocusMessageId!.Value);
+                        _jumpToMessageId = InitiallyFocusMessageId!.Value;
 
-                if (string.IsNullOrEmpty(_userId)) {
-                    _initStatus = InitializationStatus.NoPermission;
-                    return;
+                        _topLoadTimestamp = _visibleMessages[0].CreatedAt;
+                        _bottomLoadTimestamp = _visibleMessages[^1].CreatedAt;
+                    }
+
+                    if (_visibleMessages.Count == 0) {
+                        // Load past messages.
+                        _visibleMessages = await LoadTopMessages(dbContext);
+                        _topLoadTimestamp = _visibleMessages[0].CreatedAt;
+                        
+                        _endBottom = _jumpToBottomOnLoad = true;
+                    }
+
+                    _initStatus = InitializationStatus.Success;
+                    StateHasChanged();
                 }
-
-                var loadResult = await LoadTopMessages(DateTime.MaxValue);
-
-                _endTop = !loadResult.HasMore;
-                _topLoadTimestamp = loadResult.NewLoadTimestamp;
-                
-                _initStatus = InitializationStatus.Success;
-                _loadingTop = _loadingBottom = false;
             } finally {
-                StateHasChanged();
-
                 if (OnInitializeLoaded.HasDelegate) {
                     await OnInitializeLoaded.InvokeAsync(_initStatus);
                 }
             }
-
-            await Task.Yield(); // Might need this, probably...
-
-            _objectReference = DotNetObjectReference.Create(this);
-
-            await _module.InvokeVoidAsync("scrollToBottom", _scrollContainer);
-            await _module.InvokeVoidAsync("initializeScrollContainer", _scrollContainer, _objectReference);
         } else {
-            if (_savedScrollPosition != null) {
-                await _module!.InvokeVoidAsync("restoreScrollPosition", _scrollContainer, _savedScrollPosition);
-                _savedScrollPosition = null;
+            if (!_registeredScrollEvents) {
+                _registeredScrollEvents = true;
+                
+                await _module!.InvokeVoidAsync("initializeScrollContainer", _scrollContainer, _objectReference);
+            }
+            
+            if (_jumpToBottomOnLoad) {
+                _jumpToBottomOnLoad = false;
+                
+                await _module!.InvokeVoidAsync("scrollToBottom", _scrollContainer);
+            }
+
+            if (_jumpToMessageId.HasValue) {
+                await _module!.InvokeVoidAsync("jumpToMessage", _scrollContainer, _jumpToMessageId.Value);
+                _jumpToMessageId = null;
+            }
+            
+            if (_savedScrollPositionForTop != null) {
+                await _module!.InvokeVoidAsync("restoreScrollPositionForTop", _scrollContainer, _savedScrollPositionForTop);
+                _savedScrollPositionForTop = null;
+            }
+            
+            if (_savedScrollPositionForBottom != null) {
+                await _module!.InvokeVoidAsync("restoreScrollPositionForBottom", _scrollContainer, _savedScrollPositionForBottom);
+                _savedScrollPositionForBottom = null;
             }
         }
     }
@@ -136,14 +163,22 @@
         if (Interlocked.Exchange(ref _loadingTop, true)) return;
         
         await InvokeAsync(StateHasChanged); // Re-render to display the load spinner.
-        
+
         try {
-            _savedScrollPosition = await _module!.InvokeAsync<ScrollInfo>("saveScrollPosition", _scrollContainer);
+            _savedScrollPositionForTop = await _module!.InvokeAsync<ScrollInfo>("saveScrollPosition", _scrollContainer);
+        
+            await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
+                var loadResult = await LoadTopMessages(dbContext, _topLoadTimestamp);
 
-            var loadResult = await LoadTopMessages(_topLoadTimestamp);
-
-            _endTop = !loadResult.HasMore;
-            _topLoadTimestamp = loadResult.NewLoadTimestamp;
+                if (loadResult.Count == 0) {
+                    _endTop = true;
+                } else {
+                    _endTop = false;
+                    _topLoadTimestamp = loadResult[0].CreatedAt;
+                    
+                    _visibleMessages.InsertRange(0, loadResult);
+                }
+            }
         } finally {
             Interlocked.Exchange(ref _loadingTop, false);
             await InvokeAsync(StateHasChanged);
@@ -152,37 +187,96 @@
     
     [JSInvokable]
     public async Task HandleLoadBottomMessages() {
-        // if (Interlocked.Exchange(ref _loadingBottom, true)) return;
+        if (_endBottom) return;
+        if (Interlocked.Exchange(ref _loadingBottom, true)) return;
         
-        Logger.LogInformation("Load more bottom messages...");
+        await InvokeAsync(StateHasChanged); // Re-render to display the load spinner.
+        
+        try {
+            _savedScrollPositionForBottom = await _module!.InvokeAsync<ScrollInfo>("saveScrollPosition", _scrollContainer);
+        
+            await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
+                var loadResult = await LoadBottomMessages(dbContext, _bottomLoadTimestamp);
 
-        // Interlocked.Exchange(ref _loadingBottom, false);
+                if (loadResult.Count == 0) {
+                    _endBottom = true;
+                } else {
+                    _endBottom = false;
+                    _bottomLoadTimestamp = loadResult[^1].CreatedAt;
+                    
+                    _visibleMessages.AddRange(loadResult);
+                }
+            }
+        } finally {
+            Interlocked.Exchange(ref _loadingBottom, false);
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+    
+    private async Task<List<ChatMessage>> LoadTopMessages(ApplicationDbContext dbContext) {
+        List<ChatMessage> loadedMessages = await dbContext.ChatMessages
+            .Where(msg => msg.ConversationId == ConversationId)
+            .OrderByDescending(m => m.CreatedAt)
+            .Take(OverloadCount)
+            .Include(message => message.Sender)
+            .Reverse()
+            .ToListAsync();
+
+        return loadedMessages;
     }
 
-    private async Task<MessageLoadResult> LoadTopMessages(DateTime loadTimestamp) {
-        MessageLoadResult result = default;
-        
-        await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
-            // Hacky way to detect if we ran out of message by loading extra 1 message, if the collection
-            // returns the same amount, take only what we need, ignore the extra and note that there are more.
-            List<ChatMessage> loadedMessages = await dbContext.ChatMessages
-                .Where(msg => msg.ConversationId == ConversationId)
-                .OrderByDescending(msg => msg.CreatedAt)
-                .Where(m => m.CreatedAt < loadTimestamp)
-                .Take(ApplicationConstants.MessageLoadCount + 1)
-                .Include(message => message.Sender)
-                .ToListAsync();
+    private async Task<List<ChatMessage>> LoadTopMessages(ApplicationDbContext dbContext, DateTime loadTimestamp) {
+        List<ChatMessage> loadedMessages = await dbContext.ChatMessages
+            .Where(msg => msg.ConversationId == ConversationId)
+            .OrderByDescending(m => m.CreatedAt)
+            .Where(m => m.CreatedAt < loadTimestamp)
+            .Take(OverloadCount)
+            .Include(message => message.Sender)
+            .Reverse()
+            .ToListAsync();
 
-            result.HasMore = loadedMessages.Count == ApplicationConstants.MessageLoadCount + 1;
-            
-            for (int i = 0, c = int.Min(ApplicationConstants.MessageLoadCount, loadedMessages.Count); i < c; i++) {
-                _visibleMessages.Add(loadedMessages[i]);
-            }
-                
-            result.NewLoadTimestamp = _visibleMessages[^1].CreatedAt;
-        }
+        return loadedMessages;
+    }
+    
+    private async Task<List<ChatMessage>> LoadBottomMessages(ApplicationDbContext dbContext, DateTime loadTimestamp) {
+        List<ChatMessage> loadedMessages = await dbContext.ChatMessages
+            .Where(msg => msg.ConversationId == ConversationId)
+            .OrderBy(m => m.CreatedAt)
+            .Where(m => m.CreatedAt > loadTimestamp)
+            .Take(OverloadCount)
+            .Include(message => message.Sender)
+            .ToListAsync();
 
-        return result;
+        return loadedMessages;
+    }
+
+    private async Task<List<ChatMessage>> LoadAroundMessages(ApplicationDbContext dbContext, Guid messageId) {
+        // Get the create time of the message with the required id.
+
+        DateTime dateTime = await dbContext.ChatMessages
+            .Where(m => m.Id == messageId && m.ConversationId == ConversationId)
+            .Select(m => m.CreatedAt)
+            .FirstOrDefaultAsync();
+
+        if (dateTime == default) return [];
+
+        List<ChatMessage> messages = await dbContext.ChatMessages
+            .Where(m => m.ConversationId == ConversationId)
+            .OrderByDescending(m => m.CreatedAt)
+            .Where(m => m.CreatedAt < dateTime)
+            .Take(OverloadCount)
+            .Include(m => m.Sender)
+            .Concat(dbContext.ChatMessages
+                .Where(m => m.ConversationId == ConversationId)
+                .OrderBy(m => m.CreatedAt)
+                .Where(m => m.CreatedAt >= dateTime)
+                .Take(OverloadCount)
+                .Include(m => m.Sender)
+            )
+            .OrderBy(m => m.CreatedAt)
+            .ToListAsync();
+
+        return messages;
     }
     
     public async ValueTask DisposeAsync() {
@@ -203,6 +297,4 @@
     }
 
     public record ScrollInfo(double ScrollTop, double ScrollHeight);
-
-    public record struct MessageLoadResult(bool HasMore, DateTime NewLoadTimestamp);
 }

@@ -3,11 +3,18 @@
     <ConversationMessageHistory @ref="MessageHistoryElement"
                                 class="flex-1 basis-auto"
                                 ConversationId="ConversationId!.Value"
-                                OnInitializeLoaded="HandleInitializeLoaded"/>
+                                OnInitializeLoaded="HandleInitializeLoaded"
+                                OverloadCount="ApplicationConstants.MessageLoadCount"/>
 
     <MessageInputArea class="flex-none p-2 flex flex-row items-center gap-1"
                       disabled="@(!_isConversationLoaded)"
                       OnSubmit="@OnMessageSendRequest"/>
+    
+    <div class="flex-none flex flex-row gap-1">
+        <button class="button-primary">
+            Jump to random
+        </button>
+    </div>
 </section>
 
 @code {
@@ -28,7 +35,6 @@
 
         AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "class").ToDictionary();
     }
-
    
     private void HandleInitializeLoaded(ConversationMessageHistory.InitializationStatus status) {
         if (status == ConversationMessageHistory.InitializationStatus.Success) {

@@ -1,8 +1,12 @@
 ﻿@using Conflux.Components.Shared.Icons
+@using Conflux.Database
+@using Conflux.Database.Entities
+@using Microsoft.EntityFrameworkCore
 
 @implements IAsyncDisposable
 
 @inject IJSRuntime JavascriptRuntime
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 
 <footer @attributes="AdditionalAttributes">
     <textarea @ref="_textareaElement"
