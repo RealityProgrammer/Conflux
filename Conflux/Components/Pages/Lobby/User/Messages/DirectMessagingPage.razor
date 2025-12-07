@@ -1,4 +1,4 @@
-﻿@page "/lobby/messages/{ConversationId}"
+﻿@page "/lobby/messages/{ConversationId:guid}"
 
 @using Conflux.Components.Shared
 @using Conflux.Database
@@ -6,12 +6,16 @@
 @using Conflux.Services
 @using Conflux.Services.Abstracts
 @using Microsoft.EntityFrameworkCore
+@using System.Diagnostics
 @using System.Security.Claims
+
+@implements IAsyncDisposable
 
 @inject ILogger<DirectMessagingPage> Logger
 @inject IConversationService ConversationService
 @inject ApplicationRedirectManager RedirectManager
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject NavigationManager NavigationManager
 
 <div class="flex flex-col size-full overflow-hidden">
     <header class="flex-none p-1.5 border-b border-b-gray-600 bg-gray-725 flex flex-row items-center">
@@ -40,76 +44,94 @@
 
     <main class="flex-1 overflow-hidden">
         <div class="flex flex-row h-full">
-            <MessagingArea class="flex-1 border-r border-r-gray-600" ConversationId="_conversationId" OnMessageSendRequest="HandleSendMessage"/>
-            
+            <MessagingArea @ref="_messagingArea" class="flex-1 border-r border-r-gray-600" ConversationId="ConversationId" OnMessageSendRequest="HandleSendMessage"/>
+    
             <aside class="flex-none basis-80 hidden lg:block bg-gray-750"></aside>
         </div>
     </main>
 </div>
 
 @code {
-    [Parameter] public string? ConversationId { get; set; }
-    private Guid? _conversationId;
+    [Parameter] public Guid ConversationId { get; set; }
+    private Guid _previousConversationId;
 
     private HeaderDisplayContent _headerContent = null!;
     private InitializationState _initState;
 
+    private MessagingArea _messagingArea = null!;
+
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
     private string _userId = null!;
 
-    protected override void OnParametersSet() {
-        if (Guid.TryParse(ConversationId, out var conversationId)) {
-            _conversationId = conversationId;
-            _initState = InitializationState.Initializing;
-        } else {
-            _conversationId = null;
-            _initState = InitializationState.NoConversation;
+    protected override async Task OnInitializedAsync() {
+        var authState = await AuthenticationState;
+        _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+        if (string.IsNullOrEmpty(_userId)) {
+            _initState = InitializationState.NoPermission;
         }
+        
+        NavigationManager.LocationChanged += OnNavigationLocationChanged;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
-        if (firstRender && _initState == InitializationState.Initializing) {
-            try {
-                var authState = await AuthenticationState;
-                _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-
-                if (string.IsNullOrEmpty(_userId)) {
-                    _initState = InitializationState.NoPermission;
-                    return;
-                }
-
-                Guid conversationId = _conversationId!.Value;
-
-                await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
-                    var headerContent = await dbContext.Conversations
-                        .Where(c => c.Id == conversationId && c.Members.Any(m => m.UserId == _userId))
-                        .Select(c => c.Members.First(m => m.UserId != _userId))
-                        .Select(m => m.UserId)
-                        .Join(dbContext.Users, id => id, u => u.Id, (id, u) => new HeaderDisplayContent {
-                            Title = u.DisplayName,
-                            Avatar = u.AvatarProfilePath,
-                            AvatarScaleX = u.AvatarScaleX,
-                            AvatarScaleY = u.AvatarScaleY,
-                        })
-                        .FirstOrDefaultAsync();
-
-                    if (headerContent == null) {
-                        _initState = InitializationState.NoConversation;
-                    } else {
-                        _initState = InitializationState.Success;
-                        _headerContent = headerContent;
-                    }
-                }
-            } finally {
-                StateHasChanged();
-            }
+        if (_previousConversationId == ConversationId) {
+            return;
         }
+
+        if (_previousConversationId != Guid.Empty) {
+            await ConversationService.LeaveConversationAsync(_previousConversationId);
+            _previousConversationId = Guid.Empty;
+        }
+
+        try {
+            await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
+                var headerContent = await dbContext.Conversations
+                    .Where(c => c.Id == ConversationId && c.Members.Any(m => m.UserId == _userId))
+                    .Select(c => c.Members.First(m => m.UserId != _userId))
+                    .Select(m => m.UserId)
+                    .Join(dbContext.Users, id => id, u => u.Id, (id, u) => new HeaderDisplayContent {
+                        Title = u.DisplayName,
+                        Avatar = u.AvatarProfilePath,
+                        AvatarScaleX = u.AvatarScaleX,
+                        AvatarScaleY = u.AvatarScaleY,
+                    })
+                    .FirstOrDefaultAsync();
+        
+                if (headerContent == null) {
+                    _initState = InitializationState.NoConversation;
+                } else {
+                    _initState = InitializationState.Success;
+                    _headerContent = headerContent;
+                    
+                    await ConversationService.JoinConversationAsync(ConversationId);
+                }
+            }
+        } finally {
+            StateHasChanged();
+        }
+
+        if (_previousConversationId != Guid.Empty) {
+            await _messagingArea.SwitchConversation(ConversationId);
+        }
+
+        _previousConversationId = ConversationId;
     }
 
     private async Task HandleSendMessage(string body) {
-        if (_conversationId == null) return;
+        if (_initState == InitializationState.Success) {
+            await ConversationService.SendMessageAsync(ConversationId, _userId, body, null);
+        }
+    }
+
+    private void OnNavigationLocationChanged(object? sender, LocationChangedEventArgs e) {
+        _initState = InitializationState.Initializing;
+    }
+
+    public async ValueTask DisposeAsync() {
+        NavigationManager.LocationChanged -= OnNavigationLocationChanged;
         
-        await ConversationService.SendMessageAsync(_conversationId.Value, _userId, body, null);
+        await ConversationService.LeaveConversationAsync(ConversationId);
     }
 
     private enum InitializationState {

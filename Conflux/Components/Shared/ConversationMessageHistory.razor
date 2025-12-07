@@ -9,21 +9,15 @@
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject IJSRuntime JavascriptRuntime
 
-@switch (_initStatus) {
-    case InitializationStatus.Initializing:
-        <div class="size-full flex flex-row justify-center items-center">
-            <Spinner class="size-16 fill-white"/>
-        </div>
-        break;
-        
-    case InitializationStatus.NoPermission:
-        <div class="size-full flex flex-row justify-center items-center">
-            <p class="text-sm text-gray-400">You have no permission to join this conversation.</p>
-        </div>
-        break;
-        
-    case InitializationStatus.Success:
-        <div class="overflow-y-auto p-2 pb-0 @_cssClass" @ref="_scrollContainer">
+<div class="overflow-y-auto p-2 pb-0 @_cssClass" @ref="_scrollContainer">
+    @switch (_initStatus) {
+        case InitializationStatus.Initializing:
+            <div class="size-full flex flex-row justify-center items-center">
+                <Spinner class="size-16 fill-white"/>
+            </div>
+            break;
+            
+        case InitializationStatus.Success:
             <div class="flex flex-row items-center justify-center @(_loadingTop ? "block" : "hidden")">
                 <Spinner class="size-6 fill-white"/>
             </div>
@@ -35,7 +29,7 @@
                             ScaleX="message.Sender.AvatarScaleX"
                             ScaleY="message.Sender.AvatarScaleY"
                             class="size-10 mr-2"/>
-            
+
                     <div class="flex flex-col">
                         <p>@message.Sender.DisplayName <span class="ml-1 text-xs text-gray-400">at @message.CreatedAt.ToString("yyyy/MM/dd HH:mm:ss")</span></p>
                         <p>@message.Body</p>
@@ -46,9 +40,9 @@
             <div class="flex flex-row items-center justify-center @(_loadingBottom ? "block" : "hidden")">
                 <Spinner class="size-6 fill-white"/>
             </div>
-        </div>
-        break;
-}
+            break;
+    }
+</div>
 
 @code {
     [Parameter, EditorRequired] public required Guid ConversationId { get; set; }
@@ -59,9 +53,6 @@
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
     private string? _cssClass;
     
-    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
-    private string _userId = null!;
-
     private InitializationStatus _initStatus = InitializationStatus.Initializing;
     private bool _loadingTop, _loadingBottom, _endTop, _endBottom;
     private ElementReference _scrollContainer;
@@ -74,68 +65,46 @@
     private DotNetObjectReference<ConversationMessageHistory>? _objectReference;
 
     private ScrollInfo? _savedScrollPositionForTop, _savedScrollPositionForBottom;
-    private bool _jumpToBottomOnLoad, _registeredScrollEvents;
+    private bool _jumpToBottom;
     private Guid? _jumpToMessageId;
 
-    protected override void OnParametersSet() {
+    protected override async Task OnParametersSetAsync() {
         if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
             _cssClass = Convert.ToString(obj);
         }
 
         AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "class").ToDictionary();
+        
+        await LoadInitialMessages();
+
+        _initStatus = InitializationStatus.Success;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
-            var authState = await AuthenticationState;
-            _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-
-            if (string.IsNullOrEmpty(_userId)) {
-                _initStatus = InitializationStatus.NoPermission;
-                return;
-            }
-            
             _module = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import",  "./Components/Shared/ConversationMessageHistory.razor.js");
             _objectReference = DotNetObjectReference.Create(this);
             
-            // Load messages.
-            try {
-                await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
-                    dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-                    
-                    if (InitiallyFocusMessageId.HasValue) {
-                        _visibleMessages = await LoadAroundMessages(dbContext, InitiallyFocusMessageId!.Value);
-                        _jumpToMessageId = InitiallyFocusMessageId!.Value;
-
-                        _topLoadTimestamp = _visibleMessages[0].CreatedAt;
-                        _bottomLoadTimestamp = _visibleMessages[^1].CreatedAt;
-                    }
-
-                    if (_visibleMessages.Count == 0) {
-                        // Load past messages.
-                        _visibleMessages = await LoadTopMessages(dbContext);
-                        _topLoadTimestamp = _visibleMessages[0].CreatedAt;
-                        
-                        _endBottom = _jumpToBottomOnLoad = true;
-                    }
-
-                    _initStatus = InitializationStatus.Success;
-                    StateHasChanged();
-                }
-            } finally {
-                if (OnInitializeLoaded.HasDelegate) {
-                    await OnInitializeLoaded.InvokeAsync(_initStatus);
-                }
-            }
-        } else {
-            if (!_registeredScrollEvents) {
-                _registeredScrollEvents = true;
-                
-                await _module!.InvokeVoidAsync("initializeScrollContainer", _scrollContainer, _objectReference);
+            await _module!.InvokeVoidAsync("initializeScrollContainer", _scrollContainer, _objectReference);
+            
+            if (OnInitializeLoaded.HasDelegate) {
+                await OnInitializeLoaded.InvokeAsync(_initStatus);
             }
             
-            if (_jumpToBottomOnLoad) {
-                _jumpToBottomOnLoad = false;
+            // Load messages.
+            // try {
+            //     await LoadInitialMessages();
+            //
+            //     _initStatus = InitializationStatus.Success;
+            //     StateHasChanged();
+            // } finally {
+            //     if (OnInitializeLoaded.HasDelegate) {
+            //         await OnInitializeLoaded.InvokeAsync(_initStatus);
+            //     }
+            // }
+        } else {
+            if (_jumpToBottom) {
+                _jumpToBottom = false;
                 
                 await _module!.InvokeVoidAsync("scrollToBottom", _scrollContainer);
             }
@@ -153,6 +122,32 @@
             if (_savedScrollPositionForBottom != null) {
                 await _module!.InvokeVoidAsync("restoreScrollPositionForBottom", _scrollContainer, _savedScrollPositionForBottom);
                 _savedScrollPositionForBottom = null;
+            }
+        }
+    }
+
+    private async Task LoadInitialMessages() {
+        await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
+            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+                    
+            if (InitiallyFocusMessageId.HasValue) {
+                _visibleMessages = await LoadAroundMessages(dbContext, InitiallyFocusMessageId!.Value);
+                _jumpToMessageId = InitiallyFocusMessageId!.Value;
+
+                if (_visibleMessages.Count > 0) {
+                    _topLoadTimestamp = _visibleMessages[0].CreatedAt;
+                    _bottomLoadTimestamp = _visibleMessages[^1].CreatedAt;
+                }
+            }
+
+            if (_visibleMessages.Count == 0) {
+                // Load past messages.
+                _visibleMessages = await LoadTopMessages(dbContext);
+                _endBottom = _jumpToBottom = true;
+
+                if (_visibleMessages.Count > 0) {
+                    _topLoadTimestamp = _visibleMessages[0].CreatedAt;
+                }
             }
         }
     }
@@ -278,6 +273,19 @@
 
         return messages;
     }
+
+    public async Task SwitchConversation(Guid conversationId) {
+        ConversationId = conversationId;
+        _initStatus = InitializationStatus.Initializing;
+        StateHasChanged();
+
+        _visibleMessages.Clear();
+
+        await LoadInitialMessages();
+        
+        _initStatus = InitializationStatus.Success;
+        StateHasChanged();
+    }
     
     public async ValueTask DisposeAsync() {
         if (_module is not null) {
@@ -292,7 +300,6 @@
 
     public enum InitializationStatus {
         Initializing,
-        NoPermission,
         Success,
     }
 

@@ -2,7 +2,7 @@
     @* Loading state will be handled by the ConversationMessageHistory *@
     <ConversationMessageHistory @ref="MessageHistoryElement"
                                 class="flex-1 basis-auto"
-                                ConversationId="ConversationId!.Value"
+                                ConversationId="ConversationId"
                                 OnInitializeLoaded="HandleInitializeLoaded"
                                 OverloadCount="ApplicationConstants.MessageLoadCount"/>
 
@@ -19,9 +19,9 @@
 
 @code {
     [Parameter] public EventCallback<string> OnMessageSendRequest { get; set; }
-    [Parameter, EditorRequired] public required Guid? ConversationId { get; set; }
-    
-    public ConversationMessageHistory? MessageHistoryElement { get; private set; }
+    [Parameter, EditorRequired] public required Guid ConversationId { get; set; }
+
+    public ConversationMessageHistory MessageHistoryElement { get; private set; } = null!;
 
     private bool _isConversationLoaded = false;
     
@@ -34,6 +34,11 @@
         }
 
         AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "class").ToDictionary();
+    }
+
+    public async Task SwitchConversation(Guid conversationId) {
+        ConversationId = conversationId;
+        await MessageHistoryElement.SwitchConversation(conversationId);
     }
    
     private void HandleInitializeLoaded(ConversationMessageHistory.InitializationStatus status) {

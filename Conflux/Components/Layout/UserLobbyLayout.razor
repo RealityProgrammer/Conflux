@@ -33,19 +33,19 @@
             <hr class="border-t border-t-gray-600 mx-2"/>
             
             <div class="bg-transparent pt-2 px-2 pb-1">
-                <section class="mt-1">
-                    <Virtualize ItemsProvider="ConversationsLoadProvider" OverscanCount="8">
-                        <ItemContent Context="item">
-                            <NavLink href="@($"/lobby/messages/{item.ConversationId}")" class="flex-none px-2 py-1.5 flex flex-row justify-center lg:justify-start items-center bg-transparent hover:bg-white/15 active:bg-black/15 rounded-lg cursor-pointer">
+                <Virtualize ItemsProvider="ConversationsLoadProvider" OverscanCount="8">
+                    <ItemContent Context="item">
+                        <div class="py-0.5">
+                            <NavLink href="@($"/lobby/messages/{item.ConversationId}")" class="flex-none px-2 py-1.5 flex flex-row justify-center lg:justify-start items-center bg-transparent hover:bg-white/15 active:bg-black/15 rounded-lg cursor-pointer" ActiveClass="bg-white/5!" Match="NavLinkMatch.Prefix">
                                 <Avatar class="h-10 flex-none" ImageSrc="@item.FriendAvatarSrc" ImageAlt="@(string.IsNullOrEmpty(item.FriendAvatarSrc) ? string.Empty : "User Avatar")" ScaleX="item.FriendAvatarScaleX" ScaleY="item.FriendAvatarScaleY"/>
-                
+
                                 <div class="ml-2 hidden lg:flex flex-col justify-center">
                                     <p>@item.FriendDisplayName</p>
                                 </div>
                             </NavLink>
-                        </ItemContent>
-                    </Virtualize>
-                </section>
+                        </div>
+                    </ItemContent>
+                </Virtualize>
             </div>
         </section>
         

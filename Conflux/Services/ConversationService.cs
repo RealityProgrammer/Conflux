@@ -1,17 +1,86 @@
 ﻿using Conflux.Database;
 using Conflux.Database.Entities;
 using Conflux.Services.Abstracts;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Net;
 
 namespace Conflux.Services;
 
-public sealed class ConversationService : IConversationService {
+public sealed class ConversationService : IConversationService, IAsyncDisposable {
     private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
+    private readonly INotificationService _notificationService;
+    private readonly NavigationManager _navigationManager;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly ILogger<ConversationService> _logger;
 
-    public ConversationService(IDbContextFactory<ApplicationDbContext> dbContextFactory) {
+    private readonly ConcurrentDictionary<Guid, HubConnection> _conversationHubConnections = [];
+
+    public ConversationService(IWebHostEnvironment environment, IDbContextFactory<ApplicationDbContext> dbContextFactory, INotificationService notificationService, NavigationManager navigationManager, IHttpContextAccessor httpContextAccessor, ILogger<ConversationService> logger) {
         _dbContextFactory = dbContextFactory;
+        _notificationService = notificationService;
+        _navigationManager = navigationManager;
+        _httpContextAccessor = httpContextAccessor;
+        _logger = logger;
     }
-    
+
+    private HubConnection CreateHubConnectionForConversation(Guid conversationId) {
+        return new HubConnectionBuilder()
+            .WithUrl(_navigationManager.ToAbsoluteUri($"/hub/conversation?ConversationId={conversationId}"), options => {
+                var cookies = _httpContextAccessor.HttpContext!.Request.Cookies.ToDictionary();
+                
+                options.UseDefaultCredentials = true;
+                
+                var cookieContainer = cookies.Count != 0 ? new(cookies.Count) : new CookieContainer();
+
+                foreach (var cookie in cookies) {
+                    cookieContainer.Add(new Cookie(
+                        cookie.Key,
+                        WebUtility.UrlEncode(cookie.Value),
+                        path: "/",
+                        domain: _navigationManager.ToAbsoluteUri("/").Host));
+                }
+
+                options.Cookies = cookieContainer;
+
+                foreach (var header in cookies) {
+                    options.Headers.Add(header.Key, header.Value);
+                }
+
+                options.HttpMessageHandlerFactory = (input) => {
+                    var clientHandler = new HttpClientHandler {
+                        PreAuthenticate = true,
+                        CookieContainer = cookieContainer,
+                        UseCookies = true,
+                        UseDefaultCredentials = true,
+                    };
+                    return clientHandler;
+                };
+            })
+            .WithAutomaticReconnect()
+            .Build();
+    }
+
+    public async Task JoinConversationAsync(Guid conversationId) {
+        // TODO: Revise this code due to possible race-condition.
+        if (_conversationHubConnections.ContainsKey(conversationId)) return;
+        
+        var connection = CreateHubConnectionForConversation(conversationId);
+        await connection.StartAsync();
+
+        bool add = _conversationHubConnections.TryAdd(conversationId, connection);
+        Debug.Assert(add, $"Failed to register hub connection for conversation {conversationId}. Possible race-condition?");
+    }
+
+    public async Task LeaveConversationAsync(Guid conversationId) {
+        if (_conversationHubConnections.TryRemove(conversationId, out var connection)) {
+            await connection.DisposeAsync();
+        }
+    }
+
     public async Task<Conversation?> GetOrCreateDirectConversationAsync(string user1, string user2) {
         await using (var dbContext = await _dbContextFactory.CreateDbContextAsync()) {
             string[] userIds = [user1, user2];
@@ -64,6 +133,12 @@ public sealed class ConversationService : IConversationService {
             }
 
             return false;
+        }
+    }
+
+    public async ValueTask DisposeAsync() {
+        foreach ((_, HubConnection connection) in _conversationHubConnections) {
+            await connection.DisposeAsync();
         }
     }
 }

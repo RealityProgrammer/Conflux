@@ -37,16 +37,20 @@ public sealed class NotificationService(
                 options.UseDefaultCredentials = true;
                 
                 var cookieContainer = cookies.Count != 0 ? new(cookies.Count) : new CookieContainer();
-                foreach (var cookie in cookies)
+
+                foreach (var cookie in cookies) {
                     cookieContainer.Add(new Cookie(
                         cookie.Key,
                         WebUtility.UrlEncode(cookie.Value),
                         path: "/",
                         domain: navigationManager.ToAbsoluteUri("/").Host));
+                }
+
                 options.Cookies = cookieContainer;
 
-                foreach (var header in cookies)
+                foreach (var header in cookies) {
                     options.Headers.Add(header.Key, header.Value);
+                }
 
                 options.HttpMessageHandlerFactory = (input) => {
                     var clientHandler = new HttpClientHandler {
