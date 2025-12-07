@@ -9,7 +9,6 @@
         debounceTimer = setTimeout(async () => {
             if (scrollContainer.scrollTop <= threshold) {
                 await dotNetHelper.invokeMethodAsync('HandleLoadTopMessages');
-                console.log("HandleLoadTopMessages");
             } else if (scrollContainer.scrollTop + scrollContainer.clientHeight >= scrollContainer.scrollHeight - threshold) {
                 await dotNetHelper.invokeMethodAsync('HandleLoadBottomMessages');
             }
@@ -19,7 +18,6 @@
 
 export function scrollToBottom(scrollContainer) {
     scrollContainer.scrollTop = scrollContainer.scrollHeight;
-    console.log("scrollToBottom: " + scrollContainer.scrollHeight);
 }
 
 export function saveScrollPosition(scrollContainer) {

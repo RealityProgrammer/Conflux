@@ -44,7 +44,7 @@
 
     <main class="flex-1 overflow-hidden">
         <div class="flex flex-row h-full">
-            <MessagingArea @ref="_messagingArea" class="flex-1 border-r border-r-gray-600" ConversationId="ConversationId" OnMessageSendRequest="HandleSendMessage"/>
+            <MessagingArea class="flex-1 border-r border-r-gray-600" ConversationId="ConversationId" OnMessageSendRequest="HandleSendMessage" OverloadCount="20"/>
     
             <aside class="flex-none basis-80 hidden lg:block bg-gray-750"></aside>
         </div>
@@ -57,8 +57,6 @@
 
     private HeaderDisplayContent _headerContent = null!;
     private InitializationState _initState;
-
-    private MessagingArea _messagingArea = null!;
 
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
     private string _userId = null!;
@@ -110,11 +108,7 @@
         } finally {
             StateHasChanged();
         }
-
-        if (_previousConversationId != Guid.Empty) {
-            await _messagingArea.SwitchConversation(ConversationId);
-        }
-
+        
         _previousConversationId = ConversationId;
     }
 
