@@ -7,7 +7,7 @@
 @inject IJSRuntime JavascriptRuntime
 
 <section class="flex flex-col @_cssClass">
-    <div class="overflow-y-auto p-2 pb-0 flex-1" @ref="_scrollContainer">
+    <div class="overflow-y-auto flex-1" @ref="_scrollContainer">
         @switch (_initStatus) {
             case InitializationStatus.Loading:
                 <div class="size-full flex flex-row justify-center items-center">
@@ -20,21 +20,57 @@
                     <Spinner class="size-6 fill-white"/>
                 </div>
 
-                @foreach (ChatMessage message in _visibleMessages) {
-                    <div @key="message.Id" class="group flex flex-row mb-2" data-message-id="@message.Id">
+                for (int i = 0, c = _visibleMessages.Count; i < c;) {
+                    ChatMessage message = _visibleMessages[i];
+                    
+                    <div class="px-2 py-0.5 flex flex-row">
                         <Avatar ImageSrc="@message.Sender.AvatarProfilePath"
                                 ImageAlt="@(string.IsNullOrEmpty(message.Sender.AvatarProfilePath) ? string.Empty : "Sender Avatar")"
                                 ScaleX="message.Sender.AvatarScaleX"
                                 ScaleY="message.Sender.AvatarScaleY"
-                                class="size-10 mr-2"/>
+                                class="flex-none size-10 mr-2 mt-1"/>
+                    
+                        <div class="flex-1 flex flex-col">
+                            <p>@message.Sender.DisplayName</p>
+                            <p class="relative bg-transparent hover:bg-white/10">
+                                @message.Body
+                            </p>
+                            
+                            @{ int j = i + 1; }
+                            
+                            @for (; j < c; j++) {
+                                ChatMessage message2 = _visibleMessages[j];
 
-                        <div class="flex flex-col">
-                            <p>@message.Sender.DisplayName <span class="ml-1 text-xs text-gray-400">at @message.CreatedAt.ToString("yyyy/MM/dd HH:mm:ss")</span></p>
-                            <p>@message.Body</p>
+                                if (message.SenderId == message2.SenderId) {
+                                    <p class="relative bg-transparent hover:bg-white/10 group">
+                                        @message2.Body
+                                        
+                                        <span class="px-1 py-1 top-0 right-4 -translate-y-1/2 absolute bg-gray-750 rounded-lg hidden group-hover:flex flex-row items-center gap-1">
+                                            <p class="text-sm">@message.CreatedAt.ToString("yyyy/MM/dd HH:mm:ss")</p>
+                                            
+                                            <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md">
+                                                <Pencil class="size-5 fill-white"></Pencil>
+                                            </button>
+                                            
+                                            <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md">
+                                                <TurnArrow class="size-5 fill-none stroke-white"/>
+                                            </button>
+                                            
+                                            <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md">
+                                                <ThreeDots class="size-5 fill-white"></ThreeDots>
+                                            </button>
+                                        </span>
+                                    </p>
+                                }
+                            }
+                            
+                            @{
+                                i = j;
+                            }
                         </div>
                     </div>
                 }
-
+                
                 <div class="flex flex-row items-center justify-center @(_loadingBottom ? "block" : "hidden")">
                     <Spinner class="size-6 fill-white"/>
                 </div>
