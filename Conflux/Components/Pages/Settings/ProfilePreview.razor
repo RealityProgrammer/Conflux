@@ -18,7 +18,7 @@
                         string? displayImageSrc = Model.Avatar.RequestDelete ? null : AvatarPreviewUrl ?? User.AvatarProfilePath;
                     }
                                     
-                    <Avatar class="size-20 border-4 border-gray-700" ImageSrc="@displayImageSrc" ScaleX="@User.AvatarScaleX" ScaleY="@User.AvatarScaleY"/>
+                    <Avatar class="size-20 border-4 border-gray-700" ImageSrc="@displayImageSrc"/>
 
                     @* TODO: Status indicator *@
                 </div>

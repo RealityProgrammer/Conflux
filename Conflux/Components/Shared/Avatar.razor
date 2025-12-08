@@ -1,7 +1,7 @@
 ﻿@using System.Linq.Expressions
 
 <div class="relative aspect-square rounded-full bg-black @_cssClass">
-    <img @ref="ImageElement" src="@ImageSrc" alt="@ImageAlt" class="absolute inset-0 object-cover pointer-events-none rounded-full" style="transform: scaleX(@ScaleX) scaleY(@ScaleY);">
+    <img @ref="ImageElement" src="@ImageSrc" alt="@ImageAlt" class="absolute inset-0 object-cover pointer-events-none rounded-full">
     
     @if (ChildContent != null) {
         @ChildContent
@@ -12,14 +12,6 @@
     [Parameter(CaptureUnmatchedValues = true)]
     public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
     private string? _cssClass;
-
-    [Parameter] public double ScaleX { get; set; } = 1f;
-    [Parameter] public EventCallback<double> ScaleXChanged { get; set; }
-    [Parameter] public Expression<Func<double>>? ScaleXExpression { get; set; }
-    
-    [Parameter] public double ScaleY { get; set; } = 1f;
-    [Parameter] public EventCallback<double> ScaleYChanged { get; set; }
-    [Parameter] public Expression<Func<double>>? ScaleYExpression { get; set; }
     
     [Parameter] public string? ImageSrc { get; set; }
     [Parameter] public string? ImageAlt { get; set; }

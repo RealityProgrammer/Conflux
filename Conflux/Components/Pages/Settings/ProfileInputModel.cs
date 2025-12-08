@@ -13,33 +13,9 @@ public sealed class ProfileInputModel {
     public AvatarModel Avatar { get; set; } = new();
     
     public sealed class AvatarModel : INotifyPropertyChanged {
-        private double _zoomX = 1.0;
-        private double _zoomY = 1.0;
         private IBrowserFile? _file;
         private bool _requestDelete;
-
-        [Range(0.25, 5)]
-        public double ZoomX {
-            get => Math.Round(_zoomX, 2);
-            set {
-                if (Math.Abs(value - _zoomX) > 0.01) {
-                    _zoomX = Math.Clamp(value, 0.25, 5);
-                    OnPropertyChanged();
-                }
-            }
-        }
-
-        [Range(0.25, 5)]
-        public double ZoomY {
-            get => Math.Round(_zoomY, 2);
-            set {
-                if (Math.Abs(value - _zoomY) > 0.01) {
-                    _zoomY = Math.Clamp(value, 0.25, 5);
-                    OnPropertyChanged();
-                }
-            }
-        }
-
+        
         public IBrowserFile? File {
             get => _file;
             set {

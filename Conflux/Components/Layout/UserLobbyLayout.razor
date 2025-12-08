@@ -37,7 +37,7 @@
                     <ItemContent Context="item">
                         <div class="py-0.5">
                             <NavLink href="@($"/lobby/messages/{item.ConversationId}")" class="flex-none px-2 py-1.5 flex flex-row justify-center lg:justify-start items-center bg-transparent hover:bg-white/15 active:bg-black/15 rounded-lg cursor-pointer" ActiveClass="bg-white/5!" Match="NavLinkMatch.Prefix">
-                                <Avatar class="h-10 flex-none" ImageSrc="@item.FriendAvatarSrc" ImageAlt="@(string.IsNullOrEmpty(item.FriendAvatarSrc) ? string.Empty : "User Avatar")" ScaleX="item.FriendAvatarScaleX" ScaleY="item.FriendAvatarScaleY"/>
+                                <Avatar class="h-10 flex-none" ImageSrc="@item.FriendAvatarSrc" ImageAlt="@(string.IsNullOrEmpty(item.FriendAvatarSrc) ? string.Empty : "User Avatar")"/>
 
                                 <div class="ml-2 hidden lg:flex flex-col justify-center">
                                     <p>@item.FriendDisplayName</p>
@@ -55,7 +55,7 @@
             </div>
         } else {
             <div class="flex-none h-16 border-t border-t-gray-600 p-2 flex flex-row justify-center lg:justify-start items-center">
-                <Avatar class="h-full flex-none" ImageSrc="@_avatarSrc" ImageAlt="@(string.IsNullOrEmpty(_avatarSrc) ? string.Empty : "User Avatar")" ScaleX="_avatarScaleX" ScaleY="_avatarScaleY"/>
+                <Avatar class="h-full flex-none" ImageSrc="@_avatarSrc" ImageAlt="@(string.IsNullOrEmpty(_avatarSrc) ? string.Empty : "User Avatar")"/>
                 
                 <div class="ml-2 flex-1 hidden lg:flex flex-col justify-center">
                     <p>@_userDisplayName</p>
@@ -81,7 +81,6 @@
 
     private string _userId, _userDisplayName = null!, _username = null!;
     private string? _avatarSrc;
-    private double _avatarScaleX, _avatarScaleY;
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
@@ -97,8 +96,6 @@
                         u.DisplayName,
                         u.UserName,
                         AvatarSrc = u.AvatarProfilePath,
-                        u.AvatarScaleX,
-                        u.AvatarScaleY,
                     }).FirstOrDefaultAsync();
 
                 if (data == null) {
@@ -109,8 +106,6 @@
                 _userDisplayName = data.DisplayName;
                 _username = data.UserName!;
                 _avatarSrc = data.AvatarSrc;
-                _avatarScaleX = data.AvatarScaleX;
-                _avatarScaleY = data.AvatarScaleY;
             }
 
             StateHasChanged();
@@ -140,8 +135,6 @@
                     ConversationId = m.ConversationId,
                     FriendDisplayName = m.User.DisplayName,
                     FriendAvatarSrc = m.User.AvatarProfilePath,
-                    FriendAvatarScaleX = m.User.AvatarScaleX,
-                    FriendAvatarScaleY = m.User.AvatarScaleY,
                 }).ToListAsync();
 
             return new(elements, totalCount);
@@ -150,9 +143,7 @@
 
     private sealed class ConversationElement {
         public Guid ConversationId { get; init; }
-        public string FriendDisplayName { get; init; }
+        public string FriendDisplayName { get; init; } = null!;
         public string? FriendAvatarSrc { get; init; }
-        public double FriendAvatarScaleX { get; init; }
-        public double FriendAvatarScaleY { get; init; }
     }
 }

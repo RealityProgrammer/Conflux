@@ -30,7 +30,7 @@
     <Virtualize @ref="_virtualizeContainer" ItemsProvider="LoadProvider" OverscanCount="3">
         <ChildContent Context="item">
             <div class="h-16 px-4 py-1 border-b border-b-gray-600 flex flex-row items-center hover:bg-gray-600/40 group">
-                <Avatar ImageSrc="@item.AvatarImagePath" ImageAlt="@(item.AvatarImagePath != null ? "Avatar" : string.Empty)" ScaleX="item.AvatarScaleX" ScaleY="item.AvatarScaleY" class="flex-none h-12 mr-2"/>
+                <Avatar ImageSrc="@item.AvatarImagePath" ImageAlt="@(item.AvatarImagePath != null ? "Avatar" : string.Empty)" class="flex-none h-12 mr-2"/>
             
                 <div class="flex-1 flex flex-col">
                     <p class="font-semibold">@item.DisplayName</p>
@@ -123,8 +123,6 @@
                     UserName = user.UserName!,
                     DisplayName = user.DisplayName,
                     AvatarImagePath = user.AvatarProfilePath,
-                    AvatarScaleX = user.AvatarScaleX,
-                    AvatarScaleY = user.AvatarScaleY,
                 })
                 .ToListAsync();
             
@@ -161,7 +159,5 @@
         public required string UserName { get; set; }
         public required string DisplayName { get; set; }
         public required string? AvatarImagePath { get; set; }
-        public required double AvatarScaleX { get; set; }
-        public required double AvatarScaleY { get; set; }
     }
 }

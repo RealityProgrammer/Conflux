@@ -17,9 +17,6 @@ public class ApplicationUser : IdentityUser, ICreatedAtColumn {
     // TODO: Question ourself why is this needed while the avatars always at "images/avatar/{Id}"
     [MaxLength(255)] public string? AvatarProfilePath { get; set; }
 
-    [Range(0.25, 5)] public double AvatarScaleX { get; set; } = 1;
-    [Range(0.25, 5)] public double AvatarScaleY { get; set; } = 1;
-    
     [MaxLength(128)] public string? StatusText { get; set; }
     
     public ICollection<FriendRequest> SentFriendRequests { get; set; } = null!;

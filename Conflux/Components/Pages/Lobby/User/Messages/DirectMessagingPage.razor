@@ -34,7 +34,7 @@
                 break;
 
             case InitializationState.Success:
-                <Avatar ImageSrc="@_headerContent.Avatar" ImageAlt="@(string.IsNullOrEmpty(_headerContent.Avatar) ? null : "Friend Avatar")" ScaleX="_headerContent.AvatarScaleX" ScaleY="_headerContent.AvatarScaleY" class="size-8 mr-2"/>
+                <Avatar ImageSrc="@_headerContent.Avatar" ImageAlt="@(string.IsNullOrEmpty(_headerContent.Avatar) ? null : "Friend Avatar")" class="size-8 mr-2"/>
                 <p>@_headerContent.Title</p>
                 break;
         }
@@ -89,8 +89,6 @@
                     .Join(dbContext.Users, id => id, u => u.Id, (id, u) => new HeaderDisplayContent {
                         Title = u.DisplayName,
                         Avatar = u.AvatarProfilePath,
-                        AvatarScaleX = u.AvatarScaleX,
-                        AvatarScaleY = u.AvatarScaleY,
                     })
                     .FirstOrDefaultAsync();
         
@@ -129,8 +127,6 @@
 
     private sealed class HeaderDisplayContent {
         public required string? Avatar { get; init; }
-        public required double AvatarScaleX { get; init; }
-        public required double AvatarScaleY { get; init; }
         public required string? Title { get; init; }
     }
 }

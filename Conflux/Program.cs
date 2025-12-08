@@ -80,7 +80,6 @@ builder.Services.AddScoped<MarkdownPipeline>(services => {
 builder.Services.AddScoped<ProfileSanitizingService>();
 builder.Services.AddScoped<IContentService, ContentService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
-builder.Services.AddSingleton<IMessageCacheService, MessageCacheService>();
 builder.Services.AddScoped<IConversationService, ConversationService>();
 
 // SignalR related services.
