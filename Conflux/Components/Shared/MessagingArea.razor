@@ -62,11 +62,13 @@
                                             @if (_userId == message.SenderId) {
                                                 <hr class="border-l border-y-transparent border-l-gray-600 h-5"/>
 
+                                                Guid actionMessageId = message.MessageId;
+                                                
                                                 <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md">
                                                     <Pencil class="size-5 fill-white"/>
                                                 </button>
-
-                                                <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md">
+                                                
+                                                <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md" @onclick="() => RequestMessageDelete(actionMessageId)">
                                                     <Trashcan class="size-5 fill-red-500"/>
                                                 </button>
                                             }
@@ -98,6 +100,30 @@
                       OnSubmit="HandleMessageSend"/>
 </section>
 
+<Dialog @bind-Open="_requestedMessageDelete" OnClickOutside="CloseMessageDelete" class="flex flex-row justify-center items-center">
+    <Card class="transition-transform duration-500 z-10">
+        <CardHeader Title="Delete Status?" OnCloseRequested="CloseMessageDelete"/>
+        
+        <CardContent>
+            Message deletion cannot be reverted.
+        </CardContent>
+        
+        <CardFooter>
+            @* <SpinnerButton @bind-IsSpinning="_isProcessingStatus" class="button-primary" @onclick="UpdateStatus" SpinnerCssClass="size-6 fill-white">Apply</SpinnerButton> *@
+            
+            <ProcessingStateButton @bind-IsProcessing="_isProcessingMessageDelete" @onclick="ProcessMessageDelete">
+                <ChildContent>Delete</ChildContent>
+                
+                <ProcessingContent>
+                    <Spinner class="size-4 fill-white"/>
+                </ProcessingContent>
+            </ProcessingStateButton>
+            
+            <button class="button-danger" @onclick="CloseMessageDelete">Cancel</button>
+        </CardFooter>
+    </Card>
+</Dialog>
+
 @code {
     [Parameter, EditorRequired] public required Guid ConversationId { get; set; }
     [Parameter, EditorRequired] public required int OverloadCount { get; set; }
@@ -119,6 +145,10 @@
     private ScrollInfo? _savedScrollPositionForTop, _savedScrollPositionForBottom;
     private bool _jumpToBottom;
     private Guid? _jumpToMessageId;
+
+    private bool _requestedMessageDelete;
+    private Guid _deletingMessageId;
+    private bool _isProcessingMessageDelete;
     
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
     private string _userId = null!;
@@ -266,7 +296,7 @@
             .OrderByDescending(m => m.CreatedAt)
             .Take(OverloadCount)
             .Include(message => message.Sender)
-            .Select(m => new MessageData(m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt))
+            .Select(m => new MessageData(m.Id, m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt))
             .Reverse()
             .ToListAsync();
 
@@ -280,7 +310,7 @@
             .Where(m => m.CreatedAt < loadTimestamp)
             .Take(OverloadCount)
             .Include(message => message.Sender)
-            .Select(m => new MessageData(m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt))
+            .Select(m => new MessageData(m.Id, m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt))
             .Reverse()
             .ToListAsync();
 
@@ -294,7 +324,7 @@
             .Where(m => m.CreatedAt > loadTimestamp)
             .Take(OverloadCount)
             .Include(message => message.Sender)
-            .Select(m => new MessageData(m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt))
+            .Select(m => new MessageData(m.Id, m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt))
             .ToListAsync();
 
         return loadedMessages;
@@ -316,14 +346,14 @@
             .Where(m => m.CreatedAt < dateTime)
             .Take(OverloadCount)
             .Include(m => m.Sender)
-            .Select(m => new MessageData(m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt))
+            .Select(m => new MessageData(m.Id, m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt))
             .Concat(dbContext.ChatMessages
                 .Where(m => m.ConversationId == ConversationId)
                 .OrderBy(m => m.CreatedAt)
                 .Where(m => m.CreatedAt >= dateTime)
                 .Take(OverloadCount)
                 .Include(m => m.Sender)
-                .Select(m => new MessageData(m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt))
+                .Select(m => new MessageData(m.Id, m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt))
             )
             .OrderBy(m => m.CreatedAt)
             .ToListAsync();
@@ -350,13 +380,33 @@
                         u.AvatarProfilePath,
                     }).FirstAsync();
                     
-                    _visibleMessages.Add(new MessageData(senderData.Id, senderData.DisplayName, senderData.AvatarProfilePath, message.Body, message.CreatedAt));
+                    _visibleMessages.Add(new(message.Id, senderData.Id, senderData.DisplayName, senderData.AvatarProfilePath, message.Body, message.CreatedAt));
                     StateHasChanged();
                 }
             });
         }
     }
 
+    private void RequestMessageDelete(Guid id) {
+        _requestedMessageDelete = true;
+        _deletingMessageId = id;
+    }
+
+    private void CloseMessageDelete() {
+        _requestedMessageDelete = false;
+        _deletingMessageId = default;
+    }
+
+    private async Task ProcessMessageDelete() {
+        _isProcessingMessageDelete = true;
+        
+        await Task.Delay(3000);
+        
+        _isProcessingMessageDelete = true;
+        
+        StateHasChanged();
+    }
+    
     public void Dispose() {
         ConversationService.OnMessageReceived -= OnMessageReceived;
     }
@@ -369,5 +419,5 @@
 
     private record ScrollInfo(double ScrollTop, double ScrollHeight);
 
-    private readonly record struct MessageData(string SenderId, string SenderDisplayName, string? SenderAvatar, string Body, DateTime CreatedAt);
+    private readonly record struct MessageData(Guid MessageId, string SenderId, string SenderDisplayName, string? SenderAvatar, string Body, DateTime CreatedAt);
 }

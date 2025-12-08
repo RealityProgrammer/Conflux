@@ -4,13 +4,13 @@
 @inject IJSRuntime JSRuntime
 
 <div class="cursor-default fixed inset-0 z-1000 pointer-events-none @_cssClass">
-    @* Dark Overlay *@
-    <Overlay class="bg-transparent" ActiveCssClass="bg-black/80!" OnClick="@OnClickOutside" @bind-Open="Open"></Overlay>
+    <Overlay class="bg-transparent duration-200 ease-in-out" ActiveCssClass="bg-black/80!" OnClick="@OnClickOutside" @bind-Active="Open"/>
     
-    @* Contents *@
-    @if (DisplayContent) {
-        @ChildContent
-    }
+    <div class="transition-all duration-200 ease-in-out @(Open ? "scale-100 opacity-100" : "scale-80 opacity-0")">
+        @if (Open) {
+            @ChildContent
+        }
+    </div>
 </div>
 
 @code {
@@ -18,10 +18,6 @@
     [Parameter] public EventCallback<bool> OpenChanged { get; set; }
     [Parameter] public Expression<Func<bool>>? OpenExpression { get; set; }
 
-    [Parameter] public bool DisplayContent { get; set; } = true;
-    [Parameter] public EventCallback<bool> DisplayContentChanged { get; set; }
-    [Parameter] public Expression<Func<bool>>? DisplayContentExpression { get; set; }
-    
     [Parameter, EditorRequired] public required RenderFragment ChildContent { get; set; }
 
     [Parameter] public EventCallback<MouseEventArgs> OnClickOutside { get; set; }

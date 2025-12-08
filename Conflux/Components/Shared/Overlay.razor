@@ -1,11 +1,11 @@
 ﻿@using System.Linq.Expressions
 
-<div class="cursor-default absolute inset-0 transition-colors duration-500 @_cssClass @(Open ? $"pointer-events-auto {ActiveCssClass}" : "pointer-events-none")" @onclick="OnClick"></div>
+<div class="cursor-default absolute inset-0 transition-colors @_cssClass @(Active ? $"pointer-events-auto {ActiveCssClass}" : "pointer-events-none")" @onclick="OnClick"></div>
 
 @code {
-    [Parameter] public bool Open { get; set; }
-    [Parameter] public EventCallback<bool> OpenChanged { get; set; }
-    [Parameter] public Expression<Func<bool>>? OpenExpression { get; set; }
+    [Parameter] public bool Active { get; set; }
+    [Parameter] public EventCallback<bool> ActiveChanged { get; set; }
+    [Parameter] public Expression<Func<bool>>? ActiveExpression { get; set; }
     
     [Parameter] public EventCallback<MouseEventArgs> OnClick { get; set; }
     [Parameter] public string? ActiveCssClass { get; set; }
