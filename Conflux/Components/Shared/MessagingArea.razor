@@ -24,17 +24,15 @@
                 </div>
 
                 for (int i = 0, c = _visibleMessages.Count; i < c;) {
-                    ChatMessage message = _visibleMessages[i];
+                    MessageData message = _visibleMessages[i];
                     
                     <div class="px-2 py-0.5 flex flex-row">
-                        <Avatar ImageSrc="@message.Sender.AvatarProfilePath"
-                                ImageAlt="@(string.IsNullOrEmpty(message.Sender.AvatarProfilePath) ? string.Empty : "Sender Avatar")"
-                                ScaleX="message.Sender.AvatarScaleX"
-                                ScaleY="message.Sender.AvatarScaleY"
+                        <Avatar ImageSrc="@message.SenderAvatar"
+                                ImageAlt="@(string.IsNullOrEmpty(message.SenderAvatar) ? string.Empty : "Sender Avatar")"
                                 class="flex-none size-10 mr-2 mt-1"/>
                     
                         <div class="flex-1 flex flex-col">
-                            <p>@message.Sender.DisplayName</p>
+                            <p>@message.SenderDisplayName</p>
                             <p class="relative bg-transparent hover:bg-white/10">
                                 @message.Body
                             </p>
@@ -42,7 +40,7 @@
                             @{ int j = i + 1; }
                             
                             @for (; j < c; j++) {
-                                ChatMessage message2 = _visibleMessages[j];
+                                MessageData message2 = _visibleMessages[j];
 
                                 if (message.SenderId == message2.SenderId) {
                                     <p class="relative bg-transparent hover:bg-white/10 group">
@@ -98,7 +96,7 @@
     private ElementReference _scrollContainer;
     
     // Storing messages in time ascending order.
-    private List<ChatMessage> _visibleMessages = [];
+    private List<MessageData> _visibleMessages = [];
     private DateTime _topLoadTimestamp, _bottomLoadTimestamp;
     
     private IJSObjectReference? _module;
@@ -259,44 +257,47 @@
         }
     }
     
-    private async Task<List<ChatMessage>> LoadTopMessages(ApplicationDbContext dbContext) {
-        List<ChatMessage> loadedMessages = await dbContext.ChatMessages
+    private async Task<List<MessageData>> LoadTopMessages(ApplicationDbContext dbContext) {
+        List<MessageData> loadedMessages = await dbContext.ChatMessages
             .Where(msg => msg.ConversationId == ConversationId)
             .OrderByDescending(m => m.CreatedAt)
             .Take(OverloadCount)
             .Include(message => message.Sender)
+            .Select(m => new MessageData(m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt))
             .Reverse()
             .ToListAsync();
 
         return loadedMessages;
     }
 
-    private async Task<List<ChatMessage>> LoadTopMessages(ApplicationDbContext dbContext, DateTime loadTimestamp) {
-        List<ChatMessage> loadedMessages = await dbContext.ChatMessages
+    private async Task<List<MessageData>> LoadTopMessages(ApplicationDbContext dbContext, DateTime loadTimestamp) {
+        List<MessageData> loadedMessages = await dbContext.ChatMessages
             .Where(msg => msg.ConversationId == ConversationId)
             .OrderByDescending(m => m.CreatedAt)
             .Where(m => m.CreatedAt < loadTimestamp)
             .Take(OverloadCount)
             .Include(message => message.Sender)
+            .Select(m => new MessageData(m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt))
             .Reverse()
             .ToListAsync();
 
         return loadedMessages;
     }
     
-    private async Task<List<ChatMessage>> LoadBottomMessages(ApplicationDbContext dbContext, DateTime loadTimestamp) {
-        List<ChatMessage> loadedMessages = await dbContext.ChatMessages
+    private async Task<List<MessageData>> LoadBottomMessages(ApplicationDbContext dbContext, DateTime loadTimestamp) {
+        List<MessageData> loadedMessages = await dbContext.ChatMessages
             .Where(msg => msg.ConversationId == ConversationId)
             .OrderBy(m => m.CreatedAt)
             .Where(m => m.CreatedAt > loadTimestamp)
             .Take(OverloadCount)
             .Include(message => message.Sender)
+            .Select(m => new MessageData(m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt))
             .ToListAsync();
 
         return loadedMessages;
     }
 
-    private async Task<List<ChatMessage>> LoadAroundMessages(ApplicationDbContext dbContext, Guid messageId) {
+    private async Task<List<MessageData>> LoadAroundMessages(ApplicationDbContext dbContext, Guid messageId) {
         // Get the create time of the message with the required id.
 
         DateTime dateTime = await dbContext.ChatMessages
@@ -306,18 +307,20 @@
 
         if (dateTime == default) return [];
 
-        List<ChatMessage> messages = await dbContext.ChatMessages
+        List<MessageData> messages = await dbContext.ChatMessages
             .Where(m => m.ConversationId == ConversationId)
             .OrderByDescending(m => m.CreatedAt)
             .Where(m => m.CreatedAt < dateTime)
             .Take(OverloadCount)
             .Include(m => m.Sender)
+            .Select(m => new MessageData(m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt))
             .Concat(dbContext.ChatMessages
                 .Where(m => m.ConversationId == ConversationId)
                 .OrderBy(m => m.CreatedAt)
                 .Where(m => m.CreatedAt >= dateTime)
                 .Take(OverloadCount)
                 .Include(m => m.Sender)
+                .Select(m => new MessageData(m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt))
             )
             .OrderBy(m => m.CreatedAt)
             .ToListAsync();
@@ -338,4 +341,6 @@
     }
 
     private record ScrollInfo(double ScrollTop, double ScrollHeight);
+
+    private readonly record struct MessageData(string SenderId, string SenderDisplayName, string? SenderAvatar, string Body, DateTime CreatedAt);
 }
