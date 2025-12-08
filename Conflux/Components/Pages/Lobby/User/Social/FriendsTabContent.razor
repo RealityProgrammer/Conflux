@@ -141,7 +141,7 @@
         RedirectManager.To($"/lobby/messages/{conversation.Id}").Execute();
     }
     
-    private void OnFriendRequestAcceptedNotification(FriendRequestAcceptedNotification notification) {
+    private void OnFriendRequestAcceptedNotification(FriendRequestAcceptedEventArgs eventArgs) {
         InvokeAsync(async () => {
             await _virtualizeContainer.RefreshDataAsync();
             StateHasChanged();

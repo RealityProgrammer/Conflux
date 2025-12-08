@@ -145,14 +145,14 @@
         }
     }
 
-    private void OnFriendRequestRejectedNotification(FriendRequestRejectedNotification notification) {
+    private void OnFriendRequestRejectedNotification(FriendRequestRejectedEventArgs eventArgs) {
         InvokeAsync(async () => {
             await _virtualizeContainer.RefreshDataAsync();
             StateHasChanged();
         });
     }
     
-    private void OnFriendRequestAcceptedNotification(FriendRequestAcceptedNotification notification) {
+    private void OnFriendRequestAcceptedNotification(FriendRequestAcceptedEventArgs eventArgs) {
         InvokeAsync(async () => {
             await _virtualizeContainer.RefreshDataAsync();
             StateHasChanged();

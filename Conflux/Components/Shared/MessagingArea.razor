@@ -5,9 +5,12 @@
 @using Microsoft.EntityFrameworkCore
 @using System.Security.Claims
 
+@implements IDisposable
+
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject IJSRuntime JavascriptRuntime
 @inject IConversationService ConversationService
+@inject ILogger<MessagingArea> Logger
 
 <section class="flex flex-col @_cssClass">
     <div class="overflow-y-auto flex-1" @ref="_scrollContainer">
@@ -137,6 +140,8 @@
             _objectReference = DotNetObjectReference.Create(this);
             
             await _module!.InvokeVoidAsync("initializeScrollContainer", _scrollContainer, _objectReference);
+
+            ConversationService.OnMessageReceived += OnMessageReceived;
         }
 
         if (_initStatus == InitializationStatus.Loading) {
@@ -332,6 +337,30 @@
         if (_initStatus == InitializationStatus.Success) {
             await ConversationService.SendMessageAsync(ConversationId, _userId, body, null);
         }
+    }
+
+    private void OnMessageReceived(MessageReceivedEventArgs args) {
+        // Only insert if we're at the bottom.
+        if (_endBottom) {
+            InvokeAsync(async () => {
+                ChatMessage message = args.Message;
+                
+                await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
+                    var senderData = await dbContext.Users.Where(u => u.Id == message.SenderId).Select(u => new {
+                        u.Id,
+                        u.DisplayName,
+                        u.AvatarProfilePath,
+                    }).FirstAsync();
+                    
+                    _visibleMessages.Add(new MessageData(senderData.Id, senderData.DisplayName, senderData.AvatarProfilePath, message.Body, message.CreatedAt));
+                    StateHasChanged();
+                }
+            });
+        }
+    }
+
+    public void Dispose() {
+        ConversationService.OnMessageReceived -= OnMessageReceived;
     }
 
     private enum InitializationStatus {

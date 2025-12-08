@@ -22,10 +22,10 @@ public sealed class NotificationService(
 
     private HubConnection? _hubConnection;
 
-    public event Action<FriendRequestReceivedNotification>? OnFriendRequestReceived;
-    public event Action<FriendRequestRejectedNotification>? OnFriendRequestRejected;
-    public event Action<FriendRequestCanceledNotification>? OnFriendRequestCanceled;
-    public event Action<FriendRequestAcceptedNotification>? OnFriendRequestAccepted;
+    public event Action<FriendRequestReceivedEventArgs>? OnFriendRequestReceived;
+    public event Action<FriendRequestRejectedEventArgs>? OnFriendRequestRejected;
+    public event Action<FriendRequestCanceledEventArgs>? OnFriendRequestCanceled;
+    public event Action<FriendRequestAcceptedEventArgs>? OnFriendRequestAccepted;
 
     public async Task InitializeConnection(CancellationToken cancellationToken) {
         if (_hubConnection != null) return;
@@ -74,46 +74,46 @@ public sealed class NotificationService(
             })
             .Build();
 
-        _hubConnection.On<FriendRequestReceivedNotification>(FriendRequestReceivedMethodName, notif => {
+        _hubConnection.On<FriendRequestReceivedEventArgs>(FriendRequestReceivedMethodName, notif => {
             OnFriendRequestReceived?.Invoke(notif);
         });
 
-        _hubConnection.On<FriendRequestRejectedNotification>(FriendRequestRejectedMethodName, notif => {
+        _hubConnection.On<FriendRequestRejectedEventArgs>(FriendRequestRejectedMethodName, notif => {
             OnFriendRequestRejected?.Invoke(notif);
         });
 
-        _hubConnection.On<FriendRequestCanceledNotification>(FriendRequestCanceledMethodName, notif => {
+        _hubConnection.On<FriendRequestCanceledEventArgs>(FriendRequestCanceledMethodName, notif => {
             OnFriendRequestCanceled?.Invoke(notif);
         });
         
-        _hubConnection.On<FriendRequestAcceptedNotification>(FriendRequestAcceptedMethodName, notif => {
+        _hubConnection.On<FriendRequestAcceptedEventArgs>(FriendRequestAcceptedMethodName, notif => {
             OnFriendRequestAccepted?.Invoke(notif);
         });
         
         await _hubConnection.StartAsync(cancellationToken);
     }
 
-    public Task NotifyFriendRequestReceivedAsync(FriendRequestReceivedNotification notification) {
-        var user = hubContext.Clients.User(notification.ReceiverId);
+    public Task NotifyFriendRequestReceivedAsync(FriendRequestReceivedEventArgs eventArgs) {
+        var user = hubContext.Clients.User(eventArgs.ReceiverId);
         
-        return user.SendAsync(FriendRequestReceivedMethodName, notification);
+        return user.SendAsync(FriendRequestReceivedMethodName, eventArgs);
     }
 
-    public Task NotifyFriendRequestCanceledAsync(FriendRequestCanceledNotification notification) {
-        var user = hubContext.Clients.User(notification.ReceiverId);
+    public Task NotifyFriendRequestCanceledAsync(FriendRequestCanceledEventArgs eventArgs) {
+        var user = hubContext.Clients.User(eventArgs.ReceiverId);
         
-        return user.SendAsync(FriendRequestCanceledMethodName, notification);
+        return user.SendAsync(FriendRequestCanceledMethodName, eventArgs);
     }
 
-    public Task NotifyFriendRequestRejectedAsync(FriendRequestRejectedNotification notification) {
-        var user = hubContext.Clients.User(notification.SenderId);
+    public Task NotifyFriendRequestRejectedAsync(FriendRequestRejectedEventArgs eventArgs) {
+        var user = hubContext.Clients.User(eventArgs.SenderId);
 
-        return user.SendAsync(FriendRequestRejectedMethodName, notification);
+        return user.SendAsync(FriendRequestRejectedMethodName, eventArgs);
     }
     
-    public Task NotifyFriendRequestAcceptedAsync(FriendRequestAcceptedNotification notification) {
-        Task senderSendTask = hubContext.Clients.User(notification.SenderId).SendAsync(FriendRequestAcceptedMethodName, notification);
-        Task receiverSendTask = hubContext.Clients.User(notification.ReceiverId).SendAsync(FriendRequestAcceptedMethodName, notification);
+    public Task NotifyFriendRequestAcceptedAsync(FriendRequestAcceptedEventArgs eventArgs) {
+        Task senderSendTask = hubContext.Clients.User(eventArgs.SenderId).SendAsync(FriendRequestAcceptedMethodName, eventArgs);
+        Task receiverSendTask = hubContext.Clients.User(eventArgs.ReceiverId).SendAsync(FriendRequestAcceptedMethodName, eventArgs);
         
         return Task.WhenAll(senderSendTask, receiverSendTask);
     }

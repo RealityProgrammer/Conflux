@@ -1,7 +1,9 @@
 ﻿using Conflux.Database;
 using Conflux.Database.Entities;
 using Conflux.Services.Abstracts;
+using Conflux.Services.Hubs;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Concurrent;
@@ -11,19 +13,25 @@ using System.Net;
 namespace Conflux.Services;
 
 public sealed class ConversationService : IConversationService, IAsyncDisposable {
+    private const string MessageSentEventName = "MessageSent";
+    
     private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
     private readonly INotificationService _notificationService;
     private readonly NavigationManager _navigationManager;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly ILogger<ConversationService> _logger;
+    private readonly IHubContext<ConversationHub> _hubContext;
 
     private readonly ConcurrentDictionary<Guid, HubConnection> _conversationHubConnections = [];
     
-    public ConversationService(IWebHostEnvironment environment, IDbContextFactory<ApplicationDbContext> dbContextFactory, INotificationService notificationService, NavigationManager navigationManager, IHttpContextAccessor httpContextAccessor, ILogger<ConversationService> logger) {
+    public event Action<MessageReceivedEventArgs>? OnMessageReceived;
+    
+    public ConversationService(IWebHostEnvironment environment, IDbContextFactory<ApplicationDbContext> dbContextFactory, INotificationService notificationService, NavigationManager navigationManager, IHttpContextAccessor httpContextAccessor, IHubContext<ConversationHub> hubContext, ILogger<ConversationService> logger) {
         _dbContextFactory = dbContextFactory;
         _notificationService = notificationService;
         _navigationManager = navigationManager;
         _httpContextAccessor = httpContextAccessor;
+        _hubContext = hubContext;
         _logger = logger;
     }
 
@@ -69,8 +77,13 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
         if (_conversationHubConnections.ContainsKey(conversationId)) return;
         
         var connection = CreateHubConnectionForConversation(conversationId);
-        await connection.StartAsync();
 
+        connection.On<MessageReceivedEventArgs>(MessageSentEventName, args => {
+            OnMessageReceived?.Invoke(args);
+        });
+        
+        await connection.StartAsync();
+        
         bool add = _conversationHubConnections.TryAdd(conversationId, connection);
         Debug.Assert(add, $"Failed to register hub connection for conversation {conversationId}. Possible race-condition?");
     }
@@ -121,15 +134,17 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
 
     public async Task<bool> SendMessageAsync(Guid conversationId, string senderId, string body, Guid? replyMessageId) {
         await using (var dbContext = await _dbContextFactory.CreateDbContextAsync()) {
-            dbContext.ChatMessages.Add(new() {
+            ChatMessage message = new() {
                 ConversationId = conversationId,
                 SenderId = senderId,
                 Body = body,
                 ReplyMessageId = null,
-            });
+            };
+            
+            dbContext.ChatMessages.Add(message);
 
             if (await dbContext.SaveChangesAsync() > 0) {
-                
+                await _hubContext.Clients.Group(conversationId.ToString()).SendAsync(MessageSentEventName, new MessageReceivedEventArgs(message));
                 
                 return true;
             }

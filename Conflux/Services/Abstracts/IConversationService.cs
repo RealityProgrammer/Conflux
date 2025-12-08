@@ -2,7 +2,11 @@
 
 namespace Conflux.Services.Abstracts;
 
+public readonly record struct MessageReceivedEventArgs(ChatMessage Message);
+
 public interface IConversationService {
+    event Action<MessageReceivedEventArgs>? OnMessageReceived;
+    
     Task JoinConversationAsync(Guid conversationId);
     Task LeaveConversationAsync(Guid conversationId);
     
