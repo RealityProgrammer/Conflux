@@ -29,47 +29,48 @@
                 for (int i = 0, c = _visibleMessages.Count; i < c;) {
                     MessageData message = _visibleMessages[i];
                     
+                    // Render the avatar of the sender as a start of consecutive message group
                     <div class="px-2 py-0.5 flex flex-row">
                         <Avatar ImageSrc="@message.SenderAvatar"
                                 ImageAlt="@(string.IsNullOrEmpty(message.SenderAvatar) ? string.Empty : "Sender Avatar")"
                                 class="flex-none size-10 mr-2 mt-1"/>
-                    
+                        
                         <div class="flex-1 flex flex-col">
                             <p>@message.SenderDisplayName</p>
-                            <p class="relative bg-transparent hover:bg-white/10">
-                                @message.Body
-                            </p>
                             
-                            @{ int j = i + 1; }
-                            
-                            @for (; j < c; j++) {
-                                MessageData message2 = _visibleMessages[j];
+                            @{
+                                // Render the content of consecutive messages 
+                                int endIndex = i + 1;
 
-                                if (message.SenderId == message2.SenderId) {
-                                    <p class="relative bg-transparent hover:bg-white/10 group">
-                                        @message2.Body
+                                while (endIndex < c && _visibleMessages[endIndex].SenderId == message.SenderId) {
+                                    endIndex++;
+                                }
 
+                                for (int j = i; j < endIndex; j++) {
+                                    message = _visibleMessages[j];
+                                    
+                                    <div class="relative bg-transparent hover:bg-white/5 group">
+                                        <p class="whitespace-pre-wrap">@message.Body</p>
+                                    
                                         <span class="px-1 py-1 top-0 right-4 -translate-y-1/2 absolute bg-gray-750 rounded-lg hidden group-hover:flex flex-row items-center gap-1">
                                             <p class="text-sm">@message.CreatedAt.ToString("yyyy/MM/dd HH:mm:ss")</p>
-
+                                    
                                             <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md">
                                                 <Pencil class="size-5 fill-white"></Pencil>
                                             </button>
-
+                                    
                                             <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md">
                                                 <TurnArrow class="size-5 fill-none stroke-white"/>
                                             </button>
-
+                                    
                                             <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md">
                                                 <ThreeDots class="size-5 fill-white"></ThreeDots>
                                             </button>
                                         </span>
-                                    </p>
-                                } else break;
-                            }
-                            
-                            @{
-                                i = j;
+                                    </div>
+                                }
+
+                                i = endIndex;
                             }
                         </div>
                     </div>
@@ -180,30 +181,17 @@
         
         await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
             dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-                    
-            // if (InitiallyFocusMessageId.HasValue) {
-            //     _visibleMessages = await LoadAroundMessages(dbContext, InitiallyFocusMessageId!.Value);
-            //     _jumpToMessageId = InitiallyFocusMessageId!.Value;
-            //
-            //     if (_visibleMessages.Count > 0) {
-            //         _topLoadTimestamp = _visibleMessages[0].CreatedAt;
-            //         _bottomLoadTimestamp = _visibleMessages[^1].CreatedAt;
-            //     }
-            // }
 
-            // if (_visibleMessages.Count == 0) {
-                // Load past messages.
-                _visibleMessages.AddRange(await LoadTopMessages(dbContext));
-                _endBottom = _jumpToBottom = true;
+            _visibleMessages.AddRange(await LoadTopMessages(dbContext));
+            _endBottom = _jumpToBottom = true;
 
-                if (_visibleMessages.Count > 0) {
-                    _endTop = false;
-                    _topLoadTimestamp = _visibleMessages[0].CreatedAt;
-                } else {
-                    _endTop = true;
-                }
-            // }
-        }
+            if (_visibleMessages.Count > 0) {
+                _endTop = false;
+                _topLoadTimestamp = _visibleMessages[0].CreatedAt;
+            } else {
+                _endTop = true;
+            }
+    }
     }
 
     [JSInvokable]
