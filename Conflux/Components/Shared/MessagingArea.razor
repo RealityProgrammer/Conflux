@@ -56,15 +56,25 @@
                                             <p class="text-sm">@message.CreatedAt.ToString("yyyy/MM/dd HH:mm:ss")</p>
                                     
                                             <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md">
-                                                <Pencil class="size-5 fill-white"></Pencil>
-                                            </button>
-                                    
-                                            <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md">
                                                 <TurnArrow class="size-5 fill-none stroke-white"/>
                                             </button>
-                                    
+                                            
+                                            @if (_userId == message.SenderId) {
+                                                <hr class="border-l border-y-transparent border-l-gray-600 h-5"/>
+
+                                                <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md">
+                                                    <Pencil class="size-5 fill-white"/>
+                                                </button>
+
+                                                <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md">
+                                                    <Trashcan class="size-5 fill-red-500"/>
+                                                </button>
+                                            }
+
+                                            <hr class="border-l border-y-transparent border-l-gray-600 h-5"/>
+                                            
                                             <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md">
-                                                <ThreeDots class="size-5 fill-white"></ThreeDots>
+                                                <ThreeDots class="size-5 fill-white"/>
                                             </button>
                                         </span>
                                     </div>
