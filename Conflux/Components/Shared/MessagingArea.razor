@@ -1,10 +1,13 @@
 ﻿@using Conflux.Components.Shared.Icons
 @using Conflux.Database
 @using Conflux.Database.Entities
+@using Conflux.Services.Abstracts
 @using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject IJSRuntime JavascriptRuntime
+@inject IConversationService ConversationService
 
 <section class="flex flex-col @_cssClass">
     <div class="overflow-y-auto flex-1" @ref="_scrollContainer">
@@ -44,24 +47,24 @@
                                 if (message.SenderId == message2.SenderId) {
                                     <p class="relative bg-transparent hover:bg-white/10 group">
                                         @message2.Body
-                                        
+
                                         <span class="px-1 py-1 top-0 right-4 -translate-y-1/2 absolute bg-gray-750 rounded-lg hidden group-hover:flex flex-row items-center gap-1">
                                             <p class="text-sm">@message.CreatedAt.ToString("yyyy/MM/dd HH:mm:ss")</p>
-                                            
+
                                             <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md">
                                                 <Pencil class="size-5 fill-white"></Pencil>
                                             </button>
-                                            
+
                                             <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md">
                                                 <TurnArrow class="size-5 fill-none stroke-white"/>
                                             </button>
-                                            
+
                                             <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md">
                                                 <ThreeDots class="size-5 fill-white"></ThreeDots>
                                             </button>
                                         </span>
                                     </p>
-                                }
+                                } else break;
                             }
                             
                             @{
@@ -80,11 +83,10 @@
     
     <MessageInputArea class="flex-none p-2 flex flex-row items-center gap-1"
                       disabled="@(_initStatus != InitializationStatus.Success)"
-                      OnSubmit="@OnMessageSendRequest"/>
+                      OnSubmit="HandleMessageSend"/>
 </section>
 
 @code {
-    [Parameter] public EventCallback<string> OnMessageSendRequest { get; set; }
     [Parameter, EditorRequired] public required Guid ConversationId { get; set; }
     [Parameter, EditorRequired] public required int OverloadCount { get; set; }
 
@@ -106,8 +108,22 @@
     private bool _jumpToBottom;
     private Guid? _jumpToMessageId;
     
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+    private string _userId = null!;
+
+    protected override async Task OnInitializedAsync() {
+        var authState = await AuthenticationState;
+        _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+        if (string.IsNullOrEmpty(_userId)) {
+            _initStatus = InitializationStatus.NoPermission;
+        }
+    }
+    
     // Called automatically when URL parameter changed.
     protected override void OnParametersSet() {
+        if (_initStatus == InitializationStatus.NoPermission) return;
+        
         _initStatus = InitializationStatus.Loading;
         
         if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
@@ -309,8 +325,15 @@
         return messages;
     }
 
+    private async Task HandleMessageSend(string body) {
+        if (_initStatus == InitializationStatus.Success) {
+            await ConversationService.SendMessageAsync(ConversationId, _userId, body, null);
+        }
+    }
+
     private enum InitializationStatus {
         Loading,
+        NoPermission,
         Success,
     }
 

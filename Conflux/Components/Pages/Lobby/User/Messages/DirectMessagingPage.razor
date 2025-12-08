@@ -11,9 +11,7 @@
 
 @implements IAsyncDisposable
 
-@inject ILogger<DirectMessagingPage> Logger
 @inject IConversationService ConversationService
-@inject ApplicationRedirectManager RedirectManager
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject NavigationManager NavigationManager
 
@@ -44,7 +42,7 @@
 
     <main class="flex-1 overflow-hidden">
         <div class="flex flex-row h-full">
-            <MessagingArea class="flex-1 border-r border-r-gray-600" ConversationId="ConversationId" OnMessageSendRequest="HandleSendMessage" OverloadCount="ApplicationConstants.MessageLoadCount"/>
+            <MessagingArea class="flex-1 border-r border-r-gray-600" ConversationId="ConversationId" OverloadCount="ApplicationConstants.MessageLoadCount"/>
     
             <aside class="flex-none basis-80 hidden lg:block bg-gray-750"></aside>
         </div>
@@ -110,12 +108,6 @@
         }
         
         _previousConversationId = ConversationId;
-    }
-
-    private async Task HandleSendMessage(string body) {
-        if (_initState == InitializationState.Success) {
-            await ConversationService.SendMessageAsync(ConversationId, _userId, body, null);
-        }
     }
 
     private void OnNavigationLocationChanged(object? sender, LocationChangedEventArgs e) {

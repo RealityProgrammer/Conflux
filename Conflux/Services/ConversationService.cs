@@ -18,7 +18,7 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
     private readonly ILogger<ConversationService> _logger;
 
     private readonly ConcurrentDictionary<Guid, HubConnection> _conversationHubConnections = [];
-
+    
     public ConversationService(IWebHostEnvironment environment, IDbContextFactory<ApplicationDbContext> dbContextFactory, INotificationService notificationService, NavigationManager navigationManager, IHttpContextAccessor httpContextAccessor, ILogger<ConversationService> logger) {
         _dbContextFactory = dbContextFactory;
         _notificationService = notificationService;
@@ -129,6 +129,8 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
             });
 
             if (await dbContext.SaveChangesAsync() > 0) {
+                
+                
                 return true;
             }
 
