@@ -14,6 +14,7 @@ namespace Conflux.Services;
 
 public sealed class ConversationService : IConversationService, IAsyncDisposable {
     private const string MessageSentEventName = "MessageSent";
+    private const string MessageDeletedEventName = "MessageDeleted";
     
     private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
     private readonly INotificationService _notificationService;
@@ -25,6 +26,7 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
     private readonly ConcurrentDictionary<Guid, HubConnection> _conversationHubConnections = [];
     
     public event Action<MessageReceivedEventArgs>? OnMessageReceived;
+    public event Action<MessageDeletedEventArgs>? OnMessageDeleted;
     
     public ConversationService(IWebHostEnvironment environment, IDbContextFactory<ApplicationDbContext> dbContextFactory, INotificationService notificationService, NavigationManager navigationManager, IHttpContextAccessor httpContextAccessor, IHubContext<ConversationHub> hubContext, ILogger<ConversationService> logger) {
         _dbContextFactory = dbContextFactory;
@@ -80,6 +82,10 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
 
         connection.On<MessageReceivedEventArgs>(MessageSentEventName, args => {
             OnMessageReceived?.Invoke(args);
+        });
+
+        connection.On<MessageDeletedEventArgs>(MessageDeletedEventName, args => {
+            OnMessageDeleted?.Invoke(args);
         });
         
         await connection.StartAsync();
@@ -138,7 +144,7 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
                 ConversationId = conversationId,
                 SenderId = senderId,
                 Body = body,
-                ReplyMessageId = null,
+                ReplyMessageId = replyMessageId,
             };
             
             dbContext.ChatMessages.Add(message);
@@ -146,6 +152,36 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
             if (await dbContext.SaveChangesAsync() > 0) {
                 await _hubContext.Clients.Group(conversationId.ToString()).SendAsync(MessageSentEventName, new MessageReceivedEventArgs(message));
                 
+                return true;
+            }
+
+            return false;
+        }
+    }
+
+    public async Task<bool> DeleteMessageAsync(Guid messageId, string senderId) {
+        await using (var dbContext = await _dbContextFactory.CreateDbContextAsync()) {
+            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+            // Get the conversation ID and check exists at the same time.
+            Guid conversationId = await dbContext.ChatMessages
+                .Where(m => m.Id == messageId && m.SenderId == senderId && m.DeletedAt == null)
+                .Select(m => m.ConversationId)
+                .FirstOrDefaultAsync();
+
+            if (conversationId == Guid.Empty) return false;
+
+            DateTime utcNow = DateTime.UtcNow;
+            
+            int rowsAffected = await dbContext.ChatMessages
+                .Where(m => m.Id == messageId && m.SenderId == senderId && m.DeletedAt == null)
+                .ExecuteUpdateAsync(builder => {
+                    builder.SetProperty(m => m.DeletedAt, utcNow);
+                });
+
+            if (rowsAffected > 0) {
+                await _hubContext.Clients.Group(conversationId.ToString()).SendAsync(MessageDeletedEventName, new MessageDeletedEventArgs(messageId, conversationId));
+
                 return true;
             }
 
