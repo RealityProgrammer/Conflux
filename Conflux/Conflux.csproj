@@ -39,6 +39,9 @@
       <None Update="Components\Shared\MessageTextArea.razor.js">
         <DependentUpon>MessageTextArea.razor</DependentUpon>
       </None>
+      <None Update="Components\Shared\MessageTimeline.razor.js">
+        <DependentUpon>MessageTimeline.razor</DependentUpon>
+      </None>
     </ItemGroup>
 
     <ItemGroup>

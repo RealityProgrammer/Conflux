@@ -1,0 +1,527 @@
+﻿@using Conflux.Components.Shared.Icons
+@using Conflux.Database
+@using Conflux.Database.Entities
+@using Conflux.Services.Abstracts
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.EntityFrameworkCore.Internal
+
+@inject IJSRuntime JavascriptRuntime
+@inject IConversationService ConversationService
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+
+@implements IDisposable
+
+<div class="overflow-y-auto flex-1 @_cssClass" @ref="_scrollContainer" @attributes="AdditionalAttributes">
+    @switch (_initStatus) {
+        case InitializationStatus.Loading:
+            <div class="size-full flex flex-row justify-center items-center">
+                <Spinner class="size-16 fill-white"/>
+            </div>
+            break;
+    
+        case InitializationStatus.Success:
+            <div class="flex flex-row items-center justify-center @(_loadingTop ? "block" : "hidden")">
+                <Spinner class="size-6 fill-white"/>
+            </div>
+    
+            for (int i = 0, c = _visibleMessages.Count; i < c;) {
+                IConversationService.RenderingMessageDTO message = _visibleMessages[i];
+    
+                // Render the replying message and avatar of the sender as a start of consecutive message group
+    
+                if (message.ReplyMessageId.HasValue) {
+                    Guid replyMessageId = message.ReplyMessageId.Value;
+
+                    @if (replyMessageId != Guid.Empty) {
+                        IConversationService.RenderingReplyMessageDTO replyMessage = _replyMessages[message.ReplyMessageId.Value];
+
+                        <p class="mt-2 px-2 py-1 text-sm whitespace-nowrap overflow-hidden text-ellipsis border border-gray-600 mx-2 rounded-lg bg-gray-725 shadow-md">
+                            @replyMessage.SenderDisplayName: <br/>"@replyMessage.Body"
+                        </p>
+                    } else {
+                        <p class="mt-2 px-2 py-1 text-sm whitespace-nowrap overflow-hidden text-ellipsis border border-gray-600 mx-2 rounded-lg bg-gray-725 shadow-md">
+                            Replied message has been deleted.
+                        </p>
+                    }
+                }
+    
+                <div class="px-2 py-0.5 flex flex-row">
+                    @if (message.ReplyMessageId.HasValue) {
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" class="size-6 fill-none stroke-white ml-4">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m16.49 12 3.75 3.75m0 0-3.75 3.75m3.75-3.75H3.74V4.499" />
+                        </svg>
+                    }
+    
+                    <Avatar ImageSrc="@message.SenderAvatar"
+                            ImageAlt="@(string.IsNullOrEmpty(message.SenderAvatar) ? string.Empty : "Sender Avatar")"
+                            class="flex-none size-10 mr-2 mt-1"/>
+    
+                    <div class="flex-1 flex flex-col">
+                        <p>@message.SenderDisplayName</p>
+    
+                        @{
+                            // Render the content of consecutive messages.
+                            int endIndex = i + 1;
+    
+                            if (!message.ReplyMessageId.HasValue) {
+                                while (endIndex < c && _visibleMessages[endIndex].SenderId == message.SenderId && !_visibleMessages[endIndex].ReplyMessageId.HasValue) {
+                                    endIndex++;
+                                }
+                            }
+    
+                            for (int j = i; j < endIndex; j++) {
+                                message = _visibleMessages[j];
+                                bool isEditing = message.MessageId == _editingMessageId;
+    
+                                <div class="relative bg-transparent @(isEditing ? string.Empty : "hover:bg-white/5") group">
+                                    @if (isEditing) {
+                                        <MessageTextArea @ref="_editTextArea"
+                                                         @bind-Value="_editMessageBody" 
+                                                         class="shrink-0 input-field w-full py-2 overflow-x-hidden overflow-y-auto wrap-break-word break-all resize-none scrollbar-hide shadow-lg max-h-96 my-2 wrap-break-word"
+                                                         OnEnterSubmit="HandleSubmitMessageEdit"
+                                                         OnEscape="HandleEscapeRequest"/>
+                                    } else {
+                                        <p class="whitespace-pre-wrap wrap-anywhere">
+                                            @message.Body
+                                                
+                                            @if (message.IsEdited) {
+                                                <span class="text-xs text-gray-400"> (edited)</span>
+                                            }
+                                        </p>
+                                            
+                                        <span class="px-1 py-1 top-0 right-4 -translate-y-1/2 absolute bg-gray-750 rounded-lg hidden group-hover:flex flex-row items-center gap-1">
+                                            <p class="text-sm">@message.CreatedAt.ToString("yyyy/MM/dd HH:mm:ss")</p>
+
+                                            @{ Guid actionMessageId = message.MessageId; }
+
+                                            <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md" @onclick="@(() => RequestMessageReply(actionMessageId))">
+                                                <TurnArrow class="size-5 fill-none stroke-white"/>
+                                            </button>
+
+                                            @if (UserId == message.SenderId) {
+                                                <hr class="border-l border-y-transparent border-l-gray-600 h-5"/>
+
+                                                <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md" @onclick="@(() => RequestMessageEdit(actionMessageId))">
+                                                    <Pencil class="size-5 fill-white"/>
+                                                </button>
+
+                                                <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md" @onclick="@(() => RequestMessageDelete(actionMessageId))">
+                                                    <Trashcan class="size-5 fill-red-500"/>
+                                                </button>
+                                            }
+
+                                            <hr class="border-l border-y-transparent border-l-gray-600 h-5"/>
+
+                                            <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md">
+                                                <ThreeDots class="size-5 fill-white"/>
+                                            </button>
+                                        </span>
+                                    }
+
+                                </div>
+                            }
+    
+                            i = endIndex;
+                        }
+                    </div>
+                </div>
+            }
+    
+            <div class="flex flex-row items-center justify-center @(_loadingBottom ? "block" : "hidden")">
+                <Spinner class="size-6 fill-white"/>
+            </div>
+            break;
+    }
+</div>
+
+<Dialog @bind-Open="_requestedMessageDelete" OnClickOutside="CloseMessageDelete" class="flex flex-row justify-center items-center">
+    <Card class="transition-transform duration-500 z-10">
+        <CardHeader Title="Delete Message" OnCloseRequested="CloseMessageDelete"/>
+        
+        <CardContent>
+            <p>Are you sure you want to delete this message?</p>
+            <p>This action cannot be reverted.</p>
+        </CardContent>
+        
+        <CardFooter class="mt-2 flex flex-row justify-end gap-2 border-none!">
+            <button class="button-primary w-24" @onclick="CloseMessageDelete" disabled="@_isProcessingMessageDelete">Cancel</button>
+            
+            <ProcessingStateButton @bind-IsProcessing="_isProcessingMessageDelete" @onclick="ProcessMessageDelete" class="button-danger w-24 flex flex-row justify-center">
+                <ChildContent>Delete</ChildContent>
+                
+                <ProcessingContent>
+                    <Spinner class="size-5 fill-white"/>
+                </ProcessingContent>
+            </ProcessingStateButton>
+        </CardFooter>
+    </Card>
+</Dialog>
+
+@code {
+    [Parameter, EditorRequired] public required int LoadCount { get; set; }
+    [Parameter, EditorRequired] public required string UserId { get; set; }
+    
+    [Parameter] public Guid ConversationId { get; set; }
+    [Parameter] public EventCallback<Guid> ConversationIdChanged { get; set; }
+
+    private Guid _previousConversationId;
+    
+    [Parameter] public Guid? ReplyMessageId { get; set; }
+    [Parameter] public EventCallback<Guid?> ReplyMessageIdChanged { get; set; }
+    
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+    private string? _cssClass;
+
+    // Controls.
+    private InitializationStatus _initStatus = InitializationStatus.Loading;
+    
+    // Elements.
+    private ElementReference _scrollContainer;
+    
+    // Loading tracks.
+    private bool _loadingTop, _loadingBottom, _endTop, _endBottom;
+    
+    // Storing messages in time ascending order.
+    private readonly List<IConversationService.RenderingMessageDTO> _visibleMessages = [];
+    private readonly Dictionary<Guid, IConversationService.RenderingReplyMessageDTO> _replyMessages = [];
+    private readonly SemaphoreSlim _messageSemaphore = new(1, 1);
+    
+    private DateTime _topLoadTimestamp, _bottomLoadTimestamp;
+    
+    // Message Delete.
+    private bool _requestedMessageDelete;
+    private Guid _deletingMessageId;
+    private bool _isProcessingMessageDelete;
+    
+    // Message Edit.
+    private Guid _editingMessageId;
+    private string _editMessageBody = string.Empty;
+    private MessageTextArea? _editTextArea;
+    private bool _focusOnEditTextArea;
+    
+    // Post re-render controls.
+    private bool _jumpToBottom;
+    private ScrollInfo? _savedScrollPositionForTop, _savedScrollPositionForBottom;
+    
+    // JS Module.
+    private IJSObjectReference? _module;
+    private DotNetObjectReference<MessageTimeline>? _objectReference;
+
+    protected override void OnParametersSet() {
+        if (_previousConversationId != ConversationId) {
+            _initStatus = InitializationStatus.Loading;
+            _previousConversationId = ConversationId;
+        }
+
+        if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
+            _cssClass = Convert.ToString(obj);
+        }
+
+        AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "class").ToDictionary();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            _module = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import", "./Components/Shared/MessageTimeline.razor.js");
+            _objectReference = DotNetObjectReference.Create(this);
+
+            await _module!.InvokeVoidAsync("initializeScrollContainer", _scrollContainer, _objectReference);
+            
+            ConversationService.OnMessageReceived += OnMessageReceived;
+            ConversationService.OnMessageDeleted += OnMessageDeleted;
+            ConversationService.OnMessageEdited += OnMessageEdited;
+        } else {
+            if (_jumpToBottom) {
+                _jumpToBottom = false;
+
+                await _module!.InvokeVoidAsync("scrollToBottom", _scrollContainer);
+            }
+
+            if (_savedScrollPositionForTop != null) {
+                await _module!.InvokeVoidAsync("restoreScrollPositionForTop", _scrollContainer, _savedScrollPositionForTop);
+                _savedScrollPositionForTop = null;
+            }
+
+            if (_savedScrollPositionForBottom != null) {
+                await _module!.InvokeVoidAsync("restoreScrollPositionForBottom", _scrollContainer, _savedScrollPositionForBottom);
+                _savedScrollPositionForBottom = null;
+            }
+
+            if (_focusOnEditTextArea && _editTextArea != null) {
+                await _editTextArea.Element!.Value.FocusAsync();
+            }
+
+            _focusOnEditTextArea = false;
+        }
+        
+        if (_initStatus == InitializationStatus.Loading) {
+            await LoadInitialMessages();
+            _initStatus = InitializationStatus.Success;
+
+            StateHasChanged();
+        }
+    }
+    
+    private async Task LoadInitialMessages() {
+        await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
+            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+            IConversationService.RenderingMessages messages =
+                await ConversationService.LoadMessagesBeforeTimestampAsync(ConversationId, DateTime.MaxValue, LoadCount);
+
+            await _messageSemaphore.WaitAsync();
+
+            try {
+                _visibleMessages.Clear();
+                _replyMessages.Clear();
+
+                _visibleMessages.AddRange(messages.VisibleMessages);
+
+                foreach (var replyMessage in messages.RepliedMessages) {
+                    _replyMessages.TryAdd(replyMessage.MessageId, replyMessage);
+                }
+
+                _endBottom = _jumpToBottom = true;
+
+                if (messages.VisibleMessages.Count > 0) {
+                    _endTop = false;
+                    _topLoadTimestamp = messages.VisibleMessages[0].CreatedAt;
+                } else {
+                    _endTop = true;
+                }
+            } finally {
+                _messageSemaphore.Release();
+            }
+        }
+    }
+
+    [JSInvokable]
+    public async Task HandleLoadTopMessages() {
+        if (_endTop) return;
+        if (Interlocked.Exchange(ref _loadingTop, true)) return;
+
+        await InvokeAsync(StateHasChanged); // Re-render to display the load spinner.
+
+        try {
+            _savedScrollPositionForTop = await _module!.InvokeAsync<ScrollInfo>("saveScrollPosition", _scrollContainer);
+
+            var messages =
+                await ConversationService.LoadMessagesBeforeTimestampAsync(ConversationId, _topLoadTimestamp, LoadCount);
+
+            if (messages.VisibleMessages.Count == 0) {
+                _endTop = true;
+            } else {
+                _endTop = false;
+                _topLoadTimestamp = messages.VisibleMessages[0].CreatedAt;
+
+                await _messageSemaphore.WaitAsync();
+
+                try {
+                    _visibleMessages.InsertRange(0, messages.VisibleMessages);
+
+                    foreach (var replyMessage in messages.RepliedMessages) {
+                        _replyMessages.TryAdd(replyMessage.MessageId, replyMessage);
+                    }
+                } finally {
+                    _messageSemaphore.Release();
+                }
+            }
+        } finally {
+            Interlocked.Exchange(ref _loadingTop, false);
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    [JSInvokable]
+    public async Task HandleLoadBottomMessages() {
+        if (_endBottom) return;
+        if (Interlocked.Exchange(ref _loadingBottom, true)) return;
+
+        await InvokeAsync(StateHasChanged); // Re-render to display the load spinner.
+
+        try {
+            _savedScrollPositionForBottom = await _module!.InvokeAsync<ScrollInfo>("saveScrollPosition", _scrollContainer);
+
+            var messages =
+                await ConversationService.LoadMessagesAfterTimestampAsync(ConversationId, _topLoadTimestamp, LoadCount);
+
+            if (messages.VisibleMessages.Count == 0) {
+                _endBottom = true;
+            } else {
+                _endBottom = false;
+                _bottomLoadTimestamp = messages.VisibleMessages[^1].CreatedAt;
+
+                await _messageSemaphore.WaitAsync();
+
+                try {
+                    _visibleMessages.AddRange(messages.VisibleMessages);
+
+                    foreach (var replyMessage in messages.RepliedMessages) {
+                        _replyMessages.TryAdd(replyMessage.MessageId, replyMessage);
+                    }
+                } finally {
+                    _messageSemaphore.Release();
+                }
+            }
+        } finally {
+            Interlocked.Exchange(ref _loadingBottom, false);
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+    
+    private async Task RequestMessageReply(Guid id) {
+        await ReplyMessageIdChanged.InvokeAsync(id);
+    }
+
+    private void RequestMessageEdit(Guid id) {
+        _editingMessageId = id;
+
+        foreach (var message in _visibleMessages) {
+            if (message.MessageId == id) {
+                _editMessageBody = message.Body;
+                break;
+            }
+        }
+
+        _focusOnEditTextArea = true;
+    }
+    
+    private async Task HandleSubmitMessageEdit() {
+        _editMessageBody = _editMessageBody.Trim();
+
+        if (!string.IsNullOrEmpty(_editMessageBody)) {
+            await ConversationService.EditMessageAsync(_editingMessageId, UserId, _editMessageBody);
+        }
+
+        _editingMessageId = Guid.Empty;
+        _editMessageBody = string.Empty;
+    }
+
+    private void HandleEscapeRequest() {
+        _editingMessageId = Guid.Empty;
+        _editMessageBody = string.Empty;
+    }
+    
+    private void RequestMessageDelete(Guid id) {
+        _isProcessingMessageDelete = false;
+        _requestedMessageDelete = true;
+        _deletingMessageId = id;
+    }
+    
+    private async Task ProcessMessageDelete() {
+        _isProcessingMessageDelete = true;
+
+        try {
+            await ConversationService.DeleteMessageAsync(_deletingMessageId, UserId);
+        } finally {
+            _isProcessingMessageDelete = false;
+            CloseMessageDelete();
+
+            StateHasChanged();
+        }
+    }
+
+    private void CloseMessageDelete() {
+        _requestedMessageDelete = false;
+        _deletingMessageId = Guid.Empty;
+    }
+    
+    private void OnMessageReceived(MessageReceivedEventArgs args) {
+        // Only insert if we're at the bottom.
+        if (_endBottom && args.Message.ConversationId == ConversationId) {
+            InvokeAsync(async () => {
+                _jumpToBottom = await _module!.InvokeAsync<bool>("shouldMaintainScrollBottom", _scrollContainer);
+
+                ChatMessage message = args.Message;
+
+                await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
+                    var senderData = await dbContext.Users.Where(u => u.Id == message.SenderId).Select(u => new {
+                        u.Id,
+                        u.DisplayName,
+                        u.AvatarProfilePath,
+                    }).FirstAsync();
+
+                    IConversationService.RenderingReplyMessageDTO? replyMessage = null;
+
+                    if (message.ReplyMessageId.HasValue && !_replyMessages.ContainsKey(message.ReplyMessageId.Value)) {
+                        replyMessage = await dbContext.ChatMessages
+                            .Where(m => m.Id == message.ReplyMessageId.Value && m.DeletedAt == null)
+                            .Include(m => m.Sender)
+                            .Select(m => new IConversationService.RenderingReplyMessageDTO(m.Id, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body))
+                            .FirstOrDefaultAsync();
+                    }
+
+                    await _messageSemaphore.WaitAsync();
+
+                    try {
+                        _visibleMessages.Add(new(message.Id, senderData.Id, senderData.DisplayName, senderData.AvatarProfilePath, message.Body, message.CreatedAt, false, message.ReplyMessageId));
+
+                        if (replyMessage != null) {
+                            _replyMessages.TryAdd(replyMessage.MessageId, replyMessage);
+                        }
+                    } finally {
+                        _messageSemaphore.Release();
+                    }
+
+                    StateHasChanged();
+                }
+            });
+        }
+    }
+
+    private void OnMessageDeleted(MessageDeletedEventArgs args) {
+        if (ConversationId != args.ConversationId) return;
+
+        _messageSemaphore.Wait();
+
+        try {
+            for (int i = 0; i < _visibleMessages.Count; i++) {
+                if (_visibleMessages[i].MessageId == args.MessageId) {
+                    _visibleMessages.RemoveAt(i);
+                    break;
+                }
+            }
+
+            InvokeAsync(StateHasChanged);
+        } finally {
+            _messageSemaphore.Release();
+        }
+    }
+
+    private void OnMessageEdited(MessageEditedEventArgs args) {
+        if (ConversationId != args.ConversationId) return;
+
+        _messageSemaphore.Wait();
+
+        try {
+            for (int i = 0; i < _visibleMessages.Count; i++) {
+                if (_visibleMessages[i].MessageId == args.MessageId) {
+                    _visibleMessages[i] = _visibleMessages[i] with {
+                        Body = args.Body,
+                        IsEdited = true,
+                    };
+                    break;
+                }
+            }
+
+            InvokeAsync(StateHasChanged);
+        } finally {
+            _messageSemaphore.Release();
+        }
+    }
+    
+    public void Dispose() {
+        ConversationService.OnMessageReceived -= OnMessageReceived;
+        ConversationService.OnMessageDeleted -= OnMessageDeleted;
+        ConversationService.OnMessageEdited -= OnMessageEdited;
+
+        _messageSemaphore.Dispose();
+    }
+    
+    private enum InitializationStatus {
+        Loading,
+        Success,
+    }
+    
+    private record ScrollInfo(double ScrollTop, double ScrollHeight);
+}

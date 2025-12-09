@@ -2,10 +2,10 @@
     let debounceTimer;
     const threshold = 150;
     const debounceDelay = 150;
-    
+
     scrollContainer.addEventListener("scroll", async () => {
         clearTimeout(debounceTimer);
-        
+
         debounceTimer = setTimeout(async () => {
             if (scrollContainer.scrollTop <= threshold) {
                 await dotNetHelper.invokeMethodAsync('HandleLoadTopMessages');
@@ -40,27 +40,13 @@ export function restoreScrollPositionForTop(scrollContainer, savedScrollPosition
 
 export function restoreScrollPositionForBottom(scrollContainer, savedScrollPosition) {
     // No need to do math, because it is automatically taken care of somehow lmao.
-    
-    // requestAnimationFrame(() => {
-    //     if (savedScrollPosition) {
-    //         // const newScrollHeight = scrollContainer.scrollHeight;
-    //         // const heightIncrease = newScrollHeight - savedScrollPosition.scrollHeight;
-    //
-    //         // scrollContainer.scrollTop = savedScrollPosition.scrollTop + heightIncrease;
-    //        
-    //         // const newScrollHeight = scrollContainer.scrollHeight;
-    //         // const targetDistanceFromBottom = savedScrollPosition.distanceFromBottom;
-    //         //
-    //         // scrollContainer.scrollTop = newScrollHeight - savedScrollPosition.clientHeight - targetDistanceFromBottom;
-    //     }
-    // });
 }
 
 export function jumpToMessage(scrollContainer, id) {
     const messageElement = scrollContainer.querySelector(`[data-message-id='${id}']`);
-    
+
     if (!messageElement) return;
-    
+
     messageElement.scrollIntoView({
         behavior: 'instant',
         block: 'center',
