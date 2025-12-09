@@ -36,6 +36,9 @@
 
     <ItemGroup>
       <None Remove="appsettings.Development.json.example" />
+      <None Update="Components\Shared\MessageTextArea.razor.js">
+        <DependentUpon>MessageTextArea.razor</DependentUpon>
+      </None>
     </ItemGroup>
 
     <ItemGroup>

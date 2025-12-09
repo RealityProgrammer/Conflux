@@ -65,42 +65,57 @@
     
                                 for (int j = i; j < endIndex; j++) {
                                     message = _visibleMessages[j];
+                                    bool isEditing = message.MessageId == _editingMessageId;
     
-                                    <div class="relative bg-transparent hover:bg-white/5 group">
-                                        <p class="whitespace-pre-wrap">@message.Body</p>
-    
-                                        <span class="px-1 py-1 top-0 right-4 -translate-y-1/2 absolute bg-gray-750 rounded-lg hidden group-hover:flex flex-row items-center gap-1">
-                                            <p class="text-sm">@message.CreatedAt.ToString("yyyy/MM/dd HH:mm:ss")</p>
-    
-                                            @{ Guid actionMessageId = message.MessageId; }
-    
-                                            <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md" @onclick="() => RequestMessageReply(actionMessageId)">
-                                                <TurnArrow class="size-5 fill-none stroke-white"/>
-                                            </button>
-    
-                                            @if (_userId == message.SenderId) {
+                                    <div class="relative bg-transparent @(isEditing ? string.Empty : "hover:bg-white/5") group">
+                                        @if (isEditing) {
+                                            <MessageTextArea @ref="_editTextArea"
+                                                             @bind-Value="_editMessageBody" 
+                                                             class="shrink-0 input-field w-full py-2 overflow-x-hidden overflow-y-auto wrap-break-word break-all resize-none scrollbar-hide shadow-lg max-h-96 my-2 wrap-break-word"
+                                                             OnEnterSubmit="HandleSubmitMessageEdit"
+                                                             OnEscape="HandleEscapeRequest"/>
+                                        } else {
+                                            <p class="whitespace-pre-wrap wrap-anywhere">
+                                                @message.Body
+                                                
+                                                @if (message.IsEdited) {
+                                                    <span class="text-xs text-gray-400"> (edited)</span>
+                                                }
+                                            </p>
+                                            
+                                            <span class="px-1 py-1 top-0 right-4 -translate-y-1/2 absolute bg-gray-750 rounded-lg hidden group-hover:flex flex-row items-center gap-1">
+                                                <p class="text-sm">@message.CreatedAt.ToString("yyyy/MM/dd HH:mm:ss")</p>
+
+                                                @{ Guid actionMessageId = message.MessageId; }
+
+                                                <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md" @onclick="@(() => RequestMessageReply(actionMessageId))">
+                                                    <TurnArrow class="size-5 fill-none stroke-white"/>
+                                                </button>
+
+                                                @if (_userId == message.SenderId) {
+                                                    <hr class="border-l border-y-transparent border-l-gray-600 h-5"/>
+
+                                                    <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md" @onclick="@(() => RequestMessageEdit(actionMessageId))">
+                                                        <Pencil class="size-5 fill-white"/>
+                                                    </button>
+
+                                                    <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md" @onclick="@(() => RequestMessageDelete(actionMessageId))">
+                                                        <Trashcan class="size-5 fill-red-500"/>
+                                                    </button>
+                                                }
+
                                                 <hr class="border-l border-y-transparent border-l-gray-600 h-5"/>
-    
+
                                                 <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md">
-                                                    <Pencil class="size-5 fill-white"/>
+                                                    <ThreeDots class="size-5 fill-white"/>
                                                 </button>
-    
-                                                <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md" @onclick="() => RequestMessageDelete(actionMessageId)">
-                                                    <Trashcan class="size-5 fill-red-500"/>
-                                                </button>
-                                            }
-    
-                                            <hr class="border-l border-y-transparent border-l-gray-600 h-5"/>
-    
-                                            <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md">
-                                                <ThreeDots class="size-5 fill-white"/>
-                                            </button>
-                                        </span>
+                                            </span>
+                                        }
+
                                     </div>
                                 }
     
                                 i = endIndex;
-    
                             }
                         </div>
                     </div>
@@ -152,14 +167,14 @@
     private InitializationStatus _initStatus = InitializationStatus.Loading;
     private bool _loadingTop, _loadingBottom, _endTop, _endBottom;
     private ElementReference _scrollContainer;
-    
+
     // Storing messages in time ascending order.
     private readonly List<IConversationService.RenderingMessageDTO> _visibleMessages = [];
     private readonly Dictionary<Guid, IConversationService.RenderingReplyMessageDTO> _replyMessages = [];
     private readonly SemaphoreSlim _messageSemaphore = new(1, 1);
-    
+
     private DateTime _topLoadTimestamp, _bottomLoadTimestamp;
-    
+
     private IJSObjectReference? _module;
     private DotNetObjectReference<MessagingArea>? _objectReference;
     private Guid? _replyMessageId;
@@ -171,7 +186,12 @@
     private bool _requestedMessageDelete;
     private Guid _deletingMessageId;
     private bool _isProcessingMessageDelete;
-    
+
+    private Guid _editingMessageId;
+    private string _editMessageBody = string.Empty;
+    private MessageTextArea? _editTextArea;
+    private bool _focusOnEditTextArea;
+
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
     private string _userId = null!;
 
@@ -183,13 +203,13 @@
             _initStatus = InitializationStatus.NoPermission;
         }
     }
-    
+
     // Called automatically when URL parameter changed.
     protected override void OnParametersSet() {
         if (_initStatus == InitializationStatus.NoPermission) return;
-        
+
         _initStatus = InitializationStatus.Loading;
-        
+
         if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
             _cssClass = Convert.ToString(obj);
         }
@@ -199,43 +219,50 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
-            _module = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import",  "./Components/Shared/MessagingArea.razor.js");
+            _module = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import", "./Components/Shared/MessagingArea.razor.js");
             _objectReference = DotNetObjectReference.Create(this);
-            
+
             await _module!.InvokeVoidAsync("initializeScrollContainer", _scrollContainer, _objectReference);
 
             ConversationService.OnMessageReceived += OnMessageReceived;
             ConversationService.OnMessageDeleted += OnMessageDeleted;
+            ConversationService.OnMessageEdited += OnMessageEdited;
         }
 
         if (_initStatus == InitializationStatus.Loading) {
             await LoadInitialMessages();
             _initStatus = InitializationStatus.Success;
-            
+
             StateHasChanged();
         }
 
         if (!firstRender) {
             if (_jumpToBottom) {
                 _jumpToBottom = false;
-                
+
                 await _module!.InvokeVoidAsync("scrollToBottom", _scrollContainer);
             }
-        
+
             if (_jumpToMessageId.HasValue) {
                 await _module!.InvokeVoidAsync("jumpToMessage", _scrollContainer, _jumpToMessageId.Value);
                 _jumpToMessageId = null;
             }
-            
+
             if (_savedScrollPositionForTop != null) {
                 await _module!.InvokeVoidAsync("restoreScrollPositionForTop", _scrollContainer, _savedScrollPositionForTop);
                 _savedScrollPositionForTop = null;
             }
-            
+
             if (_savedScrollPositionForBottom != null) {
                 await _module!.InvokeVoidAsync("restoreScrollPositionForBottom", _scrollContainer, _savedScrollPositionForBottom);
                 _savedScrollPositionForBottom = null;
             }
+
+            if (_focusOnEditTextArea && _editTextArea != null) {
+                await _editTextArea.Element!.Value.FocusAsync();
+            }
+
+            _focusOnEditTextArea = false;
         }
     }
 
@@ -243,7 +270,7 @@
         await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
             dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
-            IConversationService.RenderingMessages messages = 
+            IConversationService.RenderingMessages messages =
                 await ConversationService.LoadMessagesBeforeTimestampAsync(ConversationId, DateTime.MaxValue, LoadCount);
 
             await _messageSemaphore.WaitAsync();
@@ -253,6 +280,7 @@
                 _replyMessages.Clear();
 
                 _visibleMessages.AddRange(messages.VisibleMessages);
+
                 foreach (var replyMessage in messages.RepliedMessages) {
                     _replyMessages.TryAdd(replyMessage.MessageId, replyMessage);
                 }
@@ -275,7 +303,7 @@
     public async Task HandleLoadTopMessages() {
         if (_endTop) return;
         if (Interlocked.Exchange(ref _loadingTop, true)) return;
-        
+
         await InvokeAsync(StateHasChanged); // Re-render to display the load spinner.
 
         try {
@@ -289,7 +317,7 @@
             } else {
                 _endTop = false;
                 _topLoadTimestamp = messages.VisibleMessages[0].CreatedAt;
-                    
+
                 await _messageSemaphore.WaitAsync();
 
                 try {
@@ -307,17 +335,17 @@
             await InvokeAsync(StateHasChanged);
         }
     }
-    
+
     [JSInvokable]
     public async Task HandleLoadBottomMessages() {
         if (_endBottom) return;
         if (Interlocked.Exchange(ref _loadingBottom, true)) return;
-        
+
         await InvokeAsync(StateHasChanged); // Re-render to display the load spinner.
-        
+
         try {
             _savedScrollPositionForBottom = await _module!.InvokeAsync<ScrollInfo>("saveScrollPosition", _scrollContainer);
-        
+
             var messages =
                 await ConversationService.LoadMessagesAfterTimestampAsync(ConversationId, _topLoadTimestamp, LoadCount);
 
@@ -326,7 +354,7 @@
             } else {
                 _endBottom = false;
                 _bottomLoadTimestamp = messages.VisibleMessages[^1].CreatedAt;
-                    
+
                 await _messageSemaphore.WaitAsync();
 
                 try {
@@ -356,9 +384,9 @@
         if (_endBottom && args.Message.ConversationId == ConversationId) {
             InvokeAsync(async () => {
                 _jumpToBottom = await _module!.InvokeAsync<bool>("shouldMaintainScrollBottom", _scrollContainer);
-                
+
                 ChatMessage message = args.Message;
-                
+
                 await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
                     var senderData = await dbContext.Users.Where(u => u.Id == message.SenderId).Select(u => new {
                         u.Id,
@@ -375,11 +403,11 @@
                             .Select(m => new IConversationService.RenderingReplyMessageDTO(m.Id, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body))
                             .FirstOrDefaultAsync();
                     }
-                    
+
                     await _messageSemaphore.WaitAsync();
 
                     try {
-                        _visibleMessages.Add(new(message.Id, senderData.Id, senderData.DisplayName, senderData.AvatarProfilePath, message.Body, message.CreatedAt, message.ReplyMessageId));
+                        _visibleMessages.Add(new(message.Id, senderData.Id, senderData.DisplayName, senderData.AvatarProfilePath, message.Body, message.CreatedAt, false, message.ReplyMessageId));
 
                         if (replyMessage != null) {
                             _replyMessages.TryAdd(replyMessage.MessageId, replyMessage);
@@ -387,7 +415,7 @@
                     } finally {
                         _messageSemaphore.Release();
                     }
-                    
+
                     StateHasChanged();
                 }
             });
@@ -396,8 +424,10 @@
 
     private void OnMessageDeleted(MessageDeletedEventArgs args) {
         if (ConversationId != args.ConversationId) return;
-        
-        lock (_visibleMessages) {
+
+        _messageSemaphore.Wait();
+
+        try {
             for (int i = 0; i < _visibleMessages.Count; i++) {
                 if (_visibleMessages[i].MessageId == args.MessageId) {
                     _visibleMessages.RemoveAt(i);
@@ -406,11 +436,64 @@
             }
 
             InvokeAsync(StateHasChanged);
+        } finally {
+            _messageSemaphore.Release();
+        }
+    }
+
+    private void OnMessageEdited(MessageEditedEventArgs args) {
+        if (ConversationId != args.ConversationId) return;
+
+        _messageSemaphore.Wait();
+
+        try {
+            for (int i = 0; i < _visibleMessages.Count; i++) {
+                if (_visibleMessages[i].MessageId == args.MessageId) {
+                    _visibleMessages[i] = _visibleMessages[i] with {
+                        Body = args.Body,
+                        IsEdited = true,
+                    };
+                    break;
+                }
+            }
+
+            InvokeAsync(StateHasChanged);
+        } finally {
+            _messageSemaphore.Release();
         }
     }
 
     private void RequestMessageReply(Guid id) {
         _replyMessageId = id;
+    }
+
+    private void RequestMessageEdit(Guid id) {
+        _editingMessageId = id;
+
+        foreach (var message in _visibleMessages) {
+            if (message.MessageId == id) {
+                _editMessageBody = message.Body;
+                break;
+            }
+        }
+
+        _focusOnEditTextArea = true;
+    }
+
+    private async Task HandleSubmitMessageEdit() {
+        _editMessageBody = _editMessageBody.Trim();
+
+        if (!string.IsNullOrEmpty(_editMessageBody)) {
+            await ConversationService.EditMessageAsync(_editingMessageId, _userId, _editMessageBody);
+        }
+
+        _editingMessageId = Guid.Empty;
+        _editMessageBody = string.Empty;
+    }
+
+    private void HandleEscapeRequest() {
+        _editingMessageId = Guid.Empty;
+        _editMessageBody = string.Empty;
     }
 
     private void RequestMessageDelete(Guid id) {
@@ -432,14 +515,15 @@
         } finally {
             _isProcessingMessageDelete = false;
             CloseMessageDelete();
-        
+
             StateHasChanged();
         }
     }
-    
+
     public void Dispose() {
         ConversationService.OnMessageReceived -= OnMessageReceived;
         ConversationService.OnMessageDeleted -= OnMessageDeleted;
+        ConversationService.OnMessageEdited -= OnMessageEdited;
 
         _messageSemaphore.Dispose();
     }
@@ -451,4 +535,5 @@
     }
 
     private record ScrollInfo(double ScrollTop, double ScrollHeight);
+
 }
