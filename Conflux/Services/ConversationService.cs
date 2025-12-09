@@ -235,7 +235,7 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
 
             // Get the conversation ID and check exists at the same time.
             Guid conversationId = await dbContext.ChatMessages
-                .Where(m => m.Id == messageId && m.SenderId == senderId && m.DeletedAt == null)
+                .Where(m => m.Id == messageId && m.SenderId == senderId && m.DeletedAt == null && m.Body != body)
                 .Select(m => m.ConversationId)
                 .FirstOrDefaultAsync();
 
