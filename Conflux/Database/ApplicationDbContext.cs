@@ -63,7 +63,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.HasMany(conversation => conversation.Messages)
                 .WithOne(message => message.Conversation)
                 .HasForeignKey(conversation => conversation.ConversationId)
-                .OnDelete(DeleteBehavior.Restrict)
+                .OnDelete(DeleteBehavior.Cascade)
                 .IsRequired();
         }).Entity<ConversationMember>(entity => {
             entity.HasKey(member => new { member.ConversationId, member.UserId });
@@ -87,7 +87,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.HasOne(m => m.ReplyMessage)
                 .WithMany()
                 .HasForeignKey(m => m.ReplyMessageId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 

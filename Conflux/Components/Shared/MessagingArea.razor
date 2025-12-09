@@ -32,11 +32,19 @@
                     // Render the replying message and avatar of the sender as a start of consecutive message group
     
                     if (message.ReplyMessageId.HasValue) {
-                        IConversationService.RenderingReplyMessageDTO replyMessage = _replyMessages[message.ReplyMessageId.Value];
-    
-                        <p class="mt-2 px-2 py-1 text-sm whitespace-nowrap overflow-hidden text-ellipsis border border-gray-600 mx-2 rounded-lg bg-gray-725 shadow-md">
-                            @replyMessage.SenderDisplayName: <br/>"@replyMessage.Body"
-                        </p>
+                        Guid replyMessageId = message.ReplyMessageId.Value;
+
+                        @if (replyMessageId != Guid.Empty) {
+                            IConversationService.RenderingReplyMessageDTO replyMessage = _replyMessages[message.ReplyMessageId.Value];
+
+                            <p class="mt-2 px-2 py-1 text-sm whitespace-nowrap overflow-hidden text-ellipsis border border-gray-600 mx-2 rounded-lg bg-gray-725 shadow-md">
+                                @replyMessage.SenderDisplayName: <br/>"@replyMessage.Body"
+                            </p>
+                        } else {
+                            <p class="mt-2 px-2 py-1 text-sm whitespace-nowrap overflow-hidden text-ellipsis border border-gray-600 mx-2 rounded-lg bg-gray-725 shadow-md">
+                                Replied message has been deleted.
+                            </p>
+                        }
                     }
     
                     <div class="px-2 py-0.5 flex flex-row">
