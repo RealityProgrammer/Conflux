@@ -94,7 +94,7 @@
 
                                             @{ Guid actionMessageId = message.MessageId; }
 
-                                            <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md" @onclick="@(() => RequestMessageReply(actionMessageId))">
+                                            <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md" @onclick="@(() => HandleRequestReply(actionMessageId))">
                                                 <TurnArrow class="size-5 fill-none stroke-white"/>
                                             </button>
 
@@ -166,8 +166,7 @@
 
     private Guid _previousConversationId;
     
-    [Parameter] public Guid? ReplyMessageId { get; set; }
-    [Parameter] public EventCallback<Guid?> ReplyMessageIdChanged { get; set; }
+    [Parameter] public EventCallback<Guid> OnReplyRequested { get; set; }
     
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
     private string? _cssClass;
@@ -368,9 +367,9 @@
             await InvokeAsync(StateHasChanged);
         }
     }
-    
-    private async Task RequestMessageReply(Guid id) {
-        await ReplyMessageIdChanged.InvokeAsync(id);
+
+    private async Task HandleRequestReply(Guid id) {
+        await OnReplyRequested.InvokeAsync(id);
     }
 
     private void RequestMessageEdit(Guid id) {

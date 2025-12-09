@@ -38,8 +38,8 @@
     [Parameter] public Guid? ReplyMessageId { get; set; }
     [Parameter] public EventCallback<Guid?> ReplyMessageIdChanged { get; set; }
 
-    private string _body;
-    private Guid? _replyMessageId;
+    private string _body = string.Empty;
+    private Guid? _previousReplyMessageId, _replyMessageId;
     
     private ReplyMessageDTO _replyMessageData;
     
@@ -59,12 +59,11 @@
         }
 
         AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "disabled" and not "class").ToDictionary();
-
         _replyMessageId = ReplyMessageId;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
-        if (_replyMessageId != null) {
+        if (_previousReplyMessageId != _replyMessageId && _replyMessageId.HasValue) {
             await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
                 _replyMessageData = await dbContext.ChatMessages
                     .Where(m => m.Id == _replyMessageId.Value && m.DeletedAt == null)
@@ -76,9 +75,9 @@
                 
                 StateHasChanged();
             }
-        } else {
-            _replyMessageData = default;
         }
+
+        _previousReplyMessageId = _replyMessageId;
     }
 
     [JSInvokable]
@@ -90,20 +89,18 @@
         if (OnSubmit.HasDelegate) {
             await OnSubmit.InvokeAsync(new(_body, _replyMessageId));
         }
-        
-        await SetReplyMessageId(null);
+
+        _replyMessageId = null;
+        await ReplyMessageIdChanged.InvokeAsync(_replyMessageId);
         
         await InvokeAsync(StateHasChanged);
     }
 
-    public async Task SetReplyMessageId(Guid? id) {
-        _replyMessageId = id;
-        await ReplyMessageIdChanged.InvokeAsync(_replyMessageId);
-    }
-
     private async Task HandleCancelReply() {
         _replyMessageData = default;
-        await SetReplyMessageId(null);
+        _replyMessageId = null;
+        
+        await ReplyMessageIdChanged.InvokeAsync(_replyMessageId);
     }
 
     private readonly record struct ReplyMessageDTO(string AuthorDisplayName, string MessageBody);

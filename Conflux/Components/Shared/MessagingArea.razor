@@ -12,7 +12,7 @@
 
 <section class="min-w-0 flex flex-col @_cssClass">
     <MessageTimeline @bind-ConversationId="ConversationId" 
-                     @bind-ReplyMessageId="_replyMessageId"
+                     OnReplyRequested="HandleReplyRequested"
                      UserId="@_userId"
                      LoadCount="LoadCount"/>
 
@@ -23,7 +23,9 @@
 </section>
 
 @code {
-    [Parameter, EditorRequired] public required Guid ConversationId { get; set; }
+    [Parameter] public Guid ConversationId { get; set; }
+    [Parameter] public EventCallback<Guid> ConversationIdChanged { get; set; }
+    
     [Parameter, EditorRequired] public required int LoadCount { get; set; }
 
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
@@ -41,6 +43,8 @@
 
     // Called automatically when URL parameter changed.
     protected override void OnParametersSet() {
+        _replyMessageId = null;
+        
         if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
             _cssClass = Convert.ToString(obj);
         }
@@ -50,5 +54,9 @@
     
     private async Task HandleMessageSend(MessageInputArea.MessageData data) {
         await ConversationService.SendMessageAsync(ConversationId, _userId, data.Body, data.ReplyMessageId);
+    }
+
+    private void HandleReplyRequested(Guid messageId) {
+        _replyMessageId = messageId;
     }
 }
