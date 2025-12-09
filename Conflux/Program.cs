@@ -81,6 +81,7 @@ builder.Services.AddScoped<ProfileSanitizingService>();
 builder.Services.AddScoped<IContentService, ContentService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IConversationService, ConversationService>();
+builder.Services.AddMemoryCache();
 
 // SignalR related services.
 builder.Services.AddSignalR(options => {

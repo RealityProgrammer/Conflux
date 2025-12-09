@@ -16,4 +16,13 @@ public interface IConversationService {
     
     Task<bool> SendMessageAsync(Guid conversationId, string senderId, string body, Guid? replyMessageId);
     Task<bool> DeleteMessageAsync(Guid messageId, string senderId);
+
+    Task<RenderingMessages> LoadMessagesBeforeTimestampAsync(Guid conversationId, DateTime beforeTimestamp, int take);
+    Task<RenderingMessages> LoadMessagesAfterTimestampAsync(Guid conversationId, DateTime afterTimestamp, int take);
+    
+    public record RenderingMessageDTO(Guid MessageId, string SenderId, string SenderDisplayName, string? SenderAvatar, string Body, DateTime CreatedAt, Guid? ReplyMessageId);
+
+    public record RenderingReplyMessageDTO(Guid MessageId, string SenderDisplayName, string? SenderAvatar, string Body);
+    
+    public readonly record struct RenderingMessages(IList<RenderingMessageDTO> VisibleMessages, IList<RenderingReplyMessageDTO> RepliedMessages);
 }

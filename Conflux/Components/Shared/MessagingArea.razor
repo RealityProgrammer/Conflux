@@ -12,7 +12,7 @@
 @inject IConversationService ConversationService
 @inject ILogger<MessagingArea> Logger
 
-<section class="flex flex-col @_cssClass">
+<section class="min-w-0 flex flex-col @_cssClass">
     <div class="overflow-y-auto flex-1" @ref="_scrollContainer">
         @switch (_initStatus) {
             case InitializationStatus.Loading:
@@ -20,74 +20,92 @@
                     <Spinner class="size-16 fill-white"/>
                 </div>
                 break;
-            
+    
             case InitializationStatus.Success:
                 <div class="flex flex-row items-center justify-center @(_loadingTop ? "block" : "hidden")">
                     <Spinner class="size-6 fill-white"/>
                 </div>
-
+    
                 for (int i = 0, c = _visibleMessages.Count; i < c;) {
-                    MessageData message = _visibleMessages[i];
-                    
-                    // Render the avatar of the sender as a start of consecutive message group
+                    IConversationService.RenderingMessageDTO message = _visibleMessages[i];
+    
+                    // Render the replying message and avatar of the sender as a start of consecutive message group
+    
+                    if (message.ReplyMessageId.HasValue) {
+                        IConversationService.RenderingReplyMessageDTO replyMessage = _replyMessages[message.ReplyMessageId.Value];
+    
+                        <p class="mt-2 px-2 py-1 text-sm whitespace-nowrap overflow-hidden text-ellipsis border border-gray-600 mx-2 rounded-lg bg-gray-725 shadow-md">
+                            @replyMessage.SenderDisplayName: <br/>"@replyMessage.Body"
+                        </p>
+                    }
+    
                     <div class="px-2 py-0.5 flex flex-row">
+                        @if (message.ReplyMessageId.HasValue) {
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" class="size-6 fill-none stroke-white ml-4">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m16.49 12 3.75 3.75m0 0-3.75 3.75m3.75-3.75H3.74V4.499" />
+                            </svg>
+                        }
+    
                         <Avatar ImageSrc="@message.SenderAvatar"
                                 ImageAlt="@(string.IsNullOrEmpty(message.SenderAvatar) ? string.Empty : "Sender Avatar")"
                                 class="flex-none size-10 mr-2 mt-1"/>
-                        
+    
                         <div class="flex-1 flex flex-col">
                             <p>@message.SenderDisplayName</p>
-                            
+    
                             @{
-                                // Render the content of consecutive messages 
+                                // Render the content of consecutive messages.
                                 int endIndex = i + 1;
-
-                                while (endIndex < c && _visibleMessages[endIndex].SenderId == message.SenderId) {
-                                    endIndex++;
+    
+                                if (!message.ReplyMessageId.HasValue) {
+                                    while (endIndex < c && _visibleMessages[endIndex].SenderId == message.SenderId && !_visibleMessages[endIndex].ReplyMessageId.HasValue) {
+                                        endIndex++;
+                                    }
                                 }
-
+    
                                 for (int j = i; j < endIndex; j++) {
                                     message = _visibleMessages[j];
-                                    
+    
                                     <div class="relative bg-transparent hover:bg-white/5 group">
                                         <p class="whitespace-pre-wrap">@message.Body</p>
-                                    
+    
                                         <span class="px-1 py-1 top-0 right-4 -translate-y-1/2 absolute bg-gray-750 rounded-lg hidden group-hover:flex flex-row items-center gap-1">
                                             <p class="text-sm">@message.CreatedAt.ToString("yyyy/MM/dd HH:mm:ss")</p>
-                                    
-                                            <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md">
+    
+                                            @{ Guid actionMessageId = message.MessageId; }
+    
+                                            <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md" @onclick="() => RequestMessageReply(actionMessageId)">
                                                 <TurnArrow class="size-5 fill-none stroke-white"/>
                                             </button>
-                                            
+    
                                             @if (_userId == message.SenderId) {
                                                 <hr class="border-l border-y-transparent border-l-gray-600 h-5"/>
-
-                                                Guid actionMessageId = message.MessageId;
-                                                
+    
                                                 <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md">
                                                     <Pencil class="size-5 fill-white"/>
                                                 </button>
-                                                
+    
                                                 <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md" @onclick="() => RequestMessageDelete(actionMessageId)">
                                                     <Trashcan class="size-5 fill-red-500"/>
                                                 </button>
                                             }
-
+    
                                             <hr class="border-l border-y-transparent border-l-gray-600 h-5"/>
-                                            
+    
                                             <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md">
                                                 <ThreeDots class="size-5 fill-white"/>
                                             </button>
                                         </span>
                                     </div>
                                 }
-
+    
                                 i = endIndex;
+    
                             }
                         </div>
                     </div>
                 }
-                
+    
                 <div class="flex flex-row items-center justify-center @(_loadingBottom ? "block" : "hidden")">
                     <Spinner class="size-6 fill-white"/>
                 </div>
@@ -95,7 +113,8 @@
         }
     </div>
     
-    <MessageInputArea class="flex-none p-2 flex flex-row items-center gap-1"
+    <MessageInputArea @bind-ReplyMessageId="_replyMessageId"
+                      class="flex-none p-2"
                       disabled="@(_initStatus != InitializationStatus.Success)"
                       OnSubmit="HandleMessageSend"/>
 </section>
@@ -125,7 +144,7 @@
 
 @code {
     [Parameter, EditorRequired] public required Guid ConversationId { get; set; }
-    [Parameter, EditorRequired] public required int OverloadCount { get; set; }
+    [Parameter, EditorRequired] public required int LoadCount { get; set; }
 
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
     private string? _cssClass;
@@ -135,11 +154,15 @@
     private ElementReference _scrollContainer;
     
     // Storing messages in time ascending order.
-    private List<MessageData> _visibleMessages = [];
+    private readonly List<IConversationService.RenderingMessageDTO> _visibleMessages = [];
+    private readonly Dictionary<Guid, IConversationService.RenderingReplyMessageDTO> _replyMessages = [];
+    private readonly SemaphoreSlim _messageSemaphore = new(1, 1);
+    
     private DateTime _topLoadTimestamp, _bottomLoadTimestamp;
     
     private IJSObjectReference? _module;
     private DotNetObjectReference<MessagingArea>? _objectReference;
+    private Guid? _replyMessageId;
 
     private ScrollInfo? _savedScrollPositionForTop, _savedScrollPositionForBottom;
     private bool _jumpToBottom;
@@ -220,20 +243,30 @@
         await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
             dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
-            List<MessageData> messages = await LoadTopMessages(dbContext);
-            
-            lock (_visibleMessages) {
+            IConversationService.RenderingMessages messages = 
+                await ConversationService.LoadMessagesBeforeTimestampAsync(ConversationId, DateTime.MaxValue, LoadCount);
+
+            await _messageSemaphore.WaitAsync();
+
+            try {
                 _visibleMessages.Clear();
-                _visibleMessages.AddRange(messages);
-                
+                _replyMessages.Clear();
+
+                _visibleMessages.AddRange(messages.VisibleMessages);
+                foreach (var replyMessage in messages.RepliedMessages) {
+                    _replyMessages.TryAdd(replyMessage.MessageId, replyMessage);
+                }
+
                 _endBottom = _jumpToBottom = true;
 
-                if (_visibleMessages.Count > 0) {
+                if (messages.VisibleMessages.Count > 0) {
                     _endTop = false;
-                    _topLoadTimestamp = _visibleMessages[0].CreatedAt;
+                    _topLoadTimestamp = messages.VisibleMessages[0].CreatedAt;
                 } else {
                     _endTop = true;
                 }
+            } finally {
+                _messageSemaphore.Release();
             }
         }
     }
@@ -247,19 +280,26 @@
 
         try {
             _savedScrollPositionForTop = await _module!.InvokeAsync<ScrollInfo>("saveScrollPosition", _scrollContainer);
-        
-            await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
-                var loadResult = await LoadTopMessages(dbContext, _topLoadTimestamp);
 
-                if (loadResult.Count == 0) {
-                    _endTop = true;
-                } else {
-                    _endTop = false;
-                    _topLoadTimestamp = loadResult[0].CreatedAt;
+            var messages =
+                await ConversationService.LoadMessagesBeforeTimestampAsync(ConversationId, _topLoadTimestamp, LoadCount);
 
-                    lock (_visibleMessages) {
-                        _visibleMessages.InsertRange(0, loadResult);
+            if (messages.VisibleMessages.Count == 0) {
+                _endTop = true;
+            } else {
+                _endTop = false;
+                _topLoadTimestamp = messages.VisibleMessages[0].CreatedAt;
+                    
+                await _messageSemaphore.WaitAsync();
+
+                try {
+                    _visibleMessages.InsertRange(0, messages.VisibleMessages);
+
+                    foreach (var replyMessage in messages.RepliedMessages) {
+                        _replyMessages.TryAdd(replyMessage.MessageId, replyMessage);
                     }
+                } finally {
+                    _messageSemaphore.Release();
                 }
             }
         } finally {
@@ -278,18 +318,25 @@
         try {
             _savedScrollPositionForBottom = await _module!.InvokeAsync<ScrollInfo>("saveScrollPosition", _scrollContainer);
         
-            await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
-                var loadResult = await LoadBottomMessages(dbContext, _bottomLoadTimestamp);
+            var messages =
+                await ConversationService.LoadMessagesAfterTimestampAsync(ConversationId, _topLoadTimestamp, LoadCount);
 
-                if (loadResult.Count == 0) {
-                    _endBottom = true;
-                } else {
-                    _endBottom = false;
-                    _bottomLoadTimestamp = loadResult[^1].CreatedAt;
+            if (messages.VisibleMessages.Count == 0) {
+                _endBottom = true;
+            } else {
+                _endBottom = false;
+                _bottomLoadTimestamp = messages.VisibleMessages[^1].CreatedAt;
+                    
+                await _messageSemaphore.WaitAsync();
 
-                    lock (_visibleMessages) {
-                        _visibleMessages.AddRange(loadResult);
+                try {
+                    _visibleMessages.AddRange(messages.VisibleMessages);
+
+                    foreach (var replyMessage in messages.RepliedMessages) {
+                        _replyMessages.TryAdd(replyMessage.MessageId, replyMessage);
                     }
+                } finally {
+                    _messageSemaphore.Release();
                 }
             }
         } finally {
@@ -297,50 +344,10 @@
             await InvokeAsync(StateHasChanged);
         }
     }
-    
-    private async Task<List<MessageData>> LoadTopMessages(ApplicationDbContext dbContext) {
-        List<MessageData> loadedMessages = await dbContext.ChatMessages
-            .Where(m => m.ConversationId == ConversationId && m.DeletedAt == null)
-            .OrderByDescending(m => m.CreatedAt)
-            .Take(OverloadCount)
-            .Include(message => message.Sender)
-            .Select(m => new MessageData(m.Id, m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt))
-            .Reverse()
-            .ToListAsync();
 
-        return loadedMessages;
-    }
-
-    private async Task<List<MessageData>> LoadTopMessages(ApplicationDbContext dbContext, DateTime loadTimestamp) {
-        List<MessageData> loadedMessages = await dbContext.ChatMessages
-            .Where(m => m.ConversationId == ConversationId && m.DeletedAt == null)
-            .OrderByDescending(m => m.CreatedAt)
-            .Where(m => m.CreatedAt < loadTimestamp)
-            .Take(OverloadCount)
-            .Include(message => message.Sender)
-            .Select(m => new MessageData(m.Id, m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt))
-            .Reverse()
-            .ToListAsync();
-
-        return loadedMessages;
-    }
-    
-    private async Task<List<MessageData>> LoadBottomMessages(ApplicationDbContext dbContext, DateTime loadTimestamp) {
-        List<MessageData> loadedMessages = await dbContext.ChatMessages
-            .Where(m => m.ConversationId == ConversationId && m.DeletedAt == null)
-            .OrderBy(m => m.CreatedAt)
-            .Where(m => m.CreatedAt > loadTimestamp)
-            .Take(OverloadCount)
-            .Include(message => message.Sender)
-            .Select(m => new MessageData(m.Id, m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt))
-            .ToListAsync();
-
-        return loadedMessages;
-    }
-
-    private async Task HandleMessageSend(string body) {
+    private async Task HandleMessageSend(MessageInputArea.MessageData data) {
         if (_initStatus == InitializationStatus.Success) {
-            await ConversationService.SendMessageAsync(ConversationId, _userId, body, null);
+            await ConversationService.SendMessageAsync(ConversationId, _userId, data.Body, data.ReplyMessageId);
         }
     }
 
@@ -348,6 +355,8 @@
         // Only insert if we're at the bottom.
         if (_endBottom && args.Message.ConversationId == ConversationId) {
             InvokeAsync(async () => {
+                _jumpToBottom = await _module!.InvokeAsync<bool>("shouldMaintainScrollBottom", _scrollContainer);
+                
                 ChatMessage message = args.Message;
                 
                 await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
@@ -357,9 +366,28 @@
                         u.AvatarProfilePath,
                     }).FirstAsync();
 
-                    lock (_visibleMessages) {
-                        _visibleMessages.Add(new(message.Id, senderData.Id, senderData.DisplayName, senderData.AvatarProfilePath, message.Body, message.CreatedAt));
+                    IConversationService.RenderingReplyMessageDTO? replyMessage = null;
+
+                    if (message.ReplyMessageId.HasValue && !_replyMessages.ContainsKey(message.ReplyMessageId.Value)) {
+                        replyMessage = await dbContext.ChatMessages
+                            .Where(m => m.Id == message.ReplyMessageId.Value && m.DeletedAt == null)
+                            .Include(m => m.Sender)
+                            .Select(m => new IConversationService.RenderingReplyMessageDTO(m.Id, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body))
+                            .FirstOrDefaultAsync();
                     }
+                    
+                    await _messageSemaphore.WaitAsync();
+
+                    try {
+                        _visibleMessages.Add(new(message.Id, senderData.Id, senderData.DisplayName, senderData.AvatarProfilePath, message.Body, message.CreatedAt, message.ReplyMessageId));
+
+                        if (replyMessage != null) {
+                            _replyMessages.TryAdd(replyMessage.MessageId, replyMessage);
+                        }
+                    } finally {
+                        _messageSemaphore.Release();
+                    }
+                    
                     StateHasChanged();
                 }
             });
@@ -381,6 +409,10 @@
         }
     }
 
+    private void RequestMessageReply(Guid id) {
+        _replyMessageId = id;
+    }
+
     private void RequestMessageDelete(Guid id) {
         _isProcessingMessageDelete = false;
         _requestedMessageDelete = true;
@@ -389,7 +421,7 @@
 
     private void CloseMessageDelete() {
         _requestedMessageDelete = false;
-        _deletingMessageId = default;
+        _deletingMessageId = Guid.Empty;
     }
 
     private async Task ProcessMessageDelete() {
@@ -408,6 +440,8 @@
     public void Dispose() {
         ConversationService.OnMessageReceived -= OnMessageReceived;
         ConversationService.OnMessageDeleted -= OnMessageDeleted;
+
+        _messageSemaphore.Dispose();
     }
 
     private enum InitializationStatus {
@@ -417,6 +451,4 @@
     }
 
     private record ScrollInfo(double ScrollTop, double ScrollHeight);
-
-    private readonly record struct MessageData(Guid MessageId, string SenderId, string SenderDisplayName, string? SenderAvatar, string Body, DateTime CreatedAt);
 }

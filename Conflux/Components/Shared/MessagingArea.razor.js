@@ -68,3 +68,7 @@ export function jumpToMessage(scrollContainer, id) {
         inline: 'nearest',
     });
 }
+
+export function shouldMaintainScrollBottom(scrollContainer) {
+    return Math.abs(scrollContainer.scrollTop - scrollContainer.scrollHeight + scrollContainer.offsetHeight) <= 0.1;
+}

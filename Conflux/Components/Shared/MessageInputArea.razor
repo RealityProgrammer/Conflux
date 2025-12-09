@@ -1,6 +1,5 @@
 ﻿@using Conflux.Components.Shared.Icons
 @using Conflux.Database
-@using Conflux.Database.Entities
 @using Microsoft.EntityFrameworkCore
 
 @implements IAsyncDisposable
@@ -9,14 +8,26 @@
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject ILogger<MessageInputArea> Logger
 
-<footer @attributes="AdditionalAttributes">
-    <textarea @ref="_textareaElement"
-        class="flex-1 input-field w-full max-w-full py-2 max-h-96 overflow-x-hidden overflow-y-auto wrap-break-word break-all resize-none scrollbar-hide"
-        rows="1"
-        placeholder="Enter the message..."
-        disabled="@_disabled"
-        @bind="TextBody" @bind:event="oninput">
-    </textarea>
+<footer class="flex flex-row items-end gap-1 @_cssClass" @attributes="AdditionalAttributes">
+    <section class="flex-1 flex flex-col min-w-0">
+        @if (_replyMessageId != null) {
+            <div class="min-w-0 rounded-t-lg py-1 px-2 border-x border-t border-x-gray-600 border-t-gray-600 flex flex-row items-center gap-1 overflow-hidden">
+                <p class="flex-1 whitespace-nowrap overflow-hidden text-ellipsis">Replying to @_replyMessageData.AuthorDisplayName: "@_replyMessageData.MessageBody"</p>
+
+                <button class="flex-none p-0.5 bg-transparent hover:bg-white/15 rounded-full" @onclick="HandleCancelReply">
+                    <Cross class="size-4 fill-white"></Cross>
+                </button>
+            </div>
+        }
+
+        <textarea @ref="_textareaElement"
+            class="shrink-0 input-field @(_replyMessageId == null ? string.Empty : "rounded-t-none") w-full py-2 max-h-96 overflow-x-hidden overflow-y-auto wrap-break-word break-all resize-none scrollbar-hide shadow-lg"
+            rows="1"
+            placeholder="Enter the message..."
+            disabled="@_disabled"
+            @bind="TextBody" @bind:event="oninput">
+        </textarea>
+    </section>
 
     <button class="flex-none rounded-full bg-transparent hover:bg-white/15 active:bg-black/15 p-2 cursor-pointer group disabled:bg-transparent disabled:cursor-default" disabled="@_disabled">
         <Paperclip class="size-6 fill-white group-disabled:fill-gray-400"/>
@@ -28,7 +39,12 @@
 </footer>
 
 @code {
-    [Parameter] public EventCallback<string> OnSubmit { get; set; }
+    [Parameter] public EventCallback<MessageData> OnSubmit { get; set; }
+    
+    [Parameter] public Guid? ReplyMessageId { get; set; }
+    [Parameter] public EventCallback<Guid?> ReplyMessageIdChanged { get; set; }
+
+    private Guid? _replyMessageId;
     
     public string TextBody { get; set; } = string.Empty;
 
@@ -37,15 +53,26 @@
     private IJSObjectReference? _module;
     private DotNetObjectReference<MessageInputArea>? _objectReference;
 
+    private ReplyMessageDTO _replyMessageData;
+    
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
     private bool _disabled;
+    private string? _cssClass;
 
     protected override void OnParametersSet() {
-        if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("disabled", out object? obj)) {
-            _disabled = Convert.ToBoolean(obj);
+        if (AdditionalAttributes != null) {
+            if (AdditionalAttributes.TryGetValue("disabled", out object? obj)) {
+                _disabled = Convert.ToBoolean(obj);
+            }
+            
+            if (AdditionalAttributes.TryGetValue("class", out obj)) {
+                _cssClass = Convert.ToString(obj);
+            }
         }
 
-        AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key != "disabled").ToDictionary();
+        AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "disabled" and not "class").ToDictionary();
+
+        _replyMessageId = ReplyMessageId;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
@@ -56,6 +83,22 @@
             _objectReference = DotNetObjectReference.Create(this);
             await _module.InvokeVoidAsync("initializeTextArea", _textareaElement, _objectReference);
         }
+
+        if (_replyMessageId != null) {
+            await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
+                _replyMessageData = await dbContext.ChatMessages
+                    .Where(m => m.Id == _replyMessageId.Value && m.DeletedAt == null)
+                    .Select(m => new ReplyMessageDTO {
+                        AuthorDisplayName = m.Sender.DisplayName,
+                        MessageBody = m.Body,
+                    })
+                    .FirstOrDefaultAsync();
+                
+                StateHasChanged();
+            }
+        } else {
+            _replyMessageData = default;
+        }
     }
 
     [JSInvokable]
@@ -65,12 +108,13 @@
         if (_disabled || string.IsNullOrEmpty(TextBody)) return;
 
         if (OnSubmit.HasDelegate) {
-            await OnSubmit.InvokeAsync(TextBody);
+            await OnSubmit.InvokeAsync(new(TextBody, _replyMessageId));
         }
         
         TextBody = string.Empty;
-        StateHasChanged();
-        await Task.Yield();
+        await SetReplyMessageId(null);
+        
+        await InvokeAsync(StateHasChanged);
     }
 
     public async ValueTask DisposeAsync() {
@@ -83,4 +127,19 @@
 
         _objectReference?.Dispose();
     }
+
+    public async Task SetReplyMessageId(Guid? id) {
+        _replyMessageId = id;
+        await ReplyMessageIdChanged.InvokeAsync(_replyMessageId);
+    }
+
+    private async Task HandleCancelReply() {
+        _replyMessageData = default;
+        await SetReplyMessageId(null);
+    }
+
+    private readonly record struct ReplyMessageDTO(string AuthorDisplayName, string MessageBody);
+
+    public readonly record struct MessageData(string Body, Guid? ReplyMessageId);
+
 }

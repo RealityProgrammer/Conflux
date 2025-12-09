@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
@@ -20,6 +21,7 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
     private readonly INotificationService _notificationService;
     private readonly NavigationManager _navigationManager;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IMemoryCache _cache;
     private readonly ILogger<ConversationService> _logger;
     private readonly IHubContext<ConversationHub> _hubContext;
 
@@ -28,11 +30,12 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
     public event Action<MessageReceivedEventArgs>? OnMessageReceived;
     public event Action<MessageDeletedEventArgs>? OnMessageDeleted;
     
-    public ConversationService(IWebHostEnvironment environment, IDbContextFactory<ApplicationDbContext> dbContextFactory, INotificationService notificationService, NavigationManager navigationManager, IHttpContextAccessor httpContextAccessor, IHubContext<ConversationHub> hubContext, ILogger<ConversationService> logger) {
+    public ConversationService(IDbContextFactory<ApplicationDbContext> dbContextFactory, INotificationService notificationService, NavigationManager navigationManager, IHttpContextAccessor httpContextAccessor, IHubContext<ConversationHub> hubContext, IMemoryCache cache, ILogger<ConversationService> logger) {
         _dbContextFactory = dbContextFactory;
         _notificationService = notificationService;
         _navigationManager = navigationManager;
         _httpContextAccessor = httpContextAccessor;
+        _cache = cache;
         _hubContext = hubContext;
         _logger = logger;
     }
@@ -184,8 +187,59 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
 
                 return true;
             }
-
+            
             return false;
+        }
+    }
+
+    public async Task<IConversationService.RenderingMessages> LoadMessagesBeforeTimestampAsync(Guid conversationId, DateTime beforeTimestamp, int take) {
+        await using (var dbContext = await _dbContextFactory.CreateDbContextAsync()) {
+            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+            
+            List<IConversationService.RenderingMessageDTO> messages = await dbContext.ChatMessages
+                .Where(m => m.ConversationId == conversationId && m.DeletedAt == null)
+                .OrderByDescending(m => m.CreatedAt)
+                .Where(m => m.CreatedAt < beforeTimestamp)
+                .Take(take)
+                .Include(m => m.Sender)
+                .Select(m => new IConversationService.RenderingMessageDTO(m.Id, m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt, m.ReplyMessageId))
+                .Reverse()
+                .ToListAsync();
+
+            List<Guid> replyMessageIds = messages.Where(m => m.ReplyMessageId.HasValue).Select(m => m.ReplyMessageId!.Value).ToList();
+
+            List<IConversationService.RenderingReplyMessageDTO> replyMessages = await dbContext.ChatMessages
+                .Where(m => replyMessageIds.Contains(m.Id) && m.DeletedAt == null)
+                .Include(m => m.Sender)
+                .Select(m => new IConversationService.RenderingReplyMessageDTO(m.Id, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body))
+                .ToListAsync();
+            
+            return new(messages, replyMessages);
+        }
+    }
+    
+    public async Task<IConversationService.RenderingMessages> LoadMessagesAfterTimestampAsync(Guid conversationId, DateTime beforeTimestamp, int take) {
+        await using (var dbContext = await _dbContextFactory.CreateDbContextAsync()) {
+            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+            
+            List<IConversationService.RenderingMessageDTO> messages = await dbContext.ChatMessages
+                .Where(m => m.ConversationId == conversationId && m.DeletedAt == null)
+                .OrderBy(m => m.CreatedAt)
+                .Where(m => m.CreatedAt > beforeTimestamp)
+                .Take(take)
+                .Include(m => m.Sender)
+                .Select(m => new IConversationService.RenderingMessageDTO(m.Id, m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt, m.ReplyMessageId))
+                .ToListAsync();
+
+            List<Guid> replyMessageIds = messages.Where(m => m.ReplyMessageId.HasValue).Select(m => m.ReplyMessageId!.Value).ToList();
+
+            List<IConversationService.RenderingReplyMessageDTO> replyMessages = await dbContext.ChatMessages
+                .Where(m => replyMessageIds.Contains(m.Id) && m.DeletedAt == null)
+                .Include(m => m.Sender)
+                .Select(m => new IConversationService.RenderingReplyMessageDTO(m.Id, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body))
+                .ToListAsync();
+            
+            return new(messages, replyMessages);
         }
     }
 
