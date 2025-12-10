@@ -271,7 +271,7 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
                 .Take(take)
                 .Include(m => m.Sender)
                 .Include(m => m.ReplyMessage)
-                .Select(m => new IConversationService.RenderingMessageDTO(m.Id, m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt, m.LastModifiedAt != null, m.ReplyMessage != null ? m.DeletedAt != null ? m.ReplyMessageId : Guid.Empty : null))
+                .Select(m => new IConversationService.RenderingMessageDTO(m.Id, m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt, m.LastModifiedAt != null, m.ReplyMessage != null ? m.ReplyMessageId : null))
                 .Reverse()
                 .ToListAsync();
 
