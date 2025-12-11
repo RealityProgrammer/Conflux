@@ -57,7 +57,7 @@
             </div>
         } else {
             <div class="flex-none h-16 border-t border-t-gray-600 p-2 flex flex-row justify-center lg:justify-start items-center">
-                <Avatar class="h-full flex-none" ImageSrc="@_avatarSrc" ImageAlt="@(string.IsNullOrEmpty(_avatarSrc) ? string.Empty : "User Avatar")"/>
+                <Avatar class="h-full flex-none" ImageSrc="@_avatarSrc" ImageAlt="User's Avatar"/>
                 
                 <div class="ml-2 flex-1 hidden lg:flex flex-col justify-center">
                     <p>@_userDisplayName</p>
@@ -107,7 +107,10 @@
 
                 _userDisplayName = data.DisplayName;
                 _username = data.UserName!;
-                _avatarSrc = data.AvatarSrc;
+
+                if (!string.IsNullOrEmpty(data.AvatarSrc)) {
+                    _avatarSrc = ContentService.GetAssetPath(data.AvatarSrc);
+                }
             }
 
             StateHasChanged();

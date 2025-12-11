@@ -8,6 +8,7 @@
 @inject IJSRuntime JavascriptRuntime
 @inject IConversationService ConversationService
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IContentService ContentService
 
 @implements IDisposable
 
@@ -50,8 +51,8 @@
                         </svg>
                     }
     
-                    <Avatar ImageSrc="@message.SenderAvatar"
-                            ImageAlt="@(string.IsNullOrEmpty(message.SenderAvatar) ? string.Empty : "Sender Avatar")"
+                    <Avatar ImageSrc="@(string.IsNullOrEmpty(message.SenderAvatar) ? null : ContentService.GetAssetPath(message.SenderAvatar))"
+                            ImageAlt="Sender's Avatar"
                             class="flex-none size-10 mr-2 mt-1"/>
     
                     <div class="flex-1 flex flex-col">
@@ -90,9 +91,7 @@
                                                 <span class="text-xs text-gray-400"> (edited)</span>
                                             }
                                             
-                                            <img src="@message.Attachments[0]" alt="" class="size-48">
-                                            
-                                            @* <p>(@message.Attachments.Length attachments)</p> *@
+                                            <img src="@ContentService.GetAssetPath(message.Attachments[0])" alt="" class="size-48">
                                         </div>
 
                                         <span class="px-1 py-1 top-0 right-4 -translate-y-1/2 absolute bg-gray-750 rounded-lg hidden group-hover:flex flex-row items-center gap-1">

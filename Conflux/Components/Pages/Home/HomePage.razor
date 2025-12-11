@@ -4,7 +4,11 @@
 @using Microsoft.AspNetCore.Components.Sections
 @using System.Diagnostics
 @using Conflux.Components.Shared.Icons
+@using Conflux.Database
 @using Conflux.Helpers
+@using Conflux.Services.Abstracts
+@using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
 
 @implements IAsyncDisposable
 
@@ -13,6 +17,8 @@
 @inject IViteDevServerStatus Vite
 @inject IJSRuntime JSRuntime
 @inject ILogger<HomePage> Logger
+@inject IContentService ContentService
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 
 <PageTitle>HomePage</PageTitle>
 
@@ -93,7 +99,7 @@
         <AuthorizeView>
             <Authorized>
                 <button class="float-end bg-transparent hover:bg-white/10 p-2 rounded-full inline-flex flex-row justify-end items-center gap-1 cursor-pointer" @onclick="OpenUserDrawer">
-                    <div class="rounded-full bg-white size-9"></div>
+                    <Avatar ImageSrc="@_userAvatarUrl" ImageAlt="User's Avatar" class="size-9"/>
                     <p class="text-white">@context.User.Identity?.Name</p>
                 </button>
                 
@@ -165,11 +171,32 @@
     private ElementReference _particlesBackground;
 
     private bool _openNavigationDrawer, _openUserDrawer;
+
+    private string? _userAvatarUrl;
+
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
     
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
             _module = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./scripts/pages/home.ts");
             await _module.InvokeVoidAsync("initParticlesBackground", _particlesBackground);
+
+            var authState = await AuthenticationState;
+            string? userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (!string.IsNullOrEmpty(userId)) {
+                await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
+                    _userAvatarUrl = await dbContext.Users
+                        .Where(u => u.Id == userId)
+                        .Select(u => u.AvatarProfilePath)
+                        .FirstOrDefaultAsync();
+
+                    if (!string.IsNullOrEmpty(_userAvatarUrl)) {
+                        _userAvatarUrl = ContentService.GetAssetPath(_userAvatarUrl);
+                        StateHasChanged();
+                    }
+                }
+            }
         }
     }
     
