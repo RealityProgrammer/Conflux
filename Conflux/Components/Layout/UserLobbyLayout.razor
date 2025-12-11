@@ -3,6 +3,7 @@
 @using Conflux.Database
 @using Conflux.Database.Entities
 @using Conflux.Services
+@using Conflux.Services.Abstracts
 @using Microsoft.EntityFrameworkCore
 @using System.Security.Claims
 
@@ -12,6 +13,7 @@
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject ApplicationRedirectManager RedirectManager
+@inject IContentService ContentService
 
 <main class="flex flex-row size-full overflow-hidden">
     <aside class="col-span-2 bg-gray-750 h-full overflow-hidden text-white flex flex-col border-r border-r-gray-600 flex-none basis-16 lg:basis-64">
@@ -37,7 +39,7 @@
                     <ItemContent Context="item">
                         <div class="py-0.5">
                             <NavLink href="@($"/lobby/messages/{item.ConversationId}")" class="flex-none px-2 py-1.5 flex flex-row justify-center lg:justify-start items-center bg-transparent hover:bg-white/15 active:bg-black/15 rounded-lg cursor-pointer" ActiveClass="bg-white/5!" Match="NavLinkMatch.Prefix">
-                                <Avatar class="h-10 flex-none" ImageSrc="@item.FriendAvatarSrc" ImageAlt="@(string.IsNullOrEmpty(item.FriendAvatarSrc) ? string.Empty : "User Avatar")"/>
+                                <Avatar class="h-10 flex-none" ImageSrc="@(string.IsNullOrEmpty(item.FriendAvatarSrc) ? null : ContentService.GetAssetPath(item.FriendAvatarSrc))" ImageAlt="User Avatar"/>
 
                                 <div class="ml-2 hidden lg:flex flex-col justify-center">
                                     <p>@item.FriendDisplayName</p>

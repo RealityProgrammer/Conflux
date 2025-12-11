@@ -11,7 +11,7 @@ internal sealed class ApplicationContentTypeProvider : IContentTypeProvider {
         }
 
         if (subpath.StartsWith("msg_attachments") || subpath.StartsWith("/msg_attachments")) {
-            contentType = "*";
+            contentType = "image/*";
             return true;
         }
 

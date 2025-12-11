@@ -79,14 +79,22 @@
                                                          OnEnterSubmit="HandleSubmitMessageEdit"
                                                          OnEscape="HandleEscapeRequest"/>
                                     } else {
-                                        <p class="whitespace-pre-wrap wrap-anywhere">
-                                            @message.Body
-                                                
+                                        <div>
+                                            @if (!string.IsNullOrEmpty(message.Body)) {
+                                                <p class="whitespace-pre-wrap wrap-anywhere">
+                                                    @message.Body
+                                                </p>
+                                            }
+                                            
                                             @if (message.IsEdited) {
                                                 <span class="text-xs text-gray-400"> (edited)</span>
                                             }
-                                        </p>
                                             
+                                            <img src="@message.Attachments[0]" alt="" class="size-48">
+                                            
+                                            @* <p>(@message.Attachments.Length attachments)</p> *@
+                                        </div>
+
                                         <span class="px-1 py-1 top-0 right-4 -translate-y-1/2 absolute bg-gray-750 rounded-lg hidden group-hover:flex flex-row items-center gap-1">
                                             <p class="text-sm">@message.CreatedAt.ToString("yyyy/MM/dd HH:mm:ss")</p>
 
@@ -446,6 +454,7 @@
                             m.ReplyMessageId,
                             m.Body,
                             m.CreatedAt,
+                            Attachments = m.Attachments.Select(a => a.PhysicalPath).ToArray(),
                         })
                         .FirstAsync();
 
@@ -460,7 +469,7 @@
                     await _messageSemaphore.WaitAsync();
 
                     try {
-                        _visibleMessages.Add(new(args.MessageId, senderData.Id, senderData.DisplayName, senderData.AvatarProfilePath, messageData.Body, messageData.CreatedAt, false, messageData.ReplyMessageId));
+                        _visibleMessages.Add(new(args.MessageId, senderData.Id, senderData.DisplayName, senderData.AvatarProfilePath, messageData.Body, messageData.CreatedAt, false, messageData.ReplyMessageId, messageData.Attachments));
 
                         if (replyMessage != null) {
                             _replyMessages.TryAdd(replyMessage.MessageId, replyMessage);

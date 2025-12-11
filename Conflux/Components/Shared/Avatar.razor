@@ -1,7 +1,7 @@
 ﻿@using System.Linq.Expressions
 
 <div class="relative aspect-square rounded-full bg-black @_cssClass">
-    <img @ref="ImageElement" src="@ImageSrc" alt="@ImageAlt" class="absolute inset-0 object-cover pointer-events-none rounded-full">
+    <img @ref="ImageElement" src="@ImageSrc" alt="@(string.IsNullOrEmpty(ImageSrc) ? null : ImageAlt)" class="absolute inset-0 object-cover pointer-events-none rounded-full">
     
     @if (ChildContent != null) {
         @ChildContent

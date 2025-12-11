@@ -1,5 +1,4 @@
-﻿using Bogus.DataSets;
-using Conflux.Database;
+﻿using Conflux.Database;
 using Conflux.Database.Entities;
 using Conflux.Services.Abstracts;
 using Conflux.Services.Hubs;
@@ -7,7 +6,6 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
@@ -324,7 +322,7 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
                 .Take(take)
                 .Include(m => m.Sender)
                 .Include(m => m.ReplyMessage)
-                .Select(m => new IConversationService.RenderingMessageDTO(m.Id, m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt, m.LastModifiedAt != null, m.ReplyMessage != null ? m.ReplyMessageId : null))
+                .Select(m => new IConversationService.RenderingMessageDTO(m.Id, m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt, m.LastModifiedAt != null, m.ReplyMessage != null ? m.ReplyMessageId : null, m.Attachments.Select(a => a.PhysicalPath).ToArray()))
                 .Reverse()
                 .ToListAsync();
 
@@ -350,7 +348,7 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
                 .Where(m => m.CreatedAt > beforeTimestamp)
                 .Take(take)
                 .Include(m => m.Sender)
-                .Select(m => new IConversationService.RenderingMessageDTO(m.Id, m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt, m.LastModifiedAt != null, m.ReplyMessage != null ? m.DeletedAt != null ? m.ReplyMessageId : Guid.Empty : null))
+                .Select(m => new IConversationService.RenderingMessageDTO(m.Id, m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt, m.LastModifiedAt != null, m.ReplyMessage != null ? m.DeletedAt != null ? m.ReplyMessageId : Guid.Empty : null, m.Attachments.Select(a => a.PhysicalPath).ToArray()))
                 .ToListAsync();
 
             List<Guid> replyMessageIds = messages.Where(m => m.ReplyMessageId.HasValue).Select(m => m.ReplyMessageId!.Value).ToList();

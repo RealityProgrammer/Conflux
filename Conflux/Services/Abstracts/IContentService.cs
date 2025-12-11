@@ -8,4 +8,6 @@ public interface IContentService {
     Task<string> UploadMessageAttachmentAsync(Stream attachmentStream, CancellationToken cancellationToken);
     Task<ICollection<string>> UploadMessageAttachmentsAsync(IReadOnlyCollection<Stream> attachmentStreams, CancellationToken cancellationToken = default);
     Task<bool> DeleteMessageAttachmentAsync(string attachmentRelativePath);
+
+    string GetAssetPath(string resourcePath);
 }

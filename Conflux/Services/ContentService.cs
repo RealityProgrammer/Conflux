@@ -101,4 +101,8 @@ public class ContentService(IWebHostEnvironment environment) : IContentService {
             return Task.FromResult(false);
         }
     }
+
+    public string GetAssetPath(string resourcePath) {
+        return "uploads/" + resourcePath;
+    }
 }
