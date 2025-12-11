@@ -29,7 +29,7 @@
                 <TooltipContainer ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" ShowTooltip="@(!_editContext.IsValid(_avatarFileField))" Id="avatar" class="max-w-[90%]">
                     <Target>
                         @{
-                            string? displayImageSrc = Model.Avatar.RequestDelete ? null : AvatarPreviewUrl ?? User.AvatarProfilePath;
+                            string? displayImageSrc = Model.Avatar.RequestDelete ? null : AvatarPreviewUrl ?? (string.IsNullOrEmpty(User.AvatarProfilePath) ? null : ContentService.GetAssetPath(User.AvatarProfilePath));
                         }
                                         
                         <Avatar class="size-96 mx-auto group" ImageSrc="@displayImageSrc">
@@ -51,7 +51,7 @@
                         <CardContent class="grid grid-cols-1 lg:grid-cols-2 lg:mt-2">
                             <section class="w-full lg:border-r lg:border-r-gray-600 lg:p-3">
                                 @{
-                                    string? displayImageSrc = Model.Avatar.RequestDelete ? null : AvatarPreviewUrl ?? User.AvatarProfilePath;
+                                    string? displayImageSrc = Model.Avatar.RequestDelete ? null : AvatarPreviewUrl ?? (string.IsNullOrEmpty(User.AvatarProfilePath) ? null : ContentService.GetAssetPath(User.AvatarProfilePath));
                                 }
                                     
                                 <Avatar @ref="_selectableAvatar" class="size-64 sm:size-80 lg:size-96 mt-2 mx-auto group" ImageSrc="@displayImageSrc" >

@@ -15,23 +15,16 @@
     [Parameter, EditorRequired] public required RenderFragment<string?> Contents { get; set; }
     [Parameter] public string? ButtonContainerCssClass { get; set; }
     [Parameter] public string? ContentContainerCssClass { get; set; }
-    [Parameter] public string? InitiallyActiveId { get; set; }
-    [Parameter] public EventCallback<string> OnActiveTabChanged { get; set; }
     
-    public string? ActiveId { get; private set; }
-    
-    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+    [Parameter] public string? ActiveId { get; set; }
+    [Parameter] public EventCallback<string?> ActiveIdChanged { get; set; }
 
-    protected override void OnParametersSet() {
-        ActiveId = InitiallyActiveId;
-    }
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
 
     public async Task SetActiveId(string id) {
         if (ActiveId == id) return;
         
         ActiveId = id;
-        await OnActiveTabChanged.InvokeAsync(id);
-
-        StateHasChanged();
+        await ActiveIdChanged.InvokeAsync(id);
     }
 }

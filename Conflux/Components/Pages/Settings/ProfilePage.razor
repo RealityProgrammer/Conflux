@@ -34,7 +34,7 @@
 <div class="relative h-full">
     <h1 class="font-bold text-3xl">Profile Management</h1>
 
-    <TabContainer class="mt-2 pb-4" ButtonContainerCssClass="flex flex-row justify-start gap-3 border-b border-gray-600" InitiallyActiveId="preview">
+    <TabContainer class="mt-2 pb-4" ButtonContainerCssClass="flex flex-row justify-start gap-3 border-b border-gray-600" @bind-ActiveId="_tabActiveId">
         <Buttons Context="_">
             <TabButton TabId="preview" class="p-3 text-gray-400 bg-transparent hover:text-gray-200 hover:bg-gray-400 rounded-t-lg cursor-pointer" ActiveCssClass="text-blue-400! cursor-default! hover:bg-transparent!">
                 Preview
@@ -46,7 +46,13 @@
         </Buttons>
 
         <Contents Context="_">
-            <ProfileTabContents Model="Model" User="_user" PageModule="_module"/>
+            <TabContent TabId="preview">
+                <ProfilePreview Model="Model" User="_user" AvatarPreviewUrl="@_avatarPreviewUrl"/>
+            </TabContent>
+
+            <TabContent TabId="edit">
+                <ProfileEdit Model="Model" User="_user" @bind-AvatarPreviewUrl="_avatarPreviewUrl" PageModule="_module"/>
+            </TabContent>
         </Contents>
     </TabContainer>
 </div>
@@ -78,6 +84,9 @@
 
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
 
+    private string _tabActiveId = "preview";
+    private string? _avatarPreviewUrl;
+    
     private IJSObjectReference _module = null!;
 
     protected override async Task OnInitializedAsync() {
