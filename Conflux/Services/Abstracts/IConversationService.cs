@@ -3,7 +3,7 @@
 namespace Conflux.Services.Abstracts;
 
 // TODO: Revision required: Should we send the whole structure, or only the message ID.
-public readonly record struct MessageReceivedEventArgs(ChatMessage Message);
+public readonly record struct MessageReceivedEventArgs(Guid MessageId, Guid ConversationId, string SenderId);
 public readonly record struct MessageDeletedEventArgs(Guid MessageId, Guid ConversationId);
 public readonly record struct MessageEditedEventArgs(Guid MessageId, Guid ConversationId, string Body);
 
@@ -25,9 +25,9 @@ public interface IConversationService {
     Task<RenderingMessages> LoadMessagesBeforeTimestampAsync(Guid conversationId, DateTime beforeTimestamp, int take);
     Task<RenderingMessages> LoadMessagesAfterTimestampAsync(Guid conversationId, DateTime afterTimestamp, int take);
     
-    public record RenderingMessageDTO(Guid MessageId, string SenderId, string SenderDisplayName, string? SenderAvatar, string Body, DateTime CreatedAt, bool IsEdited, Guid? ReplyMessageId);
+    public record RenderingMessageDTO(Guid MessageId, string SenderId, string SenderDisplayName, string? SenderAvatar, string? Body, DateTime CreatedAt, bool IsEdited, Guid? ReplyMessageId);
 
-    public record RenderingReplyMessageDTO(Guid MessageId, string SenderDisplayName, string? SenderAvatar, string Body);
+    public record RenderingReplyMessageDTO(Guid MessageId, string SenderDisplayName, string? Body);
     
     public readonly record struct RenderingMessages(IList<RenderingMessageDTO> VisibleMessages, IList<RenderingReplyMessageDTO> RepliedMessages);
 

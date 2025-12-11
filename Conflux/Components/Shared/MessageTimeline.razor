@@ -425,14 +425,14 @@
     
     private void OnMessageReceived(MessageReceivedEventArgs args) {
         // Only insert if we're at the bottom.
-        if (_endBottom && args.Message.ConversationId == ConversationId) {
+        if (_endBottom && args.ConversationId == ConversationId) {
             InvokeAsync(async () => {
                 _jumpToBottom = await _module!.InvokeAsync<bool>("shouldMaintainScrollBottom", _scrollContainer);
 
-                ChatMessage message = args.Message;
+                // ChatMessage message = args.Message;
 
                 await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
-                    var senderData = await dbContext.Users.Where(u => u.Id == message.SenderId).Select(u => new {
+                    var senderData = await dbContext.Users.Where(u => u.Id == args.SenderId).Select(u => new {
                         u.Id,
                         u.DisplayName,
                         u.AvatarProfilePath,
@@ -440,18 +440,27 @@
 
                     IConversationService.RenderingReplyMessageDTO? replyMessage = null;
 
-                    if (message.ReplyMessageId.HasValue && !_replyMessages.ContainsKey(message.ReplyMessageId.Value)) {
+                    var messageData = await dbContext.ChatMessages
+                        .Where(m => m.Id == args.MessageId)
+                        .Select(m => new {
+                            m.ReplyMessageId,
+                            m.Body,
+                            m.CreatedAt,
+                        })
+                        .FirstAsync();
+
+                    if (messageData.ReplyMessageId.HasValue && !_replyMessages.ContainsKey(messageData.ReplyMessageId.Value)) {
                         replyMessage = await dbContext.ChatMessages
-                            .Where(m => m.Id == message.ReplyMessageId.Value && m.DeletedAt == null)
+                            .Where(m => m.Id == messageData.ReplyMessageId.Value && m.DeletedAt == null)
                             .Include(m => m.Sender)
-                            .Select(m => new IConversationService.RenderingReplyMessageDTO(m.Id, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body))
+                            .Select(m => new IConversationService.RenderingReplyMessageDTO(m.Id, m.Sender.DisplayName, m.Body))
                             .FirstOrDefaultAsync();
                     }
 
                     await _messageSemaphore.WaitAsync();
 
                     try {
-                        _visibleMessages.Add(new(message.Id, senderData.Id, senderData.DisplayName, senderData.AvatarProfilePath, message.Body, message.CreatedAt, false, message.ReplyMessageId));
+                        _visibleMessages.Add(new(args.MessageId, senderData.Id, senderData.DisplayName, senderData.AvatarProfilePath, messageData.Body, messageData.CreatedAt, false, messageData.ReplyMessageId));
 
                         if (replyMessage != null) {
                             _replyMessages.TryAdd(replyMessage.MessageId, replyMessage);

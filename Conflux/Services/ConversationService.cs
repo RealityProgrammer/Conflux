@@ -194,7 +194,7 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
 
                         returnStatus = IConversationService.SendStatus.Success;
 
-                        await _hubContext.Clients.Group(conversationId.ToString()).SendAsync(MessageReceivedEventName, new MessageReceivedEventArgs(message), cancellationToken);
+                        await _hubContext.Clients.Group(conversationId.ToString()).SendAsync(MessageReceivedEventName, new MessageReceivedEventArgs(message.Id, conversationId, senderId), cancellationToken);
 
                         return returnStatus;
                     }
@@ -333,7 +333,7 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
             List<IConversationService.RenderingReplyMessageDTO> replyMessages = await dbContext.ChatMessages
                 .Where(m => replyMessageIds.Contains(m.Id) && m.DeletedAt == null)
                 .Include(m => m.Sender)
-                .Select(m => new IConversationService.RenderingReplyMessageDTO(m.Id, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body))
+                .Select(m => new IConversationService.RenderingReplyMessageDTO(m.Id, m.Sender.DisplayName, m.Body))
                 .ToListAsync();
             
             return new(messages, replyMessages);
@@ -358,7 +358,7 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
             List<IConversationService.RenderingReplyMessageDTO> replyMessages = await dbContext.ChatMessages
                 .Where(m => replyMessageIds.Contains(m.Id) && m.DeletedAt == null)
                 .Include(m => m.Sender)
-                .Select(m => new IConversationService.RenderingReplyMessageDTO(m.Id, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body))
+                .Select(m => new IConversationService.RenderingReplyMessageDTO(m.Id, m.Sender.DisplayName, m.Body))
                 .ToListAsync();
             
             return new(messages, replyMessages);
