@@ -2,14 +2,16 @@
 @using Conflux.Database
 @using Microsoft.EntityFrameworkCore
 
+@implements IAsyncDisposable
+
 @inject IJSRuntime JavascriptRuntime
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject ILogger<MessageInputArea> Logger
 
 <footer class="flex flex-row items-end gap-1 @_cssClass" @attributes="AdditionalAttributes">
     <section class="flex-1 flex flex-col min-w-0">
-        @if (_replyMessageId != null) {
-            <div class="min-w-0 rounded-t-lg py-1 px-2 border-x border-t border-x-gray-600 border-t-gray-600 flex flex-row items-center gap-1 overflow-hidden">
+        @if (_replyMessageId.HasValue) {
+            <div class="min-w-0 rounded-t-lg py-1 px-2 border-x border-x-gray-600 border-t border-t-gray-600 flex flex-row items-center gap-1 overflow-hidden">
                 <p class="flex-1 whitespace-nowrap overflow-hidden text-ellipsis">Replying to @_replyMessageData.AuthorDisplayName: "@_replyMessageData.MessageBody"</p>
 
                 <button class="flex-none p-0.5 bg-transparent hover:bg-white/15 rounded-full" @onclick="HandleCancelReply">
@@ -18,19 +20,73 @@
             </div>
         }
         
-        @{ string textAreaCssClass = $"shrink-0 input-field w-full py-2 overflow-x-hidden overflow-y-auto wrap-break-word break-all resize-none scrollbar-hide shadow-lg max-h-96 {(_replyMessageId.HasValue ? "rounded-t-none" : string.Empty)}"; }
+        @if (_uploadingFiles.Count > 0) {
+            <ul class="min-w-0 p-2 pb-3 border-x border-x-gray-600 border-t border-t-gray-600 overflow-x-auto overflow-y-visible flex flex-row justify-start items-center gap-1.5 @(_replyMessageId.HasValue ? string.Empty : "rounded-t-lg")">
+                @for (int i = 0; i < _uploadingFiles.Count; i++) {
+                    UploadingFile uploadingFile = _uploadingFiles[i];
+                    
+                    <li class="flex-none group relative">
+                        <div class="overflow-hidden rounded-lg border border-gray-600">
+                            @switch (uploadingFile.BrowserFile.ContentType) {
+                                case "image/png" or "image/jpeg" or "image/jpg":
+                                    <img src="@uploadingFile.PreviewUrl" alt="Preview image for @uploadingFile.BrowserFile.Name" class="size-32 object-cover">
+                                    break;
+                            }
+                            
+                            <span class="absolute z-10 -right-1 -top-1 border border-gray-600 bg-gray-700 rounded-lg p-0.5 hidden group-hover:flex flex-row">
+                                @{ int index = i; }
+
+                                <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-lg" @onclick="@(() => HandleToggleUploadingFileSpoiler(index))">
+                                    @if (uploadingFile.Spoiler) {
+                                        <Eye class="size-5 fill-white"/>
+                                    } else {
+                                        <EyeSlash class="size-5 fill-white"/>
+                                    }
+                                </button>
+
+                                <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-lg" @onclick="@(() => HandleRemoveUploadingFile(index))">
+                                    <Trashcan class="size-5 fill-red-500"/>
+                                </button>
+                            </span>
+                        </div>
+                    </li>
+                }
+            </ul>
+        }
+
+        @{ string textAreaCssClass = $"shrink-0 input-field w-full py-2 overflow-x-hidden overflow-y-auto wrap-break-word break-all resize-none scrollbar-hide shadow-lg max-h-96 {(_replyMessageId.HasValue || _uploadingFiles.Count > 0 ? "rounded-t-none" : string.Empty)}"; }
 
         <MessageTextArea @bind-Value="_body" class="@textAreaCssClass" OnEnterSubmit="HandleMessageSubmit"/>
     </section>
 
-    <button class="flex-none rounded-full bg-transparent hover:bg-white/15 active:bg-black/15 p-2 cursor-pointer group disabled:bg-transparent disabled:cursor-default" disabled="@_disabled">
+    <label class="flex-none rounded-full bg-transparent hover:bg-white/15 active:bg-black/15 p-2 cursor-pointer group disabled:bg-transparent disabled:cursor-default" disabled="@_disabled">
         <Paperclip class="size-6 fill-white group-disabled:fill-gray-400"/>
-    </button>
+        
+        <InputFile @ref="_inputFile" type="file" class="hidden" multiple OnChange="HandleInputFileChanged"/>
+    </label>
 
     <button class="flex-none rounded-full bg-transparent hover:bg-white/15 active:bg-black/15 p-2 cursor-pointer group disabled:bg-transparent disabled:cursor-default" disabled="@_disabled">
         <Media Type="MediaType.Gif" class="size-6 fill-none stroke-white group-disabled:stroke-gray-400"/>
     </button>
 </footer>
+
+<Dialog @bind-Open="_reportMaximumFileCount" OnClickOutside="CloseFileCountReport" class="flex flex-row justify-center items-center">
+    <Card class="transition-transform duration-500 z-10">
+        <CardHeader Title="Too much file..." OnCloseRequested="CloseFileCountReport"/>
+        
+        <CardContent>
+            <p>
+                Whoa there buddy, you cannot send this much file for the time being.
+                <br/>
+                If you need to send more, attach it to another message.
+            </p>
+        </CardContent>
+        
+        <CardFooter class="mt-2 flex flex-row justify-end gap-2 border-none!">
+            <button class="button-primary w-24" @onclick="CloseFileCountReport">Ok</button>
+        </CardFooter>
+    </Card>
+</Dialog>
 
 @code {
     [Parameter] public EventCallback<MessageData> OnSubmit { get; set; }
@@ -38,14 +94,20 @@
     [Parameter] public Guid? ReplyMessageId { get; set; }
     [Parameter] public EventCallback<Guid?> ReplyMessageIdChanged { get; set; }
 
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+    private bool _disabled;
+    private string? _cssClass;
+    
     private string _body = string.Empty;
     private Guid? _previousReplyMessageId, _replyMessageId;
     
     private ReplyMessageDTO _replyMessageData;
+    private List<UploadingFile> _uploadingFiles = [];
+    private bool _reportMaximumFileCount;
+
+    private InputFile _inputFile = null!;
     
-    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
-    private bool _disabled;
-    private string? _cssClass;
+    private IJSObjectReference _module = null!;
 
     protected override void OnParametersSet() {
         if (AdditionalAttributes != null) {
@@ -63,6 +125,10 @@
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            _module = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import", "./Components/Shared/MessageInputArea.razor.js");
+        }
+        
         if (_previousReplyMessageId != _replyMessageId && _replyMessageId.HasValue) {
             await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
                 _replyMessageData = await dbContext.ChatMessages
@@ -84,16 +150,50 @@
     public async Task HandleMessageSubmit() {
         _body = _body.Trim();
         
-        if (_disabled || string.IsNullOrEmpty(_body)) return;
+        if (_disabled || (string.IsNullOrEmpty(_body) && _uploadingFiles.Count == 0)) return;
 
         if (OnSubmit.HasDelegate) {
-            await OnSubmit.InvokeAsync(new(_body, _replyMessageId));
+            await OnSubmit.InvokeAsync(new(_body, _replyMessageId, _uploadingFiles));
         }
 
         _replyMessageId = null;
         await ReplyMessageIdChanged.InvokeAsync(_replyMessageId);
-        
+
+        await DisposeUploadingFiles();
         await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleInputFileChanged(InputFileChangeEventArgs args) {
+        IReadOnlyList<IBrowserFile> files;
+
+        try {
+            files = args.GetMultipleFiles(ApplicationConstants.MaxAttachmentsPerMessage);
+        } catch (InvalidOperationException) {
+            _reportMaximumFileCount = true;
+            return;
+        }
+
+        if (_uploadingFiles.Count + files.Count > ApplicationConstants.MaxAttachmentsPerMessage) {
+            _reportMaximumFileCount = true;
+            return;
+        }
+        
+        for (int i = 0; i < files.Count; i++) {
+            IBrowserFile file = files[i];
+            string? previewUrl = null;
+            
+            switch (file.ContentType) {
+                case "image/png" or "image/jpeg" or "image/jpg":
+                    previewUrl = await _module.InvokeAsync<string>("createFilePreviewUrl", _inputFile.Element!, i);
+                    break;
+            }
+            
+            _uploadingFiles.Add(new(file, previewUrl, false));
+        }
+    }
+
+    private void CloseFileCountReport() {
+        _reportMaximumFileCount = false;
     }
 
     private async Task HandleCancelReply() {
@@ -103,7 +203,40 @@
         await ReplyMessageIdChanged.InvokeAsync(_replyMessageId);
     }
 
+    private void HandleToggleUploadingFileSpoiler(int index) {
+        _uploadingFiles[index] = _uploadingFiles[index] with {
+            Spoiler = !_uploadingFiles[index].Spoiler,
+        };
+    }
+
+    private async Task HandleRemoveUploadingFile(int index) {
+        if (index >= _uploadingFiles.Count) return;
+
+        UploadingFile file = _uploadingFiles[index];
+
+        if (!string.IsNullOrEmpty(file.PreviewUrl)) {
+            await JavascriptRuntime.InvokeVoidAsync("URL.revokeObjectURL", file.PreviewUrl);
+        }
+        
+        _uploadingFiles.RemoveAt(index);
+    }
+
+    private async Task DisposeUploadingFiles() {
+        for (int i = 0; i < _uploadingFiles.Count; i++) {
+            if (_uploadingFiles[i].PreviewUrl is { } previewUrl) {
+                await JavascriptRuntime.InvokeVoidAsync("URL.revokeObjectURL", previewUrl);
+            }
+        }
+
+        _uploadingFiles.Clear();
+    }
+
+    public async ValueTask DisposeAsync() {
+        await DisposeUploadingFiles();
+    }
+
     private readonly record struct ReplyMessageDTO(string AuthorDisplayName, string MessageBody);
 
-    public readonly record struct MessageData(string Body, Guid? ReplyMessageId);
+    public readonly record struct UploadingFile(IBrowserFile BrowserFile, string? PreviewUrl, bool Spoiler);
+    public readonly record struct MessageData(string Body, Guid? ReplyMessageId, IReadOnlyList<UploadingFile> UploadingFiles);
 }

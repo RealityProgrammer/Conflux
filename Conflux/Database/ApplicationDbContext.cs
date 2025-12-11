@@ -11,6 +11,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Conversation> Conversations { get; set; } = null!;
     public DbSet<ConversationMember> ConversationMembers { get; set; } = null!;
     public DbSet<ChatMessage> ChatMessages { get; set; } = null!;
+    public DbSet<MessageAttachment> MessageAttachments { get; set; } = null!;
     
     public override int SaveChanges() {
         InsertTimestamps();
@@ -88,6 +89,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .WithMany()
                 .HasForeignKey(m => m.ReplyMessageId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasMany(m => m.Attachments)
+                .WithOne(attachment => attachment.Message)
+                .HasForeignKey(attachment => attachment.MessageId)
+                .IsRequired();
+        }).Entity<MessageAttachment>(entity => {
+            entity.HasKey(message => message.Id);
         });
     }
 

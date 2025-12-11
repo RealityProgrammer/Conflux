@@ -9,7 +9,7 @@ public class ChatMessage : ICreatedAtColumn {
     
     [MaxLength(36)] public required string SenderId { get; set; } = null!;
     
-    [MaxLength(1024)] public required string Body { get; set; }
+    [MaxLength(1024)] public string? Body { get; set; }
     
     public Guid? ReplyMessageId { get; set; }
     
@@ -20,4 +20,5 @@ public class ChatMessage : ICreatedAtColumn {
     public Conversation Conversation { get; set; } = null!;
     public ApplicationUser Sender { get; set; } = null!;
     public ChatMessage? ReplyMessage { get; set; }
+    public ICollection<MessageAttachment> Attachments { get; set; } = null!;
 }
