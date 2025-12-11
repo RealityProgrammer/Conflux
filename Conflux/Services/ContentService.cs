@@ -4,7 +4,7 @@ namespace Conflux.Services;
 
 public class ContentService(IWebHostEnvironment environment) : IContentService {
     public async Task<string> UploadAvatarAsync(Stream stream, string userId) {
-        string path = Path.Combine("images", "avatar", userId);
+        string path = Path.Combine("avatar", userId);
         string physicalPath = Path.Combine(environment.ContentRootPath, "Uploads", path);
         await using var destinationStream = File.OpenWrite(physicalPath);
         
@@ -17,7 +17,7 @@ public class ContentService(IWebHostEnvironment environment) : IContentService {
     }
 
     public Task DeleteAvatarAsync(string userId) {
-        string path = Path.Combine("images", "avatar", userId);
+        string path = Path.Combine("avatar", userId);
         string physicalPath = Path.Combine(environment.ContentRootPath, "Uploads", path);
         
         File.Delete(physicalPath);
@@ -26,7 +26,7 @@ public class ContentService(IWebHostEnvironment environment) : IContentService {
     }
 
     public DateTime GetAvatarUploadTime(string userId) {
-        string path = Path.Combine("images", "avatar", userId);
+        string path = Path.Combine("avatar", userId);
         string physicalPath = Path.Combine(environment.ContentRootPath, "Uploads", path);
         
         return File.GetLastWriteTimeUtc(physicalPath);
