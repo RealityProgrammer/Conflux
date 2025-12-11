@@ -216,8 +216,8 @@
                 _validationMessages.Add(_avatarFileField, "Invalid file format.");
             }
 
-            if (avatarFile.Size > ApplicationConstants.UserAvatarMaxSize) {
-                _validationMessages.Add(_avatarFileField, $"Avatar surpassed maximum allowed size of {ApplicationConstants.UserAvatarMaxSize} bytes.");
+            if (avatarFile.Size > ApplicationConstants.MaxUserAvatarSize) {
+                _validationMessages.Add(_avatarFileField, $"Avatar surpassed maximum allowed size of {ApplicationConstants.MaxUserAvatarSize} bytes.");
             }
         }
     }
@@ -256,7 +256,7 @@
 
             // Process Avatar.
             if (Model.Avatar.File is { } imageFile) {
-                using var srcStream = imageFile.OpenReadStream(ApplicationConstants.UserAvatarMaxSize);
+                using var srcStream = imageFile.OpenReadStream(ApplicationConstants.MaxUserAvatarSize);
 
                 string databasePath = await ContentService.UploadAvatarAsync(srcStream, User.Id);
 

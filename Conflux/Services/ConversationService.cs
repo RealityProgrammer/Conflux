@@ -1,4 +1,5 @@
-﻿using Conflux.Database;
+﻿using Bogus.DataSets;
+using Conflux.Database;
 using Conflux.Database.Entities;
 using Conflux.Services.Abstracts;
 using Conflux.Services.Hubs;
@@ -14,7 +15,7 @@ using System.Net;
 namespace Conflux.Services;
 
 public sealed class ConversationService : IConversationService, IAsyncDisposable {
-    private const string MessageSentEventName = "MessageSent";
+    private const string MessageReceivedEventName = "MessageReceived";
     private const string MessageDeletedEventName = "MessageDeleted";
     private const string MessageEditedEventName = "MessageEdited";
     
@@ -22,9 +23,9 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
     private readonly INotificationService _notificationService;
     private readonly NavigationManager _navigationManager;
     private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly IMemoryCache _cache;
     private readonly ILogger<ConversationService> _logger;
     private readonly IHubContext<ConversationHub> _hubContext;
+    private readonly IContentService _contentService;
 
     private readonly ConcurrentDictionary<Guid, HubConnection> _conversationHubConnections = [];
     
@@ -32,12 +33,12 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
     public event Action<MessageDeletedEventArgs>? OnMessageDeleted;
     public event Action<MessageEditedEventArgs>? OnMessageEdited;
     
-    public ConversationService(IDbContextFactory<ApplicationDbContext> dbContextFactory, INotificationService notificationService, NavigationManager navigationManager, IHttpContextAccessor httpContextAccessor, IHubContext<ConversationHub> hubContext, IMemoryCache cache, ILogger<ConversationService> logger) {
+    public ConversationService(IDbContextFactory<ApplicationDbContext> dbContextFactory, INotificationService notificationService, NavigationManager navigationManager, IHttpContextAccessor httpContextAccessor, IHubContext<ConversationHub> hubContext, IContentService contentService, ILogger<ConversationService> logger) {
         _dbContextFactory = dbContextFactory;
         _notificationService = notificationService;
         _navigationManager = navigationManager;
         _httpContextAccessor = httpContextAccessor;
-        _cache = cache;
+        _contentService = contentService;
         _hubContext = hubContext;
         _logger = logger;
     }
@@ -85,7 +86,7 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
         
         var connection = CreateHubConnectionForConversation(conversationId);
 
-        connection.On<MessageReceivedEventArgs>(MessageSentEventName, args => {
+        connection.On<MessageReceivedEventArgs>(MessageReceivedEventName, args => {
             OnMessageReceived?.Invoke(args);
         });
 
@@ -147,24 +148,76 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
         }
     }
 
-    public async Task<bool> SendMessageAsync(Guid conversationId, string senderId, string body, Guid? replyMessageId) {
-        await using (var dbContext = await _dbContextFactory.CreateDbContextAsync()) {
-            ChatMessage message = new() {
-                ConversationId = conversationId,
-                SenderId = senderId,
-                Body = body,
-                ReplyMessageId = replyMessageId,
-            };
+    public async Task<IConversationService.SendStatus> SendMessageAsync(Guid conversationId, string senderId, string body, Guid? replyMessageId, IReadOnlyCollection<IConversationService.UploadingAttachment> attachments, CancellationToken cancellationToken = default) {
+        // TODO: Rewrite this, this is goddamn ugly.
+        await using (var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken)) {
+            await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
             
-            dbContext.ChatMessages.Add(message);
+            // Upload the attachments.
+            List<(string Name, string Path)> attachmentPaths;
 
-            if (await dbContext.SaveChangesAsync() > 0) {
-                await _hubContext.Clients.Group(conversationId.ToString()).SendAsync(MessageSentEventName, new MessageReceivedEventArgs(message));
+            try {
+                attachmentPaths = 
+                    attachments.Select(x => x.Name)
+                        .Zip(await _contentService.UploadMessageAttachmentsAsync(attachments.Select(x => x.Stream).ToList(), cancellationToken))
+                        .ToList();
+            } catch (Exception e) {
+                _logger.LogError(e, "Failed to upload message attachment.");
                 
-                return true;
+                return IConversationService.SendStatus.AttachmentFailure;
             }
 
-            return false;
+            IConversationService.SendStatus returnStatus = IConversationService.SendStatus.Success;
+
+            try {
+                // Register the message to database.
+                ChatMessage message = new() {
+                    ConversationId = conversationId,
+                    SenderId = senderId,
+                    Body = body,
+                    ReplyMessageId = replyMessageId,
+                };
+
+                dbContext.ChatMessages.Add(message);
+
+                if (await dbContext.SaveChangesAsync(cancellationToken) > 0) {
+                    // Message uploaded successfully, now register the attachments to the database.
+
+                    dbContext.MessageAttachments.AddRange(attachmentPaths.Select(tuple => new MessageAttachment {
+                        MessageId = message.Id,
+                        Name = tuple.Name,
+                        PhysicalPath = tuple.Path,
+                    }));
+
+                    if (await dbContext.SaveChangesAsync(cancellationToken) == attachmentPaths.Count) {
+                        await transaction.CommitAsync(cancellationToken);
+
+                        returnStatus = IConversationService.SendStatus.Success;
+
+                        await _hubContext.Clients.Group(conversationId.ToString()).SendAsync(MessageReceivedEventName, new MessageReceivedEventArgs(message), cancellationToken);
+
+                        return returnStatus;
+                    }
+
+                    returnStatus = IConversationService.SendStatus.AttachmentFailure;
+                } else {
+                    returnStatus = IConversationService.SendStatus.MessageFailure;
+                }
+            } catch (OperationCanceledException) {
+                returnStatus = IConversationService.SendStatus.Canceled;
+            } catch {
+                returnStatus = IConversationService.SendStatus.Failure;
+            } finally {
+                if (returnStatus != IConversationService.SendStatus.Success) {
+                    await transaction.RollbackAsync(cancellationToken);
+                    
+                    foreach (var attachmentPath in attachmentPaths) {
+                        await _contentService.DeleteMessageAttachmentAsync(attachmentPath.Path);
+                    }
+                }
+            }
+
+            return returnStatus;
         }
     }
 

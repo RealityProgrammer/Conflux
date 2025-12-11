@@ -9,6 +9,7 @@
 @inject IJSRuntime JavascriptRuntime
 @inject IConversationService ConversationService
 @inject ILogger<MessagingArea> Logger
+@inject IContentService ContentService
 
 <section class="min-w-0 flex flex-col @_cssClass">
     <MessageTimeline @bind-ConversationId="ConversationId" 
@@ -53,7 +54,30 @@
     }
     
     private async Task HandleMessageSend(MessageInputArea.MessageData data) {
-        await ConversationService.SendMessageAsync(ConversationId, _userId, data.Body, data.ReplyMessageId);
+        if (data.UploadingFiles.Count == 0) {
+            // No attachment file, plain and simple.
+            await ConversationService.SendMessageAsync(ConversationId, _userId, data.Body, data.ReplyMessageId, []);
+        } else {
+            // Hell await.
+
+            var browserFileStreams = new List<IConversationService.UploadingAttachment>(data.UploadingFiles.Count);
+
+            try {
+                for (int i = 0; i < data.UploadingFiles.Count; i++) {
+                    IBrowserFile browserFile = data.UploadingFiles[i].BrowserFile;
+                    
+                    browserFileStreams.Add(new(browserFile.Name, browserFile.OpenReadStream(ApplicationConstants.MaxAttachmentsSize)));
+                }
+
+                var status = await ConversationService.SendMessageAsync(ConversationId, _userId, data.Body, data.ReplyMessageId, browserFileStreams);
+                
+                GC.KeepAlive(status);
+            } finally {
+                foreach (var attachment in browserFileStreams) {
+                    await attachment.Stream.DisposeAsync();
+                }
+            }
+        }
     }
 
     private void HandleReplyRequested(Guid messageId) {

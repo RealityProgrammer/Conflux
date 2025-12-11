@@ -17,7 +17,7 @@ public interface IConversationService {
     
     Task<Conversation?> GetOrCreateDirectConversationAsync(string user1, string user2);
     
-    Task<bool> SendMessageAsync(Guid conversationId, string senderId, string body, Guid? replyMessageId);
+    Task<SendStatus> SendMessageAsync(Guid conversationId, string senderId, string body, Guid? replyMessageId, IReadOnlyCollection<UploadingAttachment> attachments, CancellationToken cancellationToken = default);
     Task<bool> DeleteMessageAsync(Guid messageId, string senderId);
     Task<bool> EditMessageAsync(Guid messageId, string body);
     Task<bool> EditMessageAsync(Guid messageId, string senderId, string body);
@@ -30,4 +30,14 @@ public interface IConversationService {
     public record RenderingReplyMessageDTO(Guid MessageId, string SenderDisplayName, string? SenderAvatar, string Body);
     
     public readonly record struct RenderingMessages(IList<RenderingMessageDTO> VisibleMessages, IList<RenderingReplyMessageDTO> RepliedMessages);
+
+    public readonly record struct UploadingAttachment(string Name, Stream Stream);
+    
+    public enum SendStatus {
+        Success,
+        AttachmentFailure,
+        MessageFailure,
+        Failure,
+        Canceled,
+    }
 }

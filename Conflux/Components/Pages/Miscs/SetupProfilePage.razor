@@ -326,7 +326,7 @@
         _processingAvatar = true;
 
         try {
-            using var imageStream = AvatarModel.File.OpenReadStream(ApplicationConstants.UserAvatarMaxSize);
+            using var imageStream = AvatarModel.File.OpenReadStream(ApplicationConstants.MaxUserAvatarSize);
 
             string databasePath = await ContentService.UploadAvatarAsync(imageStream, _user!.Id);
             _user.AvatarProfilePath = databasePath;
@@ -411,8 +411,8 @@
                 return;
             }
 
-            if (browserFile.Size > ApplicationConstants.UserAvatarMaxSize) {
-                _avatarMessageStore.Add(_avatarFileField, $"Avatar surpassed maximum allowed size of {ApplicationConstants.UserAvatarMaxSize} bytes.");
+            if (browserFile.Size > ApplicationConstants.MaxUserAvatarSize) {
+                _avatarMessageStore.Add(_avatarFileField, $"Avatar surpassed maximum allowed size of {ApplicationConstants.MaxUserAvatarSize} bytes.");
                 return;
             }
         }

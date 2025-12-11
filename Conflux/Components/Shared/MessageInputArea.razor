@@ -62,7 +62,7 @@
     <label class="flex-none rounded-full bg-transparent hover:bg-white/15 active:bg-black/15 p-2 cursor-pointer group disabled:bg-transparent disabled:cursor-default" disabled="@_disabled">
         <Paperclip class="size-6 fill-white group-disabled:fill-gray-400"/>
         
-        <InputFile @ref="_inputFile" type="file" class="hidden" multiple OnChange="HandleInputFileChanged"/>
+        <InputFile @ref="_inputFile" type="file" class="hidden" multiple OnChange="HandleAttachmentChanged"/>
     </label>
 
     <button class="flex-none rounded-full bg-transparent hover:bg-white/15 active:bg-black/15 p-2 cursor-pointer group disabled:bg-transparent disabled:cursor-default" disabled="@_disabled">
@@ -70,9 +70,9 @@
     </button>
 </footer>
 
-<Dialog @bind-Open="_reportMaximumFileCount" OnClickOutside="CloseFileCountReport" class="flex flex-row justify-center items-center">
+<Dialog @bind-Open="_reportSurpassedAttachmentMaxCount" OnClickOutside="CloseAttachmentCountReport" class="flex flex-row justify-center items-center">
     <Card class="transition-transform duration-500 z-10">
-        <CardHeader Title="Too much file..." OnCloseRequested="CloseFileCountReport"/>
+        <CardHeader Title="Too much file..." OnCloseRequested="CloseAttachmentCountReport"/>
         
         <CardContent>
             <p>
@@ -83,7 +83,25 @@
         </CardContent>
         
         <CardFooter class="mt-2 flex flex-row justify-end gap-2 border-none!">
-            <button class="button-primary w-24" @onclick="CloseFileCountReport">Ok</button>
+            <button class="button-primary w-24" @onclick="CloseAttachmentCountReport">Ok</button>
+        </CardFooter>
+    </Card>
+</Dialog>
+
+<Dialog @bind-Open="_reportAttachmentSurpassedMaxSize" OnClickOutside="CloseAttachmentSizeReport" class="flex flex-row justify-center items-center">
+    <Card class="transition-transform duration-500 z-10">
+        <CardHeader Title="Comically large file detected!" OnCloseRequested="CloseAttachmentSizeReport"/>
+        
+        <CardContent>
+            <p>
+                Whoa there buddy, one of the files you want to transfer over is way too large.
+                <br/>
+                You will have to find another way to send these files. Either compress them or <i>cough cough</i> use third party services <i>cough</i>.
+            </p>
+        </CardContent>
+        
+        <CardFooter class="mt-2 flex flex-row justify-end gap-2 border-none!">
+            <button class="button-primary w-24" @onclick="CloseAttachmentSizeReport">Ok</button>
         </CardFooter>
     </Card>
 </Dialog>
@@ -103,7 +121,9 @@
     
     private ReplyMessageDTO _replyMessageData;
     private List<UploadingFile> _uploadingFiles = [];
-    private bool _reportMaximumFileCount;
+    
+    private bool _reportSurpassedAttachmentMaxCount;
+    private bool _reportAttachmentSurpassedMaxSize;
 
     private InputFile _inputFile = null!;
     
@@ -163,19 +183,28 @@
         await InvokeAsync(StateHasChanged);
     }
 
-    private async Task HandleInputFileChanged(InputFileChangeEventArgs args) {
+    private async Task HandleAttachmentChanged(InputFileChangeEventArgs args) {
         IReadOnlyList<IBrowserFile> files;
 
         try {
             files = args.GetMultipleFiles(ApplicationConstants.MaxAttachmentsPerMessage);
         } catch (InvalidOperationException) {
-            _reportMaximumFileCount = true;
+            _reportSurpassedAttachmentMaxCount = true;
             return;
         }
 
+        // Validate attachment count.
         if (_uploadingFiles.Count + files.Count > ApplicationConstants.MaxAttachmentsPerMessage) {
-            _reportMaximumFileCount = true;
+            _reportSurpassedAttachmentMaxCount = true;
             return;
+        }
+
+        // Validate attachment size.
+        for (int i = 0; i < files.Count; i++) {
+            if (files[i].Size > ApplicationConstants.MaxAttachmentsSize) {
+                _reportAttachmentSurpassedMaxSize = true;
+                return;
+            }
         }
         
         for (int i = 0; i < files.Count; i++) {
@@ -184,16 +213,22 @@
             
             switch (file.ContentType) {
                 case "image/png" or "image/jpeg" or "image/jpg":
+                case var _ when file.ContentType.StartsWith("audio/"):
                     previewUrl = await _module.InvokeAsync<string>("createFilePreviewUrl", _inputFile.Element!, i);
                     break;
+
             }
             
             _uploadingFiles.Add(new(file, previewUrl, false));
         }
     }
 
-    private void CloseFileCountReport() {
-        _reportMaximumFileCount = false;
+    private void CloseAttachmentCountReport() {
+        _reportSurpassedAttachmentMaxCount = false;
+    }
+
+    private void CloseAttachmentSizeReport() {
+        _reportAttachmentSurpassedMaxSize = false;
     }
 
     private async Task HandleCancelReply() {
