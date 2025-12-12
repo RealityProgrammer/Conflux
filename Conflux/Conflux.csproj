@@ -10,7 +10,7 @@
       <Folder Include="Client\public\" />
       <Folder Include="Database\Migrations\" />
       <Folder Include="Services\Policies\" />
-      <Folder Include="Uploads\" />
+      <None Remove="Uploads\" />
     </ItemGroup>
 
     <ItemGroup>
