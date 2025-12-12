@@ -37,8 +37,8 @@
         if (OnEnterSubmit.HasDelegate) {
             await OnEnterSubmit.InvokeAsync();
 
-            CurrentValueAsString = string.Empty;
-            await ValueChanged.InvokeAsync(string.Empty);
+            CurrentValueAsString = null;
+            await ValueChanged.InvokeAsync(null);
         }
     }
 

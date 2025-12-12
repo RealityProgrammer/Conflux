@@ -146,21 +146,32 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
         }
     }
 
-    public async Task<IConversationService.SendStatus> SendMessageAsync(Guid conversationId, string senderId, string body, Guid? replyMessageId, IReadOnlyCollection<IConversationService.UploadingAttachment> attachments, CancellationToken cancellationToken = default) {
+    public async Task<IConversationService.SendStatus> SendMessageAsync(Guid conversationId, string senderId, string? body, Guid? replyMessageId, IReadOnlyCollection<IConversationService.UploadingAttachment> attachments, CancellationToken cancellationToken = default) {
         // TODO: Rewrite this, this is goddamn ugly.
+        _logger.LogInformation("Sending message...");
+        
         await using (var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken)) {
             await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
             
+            _logger.LogInformation("Uploading attachments...");
+            
             // Upload the attachments.
-            List<(string Name, string Path)> attachmentPaths;
+            var attachmentPaths = new List<(string Name, MessageAttachmentType Type, string Path)>(attachments.Count);
 
             try {
-                attachmentPaths = 
-                    attachments.Select(x => x.Name)
-                        .Zip(await _contentService.UploadMessageAttachmentsAsync(attachments.Select(x => x.Stream).ToList(), cancellationToken))
-                        .ToList();
+                foreach (var attachment in attachments) {
+                    var path = await _contentService.UploadMessageAttachmentAsync(attachment.Stream, attachment.Type, cancellationToken);
+                    
+                    _logger.LogInformation("Attachment uploaded: Type {t}, Path {p}.", attachment.Type, path);
+                    
+                    attachmentPaths.Add(new(attachment.Name, attachment.Type, path));
+                }
             } catch (Exception e) {
                 _logger.LogError(e, "Failed to upload message attachment.");
+
+                for (int i = 0; i < attachmentPaths.Count; i++) {
+                    await _contentService.DeleteMessageAttachmentAsync(attachmentPaths[i].Path);
+                }
                 
                 return IConversationService.SendStatus.AttachmentFailure;
             }
@@ -185,6 +196,7 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
                         MessageId = message.Id,
                         Name = tuple.Name,
                         PhysicalPath = tuple.Path,
+                        Type = tuple.Type,
                     }));
 
                     if (await dbContext.SaveChangesAsync(cancellationToken) == attachmentPaths.Count) {
@@ -203,8 +215,10 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
                 }
             } catch (OperationCanceledException) {
                 returnStatus = IConversationService.SendStatus.Canceled;
-            } catch {
+            } catch (Exception e) {
                 returnStatus = IConversationService.SendStatus.Failure;
+                
+                _logger.LogError(e, "Failed to send message.");
             } finally {
                 if (returnStatus != IConversationService.SendStatus.Success) {
                     await transaction.RollbackAsync(cancellationToken);
@@ -322,7 +336,7 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
                 .Take(take)
                 .Include(m => m.Sender)
                 .Include(m => m.ReplyMessage)
-                .Select(m => new IConversationService.RenderingMessageDTO(m.Id, m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt, m.LastModifiedAt != null, m.ReplyMessage != null ? m.ReplyMessageId : null, m.Attachments.Select(a => a.PhysicalPath).ToArray()))
+                .Select(m => new IConversationService.RenderingMessageDTO(m.Id, m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt, m.LastModifiedAt != null, m.ReplyMessage != null ? m.ReplyMessageId : null, m.Attachments.Select(a => new IConversationService.MessageAttachmentDTO(a.Name, a.Type, a.PhysicalPath)).ToArray()))
                 .Reverse()
                 .ToListAsync();
 
@@ -348,7 +362,7 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
                 .Where(m => m.CreatedAt > beforeTimestamp)
                 .Take(take)
                 .Include(m => m.Sender)
-                .Select(m => new IConversationService.RenderingMessageDTO(m.Id, m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt, m.LastModifiedAt != null, m.ReplyMessage != null ? m.DeletedAt != null ? m.ReplyMessageId : Guid.Empty : null, m.Attachments.Select(a => a.PhysicalPath).ToArray()))
+                .Select(m => new IConversationService.RenderingMessageDTO(m.Id, m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt, m.LastModifiedAt != null, m.ReplyMessage != null ? m.DeletedAt != null ? m.ReplyMessageId : Guid.Empty : null, m.Attachments.Select(a => new IConversationService.MessageAttachmentDTO(a.Name, a.Type, a.PhysicalPath)).ToArray()))
                 .ToListAsync();
 
             List<Guid> replyMessageIds = messages.Where(m => m.ReplyMessageId.HasValue).Select(m => m.ReplyMessageId!.Value).ToList();

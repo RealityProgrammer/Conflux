@@ -1,8 +1,10 @@
 ﻿@using Conflux.Components.Shared.Icons
 @using Conflux.Database
 @using Conflux.Database.Entities
+@using Conflux.Services
 @using Conflux.Services.Abstracts
 @using Microsoft.EntityFrameworkCore
+@using System.Diagnostics
 @using System.Security.Claims
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
@@ -58,20 +60,38 @@
             // No attachment file, plain and simple.
             await ConversationService.SendMessageAsync(ConversationId, _userId, data.Body, data.ReplyMessageId, []);
         } else {
-            // Hell await.
+            // Ensure supported file formats.
+
+            foreach (MessageInputArea.UploadingFile file in data.UploadingFiles) {
+                string contentType = file.BrowserFile.ContentType;
+
+                if (contentType.StartsWith("video/") || contentType.StartsWith("audio/") || contentType.StartsWith("image/")) {
+                    continue;
+                }
+
+                throw new NotImplementedException($"Uploading file with content MIME type '{contentType}' is not implemented.");
+            }
 
             var browserFileStreams = new List<IConversationService.UploadingAttachment>(data.UploadingFiles.Count);
 
             try {
-                for (int i = 0; i < data.UploadingFiles.Count; i++) {
-                    IBrowserFile browserFile = data.UploadingFiles[i].BrowserFile;
+                foreach (MessageInputArea.UploadingFile file in data.UploadingFiles) {
+                    IBrowserFile browserFile = file.BrowserFile;
+                    MessageAttachmentType type = browserFile.ContentType switch {
+                        _ when browserFile.ContentType.StartsWith("image/") => MessageAttachmentType.Image,
+                        _ when browserFile.ContentType.StartsWith("video/") => MessageAttachmentType.Video,
+                        _ when browserFile.ContentType.StartsWith("audio/") => MessageAttachmentType.Audio,
+                        _ => throw new UnreachableException(),
+                    };
+
+                    Stream readStream = new LazyBrowserFileStream(browserFile, ApplicationConstants.MaxSizePerAttachment);
                     
-                    browserFileStreams.Add(new(browserFile.Name, browserFile.OpenReadStream(ApplicationConstants.MaxAttachmentsSize)));
+                    browserFileStreams.Add(new(browserFile.Name, type, readStream));
                 }
 
                 var status = await ConversationService.SendMessageAsync(ConversationId, _userId, data.Body, data.ReplyMessageId, browserFileStreams);
                 
-                GC.KeepAlive(status);
+                Logger.LogInformation("Send Message status: {s}", status);
             } finally {
                 foreach (var attachment in browserFileStreams) {
                     await attachment.Stream.DisposeAsync();

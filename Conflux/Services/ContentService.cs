@@ -1,8 +1,9 @@
-﻿using Conflux.Services.Abstracts;
+﻿using Conflux.Database.Entities;
+using Conflux.Services.Abstracts;
 
 namespace Conflux.Services;
 
-public class ContentService(IWebHostEnvironment environment) : IContentService {
+public class ContentService(IWebHostEnvironment environment, ILogger<ContentService> logger) : IContentService {
     public async Task<string> UploadAvatarAsync(Stream stream, string userId, CancellationToken cancellationToken = default) {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -47,44 +48,61 @@ public class ContentService(IWebHostEnvironment environment) : IContentService {
         }
     }
 
-    public async Task<string> UploadMessageAttachmentAsync(Stream attachmentStream, CancellationToken cancellationToken) {
-        string avatarDirectory = Path.Combine(environment.ContentRootPath, "Uploads", "msg_attachments");
-
-        if (!Directory.Exists(avatarDirectory)) {
-            Directory.CreateDirectory(avatarDirectory);
-        }
-        
-        string path = Path.Combine("msg_attachments", Guid.CreateVersion7().ToString());
-        string physicalPath = Path.Combine(environment.ContentRootPath, "Uploads", path);
-
-        await using var destinationStream = File.OpenWrite(physicalPath);
-        destinationStream.SetLength(0);
-
-        await destinationStream.FlushAsync(cancellationToken);
-        await attachmentStream.CopyToAsync(destinationStream, cancellationToken);
-
-        return path;
-    }
-
-    public async Task<ICollection<string>> UploadMessageAttachmentsAsync(IReadOnlyCollection<Stream> attachmentStreams, CancellationToken cancellationToken = default) {
-        List<string> outputPaths = new List<string>(attachmentStreams.Count);
-
+    public async Task<string> UploadMessageAttachmentAsync(Stream attachmentStream, MessageAttachmentType type, CancellationToken cancellationToken) {
         try {
-            foreach (var stream in attachmentStreams) {
-                outputPaths.Add(await UploadMessageAttachmentAsync(stream, cancellationToken));
+            logger.LogInformation("Uploading message attachment type {t}.", type);
+            
+            string typePath = type switch {
+                MessageAttachmentType.Image => "images",
+                MessageAttachmentType.Audio => "audios",
+                MessageAttachmentType.Video => "videos",
+                _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
+            };
+
+            string avatarDirectory = Path.Combine(environment.ContentRootPath, "Uploads", "attachments", typePath);
+
+            if (!Directory.Exists(avatarDirectory)) {
+                Directory.CreateDirectory(avatarDirectory);
             }
 
-            return outputPaths;
-        } catch {
-            foreach (string path in outputPaths) {
-                string physicalPath = Path.Combine(environment.ContentRootPath, "Uploads", path);
-    
-                File.Delete(physicalPath);
-            }
+            string path = Path.Combine("attachments", typePath, Guid.CreateVersion7().ToString());
+            string physicalPath = Path.Combine(environment.ContentRootPath, "Uploads", path);
 
-            throw;
+            await using var destinationStream = File.OpenWrite(physicalPath);
+            destinationStream.SetLength(0);
+            
+            logger.LogInformation("Attachment stream length: {l}.", attachmentStream.Length);
+
+            await destinationStream.FlushAsync(cancellationToken);
+            await attachmentStream.CopyToAsync(destinationStream, cancellationToken);
+
+            return path;
+        } catch (Exception e) {
+            logger.LogInformation(e, "Failed to upload message attachment type {t}.", type);
+            logger.LogError(e, "Failed to upload message attachment type {t}.", type);
+            return string.Empty;
         }
     }
+
+    // public async Task<ICollection<string>> UploadMessageAttachmentsAsync(IReadOnlyCollection<Stream> attachmentStreams, CancellationToken cancellationToken = default) {
+    //     List<string> outputPaths = new List<string>(attachmentStreams.Count);
+    //
+    //     try {
+    //         foreach (var stream in attachmentStreams) {
+    //             outputPaths.Add(await UploadMessageAttachmentAsync(stream, cancellationToken));
+    //         }
+    //
+    //         return outputPaths;
+    //     } catch {
+    //         foreach (string path in outputPaths) {
+    //             string physicalPath = Path.Combine(environment.ContentRootPath, "Uploads", path);
+    //
+    //             File.Delete(physicalPath);
+    //         }
+    //
+    //         throw;
+    //     }
+    // }
 
     public Task<bool> DeleteMessageAttachmentAsync(string attachmentRelativePath) {
         try {

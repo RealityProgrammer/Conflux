@@ -10,8 +10,18 @@ internal sealed class ApplicationContentTypeProvider : IContentTypeProvider {
             return true;
         }
 
-        if (subpath.StartsWith("msg_attachments") || subpath.StartsWith("/msg_attachments")) {
+        if (subpath.StartsWith("attachments/images") || subpath.StartsWith("/attachments/images")) {
             contentType = "image/*";
+            return true;
+        }
+        
+        if (subpath.StartsWith("attachments/audios") || subpath.StartsWith("/attachments/audios")) {
+            contentType = "audio/*";
+            return true;
+        }
+        
+        if (subpath.StartsWith("attachments/videos") || subpath.StartsWith("/attachments/videos")) {
+            contentType = "video/*";
             return true;
         }
 

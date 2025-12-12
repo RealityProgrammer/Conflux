@@ -76,11 +76,11 @@
                                     @if (isEditing) {
                                         <MessageTextArea @ref="_editTextArea"
                                                          @bind-Value="_editMessageBody" 
-                                                         class="shrink-0 input-field w-full py-2 overflow-x-hidden overflow-y-auto wrap-break-word break-all resize-none scrollbar-hide shadow-lg max-h-96 my-2 wrap-break-word"
+                                                         class="shrink-0 input-field w-full py-2 overflow-x-hidden overflow-y-auto wrap-break-word break-all resize-none scrollbar-hide shadow-lg max-h-96 my-2"
                                                          OnEnterSubmit="HandleSubmitMessageEdit"
                                                          OnEscape="HandleEscapeRequest"/>
                                     } else {
-                                        <div>
+                                        <div class="test-1">
                                             @if (!string.IsNullOrEmpty(message.Body)) {
                                                 <p class="whitespace-pre-wrap wrap-anywhere">
                                                     @message.Body
@@ -90,8 +90,32 @@
                                             @if (message.IsEdited) {
                                                 <span class="text-xs text-gray-400"> (edited)</span>
                                             }
-                                            
-                                            <img src="@ContentService.GetAssetPath(message.Attachments[0])" alt="" class="size-48">
+
+                                            <div class="min-w-0 p-0.5 flex flex-row flex-wrap gap-1">
+                                                @foreach (IConversationService.MessageAttachmentDTO attachment in message.Attachments) {
+                                                    switch (attachment.Type) {
+                                                        case MessageAttachmentType.Image:
+                                                            <img src="@ContentService.GetAssetPath(attachment.Path)" alt="" class="max-w-3xl max-h-80 h-full rounded-lg aspect-auto">
+                                                            break;
+                                                            
+                                                        case MessageAttachmentType.Audio:
+                                                            @* <p>Audio attachment</p> *@
+                                                            
+                                                            <audio controls class="w-full rounded-lg">
+                                                                <source src="@ContentService.GetAssetPath(attachment.Path)">
+                                                            </audio>
+                                                            break;
+                                                            
+                                                        case MessageAttachmentType.Video:
+                                                            <video controls class="max-w-3xl max-h-80 h-full aspect-auto">
+                                                                <source src="@ContentService.GetAssetPath(attachment.Path)">
+                                                            </video>
+                                                            break;
+                                                            
+                                                        default: break;
+                                                    }
+                                                }
+                                            </div>
                                         </div>
 
                                         <span class="px-1 py-1 top-0 right-4 -translate-y-1/2 absolute bg-gray-750 rounded-lg hidden group-hover:flex flex-row items-center gap-1">
@@ -453,7 +477,7 @@
                             m.ReplyMessageId,
                             m.Body,
                             m.CreatedAt,
-                            Attachments = m.Attachments.Select(a => a.PhysicalPath).ToArray(),
+                            Attachments = m.Attachments.Select(a => new IConversationService.MessageAttachmentDTO(a.Name, a.Type, a.PhysicalPath)).ToArray(),
                         })
                         .FirstAsync();
 
