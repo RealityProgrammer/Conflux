@@ -80,41 +80,19 @@
                                                          OnEnterSubmit="HandleSubmitMessageEdit"
                                                          OnEscape="HandleEscapeRequest"/>
                                     } else {
-                                        <div class="test-1">
-                                            @if (!string.IsNullOrEmpty(message.Body)) {
-                                                <p class="whitespace-pre-wrap wrap-anywhere">
-                                                    @message.Body
-                                                </p>
-                                            }
-                                            
+                                        @if (!string.IsNullOrEmpty(message.Body)) {
+                                            <p class="whitespace-pre-wrap wrap-anywhere">
+                                                @message.Body
+                                                
+                                                @if (message.IsEdited) {
+                                                    <span class="text-xs text-gray-400"> (edited)</span>
+                                                }
+                                            </p>
+                                        } else {
                                             @if (message.IsEdited) {
                                                 <span class="text-xs text-gray-400"> (edited)</span>
                                             }
-
-                                            <div class="min-w-0 p-0.5 flex flex-row flex-wrap gap-1">
-                                                @foreach (IConversationService.MessageAttachmentDTO attachment in message.Attachments) {
-                                                    switch (attachment.Type) {
-                                                        case MessageAttachmentType.Image:
-                                                            <img src="@ContentService.GetAssetPath(attachment.Path)" alt="" class="max-w-3xl max-h-80 h-full rounded-lg aspect-auto">
-                                                            break;
-                                                            
-                                                        case MessageAttachmentType.Audio:
-                                                            <audio controls class="w-full rounded-lg">
-                                                                <source src="@ContentService.GetAssetPath(attachment.Path)">
-                                                            </audio>
-                                                            break;
-                                                            
-                                                        case MessageAttachmentType.Video:
-                                                            <video controls class="max-w-3xl max-h-80 h-full aspect-auto">
-                                                                <source src="@ContentService.GetAssetPath(attachment.Path)">
-                                                            </video>
-                                                            break;
-                                                            
-                                                        default: break;
-                                                    }
-                                                }
-                                            </div>
-                                        </div>
+                                        }
 
                                         <span class="px-1 py-1 top-0 right-4 -translate-y-1/2 absolute bg-gray-750 rounded-lg hidden group-hover:flex flex-row items-center gap-1">
                                             <p class="text-sm">@message.CreatedAt.ToString("yyyy/MM/dd HH:mm:ss")</p>
@@ -145,6 +123,29 @@
                                         </span>
                                     }
 
+                                    <div class="min-w-0 p-0.5 flex flex-row flex-wrap gap-1">
+                                        @foreach (IConversationService.MessageAttachmentDTO attachment in message.Attachments) {
+                                            switch (attachment.Type) {
+                                                case MessageAttachmentType.Image:
+                                                    <img src="@ContentService.GetAssetPath(attachment.Path)" alt="" class="max-w-3xl max-h-80 h-full rounded-lg aspect-auto">
+                                                    break;
+                                                        
+                                                case MessageAttachmentType.Audio:
+                                                    <audio controls class="w-full rounded-lg">
+                                                        <source src="@ContentService.GetAssetPath(attachment.Path)">
+                                                    </audio>
+                                                    break;
+                                                        
+                                                case MessageAttachmentType.Video:
+                                                    <video controls class="max-w-3xl max-h-80 h-full aspect-auto">
+                                                        <source src="@ContentService.GetAssetPath(attachment.Path)">
+                                                    </video>
+                                                    break;
+                                                        
+                                                default: break;
+                                            }
+                                        }
+                                    </div>
                                 </div>
                             }
     
@@ -221,7 +222,7 @@
     
     // Message Edit.
     private Guid _editingMessageId;
-    private string _editMessageBody = string.Empty;
+    private string? _editMessageBody;
     private MessageTextArea? _editTextArea;
     private bool _focusOnEditTextArea;
     
@@ -413,11 +414,9 @@
     }
     
     private async Task HandleSubmitMessageEdit() {
-        _editMessageBody = _editMessageBody.Trim();
+        _editMessageBody = _editMessageBody?.Trim();
 
-        if (!string.IsNullOrEmpty(_editMessageBody)) {
-            await ConversationService.EditMessageAsync(_editingMessageId, UserId, _editMessageBody);
-        }
+        await ConversationService.EditMessageAsync(_editingMessageId, UserId, _editMessageBody);
 
         _editingMessageId = Guid.Empty;
         _editMessageBody = string.Empty;

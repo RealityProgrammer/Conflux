@@ -294,7 +294,7 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
         }
     }
     
-    public async Task<bool> EditMessageAsync(Guid messageId, string senderId, string body) {
+    public async Task<bool> EditMessageAsync(Guid messageId, string senderId, string? body) {
         await using (var dbContext = await _dbContextFactory.CreateDbContextAsync()) {
             dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 

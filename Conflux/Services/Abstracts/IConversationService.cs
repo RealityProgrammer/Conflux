@@ -20,7 +20,7 @@ public interface IConversationService {
     Task<SendStatus> SendMessageAsync(Guid conversationId, string senderId, string? body, Guid? replyMessageId, IReadOnlyCollection<UploadingAttachment> attachments, CancellationToken cancellationToken = default);
     Task<bool> DeleteMessageAsync(Guid messageId, string senderId);
     Task<bool> EditMessageAsync(Guid messageId, string body);
-    Task<bool> EditMessageAsync(Guid messageId, string senderId, string body);
+    Task<bool> EditMessageAsync(Guid messageId, string senderId, string? body);
 
     Task<RenderingMessages> LoadMessagesBeforeTimestampAsync(Guid conversationId, DateTime beforeTimestamp, int take);
     Task<RenderingMessages> LoadMessagesAfterTimestampAsync(Guid conversationId, DateTime afterTimestamp, int take);
