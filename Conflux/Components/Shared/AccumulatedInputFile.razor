@@ -11,10 +11,8 @@
 @code {
     [Parameter] public EventCallback<AccumulatedInputFileChangeEventArgs> OnChange { get; set; }
     
-    private InputFile _activeInputFile;
-    
+    private InputFile _activeInputFile = null!;
     private int _numberOfInputFiles = 1;
-    private readonly Dictionary<int, InputFile> _inputFiles = [];
 
     private async Task HandleChangeNotification(InputFileChangeEventArgs args) {
         _numberOfInputFiles++;
