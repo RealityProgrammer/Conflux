@@ -1,0 +1,24 @@
+﻿@for (int i = _numberOfInputFiles - 1; i >= 0; i--) {
+    int capturedIndex = i;
+
+    if (capturedIndex == _numberOfInputFiles - 1) {
+        <InputFile @key="capturedIndex" @ref="_activeInputFile" OnChange="HandleChangeNotification" multiple class="hidden"></InputFile>
+    } else {
+        <InputFile @key="capturedIndex" OnChange="HandleChangeNotification" multiple class="hidden" disabled></InputFile>
+    }
+}
+    
+@code {
+    [Parameter] public EventCallback<AccumulatedInputFileChangeEventArgs> OnChange { get; set; }
+    
+    private InputFile _activeInputFile;
+    
+    private int _numberOfInputFiles = 1;
+    private readonly Dictionary<int, InputFile> _inputFiles = [];
+
+    private async Task HandleChangeNotification(InputFileChangeEventArgs args) {
+        _numberOfInputFiles++;
+
+        await OnChange.InvokeAsync(new(args, _activeInputFile));
+    }
+}

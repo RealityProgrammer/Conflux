@@ -107,12 +107,29 @@
 
         <MessageTextArea @bind-Value="_body" class="@textAreaCssClass" OnEnterSubmit="HandleMessageSubmit"/>
     </section>
-
+    
     <label class="flex-none rounded-full bg-transparent hover:bg-white/15 active:bg-black/15 p-2 cursor-pointer group disabled:bg-transparent disabled:cursor-default" disabled="@_disabled">
         <Paperclip class="size-6 fill-white group-disabled:fill-gray-400"/>
-        
-        <InputFile @ref="_inputFile" type="file" class="hidden" multiple OnChange="HandleAttachmentChanged"/>
+
+        <AccumulatedInputFile @ref="_inputFile" OnChange="HandleAttachmentChanged"></AccumulatedInputFile>
+        @* <InputFile @ref="_inputFile" type="file" class="hidden" multiple OnChange="HandleAttachmentChanged"/> *@
     </label>
+    
+    @* <label class="flex-none rounded-full bg-transparent hover:bg-white/15 active:bg-black/15 p-2 cursor-pointer group disabled:bg-transparent disabled:cursor-default" disabled="@_disabled"> *@
+    @*     <Paperclip class="size-6 fill-white group-disabled:fill-gray-400"/> *@
+    @*      *@
+    @*     <InputFile @ref="_inputFile" type="file" class="hidden" multiple OnChange="HandleAttachmentChanged"/> *@
+    @* </label> *@
+
+    @* <label for="attachment_upload" class="flex-none rounded-full bg-transparent hover:bg-white/15 active:bg-black/15 p-2 cursor-pointer group disabled:bg-transparent disabled:cursor-default" disabled="@_disabled"> *@
+    @*     <Paperclip class="size-6 fill-white group-disabled:fill-gray-400"/> *@
+    @* </label> *@
+    @* *@
+    @* @for (int i = 0; i < _numberOfInputFiles - 1; i++) { *@
+    @*     <InputFile class="hidden" multiple/> *@
+    @* } *@
+    @* *@
+    @* <InputFile id="attachment_upload" @ref="_inputFile" type="file" class="hidden" multiple OnChange="HandleAttachmentChanged"/> *@
 
     <button class="flex-none rounded-full bg-transparent hover:bg-white/15 active:bg-black/15 p-2 cursor-pointer group disabled:bg-transparent disabled:cursor-default" disabled="@_disabled">
         <Media Type="MediaType.Gif" class="size-6 fill-none stroke-white group-disabled:stroke-gray-400"/>
@@ -170,11 +187,12 @@
     
     private ReplyMessageDTO _replyMessageData;
     private List<UploadingFile> _uploadingFiles = [];
+    private int _numberOfInputFiles = 1;
     
     private bool _reportSurpassedAttachmentMaxCount;
     private bool _reportAttachmentSurpassedMaxSize;
 
-    private InputFile _inputFile = null!;
+    private AccumulatedInputFile _inputFile = null!;
     
     private IJSObjectReference _module = null!;
 
@@ -232,11 +250,11 @@
         await InvokeAsync(StateHasChanged);
     }
 
-    private async Task HandleAttachmentChanged(InputFileChangeEventArgs args) {
+    private async Task HandleAttachmentChanged(AccumulatedInputFileChangeEventArgs args) {
         IReadOnlyList<IBrowserFile> files;
 
         try {
-            files = args.GetMultipleFiles(ApplicationConstants.MaxAttachmentsPerMessage);
+            files = args.ChangeEventArgs.GetMultipleFiles(ApplicationConstants.MaxAttachmentsPerMessage);
         } catch (InvalidOperationException) {
             _reportSurpassedAttachmentMaxCount = true;
             return;
@@ -256,11 +274,12 @@
             }
         }
         
+        _numberOfInputFiles++;
+        
         for (int i = 0; i < files.Count; i++) {
             IBrowserFile file = files[i];
-
             string? previewUrl = file.ContentType switch {
-                _ when file.ContentType.StartsWith("image/") => await _module.InvokeAsync<string>("createFilePreviewUrl", _inputFile.Element!, i),
+                _ when file.ContentType.StartsWith("image/") => await _module.InvokeAsync<string>("createFilePreviewUrl", args.Owner.Element, i),
                 _ => null,
             };
 
