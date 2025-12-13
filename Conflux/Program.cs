@@ -126,7 +126,13 @@ app.UseAntiforgery();
 
 app.MapStaticAssets();
 
-PhysicalFileProvider uploadsFileProvider = new PhysicalFileProvider(Path.Combine(builder.Environment.ContentRootPath, "Uploads"));
+string uploadDirectory = Path.Combine(builder.Environment.ContentRootPath, "Uploads");
+
+if (!Directory.Exists(uploadDirectory)) {
+    Directory.CreateDirectory(uploadDirectory);
+}
+
+PhysicalFileProvider uploadsFileProvider = new PhysicalFileProvider(uploadDirectory);
 
 app.Environment.WebRootFileProvider = new CompositeFileProvider(app.Environment.WebRootFileProvider, uploadsFileProvider);
 
