@@ -18,4 +18,6 @@ public class MessageAttachment {
     public MessageAttachmentType Type { get; set; }
 
     public ChatMessage Message { get; set; } = null!;
+    
+    // TODO: Make attachment removable.
 }

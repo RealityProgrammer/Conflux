@@ -16,6 +16,11 @@ using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Configuration
+    .AddJsonFile("appsettings.json", false, true)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", false, true)
+    .AddEnvironmentVariables();
+
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -101,6 +106,16 @@ builder.Services.AddOpenApi();
 // ...
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope()) {
+    var services = scope.ServiceProvider;
+
+    var context = services.GetRequiredService<ApplicationDbContext>();
+
+    if (context.Database.GetPendingMigrations().Any()) {
+        context.Database.Migrate();
+    }
+}
 
 app.UseResponseCompression();
 
