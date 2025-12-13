@@ -37,10 +37,10 @@
     ];
 }
 
+<link rel="stylesheet" href="styles/styles.css"/>
+
 @if (Environment.IsDevelopment() && Vite.IsMiddlewareEnable) {
     <script type="module" src="@@vite/client"></script>
-    
-    <link rel="stylesheet" href="styles/styles.css"/>
     
     @foreach (var modulePath in modulePaths) {
         <script type="module" src="@modulePath"></script>
@@ -60,10 +60,6 @@
                 }
             }
         }
-    }
-
-    if ((chunk = ViteManifest["styles/input.css"]) != null) {
-        <link rel="stylesheet" href="@chunk.File"/>
     }
 }
 

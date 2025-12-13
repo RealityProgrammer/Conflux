@@ -18,8 +18,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration
     .AddJsonFile("appsettings.json", false, true)
-    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", false, true)
     .AddEnvironmentVariables();
+
+if (builder.Environment.EnvironmentName != "Production") {
+    builder.Configuration
+        .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", false, true);
+}
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
