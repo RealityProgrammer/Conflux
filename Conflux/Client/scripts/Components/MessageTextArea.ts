@@ -1,5 +1,5 @@
-﻿export function initializeTextArea(element, dotNetHelper) {
-    element.addEventListener('input', e => {
+﻿export function initializeTextArea(element: HTMLTextAreaElement, dotNetHelper: any) {
+    element.addEventListener('input', _e => {
         resizeTextArea(element);
     });
     
@@ -23,7 +23,7 @@
     })
 }
 
-export function resizeTextArea(element) {
+export function resizeTextArea(element: HTMLTextAreaElement): void {
     element.style.height = 'auto';
     element.style.height = (element.scrollHeight + 1.6) + 'px';
 }

@@ -9,6 +9,7 @@
 @inject IConversationService ConversationService
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject IContentService ContentService
+@inject ILogger<MessageTimeline> Logger
 
 @implements IDisposable
 
@@ -211,7 +212,7 @@
     // Storing messages in time ascending order.
     private readonly List<IConversationService.RenderingMessageDTO> _visibleMessages = [];
     private readonly Dictionary<Guid, IConversationService.RenderingReplyMessageDTO> _replyMessages = [];
-    private readonly SemaphoreSlim _messageSemaphore = new(1, 1);
+    private SemaphoreSlim? _messageSemaphore;
     
     private DateTime _topLoadTimestamp, _bottomLoadTimestamp;
     
@@ -234,6 +235,11 @@
     private IJSObjectReference? _module;
     private DotNetObjectReference<MessageTimeline>? _objectReference;
 
+    protected override void OnInitialized() {
+        _messageSemaphore ??= new(1, 1);
+        Logger.LogInformation("Created Semaphore.");
+    }
+
     protected override void OnParametersSet() {
         if (_previousConversationId != ConversationId) {
             _initStatus = InitializationStatus.Loading;
@@ -249,7 +255,7 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
-            _module = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import", "./Components/Shared/MessageTimeline.razor.js");
+            _module = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import", "./js/Components/MessageTimeline.js");
             _objectReference = DotNetObjectReference.Create(this);
 
             await _module!.InvokeVoidAsync("initializeScrollContainer", _scrollContainer, _objectReference);
@@ -526,7 +532,7 @@
     private void OnMessageEdited(MessageEditedEventArgs args) {
         if (ConversationId != args.ConversationId) return;
 
-        _messageSemaphore.Wait();
+        _messageSemaphore!.Wait();
 
         try {
             for (int i = 0; i < _visibleMessages.Count; i++) {
@@ -549,8 +555,9 @@
         ConversationService.OnMessageReceived -= OnMessageReceived;
         ConversationService.OnMessageDeleted -= OnMessageDeleted;
         ConversationService.OnMessageEdited -= OnMessageEdited;
-
-        _messageSemaphore.Dispose();
+        
+        _messageSemaphore?.Dispose();
+        Logger.LogInformation("Disposed Semaphore.");
     }
     
     private enum InitializationStatus {

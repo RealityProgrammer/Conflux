@@ -55,33 +55,6 @@
                                 </div>
                             </div>
                             
-                            @* @switch (contentType) { *@
-                            @*     case var _ when contentType.StartsWith("image/"): *@
-                            @*         <div class="size-48 relative group"> *@
-                            @*             <img src="@uploadingFile.PreviewUrl" alt="Preview image for @uploadingFile.BrowserFile.Name" class="size-full object-cover pointer-events-none"> *@
-                            @*              *@
-                            @*             <div class="pointer-events-none bg-transparent group-hover:bg-black/60 transition-all duration-500 ease-in-out absolute inset-0"></div> *@
-                            @*              *@
-                            @*             <div class="px-1 left-0 bottom-0 text-white translate-y-0 group-hover:-translate-y-full transition-transform duration-500 ease-in-out whitespace-nowrap overflow-hidden text-ellipsis"> *@
-                            @*                 @uploadingFile.BrowserFile.Name *@
-                            @*             </div> *@
-                            @*         </div> *@
-                            @*         break; *@
-                            @*          *@
-                            @*     case var _ when contentType.StartsWith("audio/"): *@
-                            @*         $1$ <div class="size-32"> #1# *@
-                            @*         $1$      #1# *@
-                            @*         $1$ </div> #1# *@
-                            @*          *@
-                            @*         <div class="size-32 flex flex-row justify-center items-center"> *@
-                            @*             <svg xmlns="http://www.w3.org/2000/svg" class="size-24 fill-white" viewBox="0 0 16 16"> *@
-                            @*                 <path d="M10.304 3.13a1 1 0 0 1 1.196.98v1.8l-2.5.5v5.09c0 .495-.301.883-.662 1.123C7.974 12.866 7.499 13 7 13s-.974-.134-1.338-.377C5.302 12.383 5 11.995 5 11.5s.301-.883.662-1.123C6.026 10.134 6.501 10 7 10c.356 0 .7.068 1 .196V4.41a1 1 0 0 1 .804-.98z"/> *@
-                            @*                 <path d="M4 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2zm0 1h8a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1"/> *@
-                            @*             </svg> *@
-                            @*         </div> *@
-                            @*         break; *@
-                            @* } *@
-
                             <span class="absolute z-10 -right-1 -top-1 border border-gray-600 bg-gray-700 rounded-lg p-0.5 hidden group-hover:flex flex-row">
                                 @{ int index = i; }
 
@@ -112,25 +85,8 @@
         <Paperclip class="size-6 fill-white group-disabled:fill-gray-400"/>
 
         <AccumulatedInputFile @ref="_inputFile" OnChange="HandleAttachmentChanged"></AccumulatedInputFile>
-        @* <InputFile @ref="_inputFile" type="file" class="hidden" multiple OnChange="HandleAttachmentChanged"/> *@
     </label>
     
-    @* <label class="flex-none rounded-full bg-transparent hover:bg-white/15 active:bg-black/15 p-2 cursor-pointer group disabled:bg-transparent disabled:cursor-default" disabled="@_disabled"> *@
-    @*     <Paperclip class="size-6 fill-white group-disabled:fill-gray-400"/> *@
-    @*      *@
-    @*     <InputFile @ref="_inputFile" type="file" class="hidden" multiple OnChange="HandleAttachmentChanged"/> *@
-    @* </label> *@
-
-    @* <label for="attachment_upload" class="flex-none rounded-full bg-transparent hover:bg-white/15 active:bg-black/15 p-2 cursor-pointer group disabled:bg-transparent disabled:cursor-default" disabled="@_disabled"> *@
-    @*     <Paperclip class="size-6 fill-white group-disabled:fill-gray-400"/> *@
-    @* </label> *@
-    @* *@
-    @* @for (int i = 0; i < _numberOfInputFiles - 1; i++) { *@
-    @*     <InputFile class="hidden" multiple/> *@
-    @* } *@
-    @* *@
-    @* <InputFile id="attachment_upload" @ref="_inputFile" type="file" class="hidden" multiple OnChange="HandleAttachmentChanged"/> *@
-
     <button class="flex-none rounded-full bg-transparent hover:bg-white/15 active:bg-black/15 p-2 cursor-pointer group disabled:bg-transparent disabled:cursor-default" disabled="@_disabled">
         <Media Type="MediaType.Gif" class="size-6 fill-none stroke-white group-disabled:stroke-gray-400"/>
     </button>
@@ -194,8 +150,6 @@
 
     private AccumulatedInputFile _inputFile = null!;
     
-    private IJSObjectReference _module = null!;
-
     protected override void OnParametersSet() {
         if (AdditionalAttributes != null) {
             if (AdditionalAttributes.TryGetValue("disabled", out object? obj)) {
@@ -212,10 +166,6 @@
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
-        if (firstRender) {
-            _module = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import", "./Components/Shared/MessageInputArea.razor.js");
-        }
-        
         if (_previousReplyMessageId != _replyMessageId && _replyMessageId.HasValue) {
             await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
                 _replyMessageData = await dbContext.ChatMessages
@@ -279,7 +229,7 @@
         for (int i = 0; i < files.Count; i++) {
             IBrowserFile file = files[i];
             string? previewUrl = file.ContentType switch {
-                _ when file.ContentType.StartsWith("image/") => await _module.InvokeAsync<string>("createFilePreviewUrl", args.Owner.Element, i),
+                _ when file.ContentType.StartsWith("image/") => await JavascriptRuntime.InvokeAsync<string>("window.createInputPreviewUrl", args.Owner.Element, i),
                 _ => null,
             };
 

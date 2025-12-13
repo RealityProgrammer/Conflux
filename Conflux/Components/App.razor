@@ -22,8 +22,8 @@
 
 <script src="js/utils.js"></script>
 
-@* <script src="Components/Shared/MessageTimeline.razor.js"></script> *@
-@* <script src="Components/Shared/MessageTextArea.razor.js"></script> *@
+@* <script src="Components/Shared/MessageTimeline.ts"></script> *@
+@* <script src="Components/Shared/MessageTextArea.ts"></script> *@
 @* <script src="Components/Shared/MessageInputArea.razor.js"></script> *@
 
 @{
@@ -31,13 +31,16 @@
         "scripts/Pages/HomePage.ts",
         "scripts/Pages/LoginPage.ts",
         "scripts/Pages/RegisterPage.ts",
+        
+        "scripts/Components/MessageTextArea.ts",
+        "scripts/Components/MessageTimeline.ts",
     ];
 }
 
 @if (Environment.IsDevelopment() && Vite.IsMiddlewareEnable) {
     <script type="module" src="@@vite/client"></script>
     
-    <link rel="stylesheet" href="styles/input.css"/>
+    <link rel="stylesheet" href="styles/styles.css"/>
     
     @foreach (var modulePath in modulePaths) {
         <script type="module" src="@modulePath"></script>

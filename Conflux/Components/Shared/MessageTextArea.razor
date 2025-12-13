@@ -21,9 +21,7 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
-            _module = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import",
-                "./Components/Shared/MessageTextArea.razor.js");
-        
+            _module = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import", "./js/Components/MessageTextArea.js");      
             _objectReference = DotNetObjectReference.Create(this);
             await _module.InvokeVoidAsync("initializeTextArea", Element, _objectReference);
             
