@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:18.1-alpine3.23
+    container_name: database
+    restart: unless-stopped
+    tty: true
+    environment:
+      POSTGRES_DB: Conflux
+      POSTGRES_PASSWORD: password
+      POSTGRES_ROOT_PASSWORD: root_password
+    healthcheck:
+      test: pg_isready -d Conflux
+      interval: 30s
+      timeout: 60s
+      retries: 5
+    ports:
+      - "5432:5432"
+      
+  application:
+    build:
+      context: .
+      dockerfile: app.dockerfile
+    container_name: application
+    tty: true
+    depends_on:
+      "db":
+        condition: service_healthy
+    environment:
+      DetailedErrors: true
+      
+      Vite__Server__Enabled: true
+      Vite__Server__Port: 5173
+      
+      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=Conflux;Username=postgres;Password=password;
+    ports:
+      - "8080:8080"
