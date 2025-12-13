@@ -154,7 +154,7 @@
 </div>
 
 <SectionContent SectionName="OutsideContainer">
-    <UnsavedChangesPopup @ref="_unsavedPopup" OnCancelRequest="CancelEdit" OnSaveRequest="SaveProfile"/>
+    <UnsavedChangesPopup @bind-IsShowing="_hasUnsavedChanges" OnCancelRequest="CancelEdit" OnSaveRequest="SaveProfile"/>
 </SectionContent>
 
 @code {
@@ -172,12 +172,11 @@
     private bool _showAvatarModal;
 
     private InputFile _avatarInputFile = null!;
-    private Avatar _selectableAvatar = null!;
 
     private FieldIdentifier _displayNameField, _pronounsField, _bioField, _avatarFileField, _requestDeleteAvatarField;
     private ValidationMessageStore _validationMessages = null!;
 
-    private UnsavedChangesPopup _unsavedPopup = null!;
+    private bool _hasUnsavedChanges = false;
 
     protected override void OnInitialized() {
         ResetProfileForm();
@@ -195,7 +194,7 @@
         _editContext = new(Model);
         _editContext.OnFieldChanged += (sender, args) => {
             if (_editContext.IsValid(args.FieldIdentifier)) {
-                _unsavedPopup.ShowPopup();
+                _hasUnsavedChanges = true;
             }
         };
 
@@ -290,7 +289,7 @@
             AvatarPreviewUrl = null;
             Model.Avatar.File = null!;
         } finally {
-            _unsavedPopup.HidePopup();
+            _hasUnsavedChanges = false;
         }
 
         await AvatarPreviewUrlChanged.InvokeAsync();
@@ -323,7 +322,7 @@
         Model.Avatar.File = args.File;
         AvatarPreviewUrl = url;
 
-        _unsavedPopup.ShowPopup();
+        _hasUnsavedChanges = true;
         
         await AvatarPreviewUrlChanged.InvokeAsync(url);
     }

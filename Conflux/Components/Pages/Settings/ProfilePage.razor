@@ -48,30 +48,12 @@
                 <ProfilePreview Model="Model" User="_user" AvatarPreviewUrl="@_avatarPreviewUrl"/>
             </TabContent>
 
-            <TabContent TabId="edit">
+            <TabContent TabId="edit" RenderStrategy="TabRenderStrategy.Visibility">
                 <ProfileEdit Model="Model" User="_user" @bind-AvatarPreviewUrl="_avatarPreviewUrl"/>
             </TabContent>
         </Contents>
     </TabContainer>
 </div>
-
-<SectionContent SectionName="javascript">
-    @if (Environment.IsDevelopment() && Vite.IsMiddlewareEnable) {
-        <script type="module" src="scripts/pages/settings/profile.ts"></script>
-    } else {
-        if (ViteManifest["scripts/pages/settings/profile.ts"] is { } chunk) {
-            <script type="module" src="@chunk.File"></script>
-
-            if (chunk.Imports != null) {
-                foreach (string import in chunk.Imports) {
-                    if (!ViteManifest.ContainsKey(import)) continue;
-
-                    <script type="module" src="@ViteManifest[import]!.File"></script>
-                }
-            }
-        }
-    }
-</SectionContent>
 
 @code {
     private ApplicationUser? _user;
