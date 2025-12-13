@@ -126,7 +126,7 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
-            _searchDebouncer = new(Logger, OnDebounceEnd, TimeSpan.FromMilliseconds(250));
+            _searchDebouncer = new(OnDebounceEnd, TimeSpan.FromMilliseconds(250));
 
             var authState = await AuthenticationState;
             _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;

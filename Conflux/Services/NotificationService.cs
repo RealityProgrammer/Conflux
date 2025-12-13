@@ -9,7 +9,6 @@ namespace Conflux.Services;
 
 public sealed class NotificationService(
     IWebHostEnvironment environment,
-    ILogger<NotificationService> logger,
     IHubContext<NotificationHub> hubContext,
     NavigationManager navigationManager,
     IHttpContextAccessor httpContextAccessor

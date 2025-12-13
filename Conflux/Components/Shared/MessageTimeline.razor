@@ -302,7 +302,7 @@
             IConversationService.RenderingMessages messages =
                 await ConversationService.LoadMessagesBeforeTimestampAsync(ConversationId, DateTime.MaxValue, LoadCount);
 
-            await _messageSemaphore.WaitAsync();
+            await _messageSemaphore!.WaitAsync();
 
             try {
                 _visibleMessages.Clear();
@@ -347,7 +347,7 @@
                 _endTop = false;
                 _topLoadTimestamp = messages.VisibleMessages[0].CreatedAt;
 
-                await _messageSemaphore.WaitAsync();
+                await _messageSemaphore!.WaitAsync();
 
                 try {
                     _visibleMessages.InsertRange(0, messages.VisibleMessages);
@@ -384,7 +384,7 @@
                 _endBottom = false;
                 _bottomLoadTimestamp = messages.VisibleMessages[^1].CreatedAt;
 
-                await _messageSemaphore.WaitAsync();
+                await _messageSemaphore!.WaitAsync();
 
                 try {
                     _visibleMessages.AddRange(messages.VisibleMessages);
@@ -492,7 +492,7 @@
                             .FirstOrDefaultAsync();
                     }
 
-                    await _messageSemaphore.WaitAsync();
+                    await _messageSemaphore!.WaitAsync();
 
                     try {
                         _visibleMessages.Add(new(args.MessageId, senderData.Id, senderData.DisplayName, senderData.AvatarProfilePath, messageData.Body, messageData.CreatedAt, false, messageData.ReplyMessageId, messageData.Attachments));
@@ -513,7 +513,7 @@
     private void OnMessageDeleted(MessageDeletedEventArgs args) {
         if (ConversationId != args.ConversationId) return;
 
-        _messageSemaphore.Wait();
+        _messageSemaphore!.Wait();
 
         try {
             for (int i = 0; i < _visibleMessages.Count; i++) {

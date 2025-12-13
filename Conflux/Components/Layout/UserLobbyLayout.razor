@@ -81,7 +81,7 @@
 @code {
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
 
-    private string _userId, _userDisplayName = null!, _username = null!;
+    private string _userId = null!, _userDisplayName = null!, _username = null!;
     private string? _avatarSrc;
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
