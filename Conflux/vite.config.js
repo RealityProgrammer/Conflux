@@ -2,17 +2,21 @@
 import tailwindcss from '@tailwindcss/vite';
 import path from "path";
 import mkcert from "vite-plugin-mkcert";
+import fs from 'fs';
 
 export default defineConfig({
     appType: "custom",
-    root: 'Client',
+    root: path.resolve(__dirname, "Client"),
     plugins: [
         tailwindcss(),
         mkcert(),
     ],
+    resolve: {
+        alias: { "~": __dirname }
+    },
     build: {
         manifest: true,
-        outDir: path.join(__dirname, 'wwwroot', 'dist'),
+        outDir: path.join(__dirname, 'wwwroot'),
         emptyOutDir: false,
         assetsDir: "",
         rollupOptions: {
@@ -20,60 +24,38 @@ export default defineConfig({
             input: {
                 styles: './Client/styles/input.css',
                 
-                home: './Client/scripts/pages/home.ts',
-                login: './Client/scripts/pages/login.ts',
-                register: './Client/scripts/pages/register.ts',
-                components: './Client/scripts/components.ts',
+                ...getJavascriptEntrypoints()
             },
             output: {
-                entryFileNames: (chunkInfo) => {
-                    if (chunkInfo.name === 'styles') {
-                        return 'css/[name].js';
-                    }
-
-                    const srcPath = chunkInfo.facadeModuleId ?? "";
-
-                    // TODO: Figure out a way to not having to check this.
-                    if (srcPath.includes('Client/scripts')) {
-                        const relativePath = path.relative(
-                            path.join(__dirname, 'Client', 'scripts'),
-                            path.dirname(srcPath)
-                        );
-
-                        if (relativePath === '') {
-                            return 'js/[name].js';
-                        }
-
-                        return path.join('js', relativePath, '[name].js').replace(/\\/g, '/');
-                    }
+                entryFileNames: "js/[name].js",
+                chunkFileNames: "js/[name].js",
+                assetFileNames: (info) => {
+                    const name = info.names[info.names.length - 1];
                     
-                    return 'js/[name].js';
-                },
-                // For asset files (CSS, images, fonts, etc.)
-                assetFileNames: (assetInfo) => {
-                    if (assetInfo.names) {
-                        const filename = assetInfo.names[assetInfo.names.length - 1];
-
-                        if (/css/.test(filename)) {
-                            return 'css/[name].[ext]';
+                    if (name) {
+                        // If the file is a CSS file, save it to the "css" folder
+                        if (/\.css$/.test(name)) {
+                            return "styles/[name].[ext]";
                         }
 
-                        if (/js/.test(filename)) {
-                            return 'js/[name].[ext]';
+                        // If the file is an image file, save it to the "img" folder
+                        if (/\.(png|jpe?g|gif|svg|webp|avif)$/.test(name)) {
+                            return "img/[name][extname]";
                         }
 
-                        if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(filename)) {
-                            return 'assets/images/[name].[ext]';
-                        }
+                        // If the file is any other type of file, save it to the "assets" folder 
+                        return "assets/[name][extname]";
+                    } else {
 
-                        if (/woff|woff2|eot|ttf|otf/.test(filename)) {
-                            return 'assets/fonts/[name].[ext]';
-                        }
+                        // If the file name is not specified, save it to the output directory
+                        return "[name][extname]";
                     }
-
-                    return 'assets/[name].[ext]';
                 },
-                chunkFileNames: 'js/[name]-[hash].js',
+                manualChunks: (id) => {
+                    if (id.includes('node_modules')) {
+                        return 'lib';
+                    }
+                }
             }
         },
     },
@@ -89,3 +71,33 @@ export default defineConfig({
         port: 5173,
     },
 });
+
+function getJavascriptEntrypoints() {
+    const entries = {}
+    const scriptsDir = path.join(__dirname, 'Client', 'scripts')
+
+    // Function to recursively find .js files
+    function findJsFiles(dir) {
+        const files = fs.readdirSync(dir, { withFileTypes: true })
+
+        files.forEach(file => {
+            const fullPath = path.join(dir, file.name)
+
+            if (file.isDirectory()) {
+                if (!['node_modules', 'bin', 'obj', 'wwwroot'].includes(file.name)) {
+                    findJsFiles(fullPath)
+                }
+            } else if (file.name.endsWith('.js') || file.name.endsWith('.ts')) {
+                // Get path relative to scripts directory
+                const relativePath = path.relative(scriptsDir, fullPath)
+                const entryName = relativePath.replace(/\.ts$/, '').replace(/\.js$/, '')
+                entries[entryName] = fullPath
+            }
+        })
+    }
+
+    // Start searching from scripts directory
+    findJsFiles(scriptsDir)
+
+    return entries
+}

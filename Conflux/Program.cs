@@ -102,9 +102,6 @@ builder.Services.AddControllers();
 // OpenAPI
 builder.Services.AddOpenApi();
 
-// Nuget Packages
-// ...
-
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope()) {
@@ -129,7 +126,9 @@ if (!app.Environment.IsDevelopment()) {
     
     app.MapOpenApi();
 } else {
-    app.UseViteDevelopmentServer(true);
+    if (bool.Parse(builder.Configuration["Vite:Server:Enabled"] ?? string.Empty)) {
+        app.UseViteDevelopmentServer(true);
+    }
 }
 
 app.UseHttpsRedirection();

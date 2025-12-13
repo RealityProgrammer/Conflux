@@ -11,21 +11,8 @@
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <base href="/"/>
-    <link rel="stylesheet" href="@Assets["Conflux.styles.css"]"/>
     <ImportMap/>
-    @* <link rel="icon" type="image/png" href="favicon.png"/> *@
     <HeadOutlet @rendermode="PageRenderMode"/>
-
-    @if (Environment.IsDevelopment() && Vite.IsMiddlewareEnable) {
-        <script type="module" src="@@vite/client"></script>
-        <link rel="stylesheet" href="styles/input.css" />
-    } else {
-        if (ViteManifest["styles/input.css"] is { } styleCss) {
-            <link rel="stylesheet" href="@styleCss.File" />
-        }
-    }
-    
-    @* <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet" /> *@
 </head>
 
 <body>
@@ -33,25 +20,47 @@
 
 <script src="_framework/blazor.web.js"></script>
 
-<script src="Components/Shared/MessageTimeline.razor.js"></script>
-<script src="Components/Shared/MessageTextArea.razor.js"></script>
-<script src="Components/Shared/MessageInputArea.razor.js"></script>
+<script src="js/utils.js"></script>
+
+@* <script src="Components/Shared/MessageTimeline.razor.js"></script> *@
+@* <script src="Components/Shared/MessageTextArea.razor.js"></script> *@
+@* <script src="Components/Shared/MessageInputArea.razor.js"></script> *@
+
+@{
+    string[] modulePaths = [
+        "scripts/Pages/HomePage.ts",
+        "scripts/Pages/LoginPage.ts",
+        "scripts/Pages/RegisterPage.ts",
+    ];
+}
 
 @if (Environment.IsDevelopment() && Vite.IsMiddlewareEnable) {
-    <script type="module" src="scripts/components.ts"></script>
+    <script type="module" src="@@vite/client"></script>
+    
+    <link rel="stylesheet" href="styles/input.css"/>
+    
+    @foreach (var modulePath in modulePaths) {
+        <script type="module" src="@modulePath"></script>
+    }
 } else {
     IViteChunk? chunk;
 
-    if ((chunk = ViteManifest["scripts/pages/login.ts"]) != null) {
-        <script type="module" src="@chunk.File"></script>
+    @foreach (var modulePath in modulePaths) {
+        if ((chunk = ViteManifest[modulePath]) != null) {
+            <script type="module" src="@chunk.File"></script>
 
-        if (chunk.Imports != null) {
-            foreach (string import in chunk.Imports) {
-                if (!ViteManifest.ContainsKey(import)) continue;
+            if (chunk.Imports != null) {
+                foreach (string import in chunk.Imports) {
+                    if (!ViteManifest.ContainsKey(import)) continue;
 
-                <script type="module" src="@ViteManifest[import]!.File"></script>
+                    <script type="module" src="@ViteManifest[import]!.File"></script>
+                }
             }
         }
+    }
+
+    if ((chunk = ViteManifest["styles/input.css"]) != null) {
+        <link rel="stylesheet" href="@chunk.File"/>
     }
 }
 

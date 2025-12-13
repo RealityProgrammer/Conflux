@@ -148,24 +148,6 @@
     </section>
 </header>
 
-<SectionContent SectionName="javascript">
-    @if (Environment.IsDevelopment() && Vite.IsMiddlewareEnable) {
-        <script type="module" src="scripts/pages/home.ts"></script>
-    } else {
-        if (ViteManifest["scripts/pages/home.ts"] is { } chunk) {
-            <script type="module" src="@chunk.File"></script>
-
-            if (chunk.Imports != null) {
-                foreach (string import in chunk.Imports) {
-                    if (!ViteManifest.ContainsKey(import)) continue;
-
-                    <script type="module" src="@ViteManifest[import]!.File"></script>
-                }
-            }
-        }
-    }
-</SectionContent>
-
 @code {
     private IJSObjectReference? _module;
     private ElementReference _particlesBackground;
@@ -178,7 +160,7 @@
     
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
-            _module = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./scripts/pages/home.ts");
+            _module = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/Pages/HomePage.js");
             await _module.InvokeVoidAsync("initParticlesBackground", _particlesBackground);
 
             var authState = await AuthenticationState;

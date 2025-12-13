@@ -63,7 +63,7 @@ export function initParticlesBackground(element: HTMLElement): void{
 
 export function disposeParticlesBackground() {
     if (!particleContainer) return;
-    
+
     particleContainer.destroy(true);
     particleContainer = undefined;
 }

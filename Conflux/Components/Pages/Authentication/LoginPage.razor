@@ -105,11 +105,11 @@
 
 <SectionContent SectionName="javascript">
     @if (Environment.IsDevelopment() && Vite.IsMiddlewareEnable) {
-        <StaticPageScript Src="scripts/pages/login.ts"></StaticPageScript>
+        <StaticPageScript Src="scripts/pages/LoginPage.ts"></StaticPageScript>
     } else {
         IViteChunk? chunk;
         
-        if ((chunk = ViteManifest["scripts/pages/login.ts"]) != null) {
+        if ((chunk = ViteManifest["scripts/pages/loginPage.jge.ts"]) != null) {
             <StaticPageScript Src="@chunk.File"></StaticPageScript>
 
             if (chunk.Imports != null) {

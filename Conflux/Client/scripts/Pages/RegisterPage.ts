@@ -1,15 +1,15 @@
-﻿import { animate, JSAnimation } from "animejs";
+﻿import { animate } from "animejs";
 import { registerTooltip, unregisterTooltip, initializeSensitiveInputComponents } from "../components";
-import {Placement} from "@floating-ui/dom";
 
-const animations: JSAnimation[] = [];
-const tooltips: number[] = [];
+const animations = [];
+const tooltips = [];
 
 export function onLoad() {
     initBackground();
     initTooltipContainers();
     initializeSensitiveInputComponents();
 }
+
 export function onDispose() {
     animations.forEach(animation => {
         animation.cancel();
@@ -20,7 +20,7 @@ export function onDispose() {
     });
 }
 
-function initBackground(): void {
+function initBackground() {
     for (let i = 1; i <= 5; i++) {
         const x = Math.random() * 60 - 20;
         const y = Math.random() * 60 - 20;
@@ -49,19 +49,19 @@ function initBackground(): void {
 }
 
 function initTooltipContainers() {
-    document.querySelectorAll<HTMLElement>('[data-component-type="tooltip"]').forEach(tooltip => {
+    document.querySelectorAll('[data-component-type="tooltip"]').forEach(tooltip => {
         const targetId = tooltip.dataset["tooltipFor"];
-        
+
         if (!targetId) return;
-        
+
         const target = document.querySelector<HTMLElement>(`[data-tooltip-target="${targetId}"]`);
-        
+
         if (!target) return;
-        
+
         const arrow = document.querySelector<HTMLElement>(`[data-tooltip-arrow-for="${targetId}"]`);
-        const placement = tooltip.dataset["tooltipPlacement"] as Placement || 'bottom';
+        const placement = tooltip.dataset["tooltipPlacement"] || 'bottom';
         const offset = parseInt(tooltip.dataset['tooltipOffset'] || '0');
-        
+
         tooltips.push(registerTooltip(target, tooltip, arrow, placement, offset));
     });
 }

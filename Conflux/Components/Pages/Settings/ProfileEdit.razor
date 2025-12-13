@@ -54,7 +54,7 @@
                                     string? displayImageSrc = Model.Avatar.RequestDelete ? null : AvatarPreviewUrl ?? (string.IsNullOrEmpty(User.AvatarProfilePath) ? null : ContentService.GetAssetPath(User.AvatarProfilePath));
                                 }
                                     
-                                <Avatar @ref="_selectableAvatar" class="size-64 sm:size-80 lg:size-96 mt-2 mx-auto group" ImageSrc="@displayImageSrc" >
+                                <Avatar class="size-64 sm:size-80 lg:size-96 mt-2 mx-auto group" ImageSrc="@displayImageSrc" >
                                     <label class="absolute inset-0 hidden group-hover:flex size-full flex-row justify-center items-center cursor-pointer z-10 bg-black/40 rounded-full" for="avatar">
                                         Click to change Avatar
                                     </label>
@@ -160,7 +160,6 @@
 @code {
     [Parameter, EditorRequired] public required ProfileInputModel Model { get; set; }
     [Parameter, EditorRequired] public required ApplicationUser User { get; set; }
-    [Parameter, EditorRequired] public required IJSObjectReference PageModule { get; set; }
 
     [Parameter] public string? AvatarPreviewUrl { get; set; }
     [Parameter] public EventCallback<string?> AvatarPreviewUrlChanged { get; set; }
@@ -320,7 +319,7 @@
 
         await JavascriptRuntime.InvokeVoidAsync("URL.revokeObjectURL", AvatarPreviewUrl);
 
-        string url = await PageModule.InvokeAsync<string>("previewImage", inputFileElement, _selectableAvatar.ImageElement);
+        string url = await JavascriptRuntime.InvokeAsync<string>("window.createInputPreviewUrl", inputFileElement, 0);
         Model.Avatar.File = args.File;
         AvatarPreviewUrl = url;
 

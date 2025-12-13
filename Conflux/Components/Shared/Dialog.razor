@@ -1,5 +1,4 @@
 ﻿@using System.Linq.Expressions
-@implements IAsyncDisposable
 
 @inject IJSRuntime JSRuntime
 
@@ -25,28 +24,11 @@
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
     private string? _cssClass;
 
-    internal IJSObjectReference Module { get; private set; } = null!;
-
     protected override void OnParametersSet() {
         if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
             _cssClass = Convert.ToString(obj);
         }
 
         AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "class").ToDictionary();
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender) {
-        if (firstRender) {
-            Module = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./scripts/components/modal.ts");
-        }
-    }
-
-    public async ValueTask DisposeAsync() {
-        if (Module != null!) {
-            try {
-                await Module.DisposeAsync();
-            } catch (JSDisconnectedException) {
-            }
-        }
     }
 }
