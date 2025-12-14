@@ -14,7 +14,14 @@
     <ImportMap/>
     <HeadOutlet @rendermode="PageRenderMode"/>
     
-    <link rel="stylesheet" href="styles/styles.css"/>
+    @if (Environment.IsDevelopment() && Vite.IsMiddlewareEnable) {
+        <script type="module" src="@@vite/client"></script>
+        <link rel="stylesheet" href="styles/input.css"/>
+    } else {
+        if (ViteManifest["styles/input.css"] is { } style) {
+            <link rel="stylesheet" href="@style.File"/>
+        }
+    }
 </head>
 
 <body>
@@ -35,8 +42,6 @@
 }
 
 @if (Environment.IsDevelopment() && Vite.IsMiddlewareEnable) {
-    <script type="module" src="@@vite/client"></script>
-    
     @foreach (var modulePath in modulePaths) {
         <script type="module" src="@modulePath"></script>
     }

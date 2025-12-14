@@ -38,6 +38,6 @@ WORKDIR /app
 COPY --from=publish /app/publish .
 
 # Copy Vite manifest into published wwwroot
-COPY --from=publish /src/wwwroot/.vite/manifest.json /app/publish/.vite/manifest.json
+COPY --from=publish /src/wwwroot/.vite/manifest.json ./wwwroot/.vite/manifest.json
 
 ENTRYPOINT ["dotnet", "Conflux.dll"]
