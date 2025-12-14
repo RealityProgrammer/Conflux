@@ -165,19 +165,6 @@
                                 </Tooltip>
                             </TooltipContainer>
                         </div>
-                        
-                        <div>
-
-                            <TooltipContainer ShowTooltip="_tooltipShow" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" Id="username" class="max-w-[90%]">
-                                <Target>
-                                    <button type="button" @onclick="ToggleTooltip" class="button-primary">Test</button>
-                                </Target>
-
-                                <Tooltip>
-                                    <p class="text-white">Test</p>
-                                </Tooltip>
-                            </TooltipContainer>
-                        </div>
 
                         <div class="col-start-1 col-end-2 md:col-end-3">
                             <label class="font-semibold">About Me</label>
@@ -432,11 +419,6 @@
     private void ValidateProfile(object? sender, ValidationRequestedEventArgs args) {
         _profileMessageStore.Clear();
         _usernameError = string.Empty;
-    }
-
-    private bool _tooltipShow;
-    public void ToggleTooltip() {
-        _tooltipShow ^= true;
     }
 
     private enum SetupStage {

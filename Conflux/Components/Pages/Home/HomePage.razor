@@ -100,7 +100,7 @@
             <Authorized>
                 <button class="float-end bg-transparent hover:bg-white/10 p-2 rounded-full inline-flex flex-row justify-end items-center gap-1 cursor-pointer" @onclick="OpenUserDrawer">
                     <Avatar ImageSrc="@_userAvatarUrl" ImageAlt="User's Avatar" class="size-9"/>
-                    <p class="text-white">@context.User.Identity?.Name</p>
+                    <p class="text-white">@_userDisplayName</p>
                 </button>
                 
                 <Drawer @bind-Open="_openUserDrawer" Direction="DrawerAnchorDirection.Right" OnClickOutside="CloseUserDrawer" ContainerCssClass="transition-transform duration-500 bg-[#071318] border-l-2 border-l-[#353535] w-2/3 sm:w-1/2 md:w-1/3 p-5 overflow-hidden flex flex-col gap-4">
@@ -154,7 +154,7 @@
 
     private bool _openNavigationDrawer, _openUserDrawer;
 
-    private string? _userAvatarUrl;
+    private string? _userAvatarUrl, _userDisplayName;
 
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
     
@@ -168,13 +168,15 @@
 
             if (!string.IsNullOrEmpty(userId)) {
                 await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
-                    _userAvatarUrl = await dbContext.Users
+                    var userData = await dbContext.Users
                         .Where(u => u.Id == userId)
-                        .Select(u => u.AvatarProfilePath)
+                        .Select(u => new { u.AvatarProfilePath, u.DisplayName })
                         .FirstOrDefaultAsync();
-
-                    if (!string.IsNullOrEmpty(_userAvatarUrl)) {
-                        _userAvatarUrl = ContentService.GetAssetPath(_userAvatarUrl);
+                    
+                    if (userData != null) {
+                        _userAvatarUrl = string.IsNullOrEmpty(userData.AvatarProfilePath) ? null : ContentService.GetAssetPath(userData.AvatarProfilePath);
+                        _userDisplayName = userData.DisplayName;
+                        
                         StateHasChanged();
                     }
                 }
