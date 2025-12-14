@@ -1,5 +1,4 @@
-﻿@using Conflux.Components.Shared.Icons
-@using Conflux.Database
+﻿@using Conflux.Database
 @using Conflux.Database.Entities
 @using Conflux.Services
 @using Conflux.Services.Abstracts
@@ -28,6 +27,7 @@
 @code {
     [Parameter] public Guid ConversationId { get; set; }
     [Parameter] public EventCallback<Guid> ConversationIdChanged { get; set; }
+    [Parameter] public Expression<Func<Guid>> ConversationIdExpression { get; set; } = null!;
     
     [Parameter, EditorRequired] public required int LoadCount { get; set; }
 

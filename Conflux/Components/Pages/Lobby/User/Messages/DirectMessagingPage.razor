@@ -44,7 +44,23 @@
         <div class="flex flex-row h-full">
             <MessagingArea class="flex-1" @bind-ConversationId="ConversationId" LoadCount="ApplicationConstants.MessageLoadCount"/>
             
-            <aside class="flex-none  basis-80 hidden lg:block bg-gray-750 border-l border-l-gray-600"></aside>
+            <aside class="flex-none  basis-80 hidden lg:block bg-gray-750 border-l border-l-gray-600">
+                @* <div class="relative h-32"> *@
+                @*     <div class="absolute inset-0 bg-cover bg-center bg-black rounded-tl-lg rounded-tr-lg lg:rounded-tr-none"></div> *@
+                @* *@
+                @*     <div class="absolute -bottom-8 left-4"> *@
+                @*         <div class="relative"> *@
+                @*             @{ *@
+                @*                 string? displayImageSrc = Model.Avatar.RequestDelete ? null : AvatarPreviewUrl ?? (string.IsNullOrEmpty(User.AvatarProfilePath) ? null : ContentService.GetAssetPath(User.AvatarProfilePath)); *@
+                @*             } *@
+                @*                      *@
+                @*             <Avatar class="size-20 border-4 border-gray-700" ImageSrc="@displayImageSrc" ImageAlt="Preview Avatar"/> *@
+                @* *@
+                @*             $1$ TODO: Status indicator #1# *@
+                @*         </div> *@
+                @*     </div> *@
+                @* </div> *@
+            </aside>
         </div>
     </main>
 </div>

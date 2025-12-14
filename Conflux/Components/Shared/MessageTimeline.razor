@@ -3,8 +3,6 @@
 @using Conflux.Database.Entities
 @using Conflux.Services.Abstracts
 @using Microsoft.EntityFrameworkCore
-@using Microsoft.EntityFrameworkCore.Internal
-
 @inject IJSRuntime JavascriptRuntime
 @inject IConversationService ConversationService
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
@@ -192,6 +190,7 @@
     
     [Parameter] public Guid ConversationId { get; set; }
     [Parameter] public EventCallback<Guid> ConversationIdChanged { get; set; }
+    [Parameter] public Expression<Func<Guid>> ConversationIdExpression { get; set; } = null!;
 
     private Guid _previousConversationId;
     

@@ -1,8 +1,4 @@
-﻿@using System.Linq.Expressions
-
-@inject IJSRuntime JSRuntime
-
-<div class="cursor-default fixed inset-0 z-1000 pointer-events-none @_cssClass">
+﻿<div class="cursor-default fixed inset-0 z-1000 pointer-events-none @_cssClass">
     <Overlay class="bg-transparent duration-200 ease-in-out" ActiveCssClass="bg-black/80!" OnClick="@OnClickOutside" @bind-Active="Open"/>
     
     <div class="transition-all duration-200 ease-in-out @(Open ? "scale-100 opacity-100" : "scale-80 opacity-0")">

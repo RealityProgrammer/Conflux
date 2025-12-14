@@ -1,6 +1,4 @@
-﻿@using System.Linq.Expressions
-
-<button class="@_cssClass @(IsProcessing ? ProcessingCssClass : NormalCssClass)" @attributes="AdditionalAttributes">
+﻿<button class="@_cssClass @(IsProcessing ? ProcessingCssClass : NormalCssClass)" @attributes="AdditionalAttributes">
     @if (IsProcessing) {
         @ProcessingContent
     } else {

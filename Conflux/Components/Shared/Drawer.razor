@@ -1,6 +1,4 @@
-﻿@using System.Linq.Expressions
-
-<div class="cursor-default fixed inset-0 z-1000 pointer-events-none @_cssClass" @attributes="AdditionalAttributes">
+﻿<div class="cursor-default fixed inset-0 z-1000 pointer-events-none @_cssClass" @attributes="AdditionalAttributes">
     <Overlay class="bg-transparent duration-200 ease-in-out" ActiveCssClass="bg-black/80!" OnClick="@OnClickOutside" @bind-Active="Open"/>
     
     <div class="fixed h-full @GetDirectionalCssClass() z-10 pointer-events-auto @ContainerCssClass">
