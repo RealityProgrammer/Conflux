@@ -6,7 +6,7 @@
     </section>
 } else {
     @if (Parent.ActiveId == TabId) {
-        <section @attributes="AdditionalAttributes">
+        <section class="@_cssClass" @attributes="AdditionalAttributes">
             @ChildContent
         </section>
     }
