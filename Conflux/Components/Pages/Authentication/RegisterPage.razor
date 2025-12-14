@@ -57,96 +57,77 @@
 
                         <div class="relative">
                             <label class="text-sm text-gray-300">Email</label>
+                            @{
+                                string classes = $"w-full h-11 mt-2 input-field {(_editContext.IsValid(_emailField) ? string.Empty : "border-red-700")}";
+                            }
 
-                            <TooltipContainer ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="right" TooltipOffset="8" ShowTooltip="@(!_editContext.IsValid(_emailField))" Id="register-panel-email">
-                                <Target>
-                                    @{
-                                        string classes = $"w-full h-11 mt-2 input-field {(_editContext.IsValid(_emailField) ? string.Empty : "border-red-700")}";
-                                    }
+                            <InputText type="text" @bind-Value="Model.Email" placeholder="Enter Email" class="@classes"/>
 
-                                    <InputText type="text" @bind-Value="Model.Email" placeholder="Enter Email" class="@classes"/>
-                                </Target>
-
-                                <Tooltip>
-                                    <ValidationMessage For="() => Model.Email" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"></ValidationMessage>
-                                </Tooltip>
-                            </TooltipContainer>
+                            <ValidationMessage For="() => Model.Email" class="text-red-500 text-sm"></ValidationMessage>
                         </div>
+                        
+                        @{ 
+                           bool isValid;
+                           string inputClass;
+                           string buttonClass;
+                        }
 
                         <div class="mt-4">
                             <label class="text-sm text-gray-300">Password</label>
 
-                            <TooltipContainer ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="right" TooltipOffset="8" ShowTooltip="@(!_editContext.IsValid(_passwordField))" Id="register-panel-password">
-                                <Target>
-                                    @{
-                                        bool isValid = _editContext.IsValid(_passwordField);
+                            @{
+                                isValid = _editContext.IsValid(_passwordField);
 
-                                        string inputClass = $"w-full h-11 input-field {(isValid ? string.Empty : "border-red-700")} rounded-r-none border-r-0";
-                                        string buttonClass = $"{(isValid ? string.Empty : "border-y-red-700 border-r-red-700")} transition duration-300";
-                                    }
+                                inputClass = $"w-full h-11 input-field {(isValid ? string.Empty : "border-red-700")} rounded-r-none border-r-0";
+                                buttonClass = $"px-1 {(isValid ? string.Empty : "border-y-red-700 border-r-red-700")} transition duration-300";
+                            }
 
-                                    <SensitiveInputText class="w-full mt-2 h-11" @bind-Value="Model.Password" placeholder="Enter Password" InputCssClass="@inputClass" ButtonCssClass="@buttonClass">
-                                        <ShowButtonContent>
-                                            <Eye class="size-6 fill-white"/>
-                                        </ShowButtonContent>
+                            <SensitiveInputText class="w-full mt-2 h-11" @bind-Value="Model.Password" placeholder="Enter Password" InputCssClass="@inputClass" ButtonCssClass="@buttonClass">
+                                <ShowButtonContent>
+                                    <Eye class="size-6 fill-white"/>
+                                </ShowButtonContent>
 
-                                        <HideButtonContent>
-                                            <EyeSlash class="size-6 fill-white"/>
-                                        </HideButtonContent>
-                                    </SensitiveInputText>
-                                </Target>
-
-                                <Tooltip>
-                                    <ValidationMessage For="() => Model.Password" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"></ValidationMessage>
-                                </Tooltip>
-                            </TooltipContainer>
+                                <HideButtonContent>
+                                    <EyeSlash class="size-6 fill-white"/>
+                                </HideButtonContent>
+                            </SensitiveInputText>
+                            
+                            <ValidationMessage For="() => Model.Password" class="text-red-500 text-sm"></ValidationMessage>
                         </div>
 
                         <div class="mt-4">
                             <label class="text-sm text-gray-300">Password Confirmation</label>
 
-                            <TooltipContainer ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="right" TooltipOffset="8" ShowTooltip="@(!_editContext.IsValid(_confirmationPasswordField))" Id="register-panel-confirmation-password">
-                                <Target>
-                                    @{
-                                        bool isValid = _editContext.IsValid(_confirmationPasswordField);
+                            @{
+                                isValid = _editContext.IsValid(_confirmationPasswordField);
 
-                                        string inputClass = $"w-full h-11 input-field {(isValid ? string.Empty : "border-red-700")} rounded-r-none border-r-0";
-                                        string buttonClass = $"{(isValid ? string.Empty : "border-y-red-700 border-r-red-700")} transition duration-300";
-                                    }
+                                inputClass = $"w-full h-11 input-field {(isValid ? string.Empty : "border-red-700")} rounded-r-none border-r-0";
+                                buttonClass = $"{(isValid ? string.Empty : "border-y-red-700 border-r-red-700")} transition duration-300";
+                            }
 
-                                    <SensitiveInputText class="w-full mt-2 h-11" @bind-Value="Model.ConfirmationPassword" placeholder="Enter Confirmation Password" InputCssClass="@inputClass" ButtonCssClass="@buttonClass">
-                                        <ShowButtonContent>
-                                            <Eye class="size-6 fill-white"/>
-                                        </ShowButtonContent>
+                            <SensitiveInputText class="w-full mt-2 h-11" @bind-Value="Model.ConfirmationPassword" placeholder="Enter Confirmation Password" InputCssClass="@inputClass" ButtonCssClass="@buttonClass">
+                                <ShowButtonContent>
+                                    <Eye class="size-6 fill-white"/>
+                                </ShowButtonContent>
 
-                                        <HideButtonContent>
-                                            <EyeSlash class="size-6 fill-white"/>
-                                        </HideButtonContent>
-                                    </SensitiveInputText>
-                                </Target>
-
-                                <Tooltip>
-                                    <ValidationMessage For="() => Model.ConfirmationPassword" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"></ValidationMessage>
-                                </Tooltip>
-                            </TooltipContainer>
+                                <HideButtonContent>
+                                    <EyeSlash class="size-6 fill-white"/>
+                                </HideButtonContent>
+                            </SensitiveInputText>
+                            
+                            <ValidationMessage For="() => Model.ConfirmationPassword" class="text-red-500 text-sm"></ValidationMessage>
                         </div>
 
                         <div class="mt-4">
-                            <TooltipContainer ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="right" TooltipOffset="8" ShowTooltip="@(!_editContext.IsValid(_acceptTermsField))" Id="register-panel-agree-terms">
-                                <Target>
-                                    <div class="flex flex-row gap-2">
-                                        <InputCheckbox class="accent-indigo-500 border-red-500 border" @bind-Value="Model.AcceptTerms"></InputCheckbox>
+                            <div class="flex flex-row gap-2">
+                                <InputCheckbox class="accent-indigo-500 border-red-500 border" @bind-Value="Model.AcceptTerms"></InputCheckbox>
 
-                                        <label>
-                                            You agree to our goddamn long-ass Terms And Conditions that you probably don't even bother to read.
-                                        </label>
-                                    </div>
-                                </Target>
-
-                                <Tooltip>
-                                    <ValidationMessage For="() => Model.AcceptTerms" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"></ValidationMessage>
-                                </Tooltip>
-                            </TooltipContainer>
+                                <label>
+                                    You agree to our goddamn long-ass Terms And Conditions that you probably don't even bother to read.
+                                </label>
+                            </div>
+                            
+                            <ValidationMessage For="() => Model.AcceptTerms" class="text-red-500 text-sm"></ValidationMessage>
                         </div>
 
                         <button type="submit" class="w-full h-11 button-color-1 rounded-lg text-white font-semibold shadow-md transition-colors duration-500 mt-4 cursor-pointer">

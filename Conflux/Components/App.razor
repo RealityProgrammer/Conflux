@@ -13,6 +13,8 @@
     <base href="/"/>
     <ImportMap/>
     <HeadOutlet @rendermode="PageRenderMode"/>
+    
+    <link rel="stylesheet" href="styles/styles.css"/>
 </head>
 
 <body>
@@ -22,22 +24,15 @@
 
 <script src="js/utils.js"></script>
 
-@* <script src="Components/Shared/MessageTimeline.ts"></script> *@
-@* <script src="Components/Shared/MessageTextArea.ts"></script> *@
-@* <script src="Components/Shared/MessageInputArea.razor.js"></script> *@
-
 @{
     string[] modulePaths = [
         "scripts/Pages/HomePage.ts",
-        // "scripts/Pages/LoginPage.ts",
-        // "scripts/Pages/RegisterPage.ts",
         
         "scripts/Components/MessageTextArea.ts",
         "scripts/Components/MessageTimeline.ts",
+        "scripts/Components/Tooltip.ts",
     ];
 }
-
-<link rel="stylesheet" href="styles/styles.css"/>
 
 @if (Environment.IsDevelopment() && Vite.IsMiddlewareEnable) {
     <script type="module" src="@@vite/client"></script>

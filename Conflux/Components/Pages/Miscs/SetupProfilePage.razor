@@ -67,7 +67,7 @@
                         <Target>
                             @{
                                 string avatarCssClass = $"mx-auto size-64 border-4 {(_avatarEditContext.IsValid(_avatarFileField) ? "border-gray-700" : "border-red-700")}";
-                                string? imageSource = _processingAvatar || string.IsNullOrEmpty(_user.AvatarProfilePath) ? null : $"{_user.AvatarProfilePath}?v={ContentService.GetAvatarUploadTime(_user.Id):yyyyMMddHHmmssffff}";
+                                string? imageSource = _processingAvatar || string.IsNullOrEmpty(_user.AvatarProfilePath) ? null : $"{ContentService.GetAssetPath(_user.AvatarProfilePath)}?v={ContentService.GetAvatarUploadTime(_user.Id):yyyyMMddHHmmssffff}";
                             }
 
                             <Avatar class="@avatarCssClass" ImageSrc="@imageSource">
@@ -165,13 +165,26 @@
                                 </Tooltip>
                             </TooltipContainer>
                         </div>
+                        
+                        <div>
+
+                            <TooltipContainer ShowTooltip="_tooltipShow" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" Id="username" class="max-w-[90%]">
+                                <Target>
+                                    <button type="button" @onclick="ToggleTooltip" class="button-primary">Test</button>
+                                </Target>
+
+                                <Tooltip>
+                                    <p class="text-white">Test</p>
+                                </Tooltip>
+                            </TooltipContainer>
+                        </div>
 
                         <div class="col-start-1 col-end-2 md:col-end-3">
                             <label class="font-semibold">About Me</label>
 
                             <TooltipContainer ShowTooltip="!_profileEditContext.IsValid(_bioField)" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" Id="username" class="max-w-[90%]">
                                 <Target>
-                                    <InputTextArea @bind-Value="ProfileModel!.Bio" class="mt-2 input-field h-55 w-full" maxlength="255"/>
+                                    <InputTextArea @bind-Value="ProfileModel!.Bio" class="mt-2 input-field h-55 w-full px-1.5 py-1" maxlength="255"/>
                                 </Target>
 
                                 <Tooltip>
@@ -199,7 +212,7 @@
         </div>
     </div>
     
-    <div class="fixed inset-0 overflow-hidden grid grid-cols-12 transition-transform duration-500 ease-in-out @(_showPrompt ? "translate-x-full" : _stage == SetupStage.Complete ? "translate-x-0" : "-translate-x-full")">
+    <div class="fixed inset-0 overflow-hidden grid grid-cols-12 transition-transform duration-500 ease-in-out @(_showPrompt ? "-translate-x-full" : _stage == SetupStage.Complete ? "translate-x-0" : "-translate-x-full")">
         <div class="col-start-1 col-end-13 md:col-start-2 md:col-end-12 lg:col-start-3 lg:col-end-11 xl:col-start-4 xl:col-end-10 flex flex-row justify-center items-center">
             <section class="bg-gray-700 sm:m-5 w-full rounded-3xl shadow-xl text-white overflow-visible relative p-6">
                 <h1 class="text-center font-bold text-3xl text-white">Setup Complete</h1>
@@ -250,7 +263,7 @@
         AvatarModel ??= new();
         ProfileModel ??= new();
     }
-
+    
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
             var authState = await AuthenticationState;
@@ -360,8 +373,6 @@
         _isProcessingProfile = true;
 
         try {
-            var authState = await AuthenticationState;
-            
             _user!.UserName = ProfileModel!.UserName;
             _user.DisplayName = ProfileModel.DisplayName;
             _user.Pronouns = ProfileModel.Pronouns;
@@ -421,6 +432,11 @@
     private void ValidateProfile(object? sender, ValidationRequestedEventArgs args) {
         _profileMessageStore.Clear();
         _usernameError = string.Empty;
+    }
+
+    private bool _tooltipShow;
+    public void ToggleTooltip() {
+        _tooltipShow ^= true;
     }
 
     private enum SetupStage {

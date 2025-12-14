@@ -3,7 +3,7 @@ import { registerTooltip, unregisterTooltip, initializeSensitiveInputComponents 
 import { Placement } from "@floating-ui/dom";
 
 const animations: JSAnimation[] = [];
-const tooltips = [];
+const tooltips: number[] = [];
 
 export function onLoad() {
     initBackground();
