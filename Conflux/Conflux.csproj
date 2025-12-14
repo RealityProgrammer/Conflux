@@ -77,6 +77,14 @@
       <_ContentIncludedByDefault Remove="wwwroot\js\components-DeYbmem9.chunk.min.js" />
       <_ContentIncludedByDefault Remove="wwwroot\js\lib-BbHIF8kK.chunk.min.js" />
       <_ContentIncludedByDefault Remove="wwwroot\css\styles.css" />
+      <_ContentIncludedByDefault Remove="wwwroot\js\components.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\js\Components\MessageTextArea.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\js\Components\MessageTimeline.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\js\lib.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\js\Pages\HomePage.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\js\Pages\LoginPage.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\js\Pages\RegisterPage.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\js\utils.js" />
     </ItemGroup>
 
 </Project>

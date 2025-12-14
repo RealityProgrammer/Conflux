@@ -203,7 +203,7 @@ async Task CreateRoles(RoleManager<IdentityRole> roleManager) {
 }
 
 async Task CreateFakeUsers(UserManager<ApplicationUser> userManager) {
-    for (int i = 0; i < 200; i++) {
+    for (int i = 0; i < 100; i++) {
         string email = $"test{i}@example.com";
         
         if (!await userManager.Users.AnyAsync(u => userManager.NormalizeEmail(email) == u.NormalizedEmail)) {
