@@ -13,6 +13,7 @@
 @inject ApplicationRedirectManager RedirectManager
 @inject ILogger<ActivityPage> Logger
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IContentService ContentService
 
 @if (_user == null) {
     <div class="p-4 text-white flex flex-col h-full">
@@ -21,7 +22,7 @@
         </header>
     
         <div class="flex-1 flex flex-row justify-center items-center">
-            <Spinner class="size-16 fill-white"></Spinner>
+            <Spinner class="size-16 fill-white"/>
         </div>
     </div>
 
@@ -50,7 +51,7 @@
                 <div class="absolute left-1/2 bottom-0 -translate-x-1/2 translate-y-1/2 rotate-45 size-4 border-r-2 bg-white group-hover:bg-gray-300"></div>
             </div>
             
-            <Avatar class="size-64 mt-2 shadow-lg flex-none mx-auto" ImageSrc="@_user.AvatarProfilePath"/>
+            <Avatar class="size-64 mt-2 shadow-lg flex-none mx-auto" ImageSrc="@(string.IsNullOrEmpty(_user.AvatarProfilePath) ? null : ContentService.GetAssetPath(_user.AvatarProfilePath))"/>
         </div>
         
         <Dialog @bind-Open="_openStatusDialog" OnClickOutside="() => _openStatusDialog = false" class="flex flex-row justify-center items-center">

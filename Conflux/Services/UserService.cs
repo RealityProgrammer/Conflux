@@ -8,7 +8,12 @@ using System.Security.Claims;
 
 namespace Conflux.Services;
 
-public class UserService(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, IDbContextFactory<ApplicationDbContext> DbContextFactory) : IUserService {
+public class UserService(
+    UserManager<ApplicationUser> userManager,
+    SignInManager<ApplicationUser> signInManager,
+    RoleManager<IdentityRole> roleManager,
+    IDbContextFactory<ApplicationDbContext> DbContextFactory
+) : IUserService {
     public Task<ApplicationUser?> GetUserAsync(ClaimsPrincipal claimsPrincipal) {
         return userManager.GetUserAsync(claimsPrincipal);
     }
@@ -33,6 +38,20 @@ public class UserService(UserManager<ApplicationUser> userManager, RoleManager<I
 
     public Task<bool> IsProfileSetup(ClaimsPrincipal claimsPrincipal) {
         return Task.FromResult(claimsPrincipal.FindFirstValue("ProfileSetup") == bool.TrueString);
+    }
+
+    public async Task UpdateProfileSetup(ClaimsPrincipal claimsPrincipal, bool value) {
+        var user = await userManager.GetUserAsync(claimsPrincipal);
+
+        if (user == null || user.IsProfileSetup == value) return;
+        
+        user.IsProfileSetup = value;
+        
+        IdentityResult result = await userManager.UpdateAsync(user);
+        
+        GC.KeepAlive(result);
+        
+        await signInManager.RefreshSignInAsync(user);
     }
 
     public Task<IdentityResult> AssignRoleAsync(ApplicationUser user, string roleName) {

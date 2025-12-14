@@ -206,9 +206,15 @@
                 <p class="text-center text-gray-400 text-sm mt-2">One of us, one of us...</p>
 
                 <div class="flex flex-row justify-center">
-                    <button class="mt-2 button-primary inline-flex flex-row items-center" @onclick="FinishSetup" disabled="@_processingAvatar">
-                        Complete
-                    </button>
+                    <form method="post" action="/auth/confirm-profile-setup" class="mt-2 w-full flex justify-center items-center">
+                        <AntiforgeryToken/>
+                    
+                        <input type="hidden" name="ReturnUrl" value="@ReturnUrl"/>
+                    
+                        <button type="submit" class="button-primary">
+                            Complete
+                        </button>
+                    </form>
                 </div>
             </section>
         </div>
@@ -240,13 +246,6 @@
     private bool _isProcessingProfile;
 
     protected override async Task OnInitializedAsync() {
-        var authState = await AuthenticationState;
-        
-        if (await UserService.IsProfileSetup(authState.User)) {
-            RedirectManager.To("/").Execute();
-            return;
-        }
-        
         AvatarModel ??= new();
         ProfileModel ??= new();
     }
@@ -299,20 +298,6 @@
     }
 
     private async Task FinishSetup() {
-        // TODO: Move updating IsProfileSetup here?
-        
-        // Modify user claims
-        var claimsPrincipal = (await AuthenticationState).User;
-        ClaimsIdentity identity = (ClaimsIdentity)claimsPrincipal.Identity!;
-            
-        var existingClaim = identity.FindFirst("ProfileSetup");
-            
-        if (existingClaim != null) {
-            identity.RemoveClaim(existingClaim);
-        }
-            
-        identity.AddClaim(new("ProfileSetup", bool.TrueString));
-        
         RedirectManager.To(ReturnUrl ?? "/").Execute();
     }
 
@@ -364,13 +349,11 @@
             _user.DisplayName = ProfileModel.DisplayName;
             _user.Pronouns = ProfileModel.Pronouns;
             _user.Bio = ProfileModel.Bio;
-            _user.IsProfileSetup = true;
             
             var result = await UserManager.UpdateAsync(_user);
 
             if (result.Succeeded) {
                 _stage = SetupStage.Complete;
-                
                 return;
             }
 

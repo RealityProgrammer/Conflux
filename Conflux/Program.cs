@@ -65,9 +65,9 @@ builder.Services
     .AddRoles<IdentityRole>()
     .AddRoleManager<RoleManager<IdentityRole>>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddClaimsPrincipalFactory<ApplicationUserClaimsPrincipalFactory>()
     .AddSignInManager()
-    .AddDefaultTokenProviders()
-    .AddClaimsPrincipalFactory<ApplicationUserClaimsPrincipalFactory>();
+    .AddDefaultTokenProviders();
 
 builder.Services.AddScoped<RoleManager<IdentityRole>>();
 
@@ -163,6 +163,11 @@ app.UseStaticFiles(new StaticFileOptions {
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
+app.MapPost("/auth/confirm-profile-setup", async (ClaimsPrincipal claims, [FromServices] IUserService userService, [FromForm(Name = "ReturnUrl")] string returnUrl) => {
+    await userService.UpdateProfileSetup(claims, true);
+    return TypedResults.LocalRedirect($"~/{returnUrl}");
+});
+
 app.MapPost("/auth/logout", async (ClaimsPrincipal claims, [FromServices] SignInManager<ApplicationUser> signInManager, [FromForm(Name = "ReturnUrl")] string returnUrl) => {
     await signInManager.SignOutAsync();
     return TypedResults.LocalRedirect($"~/{returnUrl}");
@@ -212,7 +217,7 @@ async Task CreateFakeUsers(UserManager<ApplicationUser> userManager) {
                 UserName = $"TestUser{i}",
                 DisplayName = $"TestUser{i}",
                 EmailConfirmed = true,
-                IsProfileSetup = true,
+                IsProfileSetup = false,
             }, "Password1!");
         }
     }

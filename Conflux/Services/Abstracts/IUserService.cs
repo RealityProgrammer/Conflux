@@ -13,6 +13,7 @@ public interface IUserService {
     Task<bool> IsTwoFactorEnabled(ApplicationUser user);
 
     Task<bool> IsProfileSetup(ClaimsPrincipal claimsPrincipal);
+    Task UpdateProfileSetup(ClaimsPrincipal claimsPrincipal, bool value);
 
     Task<IdentityResult> AssignRoleAsync(ApplicationUser user, string roleName);
     Task<IdentityResult> RemoveRoleAsync(ApplicationUser user, string roleName);
