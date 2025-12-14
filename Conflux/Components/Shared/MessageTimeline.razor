@@ -236,7 +236,6 @@
 
     protected override void OnInitialized() {
         _messageSemaphore ??= new(1, 1);
-        Logger.LogInformation("Created Semaphore.");
     }
 
     protected override void OnParametersSet() {
@@ -556,7 +555,6 @@
         ConversationService.OnMessageEdited -= OnMessageEdited;
         
         _messageSemaphore?.Dispose();
-        Logger.LogInformation("Disposed Semaphore.");
     }
     
     private enum InitializationStatus {

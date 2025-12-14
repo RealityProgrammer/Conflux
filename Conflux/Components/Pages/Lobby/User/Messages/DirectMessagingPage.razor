@@ -14,6 +14,7 @@
 @inject IConversationService ConversationService
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject NavigationManager NavigationManager
+@inject IContentService ContentService
 
 <div class="flex flex-col size-full overflow-hidden">
     <header class="flex-none p-1.5 border-b border-b-gray-600 bg-gray-725 flex flex-row items-center">
@@ -34,8 +35,8 @@
                 break;
 
             case InitializationState.Success:
-                <Avatar ImageSrc="@_headerContent.Avatar" ImageAlt="Friend's Avatar" class="size-8 mr-2"/>
-                <p>@_headerContent.Title</p>
+                <Avatar ImageSrc="@(string.IsNullOrEmpty(_otherUserInfo.Avatar) ? null : ContentService.GetAssetPath(_otherUserInfo.Avatar))" ImageAlt="Friend's Avatar" class="size-8 mr-2"/>
+                <p>@_otherUserInfo.DisplayName</p>
                 break;
         }
     </header>
@@ -44,22 +45,45 @@
         <div class="flex flex-row h-full">
             <MessagingArea class="flex-1" @bind-ConversationId="ConversationId" LoadCount="ApplicationConstants.MessageLoadCount"/>
             
-            <aside class="flex-none  basis-80 hidden lg:block bg-gray-750 border-l border-l-gray-600">
-                @* <div class="relative h-32"> *@
-                @*     <div class="absolute inset-0 bg-cover bg-center bg-black rounded-tl-lg rounded-tr-lg lg:rounded-tr-none"></div> *@
-                @* *@
-                @*     <div class="absolute -bottom-8 left-4"> *@
-                @*         <div class="relative"> *@
-                @*             @{ *@
-                @*                 string? displayImageSrc = Model.Avatar.RequestDelete ? null : AvatarPreviewUrl ?? (string.IsNullOrEmpty(User.AvatarProfilePath) ? null : ContentService.GetAssetPath(User.AvatarProfilePath)); *@
-                @*             } *@
-                @*                      *@
-                @*             <Avatar class="size-20 border-4 border-gray-700" ImageSrc="@displayImageSrc" ImageAlt="Preview Avatar"/> *@
-                @* *@
-                @*             $1$ TODO: Status indicator #1# *@
-                @*         </div> *@
-                @*     </div> *@
-                @* </div> *@
+            <aside class="flex-none  basis-80 hidden md:block bg-gray-750 border-l border-l-gray-600">
+                @if (_initState == InitializationState.Success) {
+                    <section class="relative h-32">
+                        <div class="absolute inset-0 bg-cover bg-center bg-black"></div>
+
+                        <div class="absolute -bottom-8 left-4">
+                            <div class="relative">
+                                <Avatar class="size-20 border-4 border-gray-700" ImageSrc="@(string.IsNullOrEmpty(_otherUserInfo.Avatar) ? null : ContentService.GetAssetPath(_otherUserInfo.Avatar))" ImageAlt="Preview Avatar"/>
+
+                                @* TODO: Status indicator *@
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="px-2 pt-10">
+                        <p class="text-xl font-bold">@_otherUserInfo.DisplayName</p>
+                        <p class="text-sm">@_otherUserInfo.UserName</p>
+
+                        <p class="mt-2 text-sm">
+                            <span class="font-semibold">Joined since:</span> @_otherUserInfo.CreatedAt.ToString("yyyy/MM/dd")
+                        </p>
+                        
+                        @if (!string.IsNullOrEmpty(_otherUserInfo.Pronouns)) {
+                            <p class="text-sm mt-2">
+                                <span class="font-semibold">Pronouns:</span>
+                        
+                                @_otherUserInfo.Pronouns
+                            </p>
+                        }
+                        
+                        @if (!string.IsNullOrEmpty(_otherUserInfo.Bio)) {
+                            <p class="text-sm mt-2 font-semibold">About me</p>
+                            
+                            <p class="bg-gray-700 mt-1 p-1 rounded-lg text-sm">
+                                @_otherUserInfo.Bio
+                            </p>
+                        }
+                    </section>
+                }
             </aside>
         </div>
     </main>
@@ -69,13 +93,15 @@
     [Parameter] public Guid ConversationId { get; set; }
     private Guid _previousConversationId;
 
-    private HeaderDisplayContent _headerContent = null!;
+    private OtherUserDTO _otherUserInfo = null!;
     private InitializationState _initState;
 
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
     private string _userId = null!;
-
+    
     protected override async Task OnInitializedAsync() {
+        _initState = InitializationState.Initializing;
+        
         var authState = await AuthenticationState;
         _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
@@ -98,21 +124,25 @@
 
         try {
             await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
-                var headerContent = await dbContext.Conversations
+                var otherUser = await dbContext.Conversations
                     .Where(c => c.Id == ConversationId && c.Members.Any(m => m.UserId == _userId))
                     .Select(c => c.Members.First(m => m.UserId != _userId))
                     .Select(m => m.UserId)
-                    .Join(dbContext.Users, id => id, u => u.Id, (id, u) => new HeaderDisplayContent {
-                        Title = u.DisplayName,
+                    .Join(dbContext.Users, id => id, u => u.Id, (id, u) => new OtherUserDTO {
+                        UserName = u.UserName!,
+                        DisplayName = u.DisplayName,
                         Avatar = u.AvatarProfilePath,
+                        Pronouns = u.Pronouns,
+                        Bio = u.Bio,
+                        CreatedAt = u.CreatedAt,
                     })
                     .FirstOrDefaultAsync();
         
-                if (headerContent == null) {
+                if (otherUser == null) {
                     _initState = InitializationState.NoConversation;
                 } else {
                     _initState = InitializationState.Success;
-                    _headerContent = headerContent;
+                    _otherUserInfo = otherUser;
                     
                     await ConversationService.JoinConversationAsync(ConversationId);
                 }
@@ -141,8 +171,12 @@
         Success,
     }
 
-    private sealed class HeaderDisplayContent {
+    private sealed class OtherUserDTO {
         public required string? Avatar { get; init; }
-        public required string? Title { get; init; }
+        public required string DisplayName { get; init; }
+        public required string UserName { get; init; }
+        public required string? Pronouns { get; init; }
+        public required string? Bio { get; init; }
+        public required DateTime CreatedAt { get; init; }
     }
 }
