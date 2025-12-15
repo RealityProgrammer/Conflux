@@ -59,7 +59,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         });
 
         builder.Entity<Conversation>(entity => {
-            entity.HasKey(conversation => conversation.Id);
+            entity.HasKey(x => x.Id);
 
             entity.HasMany(conversation => conversation.Messages)
                 .WithOne(message => message.Conversation)
@@ -76,7 +76,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey(member => member.ConversationId)
                 .OnDelete(DeleteBehavior.Cascade);
         }).Entity<ChatMessage>(entity => {
-            entity.HasKey(message => message.Id);
+            entity.HasKey(x => x.Id);
             
             entity.HasIndex(message => new { message.ConversationId, message.CreatedAt });
             
@@ -96,6 +96,38 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .IsRequired();
         }).Entity<MessageAttachment>(entity => {
             entity.HasKey(message => message.Id);
+        });
+
+        builder.Entity<CommunityServer>(entity => {
+            entity.HasKey(x => x.Id);
+
+            entity.HasOne(server => server.Owner)
+                .WithMany(owner => owner.OwnedServers)
+                .HasForeignKey(server => server.OwnerId)
+                .HasPrincipalKey(user => user.Id)
+                .IsRequired();
+
+            entity.HasOne(server => server.Creator)
+                .WithMany(creator => creator.CreatedServers)
+                .HasForeignKey(server => server.CreatorId)
+                .HasPrincipalKey(user => user.Id)
+                .IsRequired();
+        }).Entity<CommunityMember>(entity => {
+            entity.HasKey(x => x.Id);
+
+            entity.HasIndex(x => new { x.CommunityServerId, x.UserId }).IsUnique();
+            
+            entity.HasOne(member => member.CommunityServer)
+                .WithMany(server => server.Members)
+                .HasForeignKey(member => member.CommunityServerId)
+                .HasPrincipalKey(member => member.Id)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(member => member.User)
+                .WithMany(user => user.CommunityMembers)
+                .HasForeignKey(member => member.UserId)
+                .HasPrincipalKey(user => user.Id)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 

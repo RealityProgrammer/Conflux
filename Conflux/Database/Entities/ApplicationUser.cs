@@ -14,11 +14,14 @@ public class ApplicationUser : IdentityUser, ICreatedAtColumn {
     
     public DateTime CreatedAt { get; set; }
     
-    // TODO: Question ourself why is this needed while the avatars always at "images/avatar/{Id}"
     [MaxLength(255)] public string? AvatarProfilePath { get; set; }
 
     [MaxLength(128)] public string? StatusText { get; set; }
     
     public ICollection<FriendRequest> SentFriendRequests { get; set; } = null!;
     public ICollection<FriendRequest> ReceivedFriendRequests { get; set; } = null!;
+
+    public ICollection<CommunityServer> OwnedServers { get; set; } = null!;
+    public ICollection<CommunityServer> CreatedServers { get; set; } = null!;
+    public ICollection<CommunityMember> CommunityMembers { get; set; } = null!;
 }
