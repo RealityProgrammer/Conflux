@@ -262,20 +262,22 @@
             ConversationService.OnMessageDeleted += OnMessageDeleted;
             ConversationService.OnMessageEdited += OnMessageEdited;
         } else {
-            if (_jumpToBottom) {
-                _jumpToBottom = false;
+            if (_module != null) {
+                if (_jumpToBottom) {
+                    _jumpToBottom = false;
 
-                await _module!.InvokeVoidAsync("scrollToBottom", _scrollContainer);
-            }
+                    await _module.InvokeVoidAsync("scrollToBottom", _scrollContainer);
+                }
 
-            if (_savedScrollPositionForTop != null) {
-                await _module!.InvokeVoidAsync("restoreScrollPositionForTop", _scrollContainer, _savedScrollPositionForTop);
-                _savedScrollPositionForTop = null;
-            }
+                if (_savedScrollPositionForTop != null) {
+                    await _module.InvokeVoidAsync("restoreScrollPositionForTop", _scrollContainer, _savedScrollPositionForTop);
+                    _savedScrollPositionForTop = null;
+                }
 
-            if (_savedScrollPositionForBottom != null) {
-                await _module!.InvokeVoidAsync("restoreScrollPositionForBottom", _scrollContainer, _savedScrollPositionForBottom);
-                _savedScrollPositionForBottom = null;
+                if (_savedScrollPositionForBottom != null) {
+                    await _module.InvokeVoidAsync("restoreScrollPositionForBottom", _scrollContainer, _savedScrollPositionForBottom);
+                    _savedScrollPositionForBottom = null;
+                }
             }
 
             if (_focusOnEditTextArea && _editTextArea != null) {

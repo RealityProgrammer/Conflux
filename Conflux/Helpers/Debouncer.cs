@@ -15,7 +15,7 @@ public sealed class Debouncer(Func<CancellationToken, Task> callback, TimeSpan d
             _cts = new();
             await Task.Delay(delay, _cts.Token);
             await callback(_cts.Token);
-
+            
             await _cts.CancelAsync();
             _cts.Dispose();
             _cts = null;

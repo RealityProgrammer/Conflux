@@ -1,4 +1,5 @@
 ﻿@using Conflux.Components.Guards
+@using Conflux.Components.Shared
 @using Conflux.Components.Shared.Icons
 
 @inherits LayoutComponentBase
@@ -6,11 +7,15 @@
 
 <RedirectToProfileSetup/>
 
-<section class="absolute top-0 inset-x-0 h-16 bg-(--bg-color-1) shadow-lg overflow-hidden transition-all duration-500 @(_isDrawerExpanded ? "translate-y-0" : "-translate-y-full")">
+<section class="z-1000 absolute top-0 inset-x-0 h-16 bg-(--bg-color-1) shadow-lg overflow-hidden transition-all duration-500 @(_isDrawerExpanded ? "translate-y-0" : "-translate-y-full")">
     <div class="overflow-x-auto flex flex-row items-center gap-2 h-full p-2">
-        <NavLink class="bg-gray-800 hover:shadow-md rounded-full h-full aspect-square flex-none cursor-pointer overflow-hidden flex flex-row justify-center items-center" ActiveClass="border-2 border-blue-700!" href="/lobby" Match="NavLinkMatch.All">
-            <House class="size-6 fill-white"></House>
+        <NavLink class="bg-gray-800 hover:bg-gray-750 active:bg-gray-825 hover:shadow-md rounded-full h-full aspect-square flex-none cursor-pointer overflow-hidden flex flex-row justify-center items-center" ActiveClass="border-2 border-blue-700!" href="/lobby" Match="NavLinkMatch.Prefix">
+            <House class="size-6 fill-white"/>
         </NavLink>
+        
+        <button class="bg-gray-800 hover:bg-gray-750 active:bg-gray-825 hover:shadow-md rounded-full h-full aspect-square flex-none cursor-pointer overflow-hidden flex flex-row justify-center items-center" @onclick="() => _isShowingServerCreationCard = true">
+            <Plus class="size-6 fill-white" Large="true"/>
+        </button>
     </div>
 </section>
 
@@ -26,10 +31,47 @@
     @Body
 </div>
 
+<Dialog @bind-Open="_isShowingServerCreationCard" OnClickOutside="HandleCancelCreatingServer" class="flex flex-row justify-center items-center text-white">
+    @if (_isAskingServerNameAndProfilePicture) {
+        <Card class="w-full z-10 overflow-hidden">
+            <CardHeader Title="Input Information" Subtext="Give your new home a name, a face and a new life." OnCloseRequested="HandleCancelCreatingServer"/>
+
+            <CardContent class="pb-3">
+                <ServerAvatarAndNameForm OnRequestCreateServer="HandleCreateServer"/>
+            </CardContent>
+        </Card>
+    } else {
+        <Card class="w-full z-10 overflow-hidden">
+            <CardHeader Title="Create Your Own Paradise" Subtext="A community will need a place to stay. Make your own paradise and start chatting." OnCloseRequested="HandleCancelCreatingServer"/>
+
+            <CardContent class="pb-3">
+                <button class="border border-gray-600 bg-black/5 hover:bg-black/2 active:bg-black/8 w-full p-3 rounded-lg shadow-lg cursor-pointer" @onclick="HandleClickFreshServerCreation">
+                    Create a fresh server
+                </button>
+            </CardContent>
+        </Card>
+    }
+</Dialog>
+
 @code {
     private bool _isDrawerExpanded;
+    private bool _isShowingServerCreationCard;
+    private bool _isAskingServerNameAndProfilePicture;
 
     private void ToggleDrawer() {
         _isDrawerExpanded ^= true;
+    }
+
+    private void HandleCancelCreatingServer() {
+        _isShowingServerCreationCard = false;
+        _isAskingServerNameAndProfilePicture = false;
+    }
+
+    private void HandleClickFreshServerCreation() {
+        _isAskingServerNameAndProfilePicture = true;
+    }
+
+    private async Task HandleCreateServer(ServerAvatarAndNameForm.InputModel model) {
+        
     }
 }

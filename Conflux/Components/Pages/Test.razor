@@ -1,0 +1,63 @@
+﻿@page "/test"
+@using Conflux.Services.Abstracts
+
+@inject ISnackbarService SnackbarService
+
+<button class="button-primary" @onclick="CreateInfoSnackbar">
+    Create Info Toast
+</button>
+
+<button class="button-success" @onclick="CreateSuccessSnackbar">
+    Create Success Toast
+</button>
+
+<button class="button-warning" @onclick="CreateWarningSnackbar">
+    Create Warning Toast
+</button>
+
+<button class="button-danger" @onclick="CreateErrorSnackbar">
+    Create Danger Toast
+</button>
+
+@code {
+    public void CreateInfoSnackbar() {
+        SnackbarService.Create(new() {
+            Duration = TimeSpan.FromSeconds(5),
+            Type = SnackbarType.Info,
+            Text = "Click me",
+            OnClick = Test,
+        });
+
+        void Test() {
+            SnackbarService.Create(new() {
+                Duration = TimeSpan.FromSeconds(5),
+                Type = SnackbarType.Info,
+                Text = "I have been clicked",
+            });
+        }
+    }
+    
+    public void CreateSuccessSnackbar() {
+        SnackbarService.Create(new() {
+            Duration = TimeSpan.FromSeconds(5),
+            Type = SnackbarType.Success,
+            Text = "Success",
+        });
+    }
+    
+    public void CreateWarningSnackbar() {
+        SnackbarService.Create(new() {
+            Duration = TimeSpan.FromSeconds(5),
+            Type = SnackbarType.Warning,
+            Text = "Warning",
+        });
+    }
+    
+    public void CreateErrorSnackbar() {
+        SnackbarService.Create(new() {
+            Duration = TimeSpan.FromSeconds(5),
+            Type = SnackbarType.Error,
+            Text = "Error",
+        });
+    }
+}

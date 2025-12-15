@@ -46,10 +46,8 @@
         <script type="module" src="@modulePath"></script>
     }
 } else {
-    IViteChunk? chunk;
-
     @foreach (var modulePath in modulePaths) {
-        if ((chunk = ViteManifest[modulePath]) != null) {
+        if (ViteManifest[modulePath] is { } chunk) {
             <script type="module" src="@chunk.File"></script>
 
             if (chunk.Imports != null) {

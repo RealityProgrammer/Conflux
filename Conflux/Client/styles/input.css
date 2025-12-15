@@ -1,8 +1,13 @@
 ﻿@import "tailwindcss" source("../../Components");
 
 @theme {
-    --color-gray-725: color-mix(in oklch, var(--color-gray-700) 50%, var(--color-gray-750) 50%);
+    --color-gray-725: color-mix(in oklch, var(--color-gray-700) 25%, var(--color-gray-800) 75%);
     --color-gray-750: color-mix(in oklch, var(--color-gray-700) 50%, var(--color-gray-800) 50%);
+    --color-gray-775: color-mix(in oklch, var(--color-gray-700) 75%, var(--color-gray-800) 25%);
+
+    --color-gray-825: color-mix(in oklch, var(--color-gray-800) 25%, var(--color-gray-900) 75%);
+    --color-gray-850: color-mix(in oklch, var(--color-gray-800) 50%, var(--color-gray-900) 50%);
+    --color-gray-875: color-mix(in oklch, var(--color-gray-800) 75%, var(--color-gray-900) 25%);
 }
 
 @layer components {

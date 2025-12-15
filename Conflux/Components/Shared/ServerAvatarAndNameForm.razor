@@ -1,0 +1,147 @@
+﻿@using Conflux.Components.Shared.Icons
+@using System.ComponentModel.DataAnnotations
+
+@implements IAsyncDisposable
+
+@inject IJSRuntime JavascriptRuntime
+@inject ILogger<ServerAvatarAndNameForm> Logger
+
+<EditForm EditContext="_editContext" method="post" FormName="Profile" class="mt-2 overflow-auto flex-auto px-8">
+    <AntiforgeryToken/>
+    <DataAnnotationsValidator/>
+    
+    @* TODO: Fix the validationmessage text overflows. *@
+                    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="relative">
+            <label class="font-semibold">Server's Avatar</label>
+            
+            <InputFile @ref="_inputFile" class="hidden" id="avatar" OnChange="HandleAvatarUpload"/>
+            
+            @{
+                string avatarCssClass = $"mx-auto size-64 border-4 {(_editContext.IsValid(_avatarFileField) ? "border-gray-700" : "border-red-700")}";
+            }
+            
+            <Avatar class="@avatarCssClass" ImageSrc="@_avatarPreviewUrl">
+                <label for="avatar" class="absolute inset-0 flex group bg-transparent flex-col justify-center items-center hover:bg-gray-600/40 cursor-pointer rounded-full">
+                    <p class="hidden group-hover:block">Click to select Avatar</p>
+                </label>
+
+                @if (!string.IsNullOrEmpty(_avatarPreviewUrl)) {
+                    <button class="absolute top-0 right-0 p-2 rounded-full bg-red-600 shadow-lg hover:bg-red-500 active:bg-red-700 cursor-pointer" @onclick="HandleAvatarDelete">
+                        <Cross class="size-5 fill-white"/>
+                    </button>
+                }
+            </Avatar>
+            
+            <ValidationMessage For="() => Model.Avatar" class="text-red-500 text-sm wrap-break-word whitespace-pre-wrap"/>
+        </div>
+        
+        <div class="relative min-w-0">
+            <label class="font-semibold">Server's Name</label>
+
+            <InputText @bind-Value="Model!.Name" class="mt-2 input-field h-11 w-full" maxlength="32"/>
+            
+            <ValidationMessage For="() => Model.Name" class="text-red-500 text-sm wrap-break-word"/>
+        </div>
+    </div>
+    
+    <ProcessingStateButton @bind-IsProcessing="_isCreatingServer" type="submit" class="mt-2 border border-gray-600 bg-black/5 hover:bg-black/2 active:bg-black/8 w-full p-3 rounded-lg shadow-lg cursor-pointer" ProcessingCssClass="flex justify-center items-center" @onclick="HandleCreateServer">
+        <ChildContent>
+            Create the server
+        </ChildContent>
+        
+        <ProcessingContent>
+            <Spinner class="size-6 fill-white"/>
+        </ProcessingContent>
+    </ProcessingStateButton>
+</EditForm>
+
+@code {
+    [Parameter] public EventCallback<InputModel> OnRequestCreateServer { get; set; }
+    
+    private EditContext _editContext = null!;
+    [SupplyParameterFromForm(FormName = "Login")] private InputModel Model { get; set; } = new();
+    private ValidationMessageStore _messageStore = null!;
+    private FieldIdentifier _avatarFileField, _nameFieldIdentifier;
+    private string? _avatarPreviewUrl;
+    private InputFile _inputFile = null!;
+
+    private bool _isCreatingServer;
+    
+    protected override void OnInitialized() {
+        _editContext = new(Model);
+        _messageStore = new(_editContext);
+        
+        _editContext.OnValidationRequested += ValidateAvatar;
+    }
+
+    protected override void OnAfterRender(bool firstRender) {
+        if (firstRender) {
+            _avatarFileField = FieldIdentifier.Create(() => Model.Avatar);
+            _nameFieldIdentifier = FieldIdentifier.Create(() => Model.Name);
+        }
+    }
+
+    private async Task HandleAvatarUpload(InputFileChangeEventArgs args) {
+        if (!string.IsNullOrEmpty(_avatarPreviewUrl)) {
+            await JavascriptRuntime.InvokeVoidAsync("URL.revokeObjectURL", _avatarPreviewUrl);
+        }
+
+        _avatarPreviewUrl = await JavascriptRuntime.InvokeAsync<string>("window.createInputPreviewUrl", _inputFile.Element!, 0);
+        Model.Avatar = args.File;
+    }
+
+    private async Task HandleAvatarDelete() {
+        if (!string.IsNullOrEmpty(_avatarPreviewUrl)) {
+            await JavascriptRuntime.InvokeVoidAsync("URL.revokeObjectURL", _avatarPreviewUrl);
+            _avatarPreviewUrl = null;
+        }
+    }
+
+    private void ValidateAvatar(object? sender, ValidationRequestedEventArgs args) {
+        _messageStore.Clear();
+        
+        if (Model!.Avatar is { } browserFile) {
+            if (browserFile.ContentType is not "image/png" and not "image/jpeg" and not "image/jpg") {
+                _messageStore.Add(_avatarFileField, "Avatar file is not valid PNG or JPEG.");
+                return;
+            }
+
+            if (browserFile.Size > ApplicationConstants.MaxServerAvatarSize) {
+                _messageStore.Add(_avatarFileField, $"Avatar surpassed maximum allowed size of {ApplicationConstants.MaxServerAvatarSize} bytes.");
+                return;
+            }
+        }
+    }
+
+    private async Task HandleCreateServer() {
+        _isCreatingServer = true;
+
+        try {
+            if (!_editContext.Validate()) {
+                return;
+            }
+
+            if (OnRequestCreateServer.HasDelegate) {
+                await OnRequestCreateServer.InvokeAsync(Model);
+            }
+        } finally {
+            _isCreatingServer = false;
+        }
+    }
+
+    public async ValueTask DisposeAsync() {
+        _editContext.OnValidationRequested -= ValidateAvatar;
+        
+        if (!string.IsNullOrEmpty(_avatarPreviewUrl)) {
+            await JavascriptRuntime.InvokeVoidAsync("URL.revokeObjectURL", _avatarPreviewUrl);
+            _avatarPreviewUrl = null;
+        }
+    }
+
+    public sealed class InputModel {
+        public IBrowserFile? Avatar { get; set; }
+        [Required, MinLength(8), MaxLength(64)] public string Name { get; set; }
+    }
+}

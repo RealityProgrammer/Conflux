@@ -23,7 +23,7 @@
             <InputFile @ref="_avatarInputFile" type="file" class="hidden" accept="image/png, image/jpeg" OnChange="HandleAvatarChange" id="avatar"/>
                             
             <div class="mt-2">
-                <TooltipContainer ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" ShowTooltip="@(!_editContext.IsValid(_avatarFileField))" Id="avatar" class="max-w-[90%]">
+                <TooltipContainer ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" ShowTooltip="@(!_editContext.IsValid(_avatarFileField))" class="max-w-[90%]">
                     <Target>
                         @{
                             string? displayImageSrc = Model.Avatar.RequestDelete ? null : AvatarPreviewUrl ?? (string.IsNullOrEmpty(User.AvatarProfilePath) ? null : ContentService.GetAssetPath(User.AvatarProfilePath));
@@ -97,7 +97,7 @@
         <div class="relative">
             <label class="font-semibold">Display Name</label>
                             
-            <TooltipContainer ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" ShowTooltip="@(!_editContext.IsValid(_displayNameField))" Id="displayname" class="max-w-[90%]">
+            <TooltipContainer ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" ShowTooltip="@(!_editContext.IsValid(_displayNameField))" class="max-w-[90%]">
                 <Target>
                     @{
                         string classes = $"w-full h-11 mt-2 input-field {(_editContext.IsValid(_displayNameField) ? string.Empty : "border-red-700")}";
@@ -115,7 +115,7 @@
         <div class="relative">
             <label class="font-semibold">Pronouns</label>
                             
-            <TooltipContainer ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" ShowTooltip="@(!_editContext.IsValid(_pronounsField))" Id="pronouns" class="max-w-[90%]">
+            <TooltipContainer ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" ShowTooltip="@(!_editContext.IsValid(_pronounsField))" class="max-w-[90%]">
                 <Target>
                     @{
                         string classes = $"w-full h-11 mt-2 input-field {(_editContext.IsValid(_pronounsField) ? string.Empty : "border-red-700")}";
@@ -133,7 +133,7 @@
         <div class="col-start-1 col-end-2 lg:col-end-3">
             <label class="font-semibold">About me</label>
                             
-            <TooltipContainer ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" ShowTooltip="@(!_editContext.IsValid(_bioField))" Id="bio" class="max-w-[90%]">
+            <TooltipContainer ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" ShowTooltip="@(!_editContext.IsValid(_bioField))" class="max-w-[90%]">
                 <Target>
                     @{
                         string classes = $"w-full h-55 mt-2 input-field {(_editContext.IsValid(_bioField) ? string.Empty : "border-red-700")}";

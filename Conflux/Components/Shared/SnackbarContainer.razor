@@ -1,0 +1,87 @@
+﻿@using Conflux.Components.Shared.Icons
+@using Conflux.Services.Abstracts
+
+@implements IDisposable
+
+@inject ISnackbarService SnackbarService
+
+<div class="fixed inset-4 z-100 pointer-events-none flex flex-col justify-start items-center gap-1.5">
+    @foreach ((Guid id, SnackbarOptions options) in SnackbarService.Snackbars) {
+        <div @key="id" class="@GetSnackbarClass(options) flex-none shadow-lg rounded-lg p-2 pointer-events-auto inline-flex flex-row justify-start items-center" @onclick="() => HandleSnackbarClick(options.OnClick)">
+            @switch (options.Type) {
+                case SnackbarType.Info:
+                    <SpeechBubble Content="ChatContent.Text" ArrowDirection="ChatArrowDirection.Middle" Filled="false" class="fill-white size-6 mr-2"/>
+                    break;
+                    
+                case SnackbarType.Success:
+                    <Check Variation="CheckVariation.Large" class="fill-white size-6 mr-2"/>
+                    break;
+                    
+                case SnackbarType.Warning:
+                    <Triangle Variation="TriangleVariations.Exclamation" class="fill-white size-6 mr-2"/>
+                    break;
+                    
+                case SnackbarType.Error:
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" class="fill-white size-6 mr-2">
+                        <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+                        <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/>
+                    </svg>
+                    break;
+            }
+            
+            <div class="text-white inline-block">
+                @if (options.RenderFragment != null) {
+                    @options.RenderFragment
+                } else if (options.Markup.HasValue) {
+                    @options.Markup
+                } else if (options.Text != null) {
+                    <p class="text-sm font-medium">
+                        @options.Text
+                    </p>
+                }
+            </div>
+            
+            <button class="flex-none ml-2 p-0.5 bg-transparent hover:bg-gray-300 active:bg-gray-400 rounded-full cursor-pointer" @onclick="() => CloseSnackbar(id)" @onclick:stopPropagation="true">
+                <Cross class="fill-white size-5 flex-none"/>
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    protected override void OnInitialized() {
+        SnackbarService.OnChange += OnSnackbarChanged;
+    }
+
+    private static string GetSnackbarClass(in SnackbarOptions options) {
+        string clickabilityClasses = options.OnClick == null ? string.Empty : "cursor-pointer";
+        
+        return options.Type switch {
+            SnackbarType.Success => $"bg-green-500 text-green-800 {clickabilityClasses}",
+            SnackbarType.Error => $"bg-red-500 text-red-800 {clickabilityClasses}",
+            SnackbarType.Warning => $"bg-yellow-500 text-yellow-800 {clickabilityClasses}",
+            _ => $"bg-blue-500 text-blue-800 {clickabilityClasses}",
+        };
+    }
+
+    private void CloseSnackbar(Guid id) {
+        SnackbarService.Remove(id);
+    }
+
+    private void OnSnackbarChanged() {
+        StateHasChanged();
+    }
+
+    private void HandleSnackbarClick(Action? callback) {
+        callback?.Invoke();
+    }
+
+    // private void HandleButtonClick(SnackbarOptions snackbar)
+    // {
+    //     snackbar.OnButtonClick?.Invoke(snackbar.Id);
+    // }
+
+    public void Dispose() {
+        SnackbarService.OnChange -= OnSnackbarChanged;
+    }
+}
