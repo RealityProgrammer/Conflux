@@ -1,0 +1,133 @@
+﻿@using Conflux.Components.Shared.Icons
+@using Conflux.Database
+@using Conflux.Services.Abstracts
+@using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
+
+@inject ICommunityServerService CommunityServerService
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+
+<section class="z-1000 absolute top-0 inset-x-0 h-16 bg-(--bg-color-1) shadow-lg overflow-hidden transition-all duration-500 @(_isDrawerExpanded ? "translate-y-0" : "-translate-y-full")">
+    <div class="overflow-x-auto flex flex-row items-center gap-2 h-full p-2">
+        <NavLink class="bg-gray-800 hover:bg-gray-750 active:bg-gray-825 hover:shadow-md rounded-full h-full aspect-square flex-none cursor-pointer overflow-hidden flex flex-row justify-center items-center" ActiveClass="border-2 border-blue-700!" href="/lobby" Match="NavLinkMatch.Prefix">
+            <House class="size-6 fill-white"/>
+        </NavLink>
+        
+        @if (_isLoadingJoinedServers) {
+            <Spinner class="fill-white h-full aspect-square"/>
+        } else {
+            @foreach (var joinedServer in _joinedServers) {
+                <NavLink class="bg-gray-800 hover:bg-gray-750 active:bg-gray-825 hover:shadow-md rounded-full h-full aspect-square flex-none cursor-pointer overflow-hidden flex flex-row justify-center items-center" ActiveClass="border-2 border-blue-700!" href="@($"/server/{joinedServer.Id}")" Match="NavLinkMatch.Prefix">
+                    <Avatar class="w-full aspect-square" ImageSrc="@null"/>
+                </NavLink>
+            }
+            
+            <button class="bg-gray-800 hover:bg-gray-750 active:bg-gray-825 hover:shadow-md rounded-full h-full aspect-square flex-none cursor-pointer overflow-hidden flex flex-row justify-center items-center" @onclick="() => _isShowingServerCreationCard = true">
+                <Plus class="size-6 fill-white" Large="true"/>
+            </button>
+        }
+    </div>
+</section>
+
+<button class="absolute @(_isDrawerExpanded ? "top-16" : "top-0") left-1/2 -translate-x-1/2 rounded-b-lg bg-gray-600 shadow-md px-5 py-0.5 cursor-pointer transition-all duration-500" @onclick="ToggleDrawer">
+    @if (_isDrawerExpanded) {
+        <Chevron Direction="ChevronDirection.Up" Mode="ChevronMode.Compact" class="animate-bounce size-5 fill-white"/>
+    } else {
+        <Chevron Direction="ChevronDirection.Down" Mode="ChevronMode.Compact" class="animate-bounce size-5 fill-white"/>
+    }
+</button>
+
+<Dialog @bind-Open="_isShowingServerCreationCard" OnClickOutside="HandleCancelCreatingServer" class="flex flex-row justify-center items-center text-white">
+    @if (_isAskingServerNameAndProfilePicture) {
+        <Card class="w-full z-10 overflow-hidden">
+            <CardHeader Title="Input Information" Subtext="Give your new home a name, a face and a new life." OnCloseRequested="HandleCancelCreatingServer"/>
+
+            <CardContent class="pb-3">
+                <ServerAvatarAndNameForm OnRequestCreateServer="HandleCreateServer"/>
+            </CardContent>
+        </Card>
+    } else {
+        <Card class="w-full z-10 overflow-hidden">
+            <CardHeader Title="Create Your Own Paradise" Subtext="A community will need a place to stay. Make your own paradise and start chatting." OnCloseRequested="HandleCancelCreatingServer"/>
+
+            <CardContent class="pb-3">
+                <button class="border border-gray-600 bg-black/5 hover:bg-black/2 active:bg-black/8 w-full p-3 rounded-lg shadow-lg cursor-pointer" @onclick="HandleClickFreshServerCreation">
+                    Create a fresh server
+                </button>
+            </CardContent>
+        </Card>
+    }
+</Dialog>
+
+@code {
+    private bool _isDrawerExpanded;
+    private bool _isShowingServerCreationCard;
+    private bool _isAskingServerNameAndProfilePicture;
+
+    private bool _isLoadingJoinedServers;
+
+    private List<CommunityServerDTO> _joinedServers = [];
+    
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+
+    protected override void OnInitialized() {
+        _isLoadingJoinedServers = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            var authState = await AuthenticationState;
+            string? userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userId)) {
+                return;
+            }
+
+            await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+            _joinedServers = await dbContext.CommunityMembers
+                .Where(m => m.UserId == userId)
+                .Select(m => m.CommunityServer)
+                .Select(s => new CommunityServerDTO(s.Id, s.Name, s.AvatarPath))
+                .ToListAsync();
+
+            _isLoadingJoinedServers = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ToggleDrawer() {
+        _isDrawerExpanded ^= true;
+    }
+
+    private void HandleCancelCreatingServer() {
+        _isShowingServerCreationCard = false;
+        _isAskingServerNameAndProfilePicture = false;
+    }
+
+    private void HandleClickFreshServerCreation() {
+        _isAskingServerNameAndProfilePicture = true;
+    }
+
+    private async Task HandleCreateServer(ServerAvatarAndNameForm.InputModel model) {
+        var authState = await AuthenticationState;
+        string? id = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(id)) return;
+
+        if (model.Avatar == null) {
+            await CommunityServerService.CreateServerAsync(model.Name, null, id);
+        } else {
+            using var avatarStream = model.Avatar.OpenReadStream(ApplicationConstants.MaxServerAvatarSize);
+
+            await CommunityServerService.CreateServerAsync(model.Name, avatarStream, id);
+        }
+        
+        _isShowingServerCreationCard = false;
+        _isAskingServerNameAndProfilePicture = false;
+    }
+
+    private readonly record struct CommunityServerDTO(Guid Id, string Name, string? AvatarPath);
+
+}
