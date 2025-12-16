@@ -12,6 +12,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ConversationMember> ConversationMembers { get; set; } = null!;
     public DbSet<ChatMessage> ChatMessages { get; set; } = null!;
     public DbSet<MessageAttachment> MessageAttachments { get; set; } = null!;
+    public DbSet<CommunityServer> CommunityServers { get; set; } = null!;
+    public DbSet<CommunityMember> CommunityMembers { get; set; } = null!;
     
     public override int SaveChanges() {
         InsertTimestamps();
