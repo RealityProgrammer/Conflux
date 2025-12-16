@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Conflux.Database.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251215152029_AddBasicCommunityServerTables")]
-    partial class AddBasicCommunityServerTables
+    [Migration("20251216084023_AddBasicCommunityServerRelations")]
+    partial class AddBasicCommunityServerRelations
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -181,7 +181,7 @@ namespace Conflux.Database.Migrations
                     b.HasIndex("CommunityServerId", "UserId")
                         .IsUnique();
 
-                    b.ToTable("CommunityMember");
+                    b.ToTable("CommunityMembers");
                 });
 
             modelBuilder.Entity("Conflux.Database.Entities.CommunityServer", b =>
@@ -218,7 +218,7 @@ namespace Conflux.Database.Migrations
 
                     b.HasIndex("OwnerId");
 
-                    b.ToTable("CommunityServer");
+                    b.ToTable("CommunityServers");
                 });
 
             modelBuilder.Entity("Conflux.Database.Entities.Conversation", b =>

@@ -178,7 +178,7 @@ namespace Conflux.Database.Migrations
                     b.HasIndex("CommunityServerId", "UserId")
                         .IsUnique();
 
-                    b.ToTable("CommunityMember");
+                    b.ToTable("CommunityMembers");
                 });
 
             modelBuilder.Entity("Conflux.Database.Entities.CommunityServer", b =>
@@ -215,7 +215,7 @@ namespace Conflux.Database.Migrations
 
                     b.HasIndex("OwnerId");
 
-                    b.ToTable("CommunityServer");
+                    b.ToTable("CommunityServers");
                 });
 
             modelBuilder.Entity("Conflux.Database.Entities.Conversation", b =>

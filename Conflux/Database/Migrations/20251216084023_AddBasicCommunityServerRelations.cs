@@ -6,13 +6,13 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Conflux.Database.Migrations
 {
     /// <inheritdoc />
-    public partial class AddBasicCommunityServerTables : Migration
+    public partial class AddBasicCommunityServerRelations : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "CommunityServer",
+                name: "CommunityServers",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -24,15 +24,15 @@ namespace Conflux.Database.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_CommunityServer", x => x.Id);
+                    table.PrimaryKey("PK_CommunityServers", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_CommunityServer_AspNetUsers_CreatorId",
+                        name: "FK_CommunityServers_AspNetUsers_CreatorId",
                         column: x => x.CreatorId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_CommunityServer_AspNetUsers_OwnerId",
+                        name: "FK_CommunityServers_AspNetUsers_OwnerId",
                         column: x => x.OwnerId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
@@ -40,7 +40,7 @@ namespace Conflux.Database.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "CommunityMember",
+                name: "CommunityMembers",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -50,40 +50,40 @@ namespace Conflux.Database.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_CommunityMember", x => x.Id);
+                    table.PrimaryKey("PK_CommunityMembers", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_CommunityMember_AspNetUsers_UserId",
+                        name: "FK_CommunityMembers_AspNetUsers_UserId",
                         column: x => x.UserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_CommunityMember_CommunityServer_CommunityServerId",
+                        name: "FK_CommunityMembers_CommunityServers_CommunityServerId",
                         column: x => x.CommunityServerId,
-                        principalTable: "CommunityServer",
+                        principalTable: "CommunityServers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_CommunityMember_CommunityServerId_UserId",
-                table: "CommunityMember",
+                name: "IX_CommunityMembers_CommunityServerId_UserId",
+                table: "CommunityMembers",
                 columns: new[] { "CommunityServerId", "UserId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_CommunityMember_UserId",
-                table: "CommunityMember",
+                name: "IX_CommunityMembers_UserId",
+                table: "CommunityMembers",
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_CommunityServer_CreatorId",
-                table: "CommunityServer",
+                name: "IX_CommunityServers_CreatorId",
+                table: "CommunityServers",
                 column: "CreatorId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_CommunityServer_OwnerId",
-                table: "CommunityServer",
+                name: "IX_CommunityServers_OwnerId",
+                table: "CommunityServers",
                 column: "OwnerId");
         }
 
@@ -91,10 +91,10 @@ namespace Conflux.Database.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "CommunityMember");
+                name: "CommunityMembers");
 
             migrationBuilder.DropTable(
-                name: "CommunityServer");
+                name: "CommunityServers");
         }
     }
 }
