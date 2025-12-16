@@ -253,13 +253,13 @@
             if (Model.Avatar.File is { } imageFile) {
                 using var srcStream = imageFile.OpenReadStream(ApplicationConstants.MaxUserAvatarSize);
 
-                string databasePath = await ContentService.UploadAvatarAsync(srcStream, User.Id);
+                string databasePath = await ContentService.UploadUserAvatarAsync(srcStream, User.Id);
 
                 User.AvatarProfilePath = databasePath;
             } else if (Model.Avatar.RequestDelete && !string.IsNullOrEmpty(User.AvatarProfilePath)) {
                 // User.ProfilePicturePath has form "upload/images/avatar"
 
-                await ContentService.DeleteAvatarAsync(User.Id);
+                await ContentService.DeleteUserAvatarAsync(User.Id);
                 User.AvatarProfilePath = null;
             }
 

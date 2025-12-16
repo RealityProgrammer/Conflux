@@ -67,7 +67,7 @@
                         <Target>
                             @{
                                 string avatarCssClass = $"mx-auto size-64 border-4 {(_avatarEditContext.IsValid(_avatarFileField) ? "border-gray-700" : "border-red-700")}";
-                                string? imageSource = _processingAvatar || string.IsNullOrEmpty(_user.AvatarProfilePath) ? null : $"{ContentService.GetAssetPath(_user.AvatarProfilePath)}?v={ContentService.GetAvatarUploadTime(_user.Id):yyyyMMddHHmmssffff}";
+                                string? imageSource = _processingAvatar || string.IsNullOrEmpty(_user.AvatarProfilePath) ? null : $"{ContentService.GetAssetPath(_user.AvatarProfilePath)}?v={ContentService.GetUserAvatarUploadTime(_user.Id):yyyyMMddHHmmssffff}";
                             }
 
                             <Avatar class="@avatarCssClass" ImageSrc="@imageSource">
@@ -313,7 +313,7 @@
         try {
             using var imageStream = AvatarModel.File.OpenReadStream(ApplicationConstants.MaxUserAvatarSize);
 
-            string databasePath = await ContentService.UploadAvatarAsync(imageStream, _user!.Id);
+            string databasePath = await ContentService.UploadUserAvatarAsync(imageStream, _user!.Id);
             _user.AvatarProfilePath = databasePath;
 
             await UserManager.UpdateAsync(_user);
@@ -327,7 +327,7 @@
         _processingAvatar = true;
         
         try {
-            await ContentService.DeleteAvatarAsync(_user!.Id);
+            await ContentService.DeleteUserAvatarAsync(_user!.Id);
             _user.AvatarProfilePath = null;
 
             await UserManager.UpdateAsync(_user);

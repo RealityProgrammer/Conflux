@@ -1,9 +1,13 @@
 ﻿@using Conflux.Components.Guards
 @using Conflux.Components.Shared
 @using Conflux.Components.Shared.Icons
+@using Conflux.Services.Abstracts
+@using System.Security.Claims
 
 @inherits LayoutComponentBase
 @layout MainLayout
+
+@inject ICommunityServerService CommunityServerService
 
 <RedirectToProfileSetup/>
 
@@ -58,6 +62,8 @@
     private bool _isShowingServerCreationCard;
     private bool _isAskingServerNameAndProfilePicture;
 
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+
     private void ToggleDrawer() {
         _isDrawerExpanded ^= true;
     }
@@ -72,6 +78,20 @@
     }
 
     private async Task HandleCreateServer(ServerAvatarAndNameForm.InputModel model) {
+        var authState = await AuthenticationState;
+        string? id = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(id)) return;
+
+        if (model.Avatar == null) {
+            await CommunityServerService.CreateServerAsync(model.Name, null, id);
+        } else {
+            using var avatarStream = model.Avatar.OpenReadStream(ApplicationConstants.MaxServerAvatarSize);
+
+            await CommunityServerService.CreateServerAsync(model.Name, avatarStream, id);
+        }
         
+        _isShowingServerCreationCard = false;
+        _isAskingServerNameAndProfilePicture = false;
     }
 }
