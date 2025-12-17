@@ -91,7 +91,7 @@ builder.Services.AddScoped<IContentService, ContentService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IConversationService, ConversationService>();
 builder.Services.AddScoped<ISnackbarService, SnackbarService>();
-builder.Services.AddScoped<ICommunityServerService, CommunityServerService>();
+builder.Services.AddScoped<ICommunityService, CommunityService>();
 
 // SignalR related services.
 builder.Services.AddSignalR(options => {

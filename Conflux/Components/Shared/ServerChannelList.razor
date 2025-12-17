@@ -4,7 +4,7 @@
 @using Microsoft.EntityFrameworkCore
 
 @inject ILogger<ServerChannelList> Logger
-@inject ICommunityServerService CommunityServerService
+@inject ICommunityService CommunityService
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 
 <section>
@@ -98,7 +98,7 @@
         if (firstRender) {
             await using var dbContext = await DbContextFactory.CreateDbContextAsync();
 
-            _channelCategories = await dbContext.CommunityServerChannelCategories
+            _channelCategories = await dbContext.CommunityChannelCategories
                 .Where(c => c.CommunityServerId == CommunityServerId)
                 .OrderBy(c => c.CreatedAt)
                 .Select(c => new ChannelCategoryDTO(
@@ -134,7 +134,7 @@
         string value = Convert.ToString(args.Value) ?? string.Empty;
         
         if (!string.IsNullOrEmpty(value)) {
-            await CommunityServerService.CreateChannelCategoryAsync(value, CommunityServerId);
+            await CommunityService.CreateChannelCategoryAsync(value, CommunityServerId);
         }
 
         _isCreatingChannelCategory = false;

@@ -4,7 +4,7 @@
 @using Microsoft.EntityFrameworkCore
 @using System.Security.Claims
 
-@inject ICommunityServerService CommunityServerService
+@inject ICommunityService CommunityService
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 
 <section class="z-1000 absolute top-0 inset-x-0 h-16 bg-(--bg-color-1) shadow-lg overflow-hidden transition-all duration-500 @(_isDrawerExpanded ? "translate-y-0" : "-translate-y-full")">
@@ -88,7 +88,7 @@
 
             _joinedServers = await dbContext.CommunityMembers
                 .Where(m => m.UserId == userId)
-                .Select(m => m.CommunityServer)
+                .Select(m => m.Community)
                 .Select(s => new CommunityServerDTO(s.Id, s.Name, s.AvatarPath))
                 .ToListAsync();
 
@@ -117,11 +117,11 @@
         if (string.IsNullOrEmpty(id)) return;
 
         if (model.Avatar == null) {
-            await CommunityServerService.CreateServerAsync(model.Name, null, id);
+            await CommunityService.CreateServerAsync(model.Name, null, id);
         } else {
             using var avatarStream = model.Avatar.OpenReadStream(ApplicationConstants.MaxServerAvatarSize);
 
-            await CommunityServerService.CreateServerAsync(model.Name, avatarStream, id);
+            await CommunityService.CreateServerAsync(model.Name, avatarStream, id);
         }
         
         _isShowingServerCreationCard = false;

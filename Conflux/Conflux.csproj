@@ -9,7 +9,6 @@
     <ItemGroup>
       <Folder Include="Client\public\" />
       <Folder Include="Client\scripts\Pages\settings\" />
-      <Folder Include="Database\Migrations\" />
       <Folder Include="Services\Policies\" />
       <None Remove="Uploads\" />
     </ItemGroup>
