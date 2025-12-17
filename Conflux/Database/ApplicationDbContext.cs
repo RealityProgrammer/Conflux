@@ -14,6 +14,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<MessageAttachment> MessageAttachments { get; set; } = null!;
     public DbSet<CommunityServer> CommunityServers { get; set; } = null!;
     public DbSet<CommunityMember> CommunityMembers { get; set; } = null!;
+    public DbSet<CommunityServerChannel> CommunityServerChannels { get; set; } = null!;
+    public DbSet<CommunityServerChannelCategory> CommunityServerChannelCategories { get; set; } = null!;
     
     public override int SaveChanges() {
         InsertTimestamps();
@@ -114,6 +116,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey(server => server.CreatorId)
                 .HasPrincipalKey(user => user.Id)
                 .IsRequired();
+
+            entity.HasMany(server => server.ChannelCategories)
+                .WithOne(channelCategory => channelCategory.CommunityServer)
+                .HasForeignKey(channelCategory => channelCategory.CommunityServerId)
+                .HasPrincipalKey(channel => channel.Id)
+                .OnDelete(DeleteBehavior.Cascade)
+                .IsRequired();
         }).Entity<CommunityMember>(entity => {
             entity.HasKey(x => x.Id);
 
@@ -129,6 +138,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .WithMany(user => user.CommunityMembers)
                 .HasForeignKey(member => member.UserId)
                 .HasPrincipalKey(user => user.Id)
+                .OnDelete(DeleteBehavior.Cascade);
+        }).Entity<CommunityServerChannelCategory>(entity => {
+            entity.HasKey(x => x.Id);
+
+            entity.HasMany(x => x.Channels)
+                .WithOne(x => x.ServerChannelCategory)
+                .HasForeignKey(x => x.ServerChannelCategoryId)
+                .HasPrincipalKey(x => x.Id)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }

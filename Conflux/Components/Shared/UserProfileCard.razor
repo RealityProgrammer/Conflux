@@ -1,0 +1,78 @@
+﻿@using Conflux.Components.Shared.Icons
+@using Conflux.Database
+@using Conflux.Services.Abstracts
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.EntityFrameworkCore.Internal
+@using System.Security.Claims
+
+@inject IContentService ContentService
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+
+<div class="h-14 p-1.5 flex flex-row justify-center items-center @_cssClass">
+    @if (string.IsNullOrEmpty(_userDisplayName)) {
+        <Spinner class="size-8 mx-auto fill-white"/>
+    } else {
+        <Avatar class="h-full flex-none" ImageSrc="@_avatarSrc" ImageAlt="User's Avatar"/>
+        
+        <div class="ml-2 flex-1 hidden lg:flex flex-col justify-center text-white">
+            <p>@_userDisplayName</p>
+            <p class="text-xs">@_username</p>
+        </div>
+        
+        <div class="flex-none hidden lg:flex flex-row items-center">
+            <NavLink class="rounded-full p-2 flex-none hover:bg-white/15 active:bg-black/15" href="/settings/account" Match="NavLinkMatch.Prefix">
+                <Gear class="size-5 fill-white flex-none"/>
+            </NavLink>
+        </div>
+    }
+</div>
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+
+    private string _userId = null!, _userDisplayName = null!, _username = null!;
+    private string? _avatarSrc;
+    
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+    private string? _cssClass;
+    
+    protected override void OnParametersSet() {
+        if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
+            _cssClass = Convert.ToString(obj);
+        }
+
+        AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "class").ToDictionary();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            var authState = await AuthenticationState;
+            _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+            await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
+                dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+                
+                var data = await dbContext.Users
+                    .Where(u => u.Id == _userId)
+                    .Select(u => new {
+                        u.DisplayName,
+                        u.UserName,
+                        AvatarSrc = u.AvatarProfilePath,
+                    }).FirstOrDefaultAsync();
+
+                if (data == null) {
+                    return;
+                }
+
+                _userDisplayName = data.DisplayName;
+                _username = data.UserName!;
+
+                if (!string.IsNullOrEmpty(data.AvatarSrc)) {
+                    _avatarSrc = ContentService.GetAssetPath(data.AvatarSrc);
+                }
+            }
+
+            StateHasChanged();
+        }
+    }
+}

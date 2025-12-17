@@ -1,0 +1,19 @@
+﻿@page "/server/{CommunityId:guid}"
+
+@using Conflux.Components.Layout
+@using Conflux.Components.Shared
+@using Microsoft.AspNetCore.Components.Sections
+
+@layout SidebarLobbyLayout
+
+<SectionContent SectionName="lobby-sidebar">
+    <ServerChannelList CommunityServerId="CommunityId"/>
+</SectionContent>
+
+<section class="col-span-10 bg-gray-700 h-full overflow-hidden flex-1 text-white">
+    
+</section>
+
+@code {
+    [Parameter] public Guid CommunityId { get; set; }
+}

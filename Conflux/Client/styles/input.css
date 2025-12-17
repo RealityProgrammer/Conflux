@@ -1,6 +1,11 @@
 ﻿@import "tailwindcss" source("../../Components");
 
 @theme {
+    /* "50 shades of gray" - @GameCreator, 2025 */
+    --color-gray-625: color-mix(in oklch, var(--color-gray-600) 25%, var(--color-gray-700) 75%);
+    --color-gray-650: color-mix(in oklch, var(--color-gray-600) 50%, var(--color-gray-700) 50%);
+    --color-gray-675: color-mix(in oklch, var(--color-gray-600) 75%, var(--color-gray-700) 25%);
+    
     --color-gray-725: color-mix(in oklch, var(--color-gray-700) 25%, var(--color-gray-800) 75%);
     --color-gray-750: color-mix(in oklch, var(--color-gray-700) 50%, var(--color-gray-800) 50%);
     --color-gray-775: color-mix(in oklch, var(--color-gray-700) 75%, var(--color-gray-800) 25%);

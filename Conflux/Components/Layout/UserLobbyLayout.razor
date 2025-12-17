@@ -4,117 +4,109 @@
 @using Conflux.Database.Entities
 @using Conflux.Services
 @using Conflux.Services.Abstracts
+@using Microsoft.AspNetCore.Components.Sections
 @using Microsoft.EntityFrameworkCore
 @using System.Security.Claims
 
 @inherits LayoutComponentBase
 
-@layout LobbyLayout
+@layout SidebarLobbyLayout
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
-@inject ApplicationRedirectManager RedirectManager
 @inject IContentService ContentService
 
-<main class="flex flex-row size-full overflow-hidden">
-    <aside class="col-span-2 bg-gray-750 h-full overflow-hidden text-white flex flex-col border-r border-r-gray-600 flex-none basis-16 lg:basis-64">
-        <section class="flex-1 overflow-y-auto">
-            <div class="flex flex-col gap-2 p-2">
-                <NavLink href="/lobby/activity" class="flex flex-row justify-center lg:justify-start items-center px-0 lg:px-4 py-2 rounded-lg w-full gap-3 flex-none cursor-pointer bg-transparent hover:bg-white/15 active:bg-black/15" ActiveClass="bg-white/20" Match="NavLinkMatch.Prefix">
-                    <Airplane class="size-6 flex-none fill-white"/>
+<SectionContent SectionName="lobby-sidebar">
+    <div class="flex flex-col gap-2 p-2">
+        <NavLink href="/lobby/activity" class="flex flex-row justify-center lg:justify-start items-center px-0 lg:px-4 py-2 rounded-lg w-full gap-3 flex-none cursor-pointer bg-transparent hover:bg-white/15 active:bg-black/15" ActiveClass="bg-white/20" Match="NavLinkMatch.Prefix">
+            <Airplane class="size-6 flex-none fill-white"/>
 
-                    <p class="hidden lg:block">Activity</p>
-                </NavLink>
+            <p class="hidden lg:block">Activity</p>
+        </NavLink>
 
-                <NavLink href="/lobby/social" class="flex flex-row justify-center lg:justify-start items-center pl-0 lg:pl-4 py-2 rounded-lg w-full gap-3 flex-none cursor-pointer bg-transparent hover:bg-white/15 active:bg-black/15" ActiveClass="bg-white/20" Match="NavLinkMatch.Prefix">
-                    <People class="size-6 flex-none fill-white"/>
+        <NavLink href="/lobby/social" class="flex flex-row justify-center lg:justify-start items-center pl-0 lg:pl-4 py-2 rounded-lg w-full gap-3 flex-none cursor-pointer bg-transparent hover:bg-white/15 active:bg-black/15" ActiveClass="bg-white/20" Match="NavLinkMatch.Prefix">
+            <People class="size-6 flex-none fill-white"/>
 
-                    <p class="hidden lg:block">Social</p>
-                </NavLink>
-            </div>
-            
-            <hr class="border-t border-t-gray-600 mx-2"/>
-            
-            <div class="bg-transparent pt-2 px-2 pb-1">
-                <Virtualize ItemsProvider="ConversationsLoadProvider" OverscanCount="8">
-                    <ItemContent Context="item">
-                        <div class="py-0.5">
-                            <NavLink href="@($"/lobby/messages/{item.ConversationId}")" class="flex-none px-2 py-1.5 flex flex-row justify-center lg:justify-start items-center bg-transparent hover:bg-white/15 active:bg-black/15 rounded-lg cursor-pointer" ActiveClass="bg-white/5!" Match="NavLinkMatch.Prefix">
-                                <Avatar class="h-10 flex-none" ImageSrc="@(string.IsNullOrEmpty(item.FriendAvatarSrc) ? null : ContentService.GetAssetPath(item.FriendAvatarSrc))" ImageAlt="User Avatar"/>
+            <p class="hidden lg:block">Social</p>
+        </NavLink>
+    </div>
 
-                                <div class="ml-2 hidden lg:flex flex-col justify-center">
-                                    <p>@item.FriendDisplayName</p>
-                                </div>
-                            </NavLink>
+    <hr class="border-t border-t-gray-600 mx-2"/>
+
+    <div class="bg-transparent pt-2 px-2 pb-1">
+        <Virtualize ItemsProvider="ConversationsLoadProvider" OverscanCount="8">
+            <ItemContent Context="item">
+                <div class="py-0.5">
+                    <NavLink href="@($"/lobby/messages/{item.ConversationId}")" class="flex-none px-2 py-1.5 flex flex-row justify-center lg:justify-start items-center bg-transparent hover:bg-white/15 active:bg-black/15 rounded-lg cursor-pointer" ActiveClass="bg-white/5!" Match="NavLinkMatch.Prefix">
+                        <Avatar class="h-10 flex-none" ImageSrc="@(string.IsNullOrEmpty(item.FriendAvatarSrc) ? null : ContentService.GetAssetPath(item.FriendAvatarSrc))" ImageAlt="User Avatar"/>
+
+                        <div class="ml-2 hidden lg:flex flex-col justify-center">
+                            <p>@item.FriendDisplayName</p>
                         </div>
-                    </ItemContent>
-                </Virtualize>
-            </div>
-        </section>
-        
-        @if (string.IsNullOrEmpty(_userDisplayName)) {
-            <div class="flex-none basis-16 border-t border-t-gray-600 p-2 flex flex-row justify-center items-center">
-                <Spinner class="size-8 mx-auto fill-white"/>
-            </div>
-        } else {
-            <div class="flex-none h-16 border-t border-t-gray-600 p-2 flex flex-row justify-center lg:justify-start items-center">
-                <Avatar class="h-full flex-none" ImageSrc="@_avatarSrc" ImageAlt="User's Avatar"/>
-                
-                <div class="ml-2 flex-1 hidden lg:flex flex-col justify-center">
-                    <p>@_userDisplayName</p>
-                    <p class="text-xs">@_username</p>
-                </div>
-                
-                <div class="flex-none hidden lg:flex flex-row items-center">
-                    <NavLink class="rounded-full p-2 flex-none hover:bg-white/15 active:bg-black/15" href="/settings/account" Match="NavLinkMatch.Prefix">
-                        <Gear class="size-5 fill-white flex-none"/>
                     </NavLink>
                 </div>
-            </div>
-        }
-    </aside>
-    
-    <section class="col-span-10 bg-gray-700 h-full overflow-hidden flex-1 text-white">
-        @Body
-    </section>
-</main>
+            </ItemContent>
+        </Virtualize>
+    </div>
+</SectionContent>
+
+<section class="col-span-10 bg-gray-700 h-full overflow-hidden flex-1 text-white">
+    @Body
+</section>
+
+@* <main class="flex flex-row size-full overflow-hidden"> *@
+@*     <aside class="col-span-2 bg-gray-750 h-full overflow-hidden text-white flex flex-col border-r border-r-gray-600 flex-none basis-16 lg:basis-64"> *@
+@*         <section class="flex-1 overflow-y-auto"> *@
+@*             <div class="flex flex-col gap-2 p-2"> *@
+@*                 <NavLink href="/lobby/activity" class="flex flex-row justify-center lg:justify-start items-center px-0 lg:px-4 py-2 rounded-lg w-full gap-3 flex-none cursor-pointer bg-transparent hover:bg-white/15 active:bg-black/15" ActiveClass="bg-white/20" Match="NavLinkMatch.Prefix"> *@
+@*                     <Airplane class="size-6 flex-none fill-white"/> *@
+@* *@
+@*                     <p class="hidden lg:block">Activity</p> *@
+@*                 </NavLink> *@
+@* *@
+@*                 <NavLink href="/lobby/social" class="flex flex-row justify-center lg:justify-start items-center pl-0 lg:pl-4 py-2 rounded-lg w-full gap-3 flex-none cursor-pointer bg-transparent hover:bg-white/15 active:bg-black/15" ActiveClass="bg-white/20" Match="NavLinkMatch.Prefix"> *@
+@*                     <People class="size-6 flex-none fill-white"/> *@
+@* *@
+@*                     <p class="hidden lg:block">Social</p> *@
+@*                 </NavLink> *@
+@*             </div> *@
+@* *@
+@*             <hr class="border-t border-t-gray-600 mx-2"/> *@
+@* *@
+@*             <div class="bg-transparent pt-2 px-2 pb-1"> *@
+@*                 <Virtualize ItemsProvider="ConversationsLoadProvider" OverscanCount="8"> *@
+@*                     <ItemContent Context="item"> *@
+@*                         <div class="py-0.5"> *@
+@*                             <NavLink href="@($"/lobby/messages/{item.ConversationId}")" class="flex-none px-2 py-1.5 flex flex-row justify-center lg:justify-start items-center bg-transparent hover:bg-white/15 active:bg-black/15 rounded-lg cursor-pointer" ActiveClass="bg-white/5!" Match="NavLinkMatch.Prefix"> *@
+@*                                 <Avatar class="h-10 flex-none" ImageSrc="@(string.IsNullOrEmpty(item.FriendAvatarSrc) ? null : ContentService.GetAssetPath(item.FriendAvatarSrc))" ImageAlt="User Avatar"/> *@
+@* *@
+@*                                 <div class="ml-2 hidden lg:flex flex-col justify-center"> *@
+@*                                     <p>@item.FriendDisplayName</p> *@
+@*                                 </div> *@
+@*                             </NavLink> *@
+@*                         </div> *@
+@*                     </ItemContent> *@
+@*                 </Virtualize> *@
+@*             </div> *@
+@*         </section> *@
+@* *@
+@*         <div class="flex-none px-1 pb-1"> *@
+@*             <UserProfileCard class="rounded-lg bg-gray-700"/> *@
+@*         </div> *@
+@*     </aside> *@
+@* *@
+@*     <section class="col-span-10 bg-gray-700 h-full overflow-hidden flex-1 text-white"> *@
+@*         @Body *@
+@*     </section> *@
+@* </main> *@
 
 @code {
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
 
-    private string _userId = null!, _userDisplayName = null!, _username = null!;
-    private string? _avatarSrc;
+    private string _userId = null!;
 
-    protected override async Task OnAfterRenderAsync(bool firstRender) {
-        if (firstRender) {
-            var authState = await AuthenticationState;
-            _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-
-            await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
-                dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-                
-                var data = await dbContext.Users
-                    .Where(u => u.Id == _userId)
-                    .Select(u => new {
-                        u.DisplayName,
-                        u.UserName,
-                        AvatarSrc = u.AvatarProfilePath,
-                    }).FirstOrDefaultAsync();
-
-                if (data == null) {
-                    RedirectManager.To("/").Execute();
-                    return;
-                }
-
-                _userDisplayName = data.DisplayName;
-                _username = data.UserName!;
-
-                if (!string.IsNullOrEmpty(data.AvatarSrc)) {
-                    _avatarSrc = ContentService.GetAssetPath(data.AvatarSrc);
-                }
-            }
-
-            StateHasChanged();
-        }
+    protected override async Task OnInitializedAsync() {
+        var authState = await AuthenticationState;
+        _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
     }
 
     private async ValueTask<ItemsProviderResult<ConversationElement>> ConversationsLoadProvider(ItemsProviderRequest request) {
