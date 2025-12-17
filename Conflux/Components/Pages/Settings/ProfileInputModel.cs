@@ -13,27 +13,24 @@ public sealed class ProfileInputModel {
     public AvatarModel Avatar { get; set; } = new();
     
     public sealed class AvatarModel : INotifyPropertyChanged {
-        private IBrowserFile? _file;
-        private bool _requestDelete;
-        
         public IBrowserFile? File {
-            get => _file;
+            get;
             set {
-                _file = value;
+                field = value;
                 OnPropertyChanged();
             }
         }
 
         public bool RequestDelete {
-            get => _requestDelete;
+            get;
             set {
-                if (_requestDelete != value) {
-                    _requestDelete = value;
+                if (field != value) {
+                    field = value;
                     OnPropertyChanged();
                 }
             }
         }
-        
+
         public event PropertyChangedEventHandler? PropertyChanged;
 
         private void OnPropertyChanged([CallerMemberName] string? propertyName = null) {

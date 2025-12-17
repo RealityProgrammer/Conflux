@@ -341,10 +341,10 @@
         _isProcessingProfile = true;
 
         try {
-            _user!.UserName = ProfileModel!.UserName;
-            _user.DisplayName = ProfileModel.DisplayName;
-            _user.Pronouns = ProfileModel.Pronouns;
-            _user.Bio = ProfileModel.Bio;
+            _user!.UserName = ProfileModel!.UserName.Trim();
+            _user.DisplayName = ProfileModel.DisplayName.Trim();
+            _user.Pronouns = ProfileModel.Pronouns?.Trim();
+            _user.Bio = ProfileModel.Bio?.Trim();
             
             var result = await UserManager.UpdateAsync(_user);
 

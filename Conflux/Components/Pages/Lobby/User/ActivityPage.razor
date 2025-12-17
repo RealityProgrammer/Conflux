@@ -128,7 +128,7 @@
         _isProcessingStatus = true;
 
         try {
-            _user!.StatusText = StatusModel!.StatusText;
+            _user!.StatusText = StatusModel!.StatusText?.Trim();
 
             await using (var database = await DbContextFactory.CreateDbContextAsync()) {
                 database.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;

@@ -88,7 +88,7 @@
     }
 
     private async Task OnDebounceEnd(CancellationToken token) {
-        _normalizedNameSearch = UserManager.NormalizeName(_nameSearch);
+        _normalizedNameSearch = UserManager.NormalizeName(_nameSearch.Trim());
 
         await _virtualizeContainer.RefreshDataAsync();
         StateHasChanged();

@@ -237,17 +237,15 @@
     }
 
     private async Task SaveProfile() {
-        ClaimsPrincipal claimsPrincipal = (await AuthenticationState).User;
-
         if (!_editContext.Validate()) {
             return;
         }
 
         try {
             // Copy model properties into user instance
-            User.DisplayName = Model.DisplayName;
-            User.Pronouns = Model.Pronouns;
-            User.Bio = Model.Bio;
+            User.DisplayName = Model.DisplayName.Trim();
+            User.Pronouns = Model.Pronouns?.Trim();
+            User.Bio = Model.Bio?.Trim();
 
             // Process Avatar.
             if (Model.Avatar.File is { } imageFile) {
