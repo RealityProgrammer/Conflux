@@ -1,0 +1,65 @@
+﻿@implements IAsyncDisposable
+
+@inject IJSRuntime JavascriptRuntime
+
+<div class="relative inline-block text-left" @ref="_container">
+    <button @onclick="HandleDisplayMenu" type="button" class="button-primary">
+        Open Menu
+    </button>
+    
+    @if (IsExpanded) {
+        <div class="absolute left-12 top-0 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50" tabindex="-1">
+            @ChildContent
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public bool IsExpanded { get; set; }
+    [Parameter] public EventCallback<bool> IsExpandedChanged { get; set; }
+    
+    [Parameter, EditorRequired] public required RenderFragment ChildContent { get; set; }
+
+    private bool _isExpanded;
+    private ElementReference _container;
+
+    private IJSObjectReference _module;
+    private int _registeredId;
+    
+    protected override void OnParametersSet() {
+        _isExpanded = IsExpanded;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            _module = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import", "./js/Components/ExpandableMenuButton.js");
+            _registeredId = await _module.InvokeAsync<int>("initializeComponent");
+        }
+    }
+
+    private async Task HandleDisplayMenu() {
+        if (_isExpanded) return;
+        
+        _isExpanded = true;
+        await IsExpandedChanged.InvokeAsync(true);
+    }
+
+    [JSInvokable]
+    public async Task HandleHideMenu() {
+        if (!_isExpanded) return;
+        
+        _isExpanded = false;
+        await IsExpandedChanged.InvokeAsync(false);
+    }
+
+    public async ValueTask DisposeAsync() {
+        try {
+            if (_module != null!) {
+                await _module.InvokeVoidAsync("disposeComponent", _registeredId);
+                _registeredId = 0;
+                await _module.DisposeAsync();
+            }
+        } catch (JSDisconnectedException) {
+        }
+    }
+}

@@ -65,7 +65,7 @@
                         <div class="flex flex-col gap-2">
                             <label class="font-bold text-gray-300">Status</label>
 
-                            <TooltipContainer ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" ShowTooltip="@(!_statusEditContext.IsValid(_statusTextField))" Id="status">
+                            <TooltipContainer ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" ShowTooltip="@(!_statusEditContext.IsValid(_statusTextField))">
                                 <Target>
                                     @{
                                         string classes = $"w-full h-11 mt-2 input-field {(_statusEditContext.IsValid(_statusTextField) ? string.Empty : "border-red-700")}";

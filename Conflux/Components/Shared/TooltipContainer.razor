@@ -2,16 +2,16 @@
 
 @implements IAsyncDisposable
 
-@inject IJSRuntime js
+@inject IJSRuntime JavascriptRuntime
 @inject ILogger<TooltipContainer> Logger
 
 @* Have to anchor the slot like a loser *@
-<section @ref="_target">
+<div @ref="_target" class="inline-block">
     @Target
-</section>
+</div>
 
 @if (ShowTooltip) {
-    <div class="absolute inset-0 pointer-events-none">
+    <div class="absolute inset-0 pointer-events-none" tabindex="-1">
         <div class="absolute top-0 left-0 @_class" @attributes="AdditionalAttributes" @ref="_tooltip" hidden>
             @Tooltip
 
@@ -21,7 +21,8 @@
 }
 
 @code {
-    private IJSObjectReference? _componentsModule;
+    private IJSObjectReference? _module;
+    private DotNetObjectReference<TooltipContainer>? _objectReference;
     
     [Parameter, EditorRequired] public required RenderFragment Target { get; set; }
     [Parameter, EditorRequired] public required RenderFragment Tooltip { get; set; }
@@ -31,10 +32,11 @@
     
     [Parameter] public string? ArrowCssClass { get; set; }
     [Parameter] public string TooltipPlacement { get; set; } = "bottom";
-    [Parameter] public int TooltipOffset { get; set; } = 0;
+    [Parameter] public int TooltipOffset { get; set; }
+
+    [Parameter] public bool CloseWhenClickOutside { get; set; }
     
-    [Parameter(CaptureUnmatchedValues = true)]
-    public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
     private string? _class;
 
     private ElementReference _target, _tooltip, _arrow;
@@ -43,15 +45,16 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
-            _componentsModule = await js.InvokeAsync<IJSObjectReference>("import", "./js/Components/Tooltip.js");
+            _module = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import", "./js/Components/Tooltip.js");
+            _objectReference = DotNetObjectReference.Create(this);
         }
 
         if (ShowTooltip) {
             if (_tooltipId == 0) {
-                _tooltipId = await _componentsModule!.InvokeAsync<int>("registerTooltip", _target, _tooltip, _arrow, TooltipPlacement, TooltipOffset);
+                _tooltipId = await _module!.InvokeAsync<int>("registerTooltip", _target, _tooltip, _arrow, TooltipPlacement, TooltipOffset, _objectReference, CloseWhenClickOutside);
             }
         } else if (_tooltipId != 0) {
-            await _componentsModule!.InvokeVoidAsync("unregisterTooltip", _tooltipId);
+            await _module!.InvokeVoidAsync("unregisterTooltip", _tooltipId);
             _tooltipId = 0;
         }
     }
@@ -64,11 +67,24 @@
         AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key != "class").ToDictionary();
     }
 
+    [JSInvokable]
+    public async Task HandleOutsideClick() {
+        if (!CloseWhenClickOutside) return;
+        
+        Logger.LogInformation("Close Outside.");
+
+        if (ShowTooltipChanged.HasDelegate) {
+            await ShowTooltipChanged.InvokeAsync(false);
+        }
+    }
+
     public async ValueTask DisposeAsync() {
-        if (_componentsModule != null) {
+        _objectReference?.Dispose();
+        
+        if (_module != null) {
             try {
-                await _componentsModule.InvokeVoidAsync("unregisterTooltip", _tooltipId);
-                await _componentsModule.DisposeAsync();
+                await _module.InvokeVoidAsync("unregisterTooltip", _tooltipId);
+                await _module.DisposeAsync();
 
                 _tooltipId = 0;
             } catch (JSDisconnectedException) {

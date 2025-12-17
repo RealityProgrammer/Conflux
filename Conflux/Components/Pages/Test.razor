@@ -1,7 +1,45 @@
 ﻿@page "/test"
 @using Conflux.Components.Shared
+@using Conflux.Components.Shared.Icons
 @using Conflux.Services.Abstracts
 
-<UserProfileCard class="rounded-lg bg-gray-650"/>
+<button @ref="_target" @onclick="HandleDisplayMenu" type="button" class="button-primary">
+    Open Menu
+</button>
 
-<p>Test</p>
+<Tooltip TargetReference="_target" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="right" TooltipOffset="8" @bind-IsShowing="_isExpanded" CloseWhenClickOutside="true">
+    <div class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md flex flex-col z-50" tabindex="-1">
+        <button class="p-1 rounded-md cursor-pointer bg-transparent hover:bg-white/10 active:bg-black/8">Button 1</button>
+        <button class="p-1 rounded-md cursor-pointer bg-transparent hover:bg-white/10 active:bg-black/8">Button 2</button>
+        <button class="p-1 rounded-md cursor-pointer bg-transparent hover:bg-white/10 active:bg-black/8">Button 3</button>
+    </div>
+</Tooltip>
+
+@* <TooltipContainer ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="right" TooltipOffset="8" @bind-ShowTooltip="_isExpanded" CloseWhenClickOutside="true"> *@
+@*     <Target> *@
+@*         <button @onclick="HandleDisplayMenu" type="button" class="button-primary"> *@
+@*             Open Menu *@
+@*         </button> *@
+@*     </Target> *@
+@* *@
+@*     <Tooltip> *@
+@*         <div class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md flex flex-col z-50" tabindex="-1"> *@
+@*             <p>Line 1</p> *@
+@*             <p>Line 2</p> *@
+@*             <p>Line 3</p> *@
+@* *@
+@*             <button>Button 1</button> *@
+@*             <button>Button 2</button> *@
+@*             <button>Button 3</button> *@
+@*         </div> *@
+@*     </Tooltip> *@
+@* </TooltipContainer> *@
+
+@code {
+    private bool _isExpanded;
+    private ElementReference _target;
+
+    public void HandleDisplayMenu() {
+        _isExpanded = true;
+    }
+}
