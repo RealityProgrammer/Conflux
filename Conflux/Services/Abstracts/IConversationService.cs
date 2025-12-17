@@ -12,8 +12,8 @@ public interface IConversationService {
     event Action<MessageDeletedEventArgs>? OnMessageDeleted;
     event Action<MessageEditedEventArgs>? OnMessageEdited;
     
-    Task JoinConversationAsync(Guid conversationId);
-    Task LeaveConversationAsync(Guid conversationId);
+    Task JoinConversationHubAsync(Guid conversationId);
+    Task LeaveConversationHubAsync(Guid conversationId);
     
     Task<Conversation?> GetOrCreateDirectConversationAsync(string user1, string user2);
     

@@ -103,13 +103,13 @@ public class ContentService(IWebHostEnvironment environment, ILogger<ContentServ
     public async Task<string> UploadServerAvatarAsync(Stream stream, Guid serverId, CancellationToken cancellationToken = default) {
         cancellationToken.ThrowIfCancellationRequested();
 
-        string avatarDirectory = Path.Combine(environment.ContentRootPath, "Uploads", "servers", "avatars");
+        string avatarDirectory = Path.Combine(environment.ContentRootPath, "Uploads", "communities", "avatars");
 
         if (!Directory.Exists(avatarDirectory)) {
             Directory.CreateDirectory(avatarDirectory);
         }
         
-        string path = Path.Combine("servers", "avatars", serverId.ToString());
+        string path = Path.Combine("communities", "avatars", serverId.ToString());
         string physicalPath = Path.Combine(environment.ContentRootPath, "Uploads", path);
         
         await using var destinationStream = File.OpenWrite(physicalPath);
@@ -123,7 +123,7 @@ public class ContentService(IWebHostEnvironment environment, ILogger<ContentServ
 
     public Task DeleteServerAvatarAsync(Guid serverId) {
         try {
-            string path = Path.Combine("servers", "avatars", serverId.ToString());
+            string path = Path.Combine("communities", "avatars", serverId.ToString());
             string physicalPath = Path.Combine(environment.ContentRootPath, "Uploads", path);
 
             File.Delete(physicalPath);
@@ -135,7 +135,7 @@ public class ContentService(IWebHostEnvironment environment, ILogger<ContentServ
 
     public DateTime GetServerAvatarUploadTime(Guid serverId) {
         try {
-            string path = Path.Combine("servers", "avatars", serverId.ToString());
+            string path = Path.Combine("communities", "avatars", serverId.ToString());
             string physicalPath = Path.Combine(environment.ContentRootPath, "Uploads", path);
 
             return File.GetLastWriteTimeUtc(physicalPath);

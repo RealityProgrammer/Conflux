@@ -176,6 +176,7 @@ app.MapPost("/auth/logout", async (ClaimsPrincipal claims, [FromServices] SignIn
 
 app.MapHub<NotificationHub>("/hub/notification");
 app.MapHub<ConversationHub>("/hub/conversation");
+app.MapHub<CommunityHub>("/hub/community");
 
 // Setup Application stuffs.
 using (var scope = app.Services.CreateScope()) {

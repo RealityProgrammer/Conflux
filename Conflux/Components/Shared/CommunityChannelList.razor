@@ -3,7 +3,9 @@
 @using Conflux.Services.Abstracts
 @using Microsoft.EntityFrameworkCore
 
-@inject ILogger<ServerChannelList> Logger
+@implements IDisposable
+
+@inject ILogger<CommunityChannelList> Logger
 @inject ICommunityService CommunityService
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 
@@ -12,14 +14,14 @@
         <button @ref="_serverOptionsButton" class="absolute top-0 right-0 p-1.5 bg-transparent hover:bg-white/15 rounded-full" @onclick="@(() => _isShowingConfigTooltip = true)">
             <Gear class="size-5 fill-white"/>
         </button>
-        
+
         <Tooltip TargetReference="_serverOptionsButton" @bind-IsShowing="_isShowingConfigTooltip" TooltipPlacement="right" TooltipOffset="4" CloseWhenClickOutside="true">
             <div class="bg-gray-600 p-1 text-white text-sm rounded-lg shadow-md flex flex-col gap-1 z-50" tabindex="-1">
                 <button class="p-1.5 bg-transparent hover:bg-white/10 active:bg-black/8 cursor-pointer rounded-md" @onclick="HandleStartCreatingChannelCategory">Create channel category</button>
             </div>
         </Tooltip>
     </div>
-        
+
     <p class="text-center">
         Welcome to<br/>
         <span class="font-bold text-lg">_Server_Name_</span>
@@ -32,7 +34,7 @@
     <h1 class="text-sm font-bold text-gray-400 mt-2 mb-2">System</h1>
         
     <div class="flex flex-col gap-1">
-        <NavLink class="flex flex-row items-center p-1.5 rounded-md hover:bg-white/15 active:bg-black/8" ActiveClass="hover:bg-white/8" href="@($"/community/{CommunityServerId}/welcome")">
+        <NavLink class="flex flex-row items-center p-1.5 rounded-md hover:bg-white/15 active:bg-black/8" ActiveClass="hover:bg-white/8" href="@($"/community/{CommunityId}/welcome")">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="mr-2 fill-none stroke-white size-6 stroke-1 flex-none">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M10.05 4.575a1.575 1.575 0 1 0-3.15 0v3m3.15-3v-1.5a1.575 1.575 0 0 1 3.15 0v1.5m-3.15 0 .075 5.925m3.075.75V4.575m0 0a1.575 1.575 0 0 1 3.15 0V15M6.9 7.575a1.575 1.575 0 1 0-3.15 0v8.175a6.75 6.75 0 0 0 6.75 6.75h2.018a5.25 5.25 0 0 0 3.712-1.538l1.732-1.732a5.25 5.25 0 0 0 1.538-3.712l.003-2.024a.668.668 0 0 1 .198-.471 1.575 1.575 0 1 0-2.228-2.228 3.818 3.818 0 0 0-1.12 2.687M6.9 7.575V12m6.27 4.318A4.49 4.49 0 0 1 16.35 15m.002 0h-.002" />
             </svg>
@@ -40,7 +42,7 @@
             <span class="flex-none">Welcome</span>
         </NavLink>
         
-        <NavLink class="flex flex-row items-center p-1.5 rounded-md hover:bg-white/15 active:bg-black/8" ActiveClass="hover:bg-white/8" href="@($"/community/{CommunityServerId}/events")">
+        <NavLink class="flex flex-row items-center p-1.5 rounded-md hover:bg-white/15 active:bg-black/8" ActiveClass="hover:bg-white/8" href="@($"/community/{CommunityId}/events")">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="mr-2 fill-none stroke-white size-6 stroke-1 flex-none">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M10.05 4.575a1.575 1.575 0 1 0-3.15 0v3m3.15-3v-1.5a1.575 1.575 0 0 1 3.15 0v1.5m-3.15 0 .075 5.925m3.075.75V4.575m0 0a1.575 1.575 0 0 1 3.15 0V15M6.9 7.575a1.575 1.575 0 1 0-3.15 0v8.175a6.75 6.75 0 0 0 6.75 6.75h2.018a5.25 5.25 0 0 0 3.712-1.538l1.732-1.732a5.25 5.25 0 0 0 1.538-3.712l.003-2.024a.668.668 0 0 1 .198-.471 1.575 1.575 0 1 0-2.228-2.228 3.818 3.818 0 0 0-1.12 2.687M6.9 7.575V12m6.27 4.318A4.49 4.49 0 0 1 16.35 15m.002 0h-.002" />
             </svg>
@@ -48,7 +50,7 @@
             <span class="flex-none">Rules</span>
         </NavLink>
         
-        <NavLink class="flex flex-row items-center p-1.5 rounded-md hover:bg-white/15 active:bg-black/8" ActiveClass="hover:bg-white/8" href="@($"/community/{CommunityServerId}/events")">
+        <NavLink class="flex flex-row items-center p-1.5 rounded-md hover:bg-white/15 active:bg-black/8" ActiveClass="hover:bg-white/8" href="@($"/community/{CommunityId}/events")">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="mr-2 fill-none stroke-white size-6 stroke-1 flex-none">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M10.05 4.575a1.575 1.575 0 1 0-3.15 0v3m3.15-3v-1.5a1.575 1.575 0 0 1 3.15 0v1.5m-3.15 0 .075 5.925m3.075.75V4.575m0 0a1.575 1.575 0 0 1 3.15 0V15M6.9 7.575a1.575 1.575 0 1 0-3.15 0v8.175a6.75 6.75 0 0 0 6.75 6.75h2.018a5.25 5.25 0 0 0 3.712-1.538l1.732-1.732a5.25 5.25 0 0 0 1.538-3.712l.003-2.024a.668.668 0 0 1 .198-.471 1.575 1.575 0 1 0-2.228-2.228 3.818 3.818 0 0 0-1.12 2.687M6.9 7.575V12m6.27 4.318A4.49 4.49 0 0 1 16.35 15m.002 0h-.002" />
             </svg>
@@ -66,7 +68,7 @@
         
     <div class="flex flex-col gap-1">
         @foreach (var channel in channels) {
-            <NavLink class="flex flex-row items-center p-1.5 rounded-md hover:bg-white/15 active:bg-black/8" ActiveClass="hover:bg-white/8" href="@($"/community/{CommunityServerId}/{channel.Id}")">
+            <NavLink class="flex flex-row items-center p-1.5 rounded-md hover:bg-white/15 active:bg-black/8" ActiveClass="hover:bg-white/8" href="@($"/community/{CommunityId}/{channel.Id}")">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="mr-2 fill-none stroke-white size-6 stroke-1 flex-none">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M10.05 4.575a1.575 1.575 0 1 0-3.15 0v3m3.15-3v-1.5a1.575 1.575 0 0 1 3.15 0v1.5m-3.15 0 .075 5.925m3.075.75V4.575m0 0a1.575 1.575 0 0 1 3.15 0V15M6.9 7.575a1.575 1.575 0 1 0-3.15 0v8.175a6.75 6.75 0 0 0 6.75 6.75h2.018a5.25 5.25 0 0 0 3.712-1.538l1.732-1.732a5.25 5.25 0 0 0 1.538-3.712l.003-2.024a.668.668 0 0 1 .198-.471 1.575 1.575 0 1 0-2.228-2.228 3.818 3.818 0 0 0-1.12 2.687M6.9 7.575V12m6.27 4.318A4.49 4.49 0 0 1 16.35 15m.002 0h-.002"/>
                 </svg>
@@ -85,7 +87,7 @@
 }
 
 @code {
-    [Parameter] public Guid CommunityServerId { get; set; }
+    [Parameter] public Guid CommunityId { get; set; }
 
     private ElementReference _serverOptionsButton;
     
@@ -99,7 +101,7 @@
             await using var dbContext = await DbContextFactory.CreateDbContextAsync();
 
             _channelCategories = await dbContext.CommunityChannelCategories
-                .Where(c => c.CommunityServerId == CommunityServerId)
+                .Where(c => c.CommunityServerId == CommunityId)
                 .OrderBy(c => c.CreatedAt)
                 .Select(c => new ChannelCategoryDTO(
                     c.Id, 
@@ -112,6 +114,8 @@
                 .ToListAsync();
             
             StateHasChanged();
+
+            CommunityService.OnChannelCategoryCreated += OnChannelCategoryCreated;
         }
     }
 
@@ -134,10 +138,39 @@
         string value = Convert.ToString(args.Value) ?? string.Empty;
         
         if (!string.IsNullOrEmpty(value)) {
-            await CommunityService.CreateChannelCategoryAsync(value, CommunityServerId);
+            await CommunityService.CreateChannelCategoryAsync(value, CommunityId);
         }
 
         _isCreatingChannelCategory = false;
+    }
+
+    private void OnChannelCategoryCreated(ChannelCategoryCreatedEventArgs args) {
+        if (args.CommunityId != CommunityId) return;
+
+        InvokeAsync(async () => {
+            try {
+                await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+
+                ChannelCategoryDTO category = await dbContext.CommunityChannelCategories
+                    .Where(x => x.Id == args.CategoryId)
+                    .Select(x => new ChannelCategoryDTO(
+                        x.Id,
+                        x.Name,
+                        x.Channels.Select(c => new ChannelDTO(c.Id, c.Name)).ToList())
+                    )
+                    .FirstAsync();
+
+                _channelCategories.Add(category);
+
+                StateHasChanged();
+            } catch (Exception e) {
+                Logger.LogError(e, "Something went wrong...");
+            }
+        });
+    }
+
+    public void Dispose() {
+        CommunityService.OnChannelCategoryCreated -= OnChannelCategoryCreated;
     }
 
     private readonly record struct ChannelCategoryDTO(Guid Id, string Name, List<ChannelDTO> Channels);

@@ -118,7 +118,7 @@
         }
 
         if (_previousConversationId != Guid.Empty) {
-            await ConversationService.LeaveConversationAsync(_previousConversationId);
+            await ConversationService.LeaveConversationHubAsync(_previousConversationId);
             _previousConversationId = Guid.Empty;
         }
 
@@ -144,7 +144,7 @@
                     _initState = InitializationState.Success;
                     _otherUserInfo = otherUser;
                     
-                    await ConversationService.JoinConversationAsync(ConversationId);
+                    await ConversationService.JoinConversationHubAsync(ConversationId);
                 }
             }
         } finally {
@@ -161,7 +161,7 @@
     public async ValueTask DisposeAsync() {
         NavigationManager.LocationChanged -= OnNavigationLocationChanged;
         
-        await ConversationService.LeaveConversationAsync(ConversationId);
+        await ConversationService.LeaveConversationHubAsync(ConversationId);
     }
 
     private enum InitializationState {

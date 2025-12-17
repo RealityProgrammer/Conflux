@@ -2,12 +2,17 @@
 
 @using Conflux.Components.Layout
 @using Conflux.Components.Shared
+@using Conflux.Services.Abstracts
 @using Microsoft.AspNetCore.Components.Sections
 
 @layout SidebarLobbyLayout
 
+@implements IAsyncDisposable
+
+@inject ICommunityService CommunityService
+
 <SectionContent SectionName="lobby-sidebar">
-    <ServerChannelList CommunityServerId="CommunityId"/>
+    <CommunityChannelList CommunityId="CommunityId"/>
 </SectionContent>
 
 <section class="col-span-10 bg-gray-700 h-full overflow-hidden flex-1 text-white">
@@ -16,4 +21,14 @@
 
 @code {
     [Parameter] public Guid CommunityId { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            await CommunityService.JoinCommunityHubAsync(CommunityId);
+        }
+    }
+
+    public async ValueTask DisposeAsync() {
+        await CommunityService.LeaveCommunityHubAsync(CommunityId);
+    }
 }

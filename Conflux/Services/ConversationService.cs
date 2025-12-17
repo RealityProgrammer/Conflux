@@ -25,7 +25,7 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
     private readonly IHubContext<ConversationHub> _hubContext;
     private readonly IContentService _contentService;
 
-    private readonly ConcurrentDictionary<Guid, HubConnection> _conversationHubConnections = [];
+    private readonly ConcurrentDictionary<Guid, HubConnection> _hubConnections = [];
     
     public event Action<MessageReceivedEventArgs>? OnMessageReceived;
     public event Action<MessageDeletedEventArgs>? OnMessageDeleted;
@@ -41,7 +41,7 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
         _logger = logger;
     }
 
-    private HubConnection CreateHubConnectionForConversation(Guid conversationId) {
+    private HubConnection CreateHubConnection(Guid conversationId) {
         return new HubConnectionBuilder()
             .WithUrl(_navigationManager.ToAbsoluteUri($"/hub/conversation?ConversationId={conversationId}"), options => {
                 var cookies = _httpContextAccessor.HttpContext!.Request.Cookies.ToDictionary();
@@ -78,11 +78,11 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
             .Build();
     }
 
-    public async Task JoinConversationAsync(Guid conversationId) {
+    public async Task JoinConversationHubAsync(Guid conversationId) {
         // TODO: Revise this code due to possible race-condition.
-        if (_conversationHubConnections.ContainsKey(conversationId)) return;
+        if (_hubConnections.ContainsKey(conversationId)) return;
         
-        var connection = CreateHubConnectionForConversation(conversationId);
+        var connection = CreateHubConnection(conversationId);
 
         connection.On<MessageReceivedEventArgs>(MessageReceivedEventName, args => {
             OnMessageReceived?.Invoke(args);
@@ -98,12 +98,12 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
         
         await connection.StartAsync();
         
-        bool add = _conversationHubConnections.TryAdd(conversationId, connection);
+        bool add = _hubConnections.TryAdd(conversationId, connection);
         Debug.Assert(add, $"Failed to register hub connection for conversation {conversationId}. Possible race-condition?");
     }
 
-    public async Task LeaveConversationAsync(Guid conversationId) {
-        if (_conversationHubConnections.TryRemove(conversationId, out var connection)) {
+    public async Task LeaveConversationHubAsync(Guid conversationId) {
+        if (_hubConnections.TryRemove(conversationId, out var connection)) {
             await connection.DisposeAsync();
         }
     }
@@ -148,12 +148,9 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
 
     public async Task<IConversationService.SendStatus> SendMessageAsync(Guid conversationId, string senderId, string? body, Guid? replyMessageId, IReadOnlyCollection<IConversationService.UploadingAttachment> attachments, CancellationToken cancellationToken = default) {
         // TODO: Rewrite this, this is goddamn ugly.
-        _logger.LogInformation("Sending message...");
         
         await using (var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken)) {
             await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
-            
-            _logger.LogInformation("Uploading attachments...");
             
             // Upload the attachments.
             var attachmentPaths = new List<(string Name, MessageAttachmentType Type, string Path)>(attachments.Count);
@@ -161,8 +158,6 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
             try {
                 foreach (var attachment in attachments) {
                     var path = await _contentService.UploadMessageAttachmentAsync(attachment.Stream, attachment.Type, cancellationToken);
-                    
-                    _logger.LogInformation("Attachment uploaded: Type {t}, Path {p}.", attachment.Type, path);
                     
                     attachmentPaths.Add(new(attachment.Name, attachment.Type, path));
                 }
@@ -378,7 +373,7 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
     }
 
     public async ValueTask DisposeAsync() {
-        foreach ((_, HubConnection connection) in _conversationHubConnections) {
+        foreach ((_, HubConnection connection) in _hubConnections) {
             await connection.DisposeAsync();
         }
     }
