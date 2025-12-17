@@ -2,7 +2,7 @@
 
 namespace Conflux.Database.Entities;
 
-public class CommunityServerChannelCategory : ICreatedAtColumn {
+public class CommunityChannelCategory : ICreatedAtColumn {
     public Guid Id { get; set; }
 
     [MaxLength(32)] public string Name { get; set; } = null!;
@@ -11,6 +11,6 @@ public class CommunityServerChannelCategory : ICreatedAtColumn {
     
     public Guid CommunityServerId { get; set; }
 
-    public CommunityServer CommunityServer { get; set; } = null!;
-    public ICollection<CommunityServerChannel> Channels { get; set; } = null!;
+    public Community Community { get; set; } = null!;
+    public ICollection<ComunityChannel> Channels { get; set; } = null!;
 }

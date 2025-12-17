@@ -21,7 +21,7 @@ public class ApplicationUser : IdentityUser, ICreatedAtColumn {
     public ICollection<FriendRequest> SentFriendRequests { get; set; } = null!;
     public ICollection<FriendRequest> ReceivedFriendRequests { get; set; } = null!;
 
-    public ICollection<CommunityServer> OwnedServers { get; set; } = null!;
-    public ICollection<CommunityServer> CreatedServers { get; set; } = null!;
+    public ICollection<Community> OwnedServers { get; set; } = null!;
+    public ICollection<Community> CreatedServers { get; set; } = null!;
     public ICollection<CommunityMember> CommunityMembers { get; set; } = null!;
 }

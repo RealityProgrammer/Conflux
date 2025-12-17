@@ -10,6 +10,6 @@ public class CommunityMember : ICreatedAtColumn {
     
     public DateTime CreatedAt { get; set; }
     
-    public CommunityServer CommunityServer { get; set; } = null!;
+    public Community Community { get; set; } = null!;
     public ApplicationUser User { get; set; } = null!;
 }

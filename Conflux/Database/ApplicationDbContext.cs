@@ -12,10 +12,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ConversationMember> ConversationMembers { get; set; } = null!;
     public DbSet<ChatMessage> ChatMessages { get; set; } = null!;
     public DbSet<MessageAttachment> MessageAttachments { get; set; } = null!;
-    public DbSet<CommunityServer> CommunityServers { get; set; } = null!;
+    public DbSet<Community> Communities { get; set; } = null!;
     public DbSet<CommunityMember> CommunityMembers { get; set; } = null!;
-    public DbSet<CommunityServerChannel> CommunityServerChannels { get; set; } = null!;
-    public DbSet<CommunityServerChannelCategory> CommunityServerChannelCategories { get; set; } = null!;
+    public DbSet<ComunityChannel> CommunityChannels { get; set; } = null!;
+    public DbSet<CommunityChannelCategory> CommunityChannelCategories { get; set; } = null!;
     
     public override int SaveChanges() {
         InsertTimestamps();
@@ -102,7 +102,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.HasKey(message => message.Id);
         });
 
-        builder.Entity<CommunityServer>(entity => {
+        builder.Entity<Community>(entity => {
             entity.HasKey(x => x.Id);
 
             entity.HasOne(server => server.Owner)
@@ -118,7 +118,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .IsRequired();
 
             entity.HasMany(server => server.ChannelCategories)
-                .WithOne(channelCategory => channelCategory.CommunityServer)
+                .WithOne(channelCategory => channelCategory.Community)
                 .HasForeignKey(channelCategory => channelCategory.CommunityServerId)
                 .HasPrincipalKey(channel => channel.Id)
                 .OnDelete(DeleteBehavior.Cascade)
@@ -128,7 +128,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
             entity.HasIndex(x => new { x.CommunityServerId, x.UserId }).IsUnique();
             
-            entity.HasOne(member => member.CommunityServer)
+            entity.HasOne(member => member.Community)
                 .WithMany(server => server.Members)
                 .HasForeignKey(member => member.CommunityServerId)
                 .HasPrincipalKey(member => member.Id)
@@ -139,11 +139,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey(member => member.UserId)
                 .HasPrincipalKey(user => user.Id)
                 .OnDelete(DeleteBehavior.Cascade);
-        }).Entity<CommunityServerChannelCategory>(entity => {
+        }).Entity<CommunityChannelCategory>(entity => {
             entity.HasKey(x => x.Id);
 
             entity.HasMany(x => x.Channels)
-                .WithOne(x => x.ServerChannelCategory)
+                .WithOne(x => x.ChannelCategory)
                 .HasForeignKey(x => x.ServerChannelCategoryId)
                 .HasPrincipalKey(x => x.Id)
                 .OnDelete(DeleteBehavior.Cascade);

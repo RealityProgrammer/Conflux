@@ -154,34 +154,7 @@ namespace Conflux.Database.Migrations
                     b.ToTable("ChatMessages");
                 });
 
-            modelBuilder.Entity("Conflux.Database.Entities.CommunityMember", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CommunityServerId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasMaxLength(36)
-                        .HasColumnType("character varying(36)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("CommunityServerId", "UserId")
-                        .IsUnique();
-
-                    b.ToTable("CommunityMembers");
-                });
-
-            modelBuilder.Entity("Conflux.Database.Entities.CommunityServer", b =>
+            modelBuilder.Entity("Conflux.Database.Entities.Community", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -215,34 +188,10 @@ namespace Conflux.Database.Migrations
 
                     b.HasIndex("OwnerId");
 
-                    b.ToTable("CommunityServers");
+                    b.ToTable("Communities");
                 });
 
-            modelBuilder.Entity("Conflux.Database.Entities.CommunityServerChannel", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
-
-                    b.Property<Guid>("ServerChannelCategoryId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ServerChannelCategoryId");
-
-                    b.ToTable("CommunityServerChannels");
-                });
-
-            modelBuilder.Entity("Conflux.Database.Entities.CommunityServerChannelCategory", b =>
+            modelBuilder.Entity("Conflux.Database.Entities.CommunityChannelCategory", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -263,7 +212,58 @@ namespace Conflux.Database.Migrations
 
                     b.HasIndex("CommunityServerId");
 
-                    b.ToTable("CommunityServerChannelCategories");
+                    b.ToTable("CommunityChannelCategories");
+                });
+
+            modelBuilder.Entity("Conflux.Database.Entities.CommunityMember", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CommunityServerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(36)
+                        .HasColumnType("character varying(36)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("CommunityServerId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("CommunityMembers");
+                });
+
+            modelBuilder.Entity("Conflux.Database.Entities.ComunityChannel", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<Guid>("ServerChannelCategoryId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ServerChannelCategoryId");
+
+                    b.ToTable("CommunityChannels");
                 });
 
             modelBuilder.Entity("Conflux.Database.Entities.Conversation", b =>
@@ -521,26 +521,7 @@ namespace Conflux.Database.Migrations
                     b.Navigation("Sender");
                 });
 
-            modelBuilder.Entity("Conflux.Database.Entities.CommunityMember", b =>
-                {
-                    b.HasOne("Conflux.Database.Entities.CommunityServer", "CommunityServer")
-                        .WithMany("Members")
-                        .HasForeignKey("CommunityServerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Conflux.Database.Entities.ApplicationUser", "User")
-                        .WithMany("CommunityMembers")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CommunityServer");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Conflux.Database.Entities.CommunityServer", b =>
+            modelBuilder.Entity("Conflux.Database.Entities.Community", b =>
                 {
                     b.HasOne("Conflux.Database.Entities.ApplicationUser", "Creator")
                         .WithMany("CreatedServers")
@@ -559,26 +540,45 @@ namespace Conflux.Database.Migrations
                     b.Navigation("Owner");
                 });
 
-            modelBuilder.Entity("Conflux.Database.Entities.CommunityServerChannel", b =>
+            modelBuilder.Entity("Conflux.Database.Entities.CommunityChannelCategory", b =>
                 {
-                    b.HasOne("Conflux.Database.Entities.CommunityServerChannelCategory", "ServerChannelCategory")
-                        .WithMany("Channels")
-                        .HasForeignKey("ServerChannelCategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ServerChannelCategory");
-                });
-
-            modelBuilder.Entity("Conflux.Database.Entities.CommunityServerChannelCategory", b =>
-                {
-                    b.HasOne("Conflux.Database.Entities.CommunityServer", "CommunityServer")
+                    b.HasOne("Conflux.Database.Entities.Community", "Community")
                         .WithMany("ChannelCategories")
                         .HasForeignKey("CommunityServerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("CommunityServer");
+                    b.Navigation("Community");
+                });
+
+            modelBuilder.Entity("Conflux.Database.Entities.CommunityMember", b =>
+                {
+                    b.HasOne("Conflux.Database.Entities.Community", "Community")
+                        .WithMany("Members")
+                        .HasForeignKey("CommunityServerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Conflux.Database.Entities.ApplicationUser", "User")
+                        .WithMany("CommunityMembers")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Community");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Conflux.Database.Entities.ComunityChannel", b =>
+                {
+                    b.HasOne("Conflux.Database.Entities.CommunityChannelCategory", "ChannelCategory")
+                        .WithMany("Channels")
+                        .HasForeignKey("ServerChannelCategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ChannelCategory");
                 });
 
             modelBuilder.Entity("Conflux.Database.Entities.ConversationMember", b =>
@@ -699,14 +699,14 @@ namespace Conflux.Database.Migrations
                     b.Navigation("Attachments");
                 });
 
-            modelBuilder.Entity("Conflux.Database.Entities.CommunityServer", b =>
+            modelBuilder.Entity("Conflux.Database.Entities.Community", b =>
                 {
                     b.Navigation("ChannelCategories");
 
                     b.Navigation("Members");
                 });
 
-            modelBuilder.Entity("Conflux.Database.Entities.CommunityServerChannelCategory", b =>
+            modelBuilder.Entity("Conflux.Database.Entities.CommunityChannelCategory", b =>
                 {
                     b.Navigation("Channels");
                 });
