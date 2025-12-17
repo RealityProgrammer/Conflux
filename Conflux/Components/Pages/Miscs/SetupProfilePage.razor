@@ -63,36 +63,36 @@
                     
                     <InputFile class="hidden" id="avatar" OnChange="HandleAvatarUpload"/>
 
-                    <TooltipContainer ShowTooltip="!_avatarEditContext.IsValid(_avatarFileField)" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8">
-                        <Target>
-                            @{
-                                string avatarCssClass = $"mx-auto size-64 border-4 {(_avatarEditContext.IsValid(_avatarFileField) ? "border-gray-700" : "border-red-700")}";
-                                string? imageSource = _processingAvatar || string.IsNullOrEmpty(_user.AvatarProfilePath) ? null : $"{ContentService.GetAssetPath(_user.AvatarProfilePath)}?v={ContentService.GetUserAvatarUploadTime(_user.Id):yyyyMMddHHmmssffff}";
+                    @{
+                        string avatarCssClass = $"size-64 border-4 {(_avatarEditContext.IsValid(_avatarFileField) ? "border-gray-700" : "border-red-700")}";
+                        string? imageSource = _processingAvatar || string.IsNullOrEmpty(_user.AvatarProfilePath) ? null : $"{ContentService.GetAssetPath(_user.AvatarProfilePath)}?v={ContentService.GetUserAvatarUploadTime(_user.Id):yyyyMMddHHmmssffff}";
+                    }
+                    
+                    <div class="flex flex-row justify-center">
+                        <Avatar class="@avatarCssClass" ImageSrc="@imageSource" @ref="_avatarElement">
+                            @if (_processingAvatar) {
+                                <div class="absolute inset-0 flex flex-col justify-center items-center">
+                                    <Spinner class="size-1/2 fill-white"/>
+                                </div>
+                            } else {
+                                <label for="avatar" class="absolute inset-0 flex group bg-transparent flex-col justify-center items-center hover:bg-gray-600/40 cursor-pointer rounded-full">
+                                    <p class="hidden group-hover:block">Click to select Avatar</p>
+                                </label>
                             }
 
-                            <Avatar class="@avatarCssClass" ImageSrc="@imageSource">
-                                @if (_processingAvatar) {
-                                    <div class="absolute inset-0 flex flex-col justify-center items-center">
-                                        <Spinner class="size-1/2 fill-white"/>
-                                    </div>
-                                } else {
-                                    <label for="avatar" class="absolute inset-0 flex group bg-transparent flex-col justify-center items-center hover:bg-gray-600/40 cursor-pointer rounded-full">
-                                        <p class="hidden group-hover:block">Click to select Avatar</p>
-                                    </label>
-                                }
-
-                                @if (!string.IsNullOrEmpty(imageSource)) {
-                                    <button class="absolute top-0 right-0 p-2 rounded-full bg-red-600 shadow-lg hover:bg-red-500 active:bg-red-700 cursor-pointer" @onclick="HandleAvatarDelete">
-                                        <Cross class="size-5 fill-white"/>
-                                    </button>
-                                }
-                            </Avatar>
-                        </Target>
-
-                        <Tooltip>
+                            @if (!string.IsNullOrEmpty(imageSource)) {
+                                <button class="absolute top-0 right-0 p-2 rounded-full bg-red-600 shadow-lg hover:bg-red-500 active:bg-red-700 cursor-pointer" @onclick="HandleAvatarDelete">
+                                    <Cross class="size-5 fill-white"/>
+                                </button>
+                            }
+                        </Avatar>
+                    </div>
+                    
+                    @if (_avatarElement != null) {
+                        <Tooltip TargetReference="_avatarElement.RootElement" IsShowing="!_avatarEditContext.IsValid(_avatarFileField)" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8">
                             <ValidationMessage For="() => AvatarModel!.File" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"/>
                         </Tooltip>
-                    </TooltipContainer>
+                    }
                 </EditForm>
 
                 <div class="flex flex-row justify-center">
@@ -118,66 +118,58 @@
                     <DataAnnotationsValidator/>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="relative">
+                        <div>
                             <label class="font-semibold">Username</label>
 
-                            <TooltipContainer ShowTooltip="!string.IsNullOrEmpty(_usernameError) || !_profileEditContext.IsValid(_usernameField)" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" class="max-w-[90%]">
-                                <Target>
-                                    <InputText @bind-Value="ProfileModel!.UserName" class="mt-2 input-field h-11 w-full" maxlength="32"/>
-                                </Target>
-
-                                <Tooltip>
+                            <InputText @ref="_usernameInputElement" @bind-Value="ProfileModel!.UserName" class="mt-2 input-field h-11 w-full" maxlength="32"/>
+                            
+                            @if (_usernameInputElement?.Element.HasValue ?? false) {
+                                <Tooltip TargetReference="_usernameInputElement.Element.Value" IsShowing="!string.IsNullOrEmpty(_usernameError) || !_profileEditContext.IsValid(_usernameField)" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" class="max-w-[90%]">
                                     @if (string.IsNullOrEmpty(_usernameError)) {
                                         <ValidationMessage For="() => ProfileModel!.UserName" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"/>
                                     } else {
                                         <p class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md">@_usernameError</p>
                                     }
                                 </Tooltip>
-                            </TooltipContainer>
-                            
+                            }
+
                             <p class="text-sm text-red-500 mt-1 text-center">Warning: Username is immutable!</p>
                         </div>
 
                         <div>
                             <label class="font-semibold">Display Name</label>
 
-                            <TooltipContainer ShowTooltip="!_profileEditContext.IsValid(_displayNameField)" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" class="max-w-[90%]">
-                                <Target>
-                                    <InputText @bind-Value="ProfileModel!.DisplayName" class="mt-2 input-field h-11 w-full" maxlength="32"/>
-                                </Target>
-
-                                <Tooltip>
+                            <InputText @ref="_displayNameInputElement" @bind-Value="ProfileModel!.DisplayName" class="mt-2 input-field h-11 w-full" maxlength="32"/>
+                            
+                            @if (_displayNameInputElement?.Element.HasValue ?? false) {
+                                <Tooltip TargetReference="_displayNameInputElement.Element.Value" IsShowing="!_profileEditContext.IsValid(_displayNameField)" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" class="max-w-[90%]">
                                     <ValidationMessage For="() => ProfileModel!.DisplayName" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md]"/>
                                 </Tooltip>
-                            </TooltipContainer>
+                            }
                         </div>
 
                         <div>
                             <label class="font-semibold">Pronouns</label>
 
-                            <TooltipContainer ShowTooltip="!_profileEditContext.IsValid(_pronounsField)" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" class="max-w-[90%]">
-                                <Target>
-                                    <InputText @bind-Value="ProfileModel!.Pronouns" class="mt-2 input-field h-11 w-full" maxlength="32"/>
-                                </Target>
-
-                                <Tooltip>
+                            <InputText @ref="_pronounsInputElement" @bind-Value="ProfileModel!.Pronouns" class="mt-2 input-field h-11 w-full" maxlength="32"/>
+                            
+                            @if (_pronounsInputElement?.Element.HasValue ?? false) {
+                                <Tooltip TargetReference="_pronounsInputElement.Element.Value" IsShowing="!_profileEditContext.IsValid(_pronounsField)" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" class="max-w-[90%]">
                                     <ValidationMessage For="() => ProfileModel!.Pronouns" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"/>
                                 </Tooltip>
-                            </TooltipContainer>
+                            }
                         </div>
 
                         <div class="col-start-1 col-end-2 md:col-end-3">
                             <label class="font-semibold">About Me</label>
 
-                            <TooltipContainer ShowTooltip="!_profileEditContext.IsValid(_bioField)" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" class="max-w-[90%]">
-                                <Target>
-                                    <InputTextArea @bind-Value="ProfileModel!.Bio" class="mt-2 input-field h-55 w-full px-1.5 py-1" maxlength="255"/>
-                                </Target>
-
-                                <Tooltip>
+                            <InputTextArea @ref="_bioInputElement" @bind-Value="ProfileModel!.Bio" class="mt-2 input-field h-55 w-full px-1.5 py-1" maxlength="255"/>
+                            
+                            @if (_bioInputElement?.Element.HasValue ?? false) {
+                                <Tooltip TargetReference="_bioInputElement.Element.Value" IsShowing="!_profileEditContext.IsValid(_bioField)" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" class="max-w-[90%]">
                                     <ValidationMessage For="() => ProfileModel!.Bio" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"/>
                                 </Tooltip>
-                            </TooltipContainer>
+                            }
                         </div>
                     </div>
                 </EditForm>
@@ -230,7 +222,11 @@
 
     private bool _showPrompt = true;
     private SetupStage _stage;
-
+    
+    private Avatar? _avatarElement;
+    private InputText? _usernameInputElement, _displayNameInputElement, _pronounsInputElement;
+    private InputTextArea? _bioInputElement;
+    
     [SupplyParameterFromForm(FormName = "Avatar")] private AvatarInputModel? AvatarModel { get; set; }
     private EditContext _avatarEditContext = null!;
     private ValidationMessageStore _avatarMessageStore = null!;

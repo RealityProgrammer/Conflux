@@ -1,4 +1,4 @@
-﻿<div class="z-0 relative aspect-square rounded-full bg-black overflow-hidden @_cssClass">
+﻿<div class="z-0 relative aspect-square rounded-full bg-black overflow-hidden @_cssClass" @ref="RootElement">
     <img @ref="ImageElement" src="@ImageSrc" alt="@(string.IsNullOrEmpty(ImageSrc) ? null : ImageAlt)" class="relative inset-0 object-cover pointer-events-none">
     
     @if (ChildContent != null) {
@@ -16,6 +16,7 @@
     private string? _cssClass;
     
     public ElementReference ImageElement { get; set; }
+    public ElementReference RootElement { get; set; }
 
     protected override void OnParametersSet() {
         if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
