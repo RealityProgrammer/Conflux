@@ -82,6 +82,7 @@
       <_ContentIncludedByDefault Remove="wwwroot\js\Pages\LoginPage.js" />
       <_ContentIncludedByDefault Remove="wwwroot\js\Pages\RegisterPage.js" />
       <_ContentIncludedByDefault Remove="wwwroot\js\utils.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\styles\styles.css" />
     </ItemGroup>
 
 </Project>

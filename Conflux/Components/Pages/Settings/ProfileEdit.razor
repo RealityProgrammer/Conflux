@@ -23,24 +23,22 @@
             <InputFile @ref="_avatarInputFile" type="file" class="hidden" accept="image/png, image/jpeg" OnChange="HandleAvatarChange" id="avatar"/>
                             
             <div class="mt-2">
-                <TooltipContainer ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" ShowTooltip="@(!_editContext.IsValid(_avatarFileField))" class="max-w-[90%]">
-                    <Target>
-                        @{
-                            string? displayImageSrc = Model.Avatar.RequestDelete ? null : AvatarPreviewUrl ?? (string.IsNullOrEmpty(User.AvatarProfilePath) ? null : ContentService.GetAssetPath(User.AvatarProfilePath));
-                        }
-                                        
-                        <Avatar class="size-96 mx-auto group" ImageSrc="@displayImageSrc">
-                            <p class="absolute inset-0 hidden group-hover:flex size-full text-center flex-row justify-center items-center cursor-pointer" @onclick="OpenAvatarModal">
-                                Click to change Avatar
-                            </p>
-                        </Avatar>
-                    </Target>
-                                    
-                    <Tooltip>
-                        <ValidationMessage For="() => Model.Avatar.File" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"></ValidationMessage>
-                    </Tooltip>
-                </TooltipContainer>
+                @{
+                    string? displayImageSrc = Model.Avatar.RequestDelete ? null : AvatarPreviewUrl ?? (string.IsNullOrEmpty(User.AvatarProfilePath) ? null : ContentService.GetAssetPath(User.AvatarProfilePath));
+                }
                                 
+                <Avatar @ref="_avatarElement" class="size-96 mx-auto group" ImageSrc="@displayImageSrc">
+                    <p class="absolute inset-0 hidden group-hover:flex size-full text-center flex-row justify-center items-center cursor-pointer" @onclick="OpenAvatarModal">
+                        Click to change Avatar
+                    </p>
+                </Avatar>
+                
+                @if (_avatarElement != null) {
+                    <Popover TargetReference="_avatarElement.RootElement" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" ShowTooltip="@(!_editContext.IsValid(_avatarFileField))" class="max-w-[90%]">
+                        <ValidationMessage For="() => Model.Avatar.File" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"></ValidationMessage>
+                    </Popover>
+                }
+
                 <Dialog @bind-Open="_showAvatarModal" OnClickOutside="CloseAvatarModal" class="flex flex-row justify-center items-center overflow-hidden">
                     <Card class="lg:static transition-transform duration-500 z-10">
                         <CardHeader Title="Avatar Adjustment" OnCloseRequested="CloseAvatarModal"/>
@@ -83,59 +81,55 @@
             <label class="font-semibold">Username</label>
             <input type="text" readonly value="@User.UserName" class="mt-2 input-field h-11 w-full" disabled>
         </div>
+        
+        @{ string classes; }
 
         <div class="relative">
             <label class="font-semibold">Display Name</label>
                             
-            <TooltipContainer ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" ShowTooltip="@(!_editContext.IsValid(_displayNameField))" class="max-w-[90%]">
-                <Target>
-                    @{
-                        string classes = $"w-full h-11 mt-2 input-field {(_editContext.IsValid(_displayNameField) ? string.Empty : "border-red-700")}";
-                    }
+            @{
+                classes = $"w-full h-11 mt-2 input-field {(_editContext.IsValid(_displayNameField) ? string.Empty : "border-red-700")}";
+            }
 
-                    <InputText type="text" @bind-Value="Model.DisplayName" placeholder="Display Name" class="@classes" maxlength="32"/>
-                </Target>
-
-                <Tooltip>
+            <InputText @ref="_displayNameElement" type="text" @bind-Value="Model.DisplayName" placeholder="Display Name" class="@classes" maxlength="32"/>
+            
+            @if (_displayNameElement?.Element.HasValue ?? false) {
+                <Popover TargetReference="_displayNameElement.Element.Value" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" ShowTooltip="@(!_editContext.IsValid(_displayNameField))" class="max-w-[90%]">
                     <ValidationMessage For="() => Model.DisplayName" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"></ValidationMessage>
-                </Tooltip>
-            </TooltipContainer>
+                </Popover>
+            }
         </div>
 
         <div class="relative">
             <label class="font-semibold">Pronouns</label>
                             
-            <TooltipContainer ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" ShowTooltip="@(!_editContext.IsValid(_pronounsField))" class="max-w-[90%]">
-                <Target>
-                    @{
-                        string classes = $"w-full h-11 mt-2 input-field {(_editContext.IsValid(_pronounsField) ? string.Empty : "border-red-700")}";
-                    }
+            @{
+                classes = $"w-full h-11 mt-2 input-field {(_editContext.IsValid(_pronounsField) ? string.Empty : "border-red-700")}";
+            }
 
-                    <InputText type="text" @bind-Value="Model.Pronouns" placeholder="Pronouns" class="@classes" maxlength="32"/>
-                </Target>
-
-                <Tooltip>
+            <InputText @ref="_pronounsElement" type="text" @bind-Value="Model.Pronouns" placeholder="Pronouns" class="@classes" maxlength="32"/>
+            
+            @if (_pronounsElement?.Element.HasValue ?? false) {
+                <Popover TargetReference="_pronounsElement.Element.Value" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" ShowTooltip="@(!_editContext.IsValid(_pronounsField))" class="max-w-[90%]">
                     <ValidationMessage For="() => Model.Pronouns" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"></ValidationMessage>
-                </Tooltip>
-            </TooltipContainer>
+                </Popover>
+            }
         </div>
 
         <div class="col-start-1 col-end-2 lg:col-end-3">
             <label class="font-semibold">About me</label>
                             
-            <TooltipContainer ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" ShowTooltip="@(!_editContext.IsValid(_bioField))" class="max-w-[90%]">
-                <Target>
-                    @{
-                        string classes = $"w-full h-55 mt-2 input-field {(_editContext.IsValid(_bioField) ? string.Empty : "border-red-700")}";
-                    }
+            @{
+                classes = $"w-full h-55 mt-2 input-field {(_editContext.IsValid(_bioField) ? string.Empty : "border-red-700")}";
+            }
 
-                    <InputTextArea type="text" @bind-Value="Model.Bio" class="@classes" placeholder="Biography"/>
-                </Target>
-
-                <Tooltip>
+            <InputTextArea @ref="_bioElement" type="text" @bind-Value="Model.Bio" class="@classes" placeholder="Biography"/>
+            
+            @if (_bioElement?.Element.HasValue ?? false) {
+                <Popover TargetReference="_bioElement.Element.Value" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" ShowTooltip="@(!_editContext.IsValid(_bioField))" class="max-w-[90%]">
                     <ValidationMessage For="() => Model.Bio" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"></ValidationMessage>
-                </Tooltip>
-            </TooltipContainer>
+                </Popover>
+            }
         </div>
     </EditForm>
 </div>
@@ -158,6 +152,10 @@
 
     private bool _showAvatarModal;
 
+    private Avatar? _avatarElement;
+    private InputText? _displayNameElement, _pronounsElement;
+    private InputTextArea? _bioElement;
+    
     private InputFile _avatarInputFile = null!;
 
     private FieldIdentifier _displayNameField, _pronounsField, _bioField, _avatarFileField, _requestDeleteAvatarField;

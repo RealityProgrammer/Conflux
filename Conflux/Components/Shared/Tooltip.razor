@@ -1,76 +1,71 @@
-﻿@using System.Globalization
-
-@implements IAsyncDisposable
+﻿@implements IAsyncDisposable
 
 @inject IJSRuntime JavascriptRuntime
+@inject ILogger<Tooltip> Logger
 
-@if (IsShowing) {
-    <div class="absolute inset-0 pointer-events-none" tabindex="-1">
-        <div class="absolute top-0 left-0 pointer-events-auto @_cssClass" @attributes="AdditionalAttributes" @ref="_tooltip" hidden>
-            @ChildContent
+<div @ref="TargetElement" class="@TargetCssClass" @onmouseenter="HandleShowTooltip" @onmouseleave="HandleHideTooltip">
+    @TargetContent
+</div>
+
+@if (_showTooltip) {
+    <div class="fixed inset-0 pointer-events-none" tabindex="-1">
+        <div class="absolute pointer-events-auto @_cssClass" @attributes="AdditionalAttributes" @ref="TooltipElement" style="left: -9999px; top: -9999px;">
+            @TooltipContent
 
             @if (DisplayArrow) {
-                <div class="absolute size-2 rotate-45 @ArrowCssClass" @ref="_arrow"></div>
+                <div class="absolute size-2 rotate-45 @ArrowCssClass" @ref="ArrowElement"></div>
             }
         </div>
     </div>
 }
 
 @code {
-    [Parameter] public ElementReference TargetReference { get; set; }
-    [Parameter, EditorRequired] public required RenderFragment ChildContent { get; set; }
-    [Parameter] public string? ArrowCssClass { get; set; }
-    
-    [Parameter] public bool IsShowing { get; set; }
-    [Parameter] public EventCallback<bool> IsShowingChanged { get; set; }
-
-    [Parameter] public string TooltipPlacement { get; set; } = "right";
-    [Parameter] public float TooltipOffset { get; set; }
-    [Parameter] public bool CloseWhenClickOutside { get; set; }
+    [Parameter, EditorRequired] public required RenderFragment TooltipContent { get; set; }
+    [Parameter, EditorRequired] public required RenderFragment TargetContent { get; set; }
 
     [Parameter] public bool DisplayArrow { get; set; } = true;
-
-    private ElementReference _tooltip;
-    private ElementReference? _arrow;
+    [Parameter] public string? TargetCssClass { get; set; }
+    [Parameter] public string? ArrowCssClass { get; set; }
+    
+    [Parameter, EditorRequired] public required string TooltipPlacement { get; set; }
+    [Parameter] public int TooltipOffset { get; set; }
     
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
     private string? _cssClass;
     
+    public ElementReference TargetElement { get; set; }
+    public ElementReference TooltipElement { get; set; }
+    public ElementReference? ArrowElement { get; set; }
+    
     private IJSObjectReference? _module;
     private DotNetObjectReference<Tooltip>? _objectReference;
     private int _tooltipId;
+
+    private bool _showTooltip;
     
     protected override void OnParametersSet() {
         if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
-            _cssClass = Convert.ToString(obj, CultureInfo.InvariantCulture);
+            _cssClass = Convert.ToString(obj);
         }
 
-        AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key != "class").ToDictionary();
+        AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "class").ToDictionary();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
-        if (firstRender) {
-            _module = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import", "./js/Components/Tooltip.js");
-            _objectReference = DotNetObjectReference.Create(this);
-        }
+        //if (firstRender) {
+        // }
 
-        if (_module != null) {
-            if (IsShowing) {
-                if (_tooltipId == 0) {
-                    _tooltipId = await _module.InvokeAsync<int>("registerTooltip", TargetReference, _tooltip, _arrow, TooltipPlacement, TooltipOffset, _objectReference, CloseWhenClickOutside);
-                }
-            } else if (_tooltipId != 0) {
-                await _module!.InvokeVoidAsync("unregisterTooltip", _tooltipId);
-                _tooltipId = 0;
-            }
+        if (_showTooltip) {
+            await JavascriptRuntime.InvokeVoidAsync("window.updateTooltipPosition", TargetElement, TooltipElement, ArrowElement, TooltipPlacement, TooltipOffset);
         }
     }
-    
-    [JSInvokable]
-    public async Task HandleOutsideClick() {
-        if (!CloseWhenClickOutside) return;
 
-        await IsShowingChanged.InvokeAsync(false);
+    private async Task HandleShowTooltip() {
+        _showTooltip = true;
+    }
+
+    private void HandleHideTooltip() {
+        _showTooltip = false;
     }
     
     public async ValueTask DisposeAsync() {

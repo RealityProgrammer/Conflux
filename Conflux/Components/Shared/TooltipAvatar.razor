@@ -1,0 +1,25 @@
+﻿<div class="relative">
+    <Avatar ImageSrc="@null" ImageAlt="Some random image" class="@_cssClass" @attributes="AdditionalAttributes"/>
+    
+    <div class="hidden peer-hover:block absolute top-[calc(100%+4px)] p-1.5 rounded-md bg-gray-700 text-white font-semibold shadow-md whitespace-nowrap left-1/2 -translate-x-1/2">
+        Some really interesting avatar
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? ImageSrc { get; set; }
+    [Parameter] public string? ImageAlt { get; set; }
+    
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+    private string? _cssClass;
+    
+    protected override void OnParametersSet() {
+        if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
+            _cssClass = Convert.ToString(obj) + " peer";
+        } else {
+            _cssClass = "peer";
+        }
+
+        AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "class").ToDictionary();
+    }
+}

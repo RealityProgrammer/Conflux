@@ -1,0 +1,46 @@
+﻿@using System.Globalization
+
+@inject IJSRuntime JavascriptRuntime
+
+<div class="absolute pointer-events-auto @_cssClass" @attributes="AdditionalAttributes" @ref="Tooltip" hidden>
+    @ChildContent
+
+    @if (DisplayArrow) {
+        <div class="absolute size-2 rotate-45 @ArrowCssClass" @ref="Arrow"></div>
+    }
+</div>
+
+@* <div class="absolute inset-0 pointer-events-none" tabindex="-1"> *@
+@*     <div class="absolute top-0 left-0 pointer-events-auto @_cssClass" @attributes="AdditionalAttributes" @ref="_tooltip" hidden> *@
+@*         @ChildContent *@
+@* *@
+@*         @if (DisplayArrow) { *@
+@*             <div class="absolute size-2 rotate-45 @ArrowCssClass" @ref="_arrow"></div> *@
+@*         } *@
+@*     </div> *@
+@* </div> *@
+
+@code {
+    [Parameter] public ElementReference TargetReference { get; set; }
+    [Parameter, EditorRequired] public required RenderFragment ChildContent { get; set; }
+    [Parameter] public string? ArrowCssClass { get; set; }
+    
+    [Parameter] public string TooltipPlacement { get; set; } = "right";
+    [Parameter] public float TooltipOffset { get; set; }
+
+    [Parameter] public bool DisplayArrow { get; set; } = true;
+
+    public ElementReference Tooltip { get; set; }
+    public ElementReference? Arrow { get; set; }
+    
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+    private string? _cssClass;
+    
+    protected override void OnParametersSet() {
+        if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
+            _cssClass = Convert.ToString(obj, CultureInfo.InvariantCulture);
+        }
+
+        AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key != "class").ToDictionary();
+    }
+}

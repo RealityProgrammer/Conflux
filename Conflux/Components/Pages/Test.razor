@@ -1,0 +1,36 @@
+﻿@page "/test"
+@using Conflux.Components.Shared
+
+<div class="w-screen h-screen">
+    <Tooltip TargetCssClass="inline-block" class="p-1.5 rounded-md bg-gray-700 text-white font-semibold shadow-md whitespace-nowrap" ArrowCssClass="bg-gray-700" TooltipPlacement="bottom" TooltipOffset="8">
+        <TargetContent>
+            <Avatar @ref="_avatar" ImageSrc="@null" ImageAlt="Some random image" class="peer size-16"/>
+        </TargetContent>
+        
+        <TooltipContent>
+            Some really interesting avatar
+        </TooltipContent>
+    </Tooltip>
+</div>
+
+@* <div class="w-screen h-screen flex flex-row justify-center items-center"> *@
+@*     <Avatar @ref="_avatar" ImageSrc="@null" ImageAlt="Some random image" class="peer size-16"/> *@
+@* *@
+@*     <HoveringTooltip TargetReference="_avatar.RootElement" class="p-1.5 rounded-md bg-gray-700 text-white font-semibold shadow-md whitespace-nowrap" ArrowCssClass="bg-gray-700" TooltipPlacement="bottom" TooltipOffset="4"> *@
+@*         Some really interesting avatar *@
+@*     </HoveringTooltip> *@
+@* </div> *@
+
+@code {
+    private Avatar? _avatar;
+}
+
+@* <div class="w-screen h-screen"> *@
+@*     <div class="relative"> *@
+@*         <Avatar ImageSrc="@null" ImageAlt="Some random image" class="peer size-16"/> *@
+@*      *@
+@*         <div class="hidden peer-hover:block absolute top-[calc(100%+4px)] left-1/2 -translate-x-1/2"> *@
+@*             Some really interesting avatar *@
+@*         </div> *@
+@*     </div> *@
+@* </div> *@

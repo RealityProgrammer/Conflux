@@ -29,15 +29,17 @@
 
 <script src="_framework/blazor.web.js"></script>
 
-<script src="js/utils.js"></script>
+@* <script src="js/utils.js"></script> *@
 
 @{
     string[] modulePaths = [
+        "scripts/utils.ts",
         "scripts/Pages/HomePage.ts",
         
         "scripts/Components/MessageTextArea.ts",
         "scripts/Components/MessageTimeline.ts",
         "scripts/Components/Tooltip.ts",
+        "scripts/Components/Popover.ts",
     ];
 }
 

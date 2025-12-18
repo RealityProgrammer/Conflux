@@ -65,19 +65,17 @@
                         <div class="flex flex-col gap-2">
                             <label class="font-bold text-gray-300">Status</label>
 
-                            <TooltipContainer ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" ShowTooltip="@(!_statusEditContext.IsValid(_statusTextField))">
-                                <Target>
-                                    @{
-                                        string classes = $"w-full h-11 mt-2 input-field {(_statusEditContext.IsValid(_statusTextField) ? string.Empty : "border-red-700")}";
-                                    }
+                            @{
+                                string classes = $"w-full h-11 mt-2 input-field {(_statusEditContext.IsValid(_statusTextField) ? string.Empty : "border-red-700")}";
+                            }
 
-                                    <InputText type="text" @bind-Value="StatusModel!.StatusText" placeholder="Hmmm..." class="@classes"/>
-                                </Target>
-
-                                <Tooltip>
+                            <InputText @ref="_statusInputText" @bind-Value="StatusModel!.StatusText" placeholder="Hmmm..." class="@classes"/>
+                            
+                            @if (_statusInputText?.Element is { } elementReference) {
+                                <Popover TargetReference="elementReference" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" ShowTooltip="@(!_statusEditContext.IsValid(_statusTextField))">
                                     <ValidationMessage For="() => StatusModel!.StatusText" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"></ValidationMessage>
-                                </Tooltip>
-                            </TooltipContainer>
+                                </Popover>
+                            }
                         </div>
                     </EditForm>
                 </CardContent>
@@ -99,6 +97,8 @@
     private EditContext _statusEditContext = null!;
     private FieldIdentifier _statusTextField;
 
+    private InputText? _statusInputText;
+    
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {

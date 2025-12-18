@@ -1,0 +1,89 @@
+﻿@using System.Globalization
+
+@implements IAsyncDisposable
+
+@inject IJSRuntime JavascriptRuntime
+
+@if (IsShowing) {
+    <div class="absolute inset-0 pointer-events-none" tabindex="-1">
+        <div class="absolute top-0 left-0 pointer-events-auto @_cssClass" @attributes="AdditionalAttributes" @ref="_tooltip" hidden>
+            @ChildContent
+
+            @if (DisplayArrow) {
+                <div class="absolute size-2 rotate-45 @ArrowCssClass" @ref="_arrow"></div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public ElementReference TargetReference { get; set; }
+    [Parameter, EditorRequired] public required RenderFragment ChildContent { get; set; }
+    [Parameter] public string? ArrowCssClass { get; set; }
+    
+    [Parameter] public bool IsShowing { get; set; }
+    [Parameter] public EventCallback<bool> IsShowingChanged { get; set; }
+
+    [Parameter] public string TooltipPlacement { get; set; } = "right";
+    [Parameter] public float TooltipOffset { get; set; }
+    [Parameter] public bool CloseWhenClickOutside { get; set; }
+
+    [Parameter] public bool DisplayArrow { get; set; } = true;
+
+    private ElementReference _tooltip;
+    private ElementReference? _arrow;
+    
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+    private string? _cssClass;
+    
+    private IJSObjectReference? _module;
+    private DotNetObjectReference<Popover>? _objectReference;
+    private int _tooltipId;
+    
+    protected override void OnParametersSet() {
+        if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
+            _cssClass = Convert.ToString(obj, CultureInfo.InvariantCulture);
+        }
+
+        AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key != "class").ToDictionary();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            _module = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import", "./js/Components/Popover.js");
+            _objectReference = DotNetObjectReference.Create(this);
+        }
+
+        if (_module != null) {
+            if (IsShowing) {
+                if (_tooltipId == 0) {
+                    _tooltipId = await _module.InvokeAsync<int>("registerTooltip", TargetReference, _tooltip, _arrow, TooltipPlacement, TooltipOffset, _objectReference, CloseWhenClickOutside);
+                }
+            } else if (_tooltipId != 0) {
+                await _module!.InvokeVoidAsync("unregisterTooltip", _tooltipId);
+                _tooltipId = 0;
+            }
+        }
+    }
+    
+    [JSInvokable]
+    public async Task HandleOutsideClick() {
+        if (!CloseWhenClickOutside) return;
+
+        await IsShowingChanged.InvokeAsync(false);
+    }
+    
+    public async ValueTask DisposeAsync() {
+        _objectReference?.Dispose();
+        
+        if (_module != null) {
+            try {
+                await _module.InvokeVoidAsync("unregisterTooltip", _tooltipId);
+                await _module.DisposeAsync();
+
+                _tooltipId = 0;
+            } catch (JSDisconnectedException) {
+            }
+        }
+    }
+}
