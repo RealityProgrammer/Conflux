@@ -75,9 +75,17 @@
             <span class="flex-1 mr-1">@categoryName</span>
             
             <span class="flex-none">
-                <button class="bg-transparent cursor-pointer">
-                    <Plus Large="true" class="size-4 fill-white" @onclick="() => ShowCreateChannelDialog(categoryId)"/>
-                </button>
+                <Tooltip TargetCssClass="inline-block" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" TooltipPlacement="bottom" TooltipOffset="8">
+                    <TargetContent>
+                        <button class="bg-transparent cursor-pointer">
+                            <Plus Large="true" class="size-4 fill-white" @onclick="() => ShowCreateChannelDialog(categoryId)"/>
+                        </button>
+                    </TargetContent>
+                    
+                    <TooltipContent>
+                        Create a channel
+                    </TooltipContent>
+                </Tooltip>
             </span>
         </h1>
             
