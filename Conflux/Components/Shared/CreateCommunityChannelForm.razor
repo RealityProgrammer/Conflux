@@ -1,0 +1,77 @@
+﻿@using Conflux.Components.Shared.Icons
+@using Conflux.Database.Entities
+@using Conflux.Services.Abstracts
+@using System.ComponentModel.DataAnnotations
+
+@inject ILogger<CommunityChannelList> Logger
+@inject ICommunityService CommunityService
+
+<EditForm EditContext="_channelCreationEditContext" OnValidSubmit="HandleSubmitChannelCreation">
+    <AntiforgeryToken/>
+    <DataAnnotationsValidator/>
+                
+    <p class="font-semibold mb-1">Select channel type:</p>
+
+    <InputRadioGroup @bind-Value="Model!.Type">
+        <label class="flex flex-row items-center p-2 bg-transparent hover:bg-white/15 rounded-lg mb-2">
+            <InputRadio Value="CommunityChannelType.Text" class="flex-none mr-4 size-6"/>
+
+            <div class="flex-1 flex flex-row items-center">
+                <SpeechBubble Content="ChatContent.Text" ArrowDirection="ChatArrowDirection.Left" class="size-8 fill-white mr-2"/>
+
+                <div class="flex flex-col">
+                    <p class="font-semibold mb-1">Text Channel</p>
+                    <p class="text-sm text-gray-400">Chat around with your keyboard. You do have a keyboard, right?</p>
+                </div>
+            </div>
+        </label>
+
+        <label class="flex flex-row items-center p-2 bg-transparent hover:bg-white/15 rounded-lg mb-2">
+            <InputRadio Value="CommunityChannelType.Audio" class="flex-none mr-4 size-6"/>
+
+            <div class="flex-1 flex flex-row items-center">
+                <Volume Filled="false" Variation="VolumeVariations.Up" class="size-8 fill-white mr-2"/>
+
+                <div class="flex flex-col">
+                    <p class="font-semibold mb-1">Audio Channel</p>
+                    <p class="text-sm text-gray-400">Too lazy to type? Come here and talk.</p>
+                </div>
+            </div>
+        </label>
+    </InputRadioGroup>
+
+    <p class="font-semibold mb-1">Channel name:</p>
+
+    <InputText @ref="_inputText" class="h-11 input-field w-full" @bind-Value="Model!.Name" placeholder="Give me a name"/>
+                
+    @if (_inputText?.Element is { } element) {
+        <Tooltip TargetReference="element" IsShowing="@(!_channelCreationEditContext!.IsValid(() => Model!.Name))" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="bottom" TooltipOffset="8">
+            <ValidationMessage For="() => Model!.Name" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"/>
+        </Tooltip>
+    }
+
+    <button type="submit" class="mt-3 w-full button-primary-2">Create Channel</button>
+</EditForm>
+
+@code {
+    [Parameter] public EventCallback<InputModel> OnCreateRequest { get; set; }
+    
+    private EditContext? _channelCreationEditContext;
+    [SupplyParameterFromForm] private InputModel? Model { get; set; }
+    
+    private InputText? _inputText;
+    
+    protected override void OnInitialized() {
+        Model ??= new();
+        _channelCreationEditContext = new(Model);
+    }
+    
+    private async Task HandleSubmitChannelCreation() {
+        await OnCreateRequest.InvokeAsync(Model);
+    }
+    
+    public sealed class InputModel {
+        [Required(ErrorMessage = "Name is required."), StringLength(32, ErrorMessage = "Name cannot surpass 32 characters.")] public string Name { get; set; }
+        public CommunityChannelType Type { get; set; }
+    }
+}

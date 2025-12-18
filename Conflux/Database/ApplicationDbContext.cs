@@ -14,7 +14,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<MessageAttachment> MessageAttachments { get; set; } = null!;
     public DbSet<Community> Communities { get; set; } = null!;
     public DbSet<CommunityMember> CommunityMembers { get; set; } = null!;
-    public DbSet<ComunityChannel> CommunityChannels { get; set; } = null!;
+    public DbSet<CommunityChannel> CommunityChannels { get; set; } = null!;
     public DbSet<CommunityChannelCategory> CommunityChannelCategories { get; set; } = null!;
     
     public override int SaveChanges() {
@@ -119,7 +119,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
             entity.HasMany(server => server.ChannelCategories)
                 .WithOne(channelCategory => channelCategory.Community)
-                .HasForeignKey(channelCategory => channelCategory.CommunityServerId)
+                .HasForeignKey(channelCategory => channelCategory.CommunityId)
                 .HasPrincipalKey(channel => channel.Id)
                 .OnDelete(DeleteBehavior.Cascade)
                 .IsRequired();
@@ -144,7 +144,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
             entity.HasMany(x => x.Channels)
                 .WithOne(x => x.ChannelCategory)
-                .HasForeignKey(x => x.ServerChannelCategoryId)
+                .HasForeignKey(x => x.ChannelCategoryId)
                 .HasPrincipalKey(x => x.Id)
                 .OnDelete(DeleteBehavior.Cascade);
         });

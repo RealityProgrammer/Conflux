@@ -3,6 +3,7 @@ using System;
 using Conflux.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Conflux.Database.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251218025431_InitialMigration")]
+    partial class InitialMigration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -197,9 +200,6 @@ namespace Conflux.Database.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("ChannelCategoryId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -208,12 +208,15 @@ namespace Conflux.Database.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
 
+                    b.Property<Guid>("ServerChannelCategoryId")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("Type")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ChannelCategoryId");
+                    b.HasIndex("ServerChannelCategoryId");
 
                     b.ToTable("CommunityChannels");
                 });
@@ -224,7 +227,7 @@ namespace Conflux.Database.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("CommunityId")
+                    b.Property<Guid>("CommunityServerId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
@@ -237,7 +240,7 @@ namespace Conflux.Database.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CommunityId");
+                    b.HasIndex("CommunityServerId");
 
                     b.ToTable("CommunityChannelCategories");
                 });
@@ -547,7 +550,7 @@ namespace Conflux.Database.Migrations
                 {
                     b.HasOne("Conflux.Database.Entities.CommunityChannelCategory", "ChannelCategory")
                         .WithMany("Channels")
-                        .HasForeignKey("ChannelCategoryId")
+                        .HasForeignKey("ServerChannelCategoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -558,7 +561,7 @@ namespace Conflux.Database.Migrations
                 {
                     b.HasOne("Conflux.Database.Entities.Community", "Community")
                         .WithMany("ChannelCategories")
-                        .HasForeignKey("CommunityId")
+                        .HasForeignKey("CommunityServerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

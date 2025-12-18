@@ -9,7 +9,9 @@
         <div class="absolute top-0 left-0 pointer-events-auto @_cssClass" @attributes="AdditionalAttributes" @ref="_tooltip" hidden>
             @ChildContent
 
-            <div class="absolute size-2 rotate-45 @ArrowCssClass" @ref="_arrow"></div>
+            @if (DisplayArrow) {
+                <div class="absolute size-2 rotate-45 @ArrowCssClass" @ref="_arrow"></div>
+            }
         </div>
     </div>
 }
@@ -25,8 +27,11 @@
     [Parameter] public string TooltipPlacement { get; set; } = "right";
     [Parameter] public float TooltipOffset { get; set; }
     [Parameter] public bool CloseWhenClickOutside { get; set; }
-    
-    private ElementReference _tooltip, _arrow;
+
+    [Parameter] public bool DisplayArrow { get; set; } = true;
+
+    private ElementReference _tooltip;
+    private ElementReference? _arrow;
     
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
     private string? _cssClass;
@@ -49,13 +54,15 @@
             _objectReference = DotNetObjectReference.Create(this);
         }
 
-        if (IsShowing) {
-            if (_tooltipId == 0) {
-                _tooltipId = await _module!.InvokeAsync<int>("registerTooltip", TargetReference, _tooltip, _arrow, TooltipPlacement, TooltipOffset, _objectReference, CloseWhenClickOutside);
+        if (_module != null) {
+            if (IsShowing) {
+                if (_tooltipId == 0) {
+                    _tooltipId = await _module.InvokeAsync<int>("registerTooltip", TargetReference, _tooltip, _arrow, TooltipPlacement, TooltipOffset, _objectReference, CloseWhenClickOutside);
+                }
+            } else if (_tooltipId != 0) {
+                await _module!.InvokeVoidAsync("unregisterTooltip", _tooltipId);
+                _tooltipId = 0;
             }
-        } else if (_tooltipId != 0) {
-            await _module!.InvokeVoidAsync("unregisterTooltip", _tooltipId);
-            _tooltipId = 0;
         }
     }
     

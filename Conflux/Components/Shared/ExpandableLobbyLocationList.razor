@@ -43,7 +43,7 @@
             <CardHeader Title="Input Information" Subtext="Give your new home a name, a face and a new life." OnCloseRequested="HandleCancelCreatingServer"/>
 
             <CardContent class="pb-3">
-                <ServerAvatarAndNameForm OnRequestCreateServer="HandleCreateServer"/>
+                <CreateCommunityForm OnRequestCreateServer="HandleCreateServer"/>
             </CardContent>
         </Card>
     } else {
@@ -110,7 +110,7 @@
         _isAskingServerNameAndProfilePicture = true;
     }
 
-    private async Task HandleCreateServer(ServerAvatarAndNameForm.InputModel model) {
+    private async Task HandleCreateServer(CreateCommunityForm.InputModel model) {
         var authState = await AuthenticationState;
         string? id = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
 

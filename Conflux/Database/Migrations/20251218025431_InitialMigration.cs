@@ -368,7 +368,8 @@ namespace Conflux.Database.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ServerChannelCategoryId = table.Column<Guid>(type: "uuid", nullable: false)
+                    ServerChannelCategoryId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Type = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {

@@ -9,8 +9,8 @@ public class CommunityChannelCategory : ICreatedAtColumn {
 
     public DateTime CreatedAt { get; set; }
     
-    public Guid CommunityServerId { get; set; }
+    public Guid CommunityId { get; set; }
 
     public Community Community { get; set; } = null!;
-    public ICollection<ComunityChannel> Channels { get; set; } = null!;
+    public ICollection<CommunityChannel> Channels { get; set; } = null!;
 }

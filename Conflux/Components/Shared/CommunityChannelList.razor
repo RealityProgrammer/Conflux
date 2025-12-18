@@ -1,5 +1,6 @@
 ﻿@using Conflux.Components.Shared.Icons
 @using Conflux.Database
+@using Conflux.Database.Entities
 @using Conflux.Services.Abstracts
 @using Microsoft.EntityFrameworkCore
 
@@ -11,13 +12,13 @@
 
 <section>
     <div class="w-full h-32 bg-black relative">
-        <button @ref="_serverOptionsButton" class="absolute top-0 right-0 p-1.5 bg-transparent hover:bg-white/15 rounded-full" @onclick="@(() => _isShowingConfigTooltip = true)">
+        <button @ref="_serverOptionsButton" class="absolute top-0 right-0 p-1.5 bg-transparent hover:bg-white/15 rounded-full" @onclick="@(() => _isShowingCommunityExpandableMenu = true)">
             <Gear class="size-5 fill-white"/>
         </button>
 
-        <Tooltip TargetReference="_serverOptionsButton" @bind-IsShowing="_isShowingConfigTooltip" TooltipPlacement="right" TooltipOffset="4" CloseWhenClickOutside="true">
+        <Tooltip TargetReference="_serverOptionsButton" @bind-IsShowing="_isShowingCommunityExpandableMenu" TooltipPlacement="right" TooltipOffset="4" CloseWhenClickOutside="true">
             <div class="bg-gray-600 p-1 text-white text-sm rounded-lg shadow-md flex flex-col gap-1 z-50" tabindex="-1">
-                <button class="p-1.5 bg-transparent hover:bg-white/10 active:bg-black/8 cursor-pointer rounded-md" @onclick="HandleStartCreatingChannelCategory">Create channel category</button>
+                <button class="p-1.5 bg-transparent hover:bg-white/10 active:bg-black/8 cursor-pointer rounded-md" @onclick="HandleDisplayCommunityExpandableMenu">Create channel category</button>
             </div>
         </Tooltip>
     </div>
@@ -61,23 +62,29 @@
 </section>
 
 @foreach ((var categoryId, var categoryName, var channels) in _channelCategories) {
-    <hr class="border-t border-t-gray-600 px-2 mt-2"/>
+    <section @key="categoryId" class="px-2 mt-2 min-w-0 group border-t border-t-gray-600">
+        <h1 class="text-sm font-bold text-gray-400 mt-2 mb-2 overflow-hidden break-all whitespace-normal flex flex-row items-start">
+            <span class="flex-1 mr-1">@categoryName</span>
+            
+            <span class="flex-none">
+                <button class="bg-transparent cursor-pointer">
+                    <Plus Large="true" class="size-4 fill-white" @onclick="() => ShowCreateChannelDialog(categoryId)"/>
+                </button>
+            </span>
+        </h1>
+            
+        <div class="flex flex-col gap-1">
+            @foreach (var channel in channels) {
+                <NavLink class="flex flex-row items-center p-1.5 rounded-md hover:bg-white/15 active:bg-black/8" ActiveClass="hover:bg-white/8" href="@($"/community/{CommunityId}/{channel.Id}")">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="mr-2 fill-none stroke-white size-6 stroke-1 flex-none">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.05 4.575a1.575 1.575 0 1 0-3.15 0v3m3.15-3v-1.5a1.575 1.575 0 0 1 3.15 0v1.5m-3.15 0 .075 5.925m3.075.75V4.575m0 0a1.575 1.575 0 0 1 3.15 0V15M6.9 7.575a1.575 1.575 0 1 0-3.15 0v8.175a6.75 6.75 0 0 0 6.75 6.75h2.018a5.25 5.25 0 0 0 3.712-1.538l1.732-1.732a5.25 5.25 0 0 0 1.538-3.712l.003-2.024a.668.668 0 0 1 .198-.471 1.575 1.575 0 1 0-2.228-2.228 3.818 3.818 0 0 0-1.12 2.687M6.9 7.575V12m6.27 4.318A4.49 4.49 0 0 1 16.35 15m.002 0h-.002"/>
+                    </svg>
 
-    <section class="px-2 mt-2">
-    <h1 class="text-sm font-bold text-gray-400 mt-2 mb-2">@categoryName</h1>
-        
-    <div class="flex flex-col gap-1">
-        @foreach (var channel in channels) {
-            <NavLink class="flex flex-row items-center p-1.5 rounded-md hover:bg-white/15 active:bg-black/8" ActiveClass="hover:bg-white/8" href="@($"/community/{CommunityId}/{channel.Id}")">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="mr-2 fill-none stroke-white size-6 stroke-1 flex-none">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.05 4.575a1.575 1.575 0 1 0-3.15 0v3m3.15-3v-1.5a1.575 1.575 0 0 1 3.15 0v1.5m-3.15 0 .075 5.925m3.075.75V4.575m0 0a1.575 1.575 0 0 1 3.15 0V15M6.9 7.575a1.575 1.575 0 1 0-3.15 0v8.175a6.75 6.75 0 0 0 6.75 6.75h2.018a5.25 5.25 0 0 0 3.712-1.538l1.732-1.732a5.25 5.25 0 0 0 1.538-3.712l.003-2.024a.668.668 0 0 1 .198-.471 1.575 1.575 0 1 0-2.228-2.228 3.818 3.818 0 0 0-1.12 2.687M6.9 7.575V12m6.27 4.318A4.49 4.49 0 0 1 16.35 15m.002 0h-.002"/>
-                </svg>
-
-                <span class="flex-none">@channel.Name</span>
-            </NavLink>
-        }
-    </div>
-</section>
+                    <span class="flex-none">@channel.Name</span>
+                </NavLink>
+            }
+        </div>
+    </section>
 }
 
 @if (_isCreatingChannelCategory) {
@@ -86,22 +93,35 @@
     </section>
 }
 
+<Dialog @bind-Open="_showCreatingChannelModal" OnClickOutside="CloseCreatingChannelModal" class="flex flex-row justify-center items-center overflow-hidden">
+    <Card class="lg:static transition-transform duration-500 z-10">
+        <CardHeader Title="Create Communicate Channel" Subtext="Building another room for your house" OnCloseRequested="CloseCreatingChannelModal"/>
+                                    
+        <CardContent class="flex flex-col pb-1">
+            <CreateCommunityChannelForm OnCreateRequest="HandleChannelCreate"/>
+        </CardContent>
+    </Card>
+</Dialog>
+
 @code {
     [Parameter] public Guid CommunityId { get; set; }
 
     private ElementReference _serverOptionsButton;
     
-    private bool _isShowingConfigTooltip;
+    private bool _isShowingCommunityExpandableMenu;
     private bool _isCreatingChannelCategory;
 
+    private bool _showCreatingChannelModal;
+    private Guid _categoryChannelCreationReceiverId;
+
     private List<ChannelCategoryDTO> _channelCategories = [];
-    
+
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
             await using var dbContext = await DbContextFactory.CreateDbContextAsync();
 
             _channelCategories = await dbContext.CommunityChannelCategories
-                .Where(c => c.CommunityServerId == CommunityId)
+                .Where(c => c.CommunityId == CommunityId)
                 .OrderBy(c => c.CreatedAt)
                 .Select(c => new ChannelCategoryDTO(
                     c.Id, 
@@ -116,14 +136,15 @@
             StateHasChanged();
 
             CommunityService.OnChannelCategoryCreated += OnChannelCategoryCreated;
+            CommunityService.OnChannelCreated += OnChannelCreated;
         }
     }
 
-    private void HandleStartCreatingChannelCategory() {
-        _isShowingConfigTooltip = false;
+    private void HandleDisplayCommunityExpandableMenu() {
+        _isShowingCommunityExpandableMenu = false;
         _isCreatingChannelCategory = true;
     }
-    
+
     private void HandleCreatingChannelCategoryKeyDown(KeyboardEventArgs args) {
         if (args.Key == "Escape") {
             _isCreatingChannelCategory = false;
@@ -144,33 +165,72 @@
         _isCreatingChannelCategory = false;
     }
 
+    private void ShowCreateChannelDialog(Guid categoryId) {
+        _showCreatingChannelModal = true;
+        _categoryChannelCreationReceiverId = categoryId;
+    }
+    
+    private void CloseCreatingChannelModal() {
+        _showCreatingChannelModal = false;
+    }
+
+    private async Task HandleChannelCreate(CreateCommunityChannelForm.InputModel model) {
+        _showCreatingChannelModal = false;
+        await CommunityService.CreateChannelAsync(model.Name, model.Type, _categoryChannelCreationReceiverId);
+    }
+
     private void OnChannelCategoryCreated(ChannelCategoryCreatedEventArgs args) {
         if (args.CommunityId != CommunityId) return;
 
         InvokeAsync(async () => {
-            try {
-                await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+            await using var dbContext = await DbContextFactory.CreateDbContextAsync();
 
-                ChannelCategoryDTO category = await dbContext.CommunityChannelCategories
-                    .Where(x => x.Id == args.CategoryId)
-                    .Select(x => new ChannelCategoryDTO(
-                        x.Id,
-                        x.Name,
-                        x.Channels.Select(c => new ChannelDTO(c.Id, c.Name)).ToList())
-                    )
-                    .FirstAsync();
+            ChannelCategoryDTO category = await dbContext.CommunityChannelCategories
+                .Where(x => x.Id == args.CategoryId)
+                .Select(x => new ChannelCategoryDTO(
+                    x.Id,
+                    x.Name,
+                    x.Channels.Select(c => new ChannelDTO(c.Id, c.Name)).ToList())
+                )
+                .FirstOrDefaultAsync();
 
+            if (category.Id != Guid.Empty) {
                 _channelCategories.Add(category);
-
                 StateHasChanged();
-            } catch (Exception e) {
-                Logger.LogError(e, "Something went wrong...");
+            }
+        });
+    }
+
+    private void OnChannelCreated(ChannelCreatedEventArgs args) {
+        int index = -1;
+
+        for (int i = 0; i < _channelCategories.Count; i++) {
+            if (_channelCategories[i].Id == args.ChannelCategoryId) {
+                index = i;
+                break;
+            }
+        }
+
+        if (index == -1) return;
+        
+        InvokeAsync(async () => {
+            await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+
+            ChannelDTO channel = await dbContext.CommunityChannels
+                .Where(x => x.Id == args.ChannelId)
+                .Select(x => new ChannelDTO(x.Id, x.Name))
+                .FirstOrDefaultAsync();
+
+            if (channel.Id != Guid.Empty) {
+                _channelCategories[index].Channels.Add(channel);
+                StateHasChanged();
             }
         });
     }
 
     public void Dispose() {
         CommunityService.OnChannelCategoryCreated -= OnChannelCategoryCreated;
+        CommunityService.OnChannelCreated -= OnChannelCreated;
     }
 
     private readonly record struct ChannelCategoryDTO(Guid Id, string Name, List<ChannelDTO> Channels);
