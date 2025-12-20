@@ -147,8 +147,10 @@ public class CommunityService(
             .Where(x => x.Id == channelCategoryId)
             .Select(x => x.CommunityId)
             .FirstOrDefaultAsync();
-        
-        if (communityId == Guid.Empty) return;
+
+        if (communityId == Guid.Empty) {
+            return;
+        }
         
         await using var transaction = await dbContext.Database.BeginTransactionAsync();
         

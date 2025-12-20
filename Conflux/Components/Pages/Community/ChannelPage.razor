@@ -1,0 +1,69 @@
+﻿@page "/community/{CommunityId:guid}/{ChannelId:guid}"
+
+@using Conflux.Components.Layout
+@using Conflux.Components.Shared.Icons
+@using Conflux.Database
+@using Conflux.Services.Abstracts
+@using Microsoft.EntityFrameworkCore
+
+@layout CommunityLayout
+
+@implements IAsyncDisposable
+
+@inject ICommunityService CommunityService
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+
+@switch (_initState) {
+    case InitializationState.Initializing:
+        <div class="size-full flex flex-row justify-center items-center">
+            <Spinner class="size-8 fill-white"/>
+        </div>
+        break;
+        
+    case InitializationState.InvalidChannel:
+        <div class="size-full flex flex-row justify-center items-center">
+            <p class="text-gray-400">Nothing here...</p>
+        </div>
+        break;
+        
+    case InitializationState.Success:
+        <p>This is text channel page for id @ChannelId.</p>
+        break;
+}
+
+@code {
+    [Parameter] public Guid CommunityId { get; set; }
+    [Parameter] public Guid ChannelId { get; set; }
+    
+    [CascadingParameter] private CommunityLayout CommunityLayout { get; set; } = null!;
+
+    private InitializationState _initState;
+    
+    protected override void OnInitialized() {
+        CommunityLayout.CommunityId = CommunityId;
+        _initState = InitializationState.Initializing;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+
+            bool isValid = await dbContext.CommunityChannels
+                .Where(x => x.Id == ChannelId)
+                .AnyAsync(x => x.ChannelCategory.CommunityId == CommunityId);
+
+            _initState = isValid ? InitializationState.Success : InitializationState.InvalidChannel;
+            StateHasChanged();
+        }
+    }
+    
+    public async ValueTask DisposeAsync() {
+        await CommunityService.LeaveCommunityHubAsync(CommunityId);
+    }
+
+    private enum InitializationState {
+        Initializing,
+        InvalidChannel,
+        Success,
+    }
+}
