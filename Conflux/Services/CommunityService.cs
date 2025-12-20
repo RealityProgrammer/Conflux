@@ -150,6 +150,8 @@ public class CommunityService(
         
         if (communityId == Guid.Empty) return;
         
+        await using var transaction = await dbContext.Database.BeginTransactionAsync();
+        
         CommunityChannel channel = new() {
             Name = name,
             Type = type,
@@ -157,10 +159,17 @@ public class CommunityService(
         };
         
         dbContext.CommunityChannels.Add(channel);
+
+        Conversation conversation = new() {
+            CommunityChannelId = channel.Id,
+        };
+
+        dbContext.Conversations.Add(conversation);
         
-        if (await dbContext.SaveChangesAsync() > 0) {
-            await hubContext.Clients.Group(communityId.ToString()).SendAsync(ChannelCreatedEventName, new ChannelCreatedEventArgs(channelCategoryId, channel.Id));
-        }
+        await dbContext.SaveChangesAsync();
+        await transaction.CommitAsync();
+        
+        await hubContext.Clients.Group(communityId.ToString()).SendAsync(ChannelCreatedEventName, new ChannelCreatedEventArgs(channelCategoryId, channel.Id));
     }
 
     public async ValueTask DisposeAsync() {

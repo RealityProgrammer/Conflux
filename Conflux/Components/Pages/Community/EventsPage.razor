@@ -1,0 +1,33 @@
+﻿@page "/community/{CommunityId:guid}/events"
+
+@using Conflux.Components.Layout
+@using Conflux.Services.Abstracts
+
+@layout CommunityLayout
+
+@implements IAsyncDisposable
+
+@inject ICommunityService CommunityService
+
+<section class="bg-gray-700 size-full overflow-hidden text-white">
+    <p>This is events page.</p>
+</section>
+
+@code {
+    [Parameter] public Guid CommunityId { get; set; }
+    [CascadingParameter] private CommunityLayout CommunityLayout { get; set; } = null!;
+
+    protected override void OnInitialized() {
+        CommunityLayout.CommunityId = CommunityId;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            await CommunityService.JoinCommunityHubAsync(CommunityId);
+        }
+    }
+    
+    public async ValueTask DisposeAsync() {
+        await CommunityService.LeaveCommunityHubAsync(CommunityId);
+    }
+}

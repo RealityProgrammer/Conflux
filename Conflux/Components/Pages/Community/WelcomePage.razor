@@ -1,33 +1,32 @@
 ﻿@page "/community/{CommunityId:guid}"
 
 @using Conflux.Components.Layout
-@using Conflux.Components.Shared
 @using Conflux.Services.Abstracts
-@using Microsoft.AspNetCore.Components.Sections
 
-@layout SidebarLobbyLayout
+@layout CommunityLayout
 
 @implements IAsyncDisposable
 
 @inject ICommunityService CommunityService
 
-<SectionContent SectionName="lobby-sidebar">
-    <CommunityChannelList CommunityId="CommunityId"/>
-</SectionContent>
-
-<section class="col-span-10 bg-gray-700 h-full overflow-hidden flex-1 text-white">
-    
+<section class="bg-gray-700 size-full overflow-hidden text-white">
+    <p>This is welcome page.</p>
 </section>
 
 @code {
     [Parameter] public Guid CommunityId { get; set; }
+    [CascadingParameter] private CommunityLayout CommunityLayout { get; set; } = null!;
+
+    protected override void OnInitialized() {
+        CommunityLayout.CommunityId = CommunityId;
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
             await CommunityService.JoinCommunityHubAsync(CommunityId);
         }
     }
-
+    
     public async ValueTask DisposeAsync() {
         await CommunityService.LeaveCommunityHubAsync(CommunityId);
     }
