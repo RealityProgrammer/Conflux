@@ -125,9 +125,8 @@
         try {
             await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
                 var otherUser = await dbContext.Conversations
-                    .Where(c => c.Id == ConversationId && c.Members.Any(m => m.UserId == _userId))
-                    .Select(c => c.Members.First(m => m.UserId != _userId))
-                    .Select(m => m.UserId)
+                    .Where(c => c.Type == ConversationType.DirectMessage && c.Id == ConversationId)
+                    .Select(c => c.FriendRequest!.SenderId == _userId ? c.FriendRequest.ReceiverId : c.FriendRequest.SenderId)
                     .Join(dbContext.Users, id => id, u => u.Id, (id, u) => new OtherUserDTO {
                         UserName = u.UserName!,
                         DisplayName = u.DisplayName,

@@ -15,7 +15,7 @@ public interface IConversationService {
     Task JoinConversationHubAsync(Guid conversationId);
     Task LeaveConversationHubAsync(Guid conversationId);
     
-    Task<Conversation?> GetOrCreateDirectConversationAsync(string user1, string user2);
+    Task<Conversation?> GetOrCreateDirectConversationAsync(Guid friendRequestId);
     
     Task<SendStatus> SendMessageAsync(Guid conversationId, string senderId, string? body, Guid? replyMessageId, IReadOnlyCollection<UploadingAttachment> attachments, CancellationToken cancellationToken = default);
     Task<bool> DeleteMessageAsync(Guid messageId, string senderId);

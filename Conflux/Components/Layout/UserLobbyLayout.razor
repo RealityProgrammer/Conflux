@@ -114,7 +114,7 @@
             dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
             var query = dbContext.Conversations
-                .Where(x => x.Type == ConversationType.DirectMessage && x.Members.Select(m => m.UserId).Contains(_userId));
+                .Where(x => x.Type == ConversationType.DirectMessage && (x.FriendRequest.SenderId == _userId || x.FriendRequest.ReceiverId == _userId));
 
             int totalCount = await query.CountAsync();
 
@@ -126,13 +126,19 @@
                 .OrderBy(x => x.CreatedAt)
                 .Skip(request.StartIndex)
                 .Take(request.Count)
-                .SelectMany(c => c.Members)
-                .Where(m => m.UserId != _userId)
-                .Select(m => new ConversationElement {
-                    ConversationId = m.ConversationId,
-                    FriendDisplayName = m.User.DisplayName,
-                    FriendAvatarSrc = m.User.AvatarProfilePath,
-                }).ToListAsync();
+                .Join(dbContext.Users, conversation => conversation.FriendRequest!.SenderId == _userId ? conversation.FriendRequest.ReceiverId : conversation.FriendRequest.SenderId, user => user.Id, (conversation, user) => new ConversationElement {
+                    ConversationId = conversation.Id,
+                    FriendDisplayName = user.DisplayName,
+                    FriendAvatarSrc = user.AvatarProfilePath,
+                })
+                .ToListAsync();
+                // .SelectMany(c => c.Members)
+                // .Where(m => m.UserId != _userId)
+                // .Select(m => new ConversationElement {
+                //     ConversationId = m.ConversationId,
+                //     FriendDisplayName = m.User.DisplayName,
+                //     FriendAvatarSrc = m.User.AvatarProfilePath,
+                // }).ToListAsync();
 
             return new(elements, totalCount);
         }

@@ -53,7 +53,7 @@
     </div>
 </section>
 
-<button class="absolute @(_isDrawerExpanded ? "top-16" : "top-0") left-1/2 -translate-x-1/2 rounded-b-lg bg-gray-600 shadow-md px-5 py-0.5 cursor-pointer transition-all duration-500" @onclick="ToggleDrawer">
+<button class="z-1000 absolute @(_isDrawerExpanded ? "top-16" : "top-0") left-1/2 -translate-x-1/2 rounded-b-lg bg-gray-600 shadow-md px-5 py-0.5 cursor-pointer transition-all duration-500" @onclick="ToggleDrawer">
     @if (_isDrawerExpanded) {
         <Chevron Direction="ChevronDirection.Up" Mode="ChevronMode.Compact" class="animate-bounce size-5 fill-white"/>
     } else {

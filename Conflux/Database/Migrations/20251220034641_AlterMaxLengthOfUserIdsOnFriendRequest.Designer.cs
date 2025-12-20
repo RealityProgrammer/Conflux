@@ -3,6 +3,7 @@ using System;
 using Conflux.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Conflux.Database.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251220034641_AlterMaxLengthOfUserIdsOnFriendRequest")]
+    partial class AlterMaxLengthOfUserIdsOnFriendRequest
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -278,13 +281,13 @@ namespace Conflux.Database.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("CommunityChannelId")
+                    b.Property<Guid>("CommunityChannelId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("FriendRequestId")
+                    b.Property<Guid>("FriendRequestId")
                         .HasColumnType("uuid");
 
                     b.Property<int>("Type")
@@ -588,12 +591,14 @@ namespace Conflux.Database.Migrations
                     b.HasOne("Conflux.Database.Entities.CommunityChannel", "CommunityChannel")
                         .WithOne("Conversation")
                         .HasForeignKey("Conflux.Database.Entities.Conversation", "CommunityChannelId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("Conflux.Database.Entities.FriendRequest", "FriendRequest")
                         .WithOne("Conversation")
                         .HasForeignKey("Conflux.Database.Entities.Conversation", "FriendRequestId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("CommunityChannel");
 

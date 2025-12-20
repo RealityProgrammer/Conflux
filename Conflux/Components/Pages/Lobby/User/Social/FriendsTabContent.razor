@@ -38,7 +38,7 @@
                 </div>
             
                 <div class="flex-none flex-row gap-1 hidden group-hover:flex">
-                    <button class="p-2 rounded-full hover:bg-gray-400/50 cursor-pointer" @onclick="@(() => AccessFriendConversation(item.UserId))">
+                    <button class="p-2 rounded-full hover:bg-gray-400/50 cursor-pointer" @onclick="@(() => AccessFriendConversation(item.FriendRequestId))">
                         <SpeechBubble ArrowDirection="ChatArrowDirection.Right" Content="ChatContent.Text" class="size-6 fill-white"/>
                     </button>
                     
@@ -118,8 +118,8 @@
                 .OrderByDescending(r => r.CreatedAt)
                 .Skip(request.StartIndex)
                 .Take(request.Count)
-                .Join(dbContext.Users, r => r.SenderId == _userId ? r.ReceiverId : r.SenderId, user => user.Id, (id, user) => new FriendSearchResult {
-                    UserId = user.Id,
+                .Join(dbContext.Users, r => r.SenderId == _userId ? r.ReceiverId : r.SenderId, user => user.Id, (request, user) => new FriendSearchResult {
+                    FriendRequestId = request.Id,
                     UserName = user.UserName!,
                     DisplayName = user.DisplayName,
                     AvatarImagePath = user.AvatarProfilePath,
@@ -130,11 +130,11 @@
         }
     }
 
-    private async Task AccessFriendConversation(string friendId) {
-        Conversation? conversation = await ConversationService.GetOrCreateDirectConversationAsync(_userId, friendId);
+    private async Task AccessFriendConversation(Guid friendRequestId) {
+        Conversation? conversation = await ConversationService.GetOrCreateDirectConversationAsync(friendRequestId);
         
         if (conversation == null) {
-            Logger.LogWarning("Failed to create friend conversation between user {user} and {friend}.", _userId, friendId);
+            Logger.LogWarning("Failed to create friend conversation for friend request {id}.", friendRequestId);
             return;
         }
 
@@ -155,7 +155,7 @@
     }
 
     private sealed class FriendSearchResult {
-        public required string UserId { get; set; }
+        public required Guid FriendRequestId { get; set; }
         public required string UserName { get; set; }
         public required string DisplayName { get; set; }
         public required string? AvatarImagePath { get; set; }

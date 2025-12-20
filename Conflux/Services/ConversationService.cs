@@ -108,42 +108,57 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
         }
     }
 
-    public async Task<Conversation?> GetOrCreateDirectConversationAsync(string user1, string user2) {
-        await using (var dbContext = await _dbContextFactory.CreateDbContextAsync()) {
-            string[] userIds = [user1, user2];
+    public async Task<Conversation?> GetOrCreateDirectConversationAsync(Guid friendRequestId) {
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
 
-            Conversation? conversation = await dbContext.Conversations
-                .AsNoTracking()
-                .Where(c => c.Type == ConversationType.DirectMessage)
-                .Where(c => c.Members.Select(m => m.UserId).Intersect(userIds).Count() == 2)
-                .FirstOrDefaultAsync();
+        Conversation? conversation = await dbContext.Conversations
+            .Where(c => c.Type == ConversationType.DirectMessage && c.FriendRequestId == friendRequestId)
+            .FirstOrDefaultAsync();
 
-            if (conversation != null) {
-                return conversation;
-            }
-
-            conversation = new() {
-                Type = ConversationType.DirectMessage,
-            };
-            
-            dbContext.Add(conversation);
-            await dbContext.SaveChangesAsync();
-
-            dbContext.ConversationMembers.AddRange(
-                new() {
-                    UserId = user1,
-                    ConversationId = conversation.Id,
-                },
-                new() {
-                    UserId = user2,
-                    ConversationId = conversation.Id,
-                }
-            );
-            
-            await dbContext.SaveChangesAsync();
-
+        if (conversation != null) {
             return conversation;
         }
+
+        conversation = new() {
+            Type = ConversationType.DirectMessage,
+            FriendRequestId = friendRequestId,
+        };
+
+        dbContext.Conversations.Add(conversation);
+            
+        // string[] userIds = [user1, user2];
+        
+        // Conversation? conversation = await dbContext.Conversations
+        //     .AsNoTracking()
+        //     .Where(c => c.Type == ConversationType.DirectMessage)
+        //     .Where(c => c.Members.Select(m => m.UserId).Intersect(userIds).Count() == 2)
+        //     .FirstOrDefaultAsync();
+        //
+        // if (conversation != null) {
+        //     return conversation;
+        // }
+        //
+        // conversation = new() {
+        //     Type = ConversationType.DirectMessage,
+        // };
+        //
+        // dbContext.Add(conversation);
+        // await dbContext.SaveChangesAsync();
+        //
+        // dbContext.ConversationMembers.AddRange(
+        //     new() {
+        //         UserId = user1,
+        //         ConversationId = conversation.Id,
+        //     },
+        //     new() {
+        //         UserId = user2,
+        //         ConversationId = conversation.Id,
+        //     }
+        // );
+        
+        await dbContext.SaveChangesAsync();
+
+        return conversation;
     }
 
     public async Task<IConversationService.SendStatus> SendMessageAsync(Guid conversationId, string senderId, string? body, Guid? replyMessageId, IReadOnlyCollection<IConversationService.UploadingAttachment> attachments, CancellationToken cancellationToken = default) {
