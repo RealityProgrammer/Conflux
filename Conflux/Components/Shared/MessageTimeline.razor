@@ -3,13 +3,14 @@
 @using Conflux.Database.Entities
 @using Conflux.Services.Abstracts
 @using Microsoft.EntityFrameworkCore
+
 @inject IJSRuntime JavascriptRuntime
 @inject IConversationService ConversationService
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject IContentService ContentService
 @inject ILogger<MessageTimeline> Logger
 
-@implements IDisposable
+@implements IAsyncDisposable
 
 <div class="overflow-y-auto flex-1 @_cssClass" @ref="_scrollContainer" @attributes="AdditionalAttributes">
     @switch (_initStatus) {
@@ -189,9 +190,6 @@
     [Parameter, EditorRequired] public required string UserId { get; set; }
     
     [Parameter] public Guid ConversationId { get; set; }
-    [Parameter] public EventCallback<Guid> ConversationIdChanged { get; set; }
-    [Parameter] public Expression<Func<Guid>> ConversationIdExpression { get; set; } = null!;
-
     private Guid _previousConversationId;
     
     [Parameter] public EventCallback<Guid> OnReplyRequested { get; set; }
@@ -240,8 +238,8 @@
 
     protected override void OnParametersSet() {
         if (_previousConversationId != ConversationId) {
+            ConversationService.LeaveConversationHubAsync(_previousConversationId);
             _initStatus = InitializationStatus.Loading;
-            _previousConversationId = ConversationId;
         }
 
         if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
@@ -287,10 +285,13 @@
             _focusOnEditTextArea = false;
         }
         
-        if (_initStatus == InitializationStatus.Loading) {
+        if (_previousConversationId != ConversationId) {
+            await ConversationService.JoinConversationHubAsync(ConversationId);
+            
+            _previousConversationId = ConversationId;
+            
             await LoadInitialMessages();
             _initStatus = InitializationStatus.Success;
-
             StateHasChanged();
         }
     }
@@ -551,12 +552,14 @@
         }
     }
     
-    public void Dispose() {
+    public async ValueTask DisposeAsync() {
         ConversationService.OnMessageReceived -= OnMessageReceived;
         ConversationService.OnMessageDeleted -= OnMessageDeleted;
         ConversationService.OnMessageEdited -= OnMessageEdited;
-        
+
         _messageSemaphore?.Dispose();
+        
+        await ConversationService.LeaveConversationHubAsync(ConversationId);
     }
     
     private enum InitializationStatus {

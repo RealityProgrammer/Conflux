@@ -13,7 +13,7 @@
 @inject IContentService ContentService
 
 <section class="min-w-0 flex flex-col @_cssClass">
-    <MessageTimeline @bind-ConversationId="ConversationId" 
+    <MessageTimeline ConversationId="ConversationId" 
                      OnReplyRequested="HandleReplyRequested"
                      UserId="@_userId"
                      LoadCount="LoadCount"/>
@@ -26,8 +26,6 @@
 
 @code {
     [Parameter] public Guid ConversationId { get; set; }
-    [Parameter] public EventCallback<Guid> ConversationIdChanged { get; set; }
-    [Parameter] public Expression<Func<Guid>> ConversationIdExpression { get; set; } = null!;
     
     [Parameter, EditorRequired] public required int LoadCount { get; set; }
 

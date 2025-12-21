@@ -1,8 +1,10 @@
 ﻿@page "/community/{CommunityId:guid}/{ChannelId:guid}"
 
 @using Conflux.Components.Layout
+@using Conflux.Components.Shared
 @using Conflux.Components.Shared.Icons
 @using Conflux.Database
+@using Conflux.Database.Entities
 @using Conflux.Services.Abstracts
 @using Microsoft.EntityFrameworkCore
 
@@ -27,7 +29,23 @@
         break;
         
     case InitializationState.Success:
-        <p>This is text channel page for id @ChannelId.</p>
+        <div class="flex flex-col h-full">
+            @switch (_channelData.Type) {
+                case CommunityChannelType.Text:
+                    <header class="flex-none p-1.5 border-b border-b-gray-600 bg-gray-725 flex flex-row items-center">
+                        Header
+                    </header>
+                    
+                    <MessagingArea class="flex-1 h-full" ConversationId="_channelData.ConversationId" LoadCount="ApplicationConstants.MessageLoadCount"/>
+                    break;
+                    
+                case CommunityChannelType.Audio:
+                    <div class="flex-1 flex flex-row justify-center items-center">
+                        <p class="text-gray-400">Audio channel is currently WIP.</p>
+                    </div>
+                    break;
+            }
+        </div>
         break;
 }
 
@@ -38,21 +56,27 @@
     [CascadingParameter] private CommunityLayout CommunityLayout { get; set; } = null!;
 
     private InitializationState _initState;
+    private ChannelDTO _channelData;
     
     protected override void OnInitialized() {
         CommunityLayout.CommunityId = CommunityId;
         _initState = InitializationState.Initializing;
     }
 
+    protected override void OnParametersSet() {
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
             await using var dbContext = await DbContextFactory.CreateDbContextAsync();
 
-            bool isValid = await dbContext.CommunityChannels
+            _channelData = await dbContext.CommunityChannels
                 .Where(x => x.Id == ChannelId)
-                .AnyAsync(x => x.ChannelCategory.CommunityId == CommunityId);
+                // .Where(x => x.ChannelCategory.CommunityId == CommunityId)
+                .Select(x => new ChannelDTO(x.Conversation.Id, x.Type))
+                .FirstOrDefaultAsync();
 
-            _initState = isValid ? InitializationState.Success : InitializationState.InvalidChannel;
+            _initState = _channelData.ConversationId != Guid.Empty ? InitializationState.Success : InitializationState.InvalidChannel;
             StateHasChanged();
         }
     }
@@ -66,4 +90,6 @@
         InvalidChannel,
         Success,
     }
+
+    private record struct ChannelDTO(Guid ConversationId, CommunityChannelType Type);
 }

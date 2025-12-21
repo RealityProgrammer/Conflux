@@ -11,7 +11,6 @@
 
 @implements IAsyncDisposable
 
-@inject IConversationService ConversationService
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject NavigationManager NavigationManager
 @inject IContentService ContentService
@@ -43,7 +42,7 @@
 
     <main class="flex-1 overflow-hidden">
         <div class="flex flex-row h-full">
-            <MessagingArea class="flex-1" @bind-ConversationId="ConversationId" LoadCount="ApplicationConstants.MessageLoadCount"/>
+            <MessagingArea class="flex-1" ConversationId="ConversationId" LoadCount="ApplicationConstants.MessageLoadCount"/>
             
             <aside class="flex-none  basis-80 hidden md:block bg-gray-750 border-l border-l-gray-600">
                 @if (_initState == InitializationState.Success) {
@@ -117,11 +116,6 @@
             return;
         }
 
-        if (_previousConversationId != Guid.Empty) {
-            await ConversationService.LeaveConversationHubAsync(_previousConversationId);
-            _previousConversationId = Guid.Empty;
-        }
-
         try {
             await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
                 var otherUser = await dbContext.Conversations
@@ -142,8 +136,6 @@
                 } else {
                     _initState = InitializationState.Success;
                     _otherUserInfo = otherUser;
-                    
-                    await ConversationService.JoinConversationHubAsync(ConversationId);
                 }
             }
         } finally {
@@ -159,8 +151,6 @@
 
     public async ValueTask DisposeAsync() {
         NavigationManager.LocationChanged -= OnNavigationLocationChanged;
-        
-        await ConversationService.LeaveConversationHubAsync(ConversationId);
     }
 
     private enum InitializationState {

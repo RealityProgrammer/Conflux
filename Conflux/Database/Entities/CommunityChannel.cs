@@ -17,7 +17,6 @@ public class CommunityChannel : ICreatedAtColumn {
     
     public CommunityChannelType Type { get; set; }
     
-    public Guid ConversationId { get; set; }
     public Conversation Conversation { get; set; } = null!;
 
     public DateTime CreatedAt { get; set; }
