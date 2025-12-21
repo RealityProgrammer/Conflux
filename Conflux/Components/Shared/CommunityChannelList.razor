@@ -20,13 +20,14 @@
 
 <section>
     <div class="w-full h-32 bg-black relative">
-        <button @ref="_serverOptionsButton" class="absolute top-0 right-0 p-1.5 bg-transparent hover:bg-white/15 rounded-full" @onclick="@(() => _isShowingCommunityExpandableMenu = true)">
+        <button @ref="_serverOptionsButton" class="absolute top-0 right-0 p-1.5 bg-transparent hover:bg-white/15 rounded-full" @onclick="@(() => _showCommunityExpandableMenu = true)">
             <Gear class="size-5 fill-white"/>
         </button>
 
-        <Popover TargetReference="_serverOptionsButton" @bind-IsShowing="_isShowingCommunityExpandableMenu" TooltipPlacement="left" TooltipOffset="4" CloseWhenClickOutside="true">
+        <Popover TargetReference="_serverOptionsButton" @bind-IsShowing="_showCommunityExpandableMenu" TooltipPlacement="left" TooltipOffset="4" CloseWhenClickOutside="true">
             <div class="bg-gray-600 p-1 text-white text-sm rounded-lg shadow-md flex flex-col gap-1 z-50" tabindex="-1">
-                <button class="p-1.5 bg-transparent hover:bg-white/10 active:bg-black/8 cursor-pointer rounded-md" @onclick="HandleDisplayCommunityExpandableMenu">Create channel category</button>
+                <button class="p-1.5 bg-transparent hover:bg-white/10 active:bg-black/8 cursor-pointer rounded-md text-left" @onclick="HandleDisplayCommunityExpandableMenu">Create channel category</button>
+                <button class="p-1.5 bg-transparent hover:bg-white/10 active:bg-black/8 cursor-pointer rounded-md text-left" @onclick="HandleDisplayInvitationUrlModal">Get invitation URL</button>
             </div>
         </Popover>
     </div>
@@ -125,6 +126,18 @@
     </Card>
 </Dialog>
 
+<Dialog @bind-Open="_showInvitationUrlModal" OnClickOutside="CloseInvitationUrlModal" class="flex flex-row justify-center items-center overflow-hidden">
+    <Card class="lg:static transition-transform duration-500 z-10">
+        <CardHeader Title="Invite Your Friends Here" Subtext="Ain't a community if you're alone" OnCloseRequested="CloseInvitationUrlModal"/>
+                                    
+        <CardContent class="flex flex-col pb-1">
+            <p class="mb-2">Send this community invitation URL to your friend and start the chat:</p>
+            
+            <input type="text" class="h-11 input-field" value="" readonly>
+        </CardContent>
+    </Card>
+</Dialog>
+
 @code {
     [Parameter] public Guid CommunityId { get; set; }
 
@@ -132,10 +145,9 @@
 
     private ElementReference _serverOptionsButton;
 
-    private bool _isShowingCommunityExpandableMenu;
-    private bool _isCreatingChannelCategory;
+    private bool _showCommunityExpandableMenu, _isCreatingChannelCategory;
 
-    private bool _showCreatingChannelModal;
+    private bool _showCreatingChannelModal, _showInvitationUrlModal;
     private Guid _categoryChannelCreationReceiverId;
 
     private List<ChannelCategoryDTO> _channelCategories = [];
@@ -172,7 +184,7 @@
     }
 
     private void HandleDisplayCommunityExpandableMenu() {
-        _isShowingCommunityExpandableMenu = false;
+        _showCommunityExpandableMenu = false;
         _isCreatingChannelCategory = true;
     }
 
@@ -183,7 +195,7 @@
     }
 
     private async Task HandleCreatingChannelCategoryBlur() {
-        _isCreatingChannelCategory = false;
+        _showCommunityExpandableMenu = false;
     }
 
     private async Task HandleCreatingChannelCategoryChange(ChangeEventArgs args) {
@@ -208,6 +220,15 @@
     private async Task HandleChannelCreate(CreateCommunityChannelForm.InputModel model) {
         _showCreatingChannelModal = false;
         await CommunityService.CreateChannelAsync(model.Name, model.Type, _categoryChannelCreationReceiverId);
+    }
+    
+    private void HandleDisplayInvitationUrlModal() {
+        _showInvitationUrlModal = true;
+        _showCommunityExpandableMenu = false;
+    }
+    
+    private void CloseInvitationUrlModal() {
+        _showInvitationUrlModal = false;
     }
 
     private void OnChannelCategoryCreated(ChannelCategoryCreatedEventArgs args) {

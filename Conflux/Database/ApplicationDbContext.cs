@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ValueGeneration;
 using System.Runtime.CompilerServices;
 
 namespace Conflux.Database;
@@ -111,6 +112,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         builder.Entity<Community>(entity => {
             entity.HasKey(x => x.Id);
 
+            entity.Property(x => x.InvitationId).HasValueGenerator<GuidValueGenerator>();
+            
             entity.HasOne(server => server.Owner)
                 .WithMany(owner => owner.OwnedServers)
                 .HasForeignKey(server => server.OwnerId)

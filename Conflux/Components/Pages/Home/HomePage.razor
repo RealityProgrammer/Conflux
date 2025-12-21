@@ -176,7 +176,7 @@
                     if (userData != null) {
                         _userAvatarUrl = string.IsNullOrEmpty(userData.AvatarProfilePath) ? null : ContentService.GetAssetPath(userData.AvatarProfilePath);
                         _userDisplayName = userData.DisplayName;
-                        
+
                         StateHasChanged();
                     }
                 }

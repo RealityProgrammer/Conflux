@@ -10,6 +10,8 @@ public class Community : ICreatedAtColumn {
     
     [MaxLength(36)] public string OwnerId { get; set; } = null!;
     [MaxLength(36)] public string CreatorId { get; set; } = null!;
+
+    public Guid InvitationId { get; set; }
     
     public DateTime CreatedAt { get; set; }
 

@@ -8,8 +8,10 @@ using Microsoft.AspNetCore.Mvc;
 using Conflux.Database.Entities;
 using Conflux.Services;
 using Conflux.Services.Abstracts;
+using Conflux.Services.Authorization;
 using Conflux.Services.Hubs;
 using Markdig;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.FileProviders;
 using System.Security.Claims;
@@ -45,8 +47,15 @@ builder.Services.AddAuthentication(options => {
 });
 
 builder.Services.AddAuthorization(options => {
-    options.AddPolicy("RequireAuthenticatedUser", policy => policy.RequireAuthenticatedUser());
+    options.AddPolicy("RequireAuthenticatedUser", policy => {
+        policy.RequireAuthenticatedUser();
+    });
+    options.AddPolicy("CommunityOwnershipPolicy", policy => {
+        policy.Requirements.Add(new CommunityOwnershipRequirement());
+    });
 });
+
+builder.Services.AddSingleton<IAuthorizationHandler, CommunityOwnershipAuthorizationHandler>();
 
 // Add database services.
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options => {
