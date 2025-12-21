@@ -14,44 +14,40 @@
 
 @inject ICommunityService CommunityService
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject ILogger<ChannelPage> Logger
 
-@switch (_initState) {
-    case InitializationState.Initializing:
-        <div class="size-full flex flex-row justify-center items-center">
-            <Spinner class="size-8 fill-white"/>
-        </div>
-        break;
-        
-    case InitializationState.InvalidChannel:
-        <div class="size-full flex flex-row justify-center items-center">
-            <p class="text-gray-400">Nothing here...</p>
-        </div>
-        break;
-        
-    case InitializationState.Success:
-        <div class="flex flex-col h-full">
-            @switch (_channelData.Type) {
-                case CommunityChannelType.Text:
-                    <header class="flex-none p-1.5 border-b border-b-gray-600 bg-gray-725 flex flex-row items-center">
-                        Header
-                    </header>
-                    
-                    <MessagingArea class="flex-1 h-full" ConversationId="_channelData.ConversationId" LoadCount="ApplicationConstants.MessageLoadCount"/>
-                    break;
-                    
-                case CommunityChannelType.Audio:
-                    <div class="flex-1 flex flex-row justify-center items-center">
-                        <p class="text-gray-400">Audio channel is currently WIP.</p>
-                    </div>
-                    break;
-            }
-        </div>
-        break;
-}
+<div class="flex flex-col h-full">
+    <header class="flex-none p-1.5 border-b border-b-gray-600 bg-gray-725 flex flex-row items-center">
+        Header
+    </header>
+    
+    <main class="flex-1 h-full">
+        @switch (_initState) {
+            case InitializationState.Initializing:
+                <div class="size-full flex flex-row justify-center items-center">
+                    <Spinner class="size-8 fill-white"/>
+                </div>
+                break;
+                
+            case InitializationState.InvalidChannel:
+                <div class="size-full flex flex-row justify-center items-center">
+                    <p class="text-gray-400">Nothing here...</p>
+                </div>
+                break;
+                
+            case InitializationState.Success:
+                <MessagingArea class="flex-1 h-full" ConversationId="_channelData.ConversationId" LoadCount="ApplicationConstants.MessageLoadCount"/>
+                break;
+        }
+    </main>
+</div>
+
+
 
 @code {
     [Parameter] public Guid CommunityId { get; set; }
     [Parameter] public Guid ChannelId { get; set; }
+    private Guid _previousChannelId;
     
     [CascadingParameter] private CommunityLayout CommunityLayout { get; set; } = null!;
 
@@ -64,10 +60,13 @@
     }
 
     protected override void OnParametersSet() {
+        if (_previousChannelId != ChannelId) {
+            _initState = InitializationState.Initializing;
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
-        if (firstRender) {
+        if (_initState == InitializationState.Initializing) {
             await using var dbContext = await DbContextFactory.CreateDbContextAsync();
 
             _channelData = await dbContext.CommunityChannels

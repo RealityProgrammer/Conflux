@@ -6,11 +6,8 @@
 @using System.Diagnostics
 @using System.Security.Claims
 
-@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
-@inject IJSRuntime JavascriptRuntime
 @inject IConversationService ConversationService
 @inject ILogger<MessagingArea> Logger
-@inject IContentService ContentService
 
 <section class="min-w-0 flex flex-col @_cssClass">
     <MessageTimeline ConversationId="ConversationId" 
