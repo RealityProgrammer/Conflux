@@ -115,7 +115,7 @@
                 _communityPopulation = communityData.Population;
                 
                 if (await dbContext.CommunityMembers
-                        .Where(x => x.CommunityServerId == communityData.Id && x.UserId == _userId)
+                        .Where(x => x.CommunityId == communityData.Id && x.UserId == _userId)
                         .AnyAsync()) {
                     _state = State.AlreadyJoined;
                 } else {

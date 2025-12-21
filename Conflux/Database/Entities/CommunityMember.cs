@@ -5,8 +5,8 @@ namespace Conflux.Database.Entities;
 public class CommunityMember : ICreatedAtColumn {
     public Guid Id { get; set; }
     
-    public Guid CommunityServerId { get; set; }
-    [MaxLength(36)] public string UserId { get; set; }
+    public Guid CommunityId { get; set; }
+    [MaxLength(36)] public string UserId { get; set; } = null!;
     
     public DateTime CreatedAt { get; set; }
     

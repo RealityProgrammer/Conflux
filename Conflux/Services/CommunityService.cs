@@ -188,7 +188,7 @@ public class CommunityService(
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         
         // Early return if user already in the community.
-        if (await dbContext.CommunityMembers.Where(x => x.UserId == userId && x.CommunityServerId == communityId).AnyAsync()) {
+        if (await dbContext.CommunityMembers.Where(x => x.UserId == userId && x.CommunityId == communityId).AnyAsync()) {
             return false;
         }
         
@@ -199,7 +199,7 @@ public class CommunityService(
 
         CommunityMember member = new() {
             UserId = userId,
-            CommunityServerId = communityId,
+            CommunityId = communityId,
         };
 
         dbContext.CommunityMembers.Add(member);

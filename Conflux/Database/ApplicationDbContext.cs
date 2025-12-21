@@ -135,11 +135,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         }).Entity<CommunityMember>(entity => {
             entity.HasKey(x => x.Id);
 
-            entity.HasIndex(x => new { x.CommunityServerId, x.UserId }).IsUnique();
+            entity.HasIndex(x => new {
+                CommunityServerId = x.CommunityId, x.UserId }).IsUnique();
             
             entity.HasOne(member => member.Community)
                 .WithMany(server => server.Members)
-                .HasForeignKey(member => member.CommunityServerId)
+                .HasForeignKey(member => member.CommunityId)
                 .HasPrincipalKey(member => member.Id)
                 .OnDelete(DeleteBehavior.Cascade);
 
