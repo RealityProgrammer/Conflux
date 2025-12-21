@@ -27,6 +27,9 @@
 
     public Guid CommunityId {
         get => _communityId.GetValueOrDefault(Guid.Empty);
-        set => _communityId = value;
+        set {
+            _communityId = value;
+        }
     }
+
 }

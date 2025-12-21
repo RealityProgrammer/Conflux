@@ -54,12 +54,9 @@
     private InitializationState _initState;
     private ChannelDTO _channelData;
     
-    protected override void OnInitialized() {
-        CommunityLayout.CommunityId = CommunityId;
-        _initState = InitializationState.Initializing;
-    }
-
     protected override void OnParametersSet() {
+        CommunityLayout.CommunityId = CommunityId;
+        
         if (_previousChannelId != ChannelId) {
             _initState = InitializationState.Initializing;
         }

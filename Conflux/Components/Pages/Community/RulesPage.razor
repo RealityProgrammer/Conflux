@@ -17,7 +17,7 @@
     [Parameter] public Guid CommunityId { get; set; }
     [CascadingParameter] private CommunityLayout CommunityLayout { get; set; } = null!;
 
-    protected override void OnInitialized() {
+    protected override void OnParametersSet() {
         CommunityLayout.CommunityId = CommunityId;
     }
 

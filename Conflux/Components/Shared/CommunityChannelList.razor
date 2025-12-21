@@ -146,6 +146,7 @@
 
 @code {
     [Parameter] public Guid CommunityId { get; set; }
+    private Guid _previousCommunityId;
 
     private bool _isLoading = true;
 
@@ -161,8 +162,19 @@
     private string? _communityName;
     private string _invitationUrl;
 
+    protected override void OnParametersSet() {
+        if (_previousCommunityId != CommunityId) {
+            _isLoading = true;
+        }
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
+            CommunityService.OnChannelCategoryCreated += OnChannelCategoryCreated;
+            CommunityService.OnChannelCreated += OnChannelCreated;
+        }
+        
+        if (_isLoading) {
             await using var dbContext = await DbContextFactory.CreateDbContextAsync();
 
             _channelCategories = await dbContext.CommunityChannelCategories
@@ -187,9 +199,6 @@
             _isLoading = false;
 
             StateHasChanged();
-
-            CommunityService.OnChannelCategoryCreated += OnChannelCategoryCreated;
-            CommunityService.OnChannelCreated += OnChannelCreated;
         }
     }
 
