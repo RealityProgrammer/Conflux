@@ -5,11 +5,13 @@ namespace Conflux.Services.Abstracts;
 public readonly record struct CommunityCreatedEventArgs(Community Community);
 public readonly record struct ChannelCategoryCreatedEventArgs(Guid CommunityId, Guid CategoryId);
 public readonly record struct ChannelCreatedEventArgs(Guid ChannelCategoryId, Guid ChannelId);
+public readonly record struct CommunityMemberJoinedEventArgs(CommunityMember Member);
 
 public interface ICommunityService {
     event Action<ChannelCategoryCreatedEventArgs>? OnChannelCategoryCreated;
     event Action<ChannelCreatedEventArgs>? OnChannelCreated;
     event Action<CommunityCreatedEventArgs>? OnUserCreatedCommunity;
+    event Action<CommunityMemberJoinedEventArgs>? OnMemberJoined;
     
     Task JoinCommunityHubAsync(Guid communityId);
     Task LeaveCommunityHubAsync(Guid communityId);
@@ -18,4 +20,6 @@ public interface ICommunityService {
 
     Task CreateChannelCategoryAsync(string name, Guid communityId);
     Task CreateChannelAsync(string name, CommunityChannelType type, Guid channelCategoryId);
+
+    Task<bool> JoinCommunityAsync(string userId, Guid communityId, Guid invitationId);
 }

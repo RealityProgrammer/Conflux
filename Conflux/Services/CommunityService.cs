@@ -23,12 +23,14 @@ public class CommunityService(
 ) : ICommunityService, IAsyncDisposable {
     private const string ChannelCategoryCreatedEventName = "ChannelCategoryCreated";
     private const string ChannelCreatedEventName = "ChannelCreated";
+    private const string MemberJoinedEventName = "MemberJoined";
     
     private readonly ConcurrentDictionary<Guid, HubConnection> _hubConnections = [];
 
     public event Action<ChannelCategoryCreatedEventArgs>? OnChannelCategoryCreated;
     public event Action<ChannelCreatedEventArgs>? OnChannelCreated;
     public event Action<CommunityCreatedEventArgs>? OnUserCreatedCommunity;
+    public event Action<CommunityMemberJoinedEventArgs>? OnMemberJoined;
     
     public async Task JoinCommunityHubAsync(Guid communityId) {
         // TODO: Revise this code due to possible race-condition.
@@ -42,6 +44,10 @@ public class CommunityService(
 
         connection.On<ChannelCreatedEventArgs>(ChannelCreatedEventName, args => {
             OnChannelCreated?.Invoke(args);
+        });
+
+        connection.On<CommunityMemberJoinedEventArgs>(MemberJoinedEventName, args => {
+            OnMemberJoined?.Invoke(args);
         });
         
         await connection.StartAsync();
@@ -176,6 +182,35 @@ public class CommunityService(
         await transaction.CommitAsync();
         
         await hubContext.Clients.Group(communityId.ToString()).SendAsync(ChannelCreatedEventName, new ChannelCreatedEventArgs(channelCategoryId, channel.Id));
+    }
+
+    public async Task<bool> JoinCommunityAsync(string userId, Guid communityId, Guid invitationId) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        
+        // Early return if user already in the community.
+        if (await dbContext.CommunityMembers.Where(x => x.UserId == userId && x.CommunityServerId == communityId).AnyAsync()) {
+            return false;
+        }
+        
+        // Determine if the invitation id is valid.
+        if (!await dbContext.Communities.Where(x => x.Id == communityId && x.InvitationId == invitationId).AnyAsync()) {
+            return false;
+        }
+
+        CommunityMember member = new() {
+            UserId = userId,
+            CommunityServerId = communityId,
+        };
+
+        dbContext.CommunityMembers.Add(member);
+
+        if (await dbContext.SaveChangesAsync() > 0) {
+            await hubContext.Clients.Group(communityId.ToString()).SendAsync(MemberJoinedEventName, new CommunityMemberJoinedEventArgs(member));
+
+            return true;
+        }
+
+        return false;
     }
 
     public async ValueTask DisposeAsync() {

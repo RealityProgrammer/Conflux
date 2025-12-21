@@ -1,0 +1,158 @@
+﻿@page "/invite/{InvitationId:guid}"
+
+@using Conflux.Components.Shared
+@using Conflux.Components.Shared.Icons
+@using Conflux.Database
+@using Conflux.Services
+@using Conflux.Services.Abstracts
+@using Microsoft.EntityFrameworkCore
+@using System.Diagnostics
+@using System.Security.Claims
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IContentService ContentService
+@inject ICommunityService CommunityService
+@inject ISnackbarService SnackbarService
+@inject ApplicationRedirectManager RedirectManager
+
+<div class="-z-1 w-screen h-screen bg-size-[250%_100%] bg-linear-to-r from-[#8f4edf] to-[#e977aa] animate-[animated-gradient_10s_ease_infinite] flex flex-row justify-center items-center text-white">
+    <Card>
+        @switch (_state) {
+            case State.Initializing:
+                <Spinner class="size-16 fill-white m-5"/>
+                break;
+        
+            case State.InvalidInvitation:
+                <CardHeader Title="Invalid Invitation" Subtext="Something went wrong?"/>
+        
+                <CardContent>
+                    <p class="mb-2">Check the invitation link. Did you miss a character?</p>
+                </CardContent>
+                break;
+                
+            case State.AlreadyJoined or State.Valid:
+                <CardHeader Title="Invitation to Community" Subtext="Get ready to join the cool kid club."/>
+                
+                <CardContent class="mx-2 grid grid-cols-1 md:grid-cols-2 p-2 bg-gray-650 rounded-xl">
+                    <Avatar ImageSrc="@(string.IsNullOrEmpty(_communityAvatarPath) ? null : ContentService.GetAssetPath(_communityAvatarPath))" ImageAlt="@($"Avatar of {_communityName}")" class="size-64 mr-2"/>
+                        
+                    <div>
+                        <p class="text-center">
+                            <span class="font-semibold">You're about to join:<br/></span>
+                            
+                            <span class="font-bold text-2xl">@_communityName</span>
+                        </p>
+                        
+                        <div class="flex justify-center items-center mt-1">
+                            <div class="bg-gray-600 px-1 py-0.5 flex flex-row items-center rounded-full">
+                                <span class="bg-gray-300 rounded-full size-3 mr-1"></span>
+                                <p class="text-center text-xs">@_communityPopulation members</p>
+                            </div>
+                        </div>
+                        
+                        @if (_state == State.AlreadyJoined) {
+                            <p class="text-sm text-center mt-2 text-gray-400">But... You're already a member...</p>
+                        } else {
+                            <ProcessingStateButton @bind-IsProcessing="_isProcessingCommunityJoin" class="mt-2 button-primary w-full px-0 py-0 h-10 shadow-lg" ProcessingCssClass="flex justify-center items-center" @onclick="HandleJoinCommunity">
+                                <ChildContent>
+                                    Join the Community
+                                </ChildContent>
+                                
+                                <ProcessingContent>
+                                    <Spinner class="size-4 fill-white"/>
+                                </ProcessingContent>
+                            </ProcessingStateButton>
+                        }
+                    </div>
+                </CardContent>
+                break;
+        }
+    </Card>
+</div>
+
+@code {
+    [Parameter] public Guid InvitationId { get; set; }
+
+    private State _state;
+
+    private string? _userId, _communityName, _communityAvatarPath;
+    private Guid _communityId;
+    private int _communityPopulation;
+
+    private bool _isProcessingCommunityJoin;
+
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+
+    protected override void OnParametersSet() {
+        _state = State.Initializing;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (_state == State.Initializing) {
+            var authState = await AuthenticationState;
+            _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            
+            Debug.Assert(_userId != null);
+            
+            await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+            
+            var communityData = await dbContext.Communities
+                .Where(x => x.InvitationId == InvitationId)
+                .Select(x => new {
+                    x.Name,
+                    x.AvatarPath,
+                    x.Id,
+                    Population = x.Members.Count,
+                })
+                .FirstOrDefaultAsync();
+            
+            if (communityData == null) {
+                _state = State.InvalidInvitation;
+            } else {
+                _communityName = communityData.Name;
+                _communityAvatarPath = communityData.AvatarPath;
+                _communityId = communityData.Id;
+                _communityPopulation = communityData.Population;
+                
+                if (await dbContext.CommunityMembers
+                        .Where(x => x.CommunityServerId == communityData.Id && x.UserId == _userId)
+                        .AnyAsync()) {
+                    _state = State.AlreadyJoined;
+                } else {
+                    _state = State.Valid;
+                }
+            }
+            
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleJoinCommunity() {
+        if (_userId == null) return;
+        
+        _isProcessingCommunityJoin = true;
+
+        try {
+            bool success = await CommunityService.JoinCommunityAsync(_userId, _communityId, InvitationId);
+
+            if (success) {
+                RedirectManager.To($"/community/{_communityId}").Execute();
+            } else {
+                SnackbarService.Create(new() {
+                    Duration = TimeSpan.FromSeconds(5),
+                    Text = "Failed to join Community! Please try again later.",
+                    Type = SnackbarType.Error,
+                });
+            }
+        } finally {
+            _isProcessingCommunityJoin = false;
+        }
+    }
+
+    private enum State {
+        Initializing,
+        InvalidInvitation,
+        AlreadyJoined,
+        Valid,
+    }
+}
