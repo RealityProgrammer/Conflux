@@ -50,12 +50,20 @@ function updateTooltipPosition(targetElement: Element, tooltipElement: HTMLEleme
     });
 }
 
+function copyToClipboard(text: string): void {
+    navigator.clipboard.writeText(text).catch((error: Error) => {
+        console.error("Failed to copy to clipboard: " + error);
+    });
+}
+
 declare global {
     interface Window {
         createInputPreviewUrl: (inputElement: HTMLInputElement, fileIndex: number) => string|null;
         updateTooltipPosition: (targetElement: Element, tooltipElement: HTMLElement, arrowElement: HTMLElement | null, tooltipPlacement: Placement, tooltipOffset: number) => void;
+        copyToClipboard: (text: string) => void;
     }
 }
 
 window.createInputPreviewUrl = createInputPreviewUrl;
 window.updateTooltipPosition = updateTooltipPosition;
+window.copyToClipboard = copyToClipboard;

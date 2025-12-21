@@ -28,6 +28,7 @@ public class CommunityService(
 
     public event Action<ChannelCategoryCreatedEventArgs>? OnChannelCategoryCreated;
     public event Action<ChannelCreatedEventArgs>? OnChannelCreated;
+    public event Action<CommunityCreatedEventArgs>? OnUserCreatedCommunity;
     
     public async Task JoinCommunityHubAsync(Guid communityId) {
         // TODO: Revise this code due to possible race-condition.
@@ -92,7 +93,7 @@ public class CommunityService(
             .Build();
     }
     
-    public async Task<bool> CreateServerAsync(string name, Stream? avatarStream, string creatorId) {
+    public async Task<bool> CreateCommunityAsync(string name, Stream? avatarStream, string creatorId) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         await using var transaction = await dbContext.Database.BeginTransactionAsync();
 
@@ -111,13 +112,16 @@ public class CommunityService(
                 UserId = creatorId,
             });
             
-            await dbContext.SaveChangesAsync();
-            
-            await transaction.CommitAsync();
-
             if (avatarStream != null) {
-                await contentService.UploadServerAvatarAsync(avatarStream, community.Id);
+                string path = await contentService.UploadServerAvatarAsync(avatarStream, community.Id);
+                
+                community.AvatarPath = path;
             }
+            
+            await dbContext.SaveChangesAsync();
+            await transaction.CommitAsync();
+            
+            OnUserCreatedCommunity?.Invoke(new(community));
             
             return true;
         }

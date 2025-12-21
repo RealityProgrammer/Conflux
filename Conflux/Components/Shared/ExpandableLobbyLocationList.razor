@@ -4,8 +4,11 @@
 @using Microsoft.EntityFrameworkCore
 @using System.Security.Claims
 
+@implements IDisposable
+
 @inject ICommunityService CommunityService
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IContentService ContentService
 
 <section class="z-1000 absolute top-0 inset-x-0 h-16 bg-(--bg-color-1) shadow-lg transition-all duration-500 @(_isDrawerExpanded ? "translate-y-0" : "-translate-y-full")">
     <div class="overflow-x-auto flex flex-row items-center gap-2 h-full p-2">
@@ -28,7 +31,7 @@
                 <Tooltip TargetCssClass="inline-block h-full aspect-square" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" TooltipPlacement="bottom" TooltipOffset="8">
                     <TargetContent>
                         <NavLink class="bg-gray-800 hover:bg-gray-750 active:bg-gray-825 hover:shadow-md rounded-full h-full aspect-square flex-none cursor-pointer overflow-hidden flex flex-row justify-center items-center" ActiveClass="border-2 border-blue-700!" href="@($"/community/{joinedServer.Id}")" Match="NavLinkMatch.Prefix">
-                            <Avatar class="w-full aspect-square" ImageSrc="@null"/>
+                            <Avatar class="w-full aspect-square" ImageSrc="@(string.IsNullOrEmpty(joinedServer.AvatarPath) ? null : ContentService.GetAssetPath(joinedServer.AvatarPath))" ImageAlt="@($"Avatar of {joinedServer.Name}")"/>
                         </NavLink>
                     </TargetContent>
                     
@@ -111,13 +114,16 @@
             dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
             _joinedServers = await dbContext.CommunityMembers
-                .Where(m => m.UserId == userId)
-                .Select(m => m.Community)
-                .Select(s => new CommunityServerDTO(s.Id, s.Name, s.AvatarPath))
+                .Where(member => member.UserId == userId)
+                .OrderBy(member => member.CreatedAt)
+                .Select(member => member.Community)
+                .Select(community => new CommunityServerDTO(community.Id, community.Name, community.AvatarPath))
                 .ToListAsync();
 
             _isLoadingJoinedServers = false;
             StateHasChanged();
+
+            CommunityService.OnUserCreatedCommunity += OnUserCreatedCommunity;
         }
     }
 
@@ -141,15 +147,29 @@
         if (string.IsNullOrEmpty(id)) return;
 
         if (model.Avatar == null) {
-            await CommunityService.CreateServerAsync(model.Name, null, id);
+            await CommunityService.CreateCommunityAsync(model.Name, null, id);
         } else {
             using var avatarStream = model.Avatar.OpenReadStream(ApplicationConstants.MaxServerAvatarSize);
 
-            await CommunityService.CreateServerAsync(model.Name, avatarStream, id);
+            await CommunityService.CreateCommunityAsync(model.Name, avatarStream, id);
         }
         
         _isShowingServerCreationCard = false;
         _isAskingServerNameAndProfilePicture = false;
+    }
+
+    private void OnUserCreatedCommunity(CommunityCreatedEventArgs args) {
+        InvokeAsync(async () => {
+            await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+            
+            _joinedServers.Add(new(args.Community.Id, args.Community.Name, args.Community.AvatarPath));
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose() {
+        CommunityService.OnUserCreatedCommunity -= OnUserCreatedCommunity;
     }
 
     private readonly record struct CommunityServerDTO(Guid Id, string Name, string? AvatarPath);

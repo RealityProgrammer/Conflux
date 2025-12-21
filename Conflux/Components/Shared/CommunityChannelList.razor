@@ -1,6 +1,7 @@
 ﻿@using Conflux.Components.Shared.Icons
 @using Conflux.Database
 @using Conflux.Database.Entities
+@using Conflux.Helpers
 @using Conflux.Services.Abstracts
 @using Microsoft.EntityFrameworkCore
 
@@ -9,6 +10,8 @@
 @inject ILogger<CommunityChannelList> Logger
 @inject ICommunityService CommunityService
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JavascriptRuntime
 
 @if (_isLoading) {
     <div class="size-full flex flex-row justify-center items-center">
@@ -133,7 +136,10 @@
         <CardContent class="flex flex-col pb-1">
             <p class="mb-2">Send this community invitation URL to your friend and start the chat:</p>
             
-            <input type="text" class="h-11 input-field" value="" readonly>
+            <div class="relative">
+                <input type="text" class="w-full h-12 input-field pr-22" value="@_invitationUrl" readonly>
+                <button class="absolute top-1 bottom-1 right-1 w-20 button-primary py-0!" @onclick="EventUtils.AsNonRenderingEventHandler(HandleCopyInvitationUrl)">Copy</button>
+            </div>
         </CardContent>
     </Card>
 </Dialog>
@@ -153,6 +159,7 @@
     private List<ChannelCategoryDTO> _channelCategories = [];
 
     private string? _communityName;
+    private string _invitationUrl;
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
@@ -169,11 +176,14 @@
                 )
                 .ToListAsync();
 
-            _communityName = await dbContext.Communities
+            var data = await dbContext.Communities
                 .Where(x => x.Id == CommunityId)
-                .Select(x => x.Name)
+                .Select(x => new { x.Name, x.InvitationId })
                 .FirstAsync();
 
+            _communityName = data.Name;
+            _invitationUrl = NavigationManager.ToAbsoluteUri($"/invite/{data.InvitationId.ToString()}").GetLeftPart(UriPartial.Path);
+            
             _isLoading = false;
 
             StateHasChanged();
@@ -247,6 +257,10 @@
                 StateHasChanged();
             }
         });
+    }
+
+    private async Task HandleCopyInvitationUrl() {
+        await JavascriptRuntime.InvokeVoidAsync("window.copyToClipboard", _invitationUrl);
     }
 
     private void OnChannelCreated(ChannelCreatedEventArgs args) {
