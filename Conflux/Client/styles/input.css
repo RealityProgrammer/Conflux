@@ -197,18 +197,27 @@
     .bg-responsive-debug {
         @apply bg-red-500 sm:bg-blue-500 md:bg-green-500 lg:bg-orange-500 xl:bg-purple-600 2xl:bg-emerald-600;
     }
-}
 
-@layer utilities {
     .scrollbar-hide::-webkit-scrollbar {
         display: none;
     }
-    
+
     .scrollbar-hide {
         -ms-overflow-style: none;
         scrollbar-width: none;
     }
 }
+
+/*@layer utilities {*/
+/*    .scrollbar-hide::-webkit-scrollbar {*/
+/*        display: none;*/
+/*    }*/
+/*    */
+/*    .scrollbar-hide {*/
+/*        -ms-overflow-style: none;*/
+/*        scrollbar-width: none;*/
+/*    }*/
+/*}*/
 
 @layer base {
     * {

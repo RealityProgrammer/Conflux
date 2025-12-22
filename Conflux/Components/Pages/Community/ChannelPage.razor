@@ -16,12 +16,12 @@
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject ILogger<ChannelPage> Logger
 
-<div class="flex flex-col h-full">
+<div class="flex flex-col h-full overflow-hidden">
     <header class="flex-none p-1.5 border-b border-b-gray-600 bg-gray-725 flex flex-row items-center">
         Header
     </header>
     
-    <main class="flex-1 h-full">
+    <main class="flex flex-row flex-1 overflow-hidden">
         @switch (_initState) {
             case InitializationState.Initializing:
                 <div class="size-full flex flex-row justify-center items-center">
@@ -39,10 +39,12 @@
                 <MessagingArea class="flex-1 h-full" ConversationId="_channelData.ConversationId" LoadCount="ApplicationConstants.MessageLoadCount"/>
                 break;
         }
+        
+        <aside class="flex-none basis-80 bg-gray-750 border-l border-l-gray-600 p-1.5 overflow-y-scroll scrollbar-hide">
+            <CommunityMemberList CommunityId="CommunityId" OverscanCount="10"/>
+        </aside>
     </main>
 </div>
-
-
 
 @code {
     [Parameter] public Guid CommunityId { get; set; }
@@ -74,6 +76,8 @@
 
             _initState = _channelData.ConversationId != Guid.Empty ? InitializationState.Success : InitializationState.InvalidChannel;
             StateHasChanged();
+
+            _previousChannelId = ChannelId;
         }
     }
     

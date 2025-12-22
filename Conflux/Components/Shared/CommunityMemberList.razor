@@ -1,0 +1,50 @@
+﻿@using Conflux.Database
+@using Conflux.Database.Entities
+@using Conflux.Services.Abstracts
+@using Microsoft.EntityFrameworkCore
+
+@inject IContentService ContentService
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+
+<div class="flex flex-col gap-0.5">
+    <Virtualize OverscanCount="OverscanCount" ItemsProvider="MembersProvider">
+        <ItemContent Context="item">
+            <div class="flex-none h-12 p-1 bg-transparent hover:bg-white/15 active:bg-black/25 cursor-pointer rounded-lg flex flex-row items-center select-none">
+                <Avatar ImageSrc="@(string.IsNullOrEmpty(item.AvatarPath) ? null : ContentService.GetAssetPath(item.AvatarPath))" ImageAlt="@($"Avatar of {item.DisplayName}")" class="h-full mr-2"/>
+    
+                <p>@item.DisplayName</p>
+            </div>
+        </ItemContent>
+    </Virtualize>
+</div>
+
+@code {
+    [Parameter] public int OverscanCount { get; set; } = 10;
+
+    [Parameter, EditorRequired] public required Guid CommunityId { get; set; }
+
+    private async ValueTask<ItemsProviderResult<MemberDTO>> MembersProvider(ItemsProviderRequest request) {
+        await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        IQueryable<CommunityMember> query = dbContext.CommunityMembers
+            .Where(member => member.CommunityId == CommunityId);
+        
+        int totalCount = await query.CountAsync();
+
+        if (totalCount == 0) {
+            return new([], 0);
+        }
+
+        var results = await query
+            .OrderByDescending(x => x.CreatedAt)
+            .Skip(request.StartIndex)
+            .Take(request.Count)
+            .Select(x => x.User)
+            .Select(u => new MemberDTO(u.Id, u.AvatarProfilePath, u.DisplayName))
+            .ToListAsync();
+        
+        return new(results, totalCount);
+    }
+
+    private readonly record struct MemberDTO(string Id, string? AvatarPath, string DisplayName);
+}
