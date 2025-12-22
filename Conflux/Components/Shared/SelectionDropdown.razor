@@ -1,0 +1,27 @@
+﻿@typeparam TValue
+
+@inherits InputSelect<TValue>
+
+<DropdownButton class="@ButtonCssClass" PopoverCssClass="@PopoverCssClass">
+    <ChildContent>
+        @CurrentValueAsString
+    </ChildContent>
+    
+    <Dropdown>
+        <CascadingValue Value="this">
+            <ul class="p-1 bg-gray-700 rounded-lg border border-gray-600 @CssClass">
+                @ChildContent
+            </ul>
+        </CascadingValue>
+    </Dropdown>
+</DropdownButton>
+
+@code {
+    [Parameter] public string? ButtonCssClass { get; set; }
+    [Parameter] public string? PopoverCssClass { get; set; }
+
+    public async Task SelectValueAsync(TValue value) {
+        CurrentValue = value;
+        await ValueChanged.InvokeAsync(value);
+    }
+}

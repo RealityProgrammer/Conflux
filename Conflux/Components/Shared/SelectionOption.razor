@@ -1,0 +1,67 @@
+﻿@using Conflux.Components.Shared.Icons
+
+@typeparam TValue
+
+<li class="flex flex-row items-center @_cssClass" @attributes="AdditionalAttributes" @onclick="HandleValueSelection">
+    <span class="flex-1">@ChildContent</span>
+    
+    @if (IsValueSelected()) {
+        <span class="flex-none">
+            @if (Checked != null) {
+                @Checked
+            } else {
+                <Check Variation="CheckVariation.Normal" class="size-5 fill-white"/>
+            }
+        </span>
+    }
+</li>
+
+@code {
+    [Parameter, EditorRequired] public required RenderFragment ChildContent { get; set; }
+    [Parameter] public RenderFragment? Checked { get; set; }
+        
+    [Parameter] public TValue? Value { get; set; }
+    
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+    private string? _cssClass;
+    
+    [CascadingParameter] private SelectionDropdown<TValue>? SelectionDropdown { get; set; }
+
+    protected override void OnParametersSet() {
+        if (SelectionDropdown == null) {
+            throw new InvalidOperationException($"{nameof(SelectionOption<>)} must be within a {nameof(SelectionDropdown<>)}.");
+        }
+        
+        if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
+            _cssClass = Convert.ToString(obj);
+        }
+
+        AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "class").ToDictionary();
+    }
+
+    private bool IsValueSelected() {
+        if (SelectionDropdown == null || Value == null) {
+            return false;
+        }
+
+        var currentValue = SelectionDropdown.Value;
+
+        if (currentValue == null && Value == null) {
+            return true;
+        }
+
+        if (currentValue == null || Value == null) {
+            return false;
+        }
+
+        return EqualityComparer<TValue>.Default.Equals(currentValue, Value);
+    }
+
+    private async Task HandleValueSelection() {
+        if (SelectionDropdown == null || Value == null) {
+            return;
+        }
+
+        await SelectionDropdown.SelectValueAsync(Value);
+    }
+}

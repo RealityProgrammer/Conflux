@@ -1,0 +1,42 @@
+﻿@using Conflux.Components.Shared.Icons
+
+<button @ref="ButtonElementReference" class="input-field text-left relative flex flex-row items-center hover:bg-white/15 active:bg-black/25 cursor-pointer @_cssClass" @onclick="HandleToggleDropdown">
+    <span class="flex-1">
+        @if (ChildContent != null) {
+            @ChildContent
+        }
+    </span>
+    
+    @{ string chevronCssClass = $"flex-none fill-white size-3 transition-transform duration-250 ease-in-out {(_openDropdown ? "rotate-0" : "rotate-180")}"; }
+    <Chevron class="@chevronCssClass" Direction="ChevronDirection.Down" Mode="ChevronMode.Normal"></Chevron>
+</button>
+
+<Popover class="@PopoverCssClass" DisplayArrow="false" CloseWhenClickOutside="true" @bind-IsShowing="_openDropdown" TargetReference="ButtonElementReference" TooltipPlacement="bottom" TooltipOffset="2">
+    @Dropdown
+</Popover>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter, EditorRequired] public required RenderFragment Dropdown { get; set; }
+    
+    [Parameter] public string? PopoverCssClass { get; set; }
+    
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+    private string? _cssClass;
+
+    private bool _openDropdown;
+    
+    public ElementReference ButtonElementReference { get; set; }
+
+    protected override void OnParametersSet() {
+        if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
+            _cssClass = Convert.ToString(obj);
+        }
+
+        AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "class").ToDictionary();
+    }
+
+    private void HandleToggleDropdown() {
+        _openDropdown ^= true;
+    }
+}
