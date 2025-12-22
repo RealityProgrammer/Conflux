@@ -56,6 +56,7 @@ builder.Services.AddAuthorization(options => {
 });
 
 builder.Services.AddSingleton<IAuthorizationHandler, CommunityOwnershipAuthorizationHandler>();
+builder.Services.AddSingleton<IAuthorizationHandler, CommunityAuthorizationCrudHandler>();
 
 // Add database services.
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options => {

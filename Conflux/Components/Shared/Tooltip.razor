@@ -1,6 +1,4 @@
-﻿@implements IAsyncDisposable
-
-@inject IJSRuntime JavascriptRuntime
+﻿@inject IJSRuntime JavascriptRuntime
 @inject ILogger<Tooltip> Logger
 
 <div @ref="TargetElement" class="@TargetCssClass" @onmouseenter="HandleShowTooltip" @onmouseleave="HandleHideTooltip">
@@ -37,10 +35,6 @@
     public ElementReference TooltipElement { get; set; }
     public ElementReference? ArrowElement { get; set; }
     
-    private IJSObjectReference? _module;
-    private DotNetObjectReference<Tooltip>? _objectReference;
-    private int _tooltipId;
-
     private bool _showTooltip;
     
     protected override void OnParametersSet() {
@@ -52,33 +46,16 @@
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
-        //if (firstRender) {
-        // }
-
         if (_showTooltip) {
             await JavascriptRuntime.InvokeVoidAsync("window.updateTooltipPosition", TargetElement, TooltipElement, ArrowElement, TooltipPlacement, TooltipOffset);
         }
     }
 
-    private async Task HandleShowTooltip() {
+    private void HandleShowTooltip() {
         _showTooltip = true;
     }
 
     private void HandleHideTooltip() {
         _showTooltip = false;
-    }
-    
-    public async ValueTask DisposeAsync() {
-        _objectReference?.Dispose();
-        
-        if (_module != null) {
-            try {
-                await _module.InvokeVoidAsync("unregisterTooltip", _tooltipId);
-                await _module.DisposeAsync();
-
-                _tooltipId = 0;
-            } catch (JSDisconnectedException) {
-            }
-        }
     }
 }

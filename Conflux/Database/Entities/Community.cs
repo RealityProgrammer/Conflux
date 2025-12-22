@@ -19,5 +19,5 @@ public class Community : ICreatedAtColumn {
     public ApplicationUser Creator { get; set; } = null!;
 
     public ICollection<CommunityMember> Members { get; set; } = null!;
-    public ICollection<CommunityChannelCategory> ChannelCategories { get; set; } = null!;
+    public IList<CommunityChannelCategory> ChannelCategories { get; set; } = null!;
 }

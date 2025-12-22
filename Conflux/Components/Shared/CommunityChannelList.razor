@@ -13,142 +13,163 @@
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JavascriptRuntime
 
-@if (_isLoading) {
-    <div class="size-full flex flex-row justify-center items-center">
-        <Spinner class="size-8 fill-white"/>
-    </div>
-    
-    return;
-}
-
-<section>
-    <div class="w-full h-32 bg-black relative">
-        <button @ref="_serverOptionsButton" class="absolute top-0 right-0 p-1.5 bg-transparent hover:bg-white/15 rounded-full" @onclick="@(() => _showCommunityExpandableMenu = true)">
-            <Gear class="size-5 fill-white"/>
-        </button>
-
-        <Popover TargetReference="_serverOptionsButton" @bind-IsShowing="_showCommunityExpandableMenu" TooltipPlacement="left" TooltipOffset="4" CloseWhenClickOutside="true">
-            <div class="bg-gray-600 p-1 text-white text-sm rounded-lg shadow-md flex flex-col gap-1 z-50" tabindex="-1">
-                <button class="p-1.5 bg-transparent hover:bg-white/10 active:bg-black/8 cursor-pointer rounded-md text-left" @onclick="HandleDisplayCommunityExpandableMenu">Create channel category</button>
-                <button class="p-1.5 bg-transparent hover:bg-white/10 active:bg-black/8 cursor-pointer rounded-md text-left" @onclick="HandleDisplayInvitationUrlModal">Get invitation URL</button>
-            </div>
-        </Popover>
-    </div>
-
-    <p class="text-center">
-        Welcome to<br/>
-        <span class="font-bold text-lg">@_communityName</span>
-    </p>
-</section>
-    
-<hr class="border-t border-t-gray-600 px-2 mt-2"/>
-    
-<section class="px-2 mt-2">
-    <h1 class="text-sm font-bold text-gray-400 mt-2 mb-2">System</h1>
-        
-    <div class="flex flex-col gap-1">
-        <NavLink class="flex flex-row items-center p-1.5 rounded-md hover:bg-white/15 active:bg-black/8" ActiveClass="bg-white/8!" href="@($"/community/{CommunityId}")" Match="NavLinkMatch.All">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="mr-2 fill-none stroke-white size-6 stroke-1 flex-none">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M10.05 4.575a1.575 1.575 0 1 0-3.15 0v3m3.15-3v-1.5a1.575 1.575 0 0 1 3.15 0v1.5m-3.15 0 .075 5.925m3.075.75V4.575m0 0a1.575 1.575 0 0 1 3.15 0V15M6.9 7.575a1.575 1.575 0 1 0-3.15 0v8.175a6.75 6.75 0 0 0 6.75 6.75h2.018a5.25 5.25 0 0 0 3.712-1.538l1.732-1.732a5.25 5.25 0 0 0 1.538-3.712l.003-2.024a.668.668 0 0 1 .198-.471 1.575 1.575 0 1 0-2.228-2.228 3.818 3.818 0 0 0-1.12 2.687M6.9 7.575V12m6.27 4.318A4.49 4.49 0 0 1 16.35 15m.002 0h-.002" />
-            </svg>
-
-            <span class="flex-none">Welcome</span>
-        </NavLink>
-        
-        <NavLink class="flex flex-row items-center p-1.5 rounded-md hover:bg-white/15 active:bg-black/8" ActiveClass="bg-white/8!" href="@($"/community/{CommunityId}/rules")" Match="NavLinkMatch.All">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="mr-2 fill-none stroke-white size-6 stroke-1 flex-none">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M10.05 4.575a1.575 1.575 0 1 0-3.15 0v3m3.15-3v-1.5a1.575 1.575 0 0 1 3.15 0v1.5m-3.15 0 .075 5.925m3.075.75V4.575m0 0a1.575 1.575 0 0 1 3.15 0V15M6.9 7.575a1.575 1.575 0 1 0-3.15 0v8.175a6.75 6.75 0 0 0 6.75 6.75h2.018a5.25 5.25 0 0 0 3.712-1.538l1.732-1.732a5.25 5.25 0 0 0 1.538-3.712l.003-2.024a.668.668 0 0 1 .198-.471 1.575 1.575 0 1 0-2.228-2.228 3.818 3.818 0 0 0-1.12 2.687M6.9 7.575V12m6.27 4.318A4.49 4.49 0 0 1 16.35 15m.002 0h-.002" />
-            </svg>
-
-            <span class="flex-none">Rules</span>
-        </NavLink>
-        
-        <NavLink class="flex flex-row items-center p-1.5 rounded-md hover:bg-white/15 active:bg-black/8" ActiveClass="bg-white/8!" href="@($"/community/{CommunityId}/events")" Match="NavLinkMatch.All">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="mr-2 fill-none stroke-white size-6 stroke-1 flex-none">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M10.05 4.575a1.575 1.575 0 1 0-3.15 0v3m3.15-3v-1.5a1.575 1.575 0 0 1 3.15 0v1.5m-3.15 0 .075 5.925m3.075.75V4.575m0 0a1.575 1.575 0 0 1 3.15 0V15M6.9 7.575a1.575 1.575 0 1 0-3.15 0v8.175a6.75 6.75 0 0 0 6.75 6.75h2.018a5.25 5.25 0 0 0 3.712-1.538l1.732-1.732a5.25 5.25 0 0 0 1.538-3.712l.003-2.024a.668.668 0 0 1 .198-.471 1.575 1.575 0 1 0-2.228-2.228 3.818 3.818 0 0 0-1.12 2.687M6.9 7.575V12m6.27 4.318A4.49 4.49 0 0 1 16.35 15m.002 0h-.002" />
-            </svg>
-
-            <span class="flex-none">Events</span>
-        </NavLink>
-    </div>
-</section>
-
-@foreach ((var categoryId, var categoryName, var channels) in _channelCategories) {
-    <section @key="categoryId" class="px-2 mt-2 min-w-0 group border-t border-t-gray-600">
-        <h1 class="text-sm font-bold text-gray-400 mt-2 mb-2 overflow-hidden break-all whitespace-normal flex flex-row items-start">
-            <span class="flex-1 mr-1">@categoryName</span>
-            
-            <span class="flex-none">
-                <Tooltip TargetCssClass="inline-block" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" TooltipPlacement="bottom" TooltipOffset="8">
-                    <TargetContent>
-                        <button class="bg-transparent cursor-pointer">
-                            <Plus Large="true" class="size-4 fill-white" @onclick="() => ShowCreateChannelDialog(categoryId)"/>
-                        </button>
-                    </TargetContent>
-                    
-                    <TooltipContent>
-                        Create a channel
-                    </TooltipContent>
-                </Tooltip>
-            </span>
-        </h1>
-            
-        <div class="flex flex-col gap-1">
-            @foreach (var channel in channels) {
-                <NavLink class="flex flex-row items-center p-1.5 rounded-md hover:bg-white/15 active:bg-black/8" ActiveClass="bg-white/8!" href="@($"/community/{CommunityId}/{channel.Id}")" Match="NavLinkMatch.All">
-                    @switch (channel.Type) {
-                        case CommunityChannelType.Text:
-                            <SpeechBubble ArrowDirection="ChatArrowDirection.Left" Content="ChatContent.Text" class="mr-2 size-6 fill-white"/>
-                            break;
-                            
-                        case CommunityChannelType.Audio:
-                            <Volume Variation="VolumeVariations.Up" class="mr-2 size-6 fill-white"/>
-                            break;
-                    }
-
-                    <span class="flex-none">@channel.Name</span>
-                </NavLink>
-            }
+@switch (_state) {
+    case State.Loading:
+        <div class="size-full flex flex-row justify-center items-center">
+            <Spinner class="size-8 fill-white"/>
         </div>
-    </section>
-}
+        break;
 
-@if (_isCreatingChannelCategory) {
-    <section class="px-2 mt-2">
-        <input type="text" maxlength="32" class="w-full h-10 input-field" autofocus @onkeydown="HandleCreatingChannelCategoryKeyDown" @onblur="HandleCreatingChannelCategoryBlur" @onchange="HandleCreatingChannelCategoryChange">
-    </section>
-}
+    case State.InvalidCommunity:
+        <div class="size-full flex flex-row justify-center items-center">
+            <p class="text-sm text-gray-400">Something went wrong...</p>
+        </div>
+        break;
 
-<Dialog @bind-Open="_showCreatingChannelModal" OnClickOutside="CloseCreatingChannelModal" class="flex flex-row justify-center items-center overflow-hidden">
-    <Card class="lg:static transition-transform duration-500 z-10">
-        <CardHeader Title="Create Communicate Channel" Subtext="Building another room for your house" OnCloseRequested="CloseCreatingChannelModal"/>
-                                    
-        <CardContent class="flex flex-col pb-1">
-            <CreateCommunityChannelForm OnCreateRequest="HandleChannelCreate"/>
-        </CardContent>
-    </Card>
-</Dialog>
-
-<Dialog @bind-Open="_showInvitationUrlModal" OnClickOutside="CloseInvitationUrlModal" class="flex flex-row justify-center items-center overflow-hidden">
-    <Card class="lg:static transition-transform duration-500 z-10">
-        <CardHeader Title="Invite Your Friends Here" Subtext="Ain't a community if you're alone" OnCloseRequested="CloseInvitationUrlModal"/>
-                                    
-        <CardContent class="flex flex-col pb-1">
-            <p class="mb-2">Send this community invitation URL to your friend and start the chat:</p>
-            
-            <div class="relative">
-                <input type="text" class="w-full h-12 input-field pr-22" value="@_invitationUrl" readonly>
-                <button class="absolute top-1 bottom-1 right-1 w-20 button-primary py-0!" @onclick="EventUtils.AsNonRenderingEventHandler(HandleCopyInvitationUrl)">Copy</button>
+    case State.Success:
+        <section>
+            <div class="w-full h-32 bg-black relative">
+                <button @ref="_serverOptionsButton" class="absolute top-0 right-0 p-1.5 bg-transparent hover:bg-white/15 rounded-full" @onclick="@(() => _showCommunityExpandableMenu = true)">
+                    <Gear class="size-5 fill-white"/>
+                </button>
+        
+                <Popover TargetReference="_serverOptionsButton" @bind-IsShowing="_showCommunityExpandableMenu" TooltipPlacement="left" TooltipOffset="4" CloseWhenClickOutside="true">
+                    <div class="bg-gray-600 p-1 text-white text-sm rounded-lg shadow-md flex flex-col gap-1 z-50" tabindex="-1">
+                        <AuthorizeView Policy="CommunityOwnershipPolicy" Resource="_community">
+                            <Authorized>
+                                <button class="p-1.5 bg-transparent hover:bg-white/10 active:bg-black/8 cursor-pointer rounded-md text-left" @onclick="HandleDisplayCommunityExpandableMenu">Create channel category</button>
+                            </Authorized>
+                        </AuthorizeView>
+        
+                        <button class="p-1.5 bg-transparent hover:bg-white/10 active:bg-black/8 cursor-pointer rounded-md text-left" @onclick="HandleDisplayInvitationUrlModal">Get invitation URL</button>
+                    </div>
+                </Popover>
             </div>
-        </CardContent>
-    </Card>
-</Dialog>
+        
+            <p class="text-center">
+                Welcome to<br/>
+                <span class="font-bold text-lg">@_community.Name</span>
+            </p>
+        </section>
+        
+        <hr class="border-t border-t-gray-600 px-2 mt-2"/>
+        
+        <section class="px-2 mt-2">
+            <h1 class="text-sm font-bold text-gray-400 mt-2 mb-2">System</h1>
+        
+            <div class="flex flex-col gap-1">
+                <NavLink class="flex flex-row items-center p-1.5 rounded-md hover:bg-white/15 active:bg-black/8" ActiveClass="bg-white/8!" href="@($"/community/{CommunityId}")" Match="NavLinkMatch.All">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="mr-2 fill-none stroke-white size-6 stroke-1 flex-none">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.05 4.575a1.575 1.575 0 1 0-3.15 0v3m3.15-3v-1.5a1.575 1.575 0 0 1 3.15 0v1.5m-3.15 0 .075 5.925m3.075.75V4.575m0 0a1.575 1.575 0 0 1 3.15 0V15M6.9 7.575a1.575 1.575 0 1 0-3.15 0v8.175a6.75 6.75 0 0 0 6.75 6.75h2.018a5.25 5.25 0 0 0 3.712-1.538l1.732-1.732a5.25 5.25 0 0 0 1.538-3.712l.003-2.024a.668.668 0 0 1 .198-.471 1.575 1.575 0 1 0-2.228-2.228 3.818 3.818 0 0 0-1.12 2.687M6.9 7.575V12m6.27 4.318A4.49 4.49 0 0 1 16.35 15m.002 0h-.002"/>
+                    </svg>
+        
+                    <span class="flex-none">Welcome</span>
+                </NavLink>
+        
+                <NavLink class="flex flex-row items-center p-1.5 rounded-md hover:bg-white/15 active:bg-black/8" ActiveClass="bg-white/8!" href="@($"/community/{CommunityId}/rules")" Match="NavLinkMatch.All">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="mr-2 fill-none stroke-white size-6 stroke-1 flex-none">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.05 4.575a1.575 1.575 0 1 0-3.15 0v3m3.15-3v-1.5a1.575 1.575 0 0 1 3.15 0v1.5m-3.15 0 .075 5.925m3.075.75V4.575m0 0a1.575 1.575 0 0 1 3.15 0V15M6.9 7.575a1.575 1.575 0 1 0-3.15 0v8.175a6.75 6.75 0 0 0 6.75 6.75h2.018a5.25 5.25 0 0 0 3.712-1.538l1.732-1.732a5.25 5.25 0 0 0 1.538-3.712l.003-2.024a.668.668 0 0 1 .198-.471 1.575 1.575 0 1 0-2.228-2.228 3.818 3.818 0 0 0-1.12 2.687M6.9 7.575V12m6.27 4.318A4.49 4.49 0 0 1 16.35 15m.002 0h-.002"/>
+                    </svg>
+        
+                    <span class="flex-none">Rules</span>
+                </NavLink>
+        
+                <NavLink class="flex flex-row items-center p-1.5 rounded-md hover:bg-white/15 active:bg-black/8" ActiveClass="bg-white/8!" href="@($"/community/{CommunityId}/events")" Match="NavLinkMatch.All">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="mr-2 fill-none stroke-white size-6 stroke-1 flex-none">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.05 4.575a1.575 1.575 0 1 0-3.15 0v3m3.15-3v-1.5a1.575 1.575 0 0 1 3.15 0v1.5m-3.15 0 .075 5.925m3.075.75V4.575m0 0a1.575 1.575 0 0 1 3.15 0V15M6.9 7.575a1.575 1.575 0 1 0-3.15 0v8.175a6.75 6.75 0 0 0 6.75 6.75h2.018a5.25 5.25 0 0 0 3.712-1.538l1.732-1.732a5.25 5.25 0 0 0 1.538-3.712l.003-2.024a.668.668 0 0 1 .198-.471 1.575 1.575 0 1 0-2.228-2.228 3.818 3.818 0 0 0-1.12 2.687M6.9 7.575V12m6.27 4.318A4.49 4.49 0 0 1 16.35 15m.002 0h-.002"/>
+                    </svg>
+        
+                    <span class="flex-none">Events</span>
+                </NavLink>
+            </div>
+        </section>
+        
+        @foreach (var channelCategory in _community.ChannelCategories) {
+            <section @key="channelCategory.Id" class="px-2 mt-2 min-w-0 group border-t border-t-gray-600">
+                <h1 class="text-sm font-bold text-gray-400 mt-2 mb-2 overflow-hidden break-all whitespace-normal flex flex-row items-start">
+                    <span class="flex-1 mr-1">@channelCategory.Name</span>
+        
+                    <AuthorizeView Policy="CommunityOwnershipPolicy" Resource="_community">
+                        <Authorized>
+                            <span class="flex-none">
+                                <Tooltip TargetCssClass="inline-block" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" TooltipPlacement="right" TooltipOffset="8">
+                                    <TargetContent>
+                                        <button class="bg-transparent cursor-pointer" @onclick="() => ShowCreateChannelDialog(channelCategory.Id)">
+                                            <Plus Large="true" class="size-4 fill-white"/>
+                                        </button>
+                                    </TargetContent>
+
+                                    <TooltipContent>
+                                        Create a channel
+                                    </TooltipContent>
+                                </Tooltip>
+                            </span>
+                        </Authorized>
+                    </AuthorizeView>
+                </h1>
+        
+                <div class="flex flex-col gap-1">
+                    @foreach (var channel in channelCategory.Channels) {
+                        <NavLink class="flex flex-row items-center p-1.5 rounded-md hover:bg-white/15 active:bg-black/8" ActiveClass="bg-white/8!" href="@($"/community/{CommunityId}/{channel.Id}")" Match="NavLinkMatch.All">
+                            @switch (channel.Type) {
+                                case CommunityChannelType.Text:
+                                    <SpeechBubble ArrowDirection="ChatArrowDirection.Left" Content="ChatContent.Text" class="mr-2 size-6 fill-white"/>
+                                    break;
+        
+                                case CommunityChannelType.Audio:
+                                    <Volume Variation="VolumeVariations.Up" class="mr-2 size-6 fill-white"/>
+                                    break;
+                            }
+        
+                            <span class="flex-none">@channel.Name</span>
+                        </NavLink>
+                    }
+                </div>
+            </section>
+        }
+        
+        <AuthorizeView Policy="CommunityOwnershipPolicy" Resource="_community">
+            <Authorized>
+                @if (_isCreatingChannelCategory) {
+                    <section class="px-2 mt-2">
+                        <input type="text" maxlength="32" class="w-full h-10 input-field" autofocus @onkeydown="HandleCreatingChannelCategoryKeyDown" @onblur="HandleCreatingChannelCategoryBlur" @onchange="HandleCreatingChannelCategoryChange">
+                    </section>
+                }
+        
+                <Dialog @bind-Open="_showCreatingChannelModal" OnClickOutside="CloseCreatingChannelModal" class="flex flex-row justify-center items-center overflow-hidden">
+                    <Card class="lg:static transition-transform duration-500 z-10">
+                        <CardHeader Title="Create Communicate Channel" Subtext="Building another room for your house" OnCloseRequested="CloseCreatingChannelModal"/>
+        
+                        <CardContent class="flex flex-col pb-1">
+                            <CreateCommunityChannelForm OnCreateRequest="HandleChannelCreate"/>
+                        </CardContent>
+                    </Card>
+                </Dialog>
+            </Authorized>
+        </AuthorizeView>
+        
+        <Dialog @bind-Open="_showInvitationUrlModal" OnClickOutside="CloseInvitationUrlModal" class="flex flex-row justify-center items-center overflow-hidden">
+            <Card class="lg:static transition-transform duration-500 z-10">
+                <CardHeader Title="Invite Your Friends Here" Subtext="Ain't a community if you're alone" OnCloseRequested="CloseInvitationUrlModal"/>
+        
+                <CardContent class="flex flex-col pb-1">
+                    <p class="mb-2">Send this community invitation URL to your friend and start the chat:</p>
+        
+                    <div class="relative">
+                        <input type="text" class="w-full h-12 input-field pr-22" value="@_invitationUrl" readonly>
+                        <button class="absolute top-1 bottom-1 right-1 w-20 button-primary py-0!" @onclick="EventUtils.AsNonRenderingEventHandler(HandleCopyInvitationUrl)">Copy</button>
+                    </div>
+                </CardContent>
+            </Card>
+        </Dialog>
+        break;
+}
 
 @code {
     [Parameter] public Guid CommunityId { get; set; }
     private Guid _previousCommunityId;
 
-    private bool _isLoading = true;
+    private State _state;
 
     private ElementReference _serverOptionsButton;
 
@@ -157,14 +178,12 @@
     private bool _showCreatingChannelModal, _showInvitationUrlModal;
     private Guid _categoryChannelCreationReceiverId;
 
-    private List<ChannelCategoryDTO> _channelCategories = [];
-
-    private string? _communityName;
+    private Community _community;
     private string _invitationUrl;
-
+    
     protected override void OnParametersSet() {
         if (_previousCommunityId != CommunityId) {
-            _isLoading = true;
+            _state = State.Loading;
         }
     }
 
@@ -174,31 +193,26 @@
             CommunityService.OnChannelCreated += OnChannelCreated;
         }
         
-        if (_isLoading) {
+        if (_state == State.Loading) {
             await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
-            _channelCategories = await dbContext.CommunityChannelCategories
-                .Where(c => c.CommunityId == CommunityId)
-                .OrderBy(c => c.CreatedAt)
-                .Select(c =>
-                    new ChannelCategoryDTO(c.Id, c.Name, c.Channels
-                        .Select(x => new ChannelDTO(x.Id, x.Type, x.Name))
-                        .ToList()
-                    )
-                )
-                .ToListAsync();
-
-            var data = await dbContext.Communities
+            var community = await dbContext.Communities
                 .Where(x => x.Id == CommunityId)
-                .Select(x => new { x.Name, x.InvitationId })
-                .FirstAsync();
+                .Include(x => x.ChannelCategories)
+                .ThenInclude(x => x.Channels)
+                .FirstOrDefaultAsync();
 
-            _communityName = data.Name;
-            _invitationUrl = NavigationManager.ToAbsoluteUri($"/invite/{data.InvitationId.ToString()}").GetLeftPart(UriPartial.Path);
-            
-            _isLoading = false;
+            if (community == null) {
+                _state = State.InvalidCommunity;
+            } else {
+                _invitationUrl = NavigationManager.ToAbsoluteUri($"/invite/{community.InvitationId.ToString()}").GetLeftPart(UriPartial.Path);
+                _state = State.Success;
+                _community = community;
+            }
 
             StateHasChanged();
+            _previousCommunityId = CommunityId;
         }
     }
 
@@ -255,14 +269,14 @@
 
         InvokeAsync(async () => {
             await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
-            ChannelCategoryDTO category = await dbContext.CommunityChannelCategories
+            var channelCategory = await dbContext.CommunityChannelCategories
                 .Where(x => x.Id == args.CategoryId)
-                .Select(x => new ChannelCategoryDTO(x.Id, x.Name, x.Channels.Select(c => new ChannelDTO(c.Id, c.Type, c.Name)).ToList()))
                 .FirstOrDefaultAsync();
 
-            if (category.Id != Guid.Empty) {
-                _channelCategories.Add(category);
+            if (channelCategory != null) {
+                _community.ChannelCategories.Add(channelCategory);
                 StateHasChanged();
             }
         });
@@ -275,8 +289,8 @@
     private void OnChannelCreated(ChannelCreatedEventArgs args) {
         int index = -1;
 
-        for (int i = 0; i < _channelCategories.Count; i++) {
-            if (_channelCategories[i].Id == args.ChannelCategoryId) {
+        for (int i = 0; i < _community.ChannelCategories.Count; i++) {
+            if (_community.ChannelCategories[i].Id == args.ChannelCategoryId) {
                 index = i;
                 break;
             }
@@ -287,13 +301,12 @@
         InvokeAsync(async () => {
             await using var dbContext = await DbContextFactory.CreateDbContextAsync();
 
-            ChannelDTO channel = await dbContext.CommunityChannels
+            var channel = await dbContext.CommunityChannels
                 .Where(x => x.Id == args.ChannelId)
-                .Select(x => new ChannelDTO(x.Id, x.Type, x.Name))
                 .FirstOrDefaultAsync();
 
-            if (channel.Id != Guid.Empty) {
-                _channelCategories[index].Channels.Add(channel);
+            if (channel != null) {
+                _community.ChannelCategories[index].Channels.Add(channel);
                 StateHasChanged();
             }
         });
@@ -307,4 +320,10 @@
     private readonly record struct ChannelCategoryDTO(Guid Id, string Name, List<ChannelDTO> Channels);
 
     private readonly record struct ChannelDTO(Guid Id, CommunityChannelType Type, string Name);
+
+    private enum State {
+        Loading,
+        InvalidCommunity,
+        Success,
+    }
 }
