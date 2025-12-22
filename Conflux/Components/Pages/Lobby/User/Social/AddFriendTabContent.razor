@@ -4,6 +4,7 @@
 @using Conflux.Database.Entities
 @using Conflux.Helpers
 @using Conflux.Services.Abstracts
+@using Microsoft.AspNetCore.Http.Features
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
 @using System.Collections.Concurrent
@@ -27,7 +28,7 @@
 <div class="flex-1 overflow-auto mt-2 border border-gray-600 rounded-lg">
     <Virtualize @ref="_virtualizeContainer" ItemsProvider="LoadProvider" OverscanCount="3">
         <ChildContent Context="item">
-            <div class="h-16 px-4 py-1 border-b border-b-gray-600 flex flex-row items-center hover:bg-gray-600/40 group">
+            <div @key="item.Id" class="h-16 px-4 py-1 border-b border-b-gray-600 flex flex-row items-center hover:bg-gray-600/40 group">
                 <Avatar ImageSrc="@item.AvatarImagePath" ImageAlt="Avatar" class="flex-none h-12 mr-2"/>
             
                 <div class="flex-1 flex flex-col">
