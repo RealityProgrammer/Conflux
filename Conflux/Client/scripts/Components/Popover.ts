@@ -21,7 +21,6 @@ function updateTooltipPosition(targetElement: Element, tooltipElement: HTMLEleme
     }).then((position: ComputePositionReturn) => {
         tooltipElement.style.left = `${position.x}px`;
         tooltipElement.style.top = `${position.y}px`;
-        tooltipElement.removeAttribute("hidden");
 
         const staticSide = {
             top: 'bottom',
