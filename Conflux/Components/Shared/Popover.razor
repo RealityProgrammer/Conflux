@@ -5,8 +5,8 @@
 @inject IJSRuntime JavascriptRuntime
 
 @if (IsShowing) {
-    <div class="absolute inset-0 pointer-events-none" tabindex="-1">
-        <div class="absolute top-0 left-0 pointer-events-auto @_cssClass" @attributes="AdditionalAttributes" @ref="_tooltip" style="left: -9999px; top: -9999px;">
+    <div class="absolute inset-0 pointer-events-none z-10" tabindex="-1">
+        <div class="absolute pointer-events-auto @_cssClass" @attributes="AdditionalAttributes" @ref="_tooltip" style="left: -9999px; top: -9999px;">
             @ChildContent
 
             @if (DisplayArrow) {

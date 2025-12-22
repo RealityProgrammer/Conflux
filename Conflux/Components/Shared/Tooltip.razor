@@ -6,7 +6,7 @@
 </div>
 
 @if (_showTooltip) {
-    <div class="fixed inset-0 pointer-events-none" tabindex="-1">
+    <div class="fixed inset-0 pointer-events-none z-10" tabindex="-1">
         <div class="absolute pointer-events-auto @_cssClass" @attributes="AdditionalAttributes" @ref="TooltipElement" style="left: -9999px; top: -9999px;">
             @TooltipContent
 
