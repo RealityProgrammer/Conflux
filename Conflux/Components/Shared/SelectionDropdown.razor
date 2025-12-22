@@ -2,7 +2,7 @@
 
 @inherits InputSelect<TValue>
 
-<DropdownButton class="@ButtonCssClass" PopoverCssClass="@PopoverCssClass">
+<DropdownButton @ref="DropdownButtonReference" class="@ButtonCssClass" PopoverCssClass="@PopoverCssClass">
     <ChildContent>
         @CurrentValueAsString
     </ChildContent>
@@ -19,9 +19,11 @@
 @code {
     [Parameter] public string? ButtonCssClass { get; set; }
     [Parameter] public string? PopoverCssClass { get; set; }
+    
+    public DropdownButton? DropdownButtonReference { get; set; }
 
-    public async Task SelectValueAsync(TValue value) {
+    public void SetValue(TValue value) {
+        DropdownButtonReference?.HideDropdown();
         CurrentValue = value;
-        await ValueChanged.InvokeAsync(value);
     }
 }

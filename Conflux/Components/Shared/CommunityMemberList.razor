@@ -2,20 +2,29 @@
 @using Conflux.Database.Entities
 @using Conflux.Services.Abstracts
 @using Microsoft.EntityFrameworkCore
+@using System.Diagnostics.CodeAnalysis
 
 @inject IContentService ContentService
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject ILogger<CommunityMemberList> Logger
 
-<div class="flex flex-col gap-0.5">
-    <Virtualize OverscanCount="OverscanCount" ItemsProvider="MembersProvider">
-        <ItemContent Context="item">
-            <div class="flex-none h-12 p-1 bg-transparent hover:bg-white/15 active:bg-black/25 cursor-pointer rounded-lg flex flex-row items-center select-none">
-                <Avatar ImageSrc="@(string.IsNullOrEmpty(item.AvatarPath) ? null : ContentService.GetAssetPath(item.AvatarPath))" ImageAlt="@($"Avatar of {item.DisplayName}")" class="h-full mr-2"/>
-    
-                <p>@item.DisplayName</p>
-            </div>
-        </ItemContent>
-    </Virtualize>
+<div class="flex flex-col gap-1 h-full pt-1.5 px-1.5">
+    <SelectionDropdown @bind-Value="_filterGroup" @bind-Value:after="RefreshMemberList" ButtonCssClass="h-8" PopoverCssClass="z-10 w-72 p-1">
+        <SelectionOption class="select-none p-1.5 text-left bg-transparent hover:bg-white/15 active:bg-black/25 cursor-pointer rounded-md" Value="MemberGroups.Owners">Owners</SelectionOption>
+        <SelectionOption class="select-none p-1.5 text-left bg-transparent hover:bg-white/15 active:bg-black/25 cursor-pointer rounded-md" Value="MemberGroups.Members">Members</SelectionOption>
+    </SelectionDropdown>
+
+    <div class="flex-1 h-full overflow-y-scroll scrollbar-hide pb-1.5">
+        <Virtualize @ref="_memberListVirtualize" OverscanCount="OverscanCount" ItemsProvider="MembersProvider">
+            <ItemContent Context="item">
+                <div class="flex-none h-12 p-1 bg-transparent hover:bg-white/15 active:bg-black/25 cursor-pointer rounded-lg flex flex-row items-center select-none">
+                    <Avatar ImageSrc="@(string.IsNullOrEmpty(item.AvatarPath) ? null : ContentService.GetAssetPath(item.AvatarPath))" ImageAlt="@($"Avatar of {item.DisplayName}")" class="h-full mr-2"/>
+
+                    <p>@item.DisplayName</p>
+                </div>
+            </ItemContent>
+        </Virtualize>
+    </div>
 </div>
 
 @code {
@@ -23,28 +32,64 @@
 
     [Parameter, EditorRequired] public required Guid CommunityId { get; set; }
 
-    private async ValueTask<ItemsProviderResult<MemberDTO>> MembersProvider(ItemsProviderRequest request) {
-        await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+    private MemberGroups _filterGroup;
+    
+    private MemberDTO _ownerMember;
+    private Virtualize<MemberDTO> _memberListVirtualize = null!;
 
-        IQueryable<CommunityMember> query = dbContext.CommunityMembers
-            .Where(member => member.CommunityId == CommunityId);
-        
-        int totalCount = await query.CountAsync();
-
-        if (totalCount == 0) {
-            return new([], 0);
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+            
+            _ownerMember = await dbContext.Communities.Where(x => x.Id == CommunityId)
+                .Select(x => x.Owner)
+                .Select(x => new MemberDTO(x.Id, x.AvatarProfilePath, x.DisplayName))
+                .FirstAsync();
         }
+    }
 
-        var results = await query
-            .OrderByDescending(x => x.CreatedAt)
-            .Skip(request.StartIndex)
-            .Take(request.Count)
-            .Select(x => x.User)
-            .Select(u => new MemberDTO(u.Id, u.AvatarProfilePath, u.DisplayName))
-            .ToListAsync();
-        
-        return new(results, totalCount);
+    private async ValueTask<ItemsProviderResult<MemberDTO>> MembersProvider(ItemsProviderRequest request) {
+        @switch (_filterGroup) {
+            case MemberGroups.Owners:
+                return new([_ownerMember], 1);
+
+            case MemberGroups.Members:
+            default:
+            {
+                await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+
+                IQueryable<CommunityMember> query = dbContext.CommunityMembers
+                    .Where(member => member.CommunityId == CommunityId && member.UserId != _ownerMember.Id);
+
+                int totalCount = await query.CountAsync();
+
+                if (totalCount == 0) {
+                    return new([], 0);
+                }
+
+                var results = await query
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Skip(request.StartIndex)
+                    .Take(request.Count)
+                    .Select(x => x.User)
+                    .Select(u => new MemberDTO(u.Id, u.AvatarProfilePath, u.DisplayName))
+                    .ToListAsync();
+                
+                return new(results, totalCount);
+            }
+        }
+    }
+
+    private async Task RefreshMemberList() {
+        await _memberListVirtualize.RefreshDataAsync();
+        StateHasChanged();
     }
 
     private readonly record struct MemberDTO(string Id, string? AvatarPath, string DisplayName);
+
+    private enum MemberGroups {
+        Owners,
+        Members,
+    }
 }

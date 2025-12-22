@@ -11,9 +11,11 @@
     <Chevron class="@chevronCssClass" Direction="ChevronDirection.Down" Mode="ChevronMode.Normal"></Chevron>
 </button>
 
-<Popover class="@PopoverCssClass" DisplayArrow="false" CloseWhenClickOutside="true" @bind-IsShowing="_openDropdown" TargetReference="ButtonElementReference" TooltipPlacement="bottom" TooltipOffset="2">
-    @Dropdown
-</Popover>
+@if (ButtonElementReference.HasValue) {
+    <Popover @ref="PopoverElement" class="@PopoverCssClass" DisplayArrow="false" CloseWhenClickOutside="true" @bind-IsShowing="_openDropdown" TargetReference="ButtonElementReference.Value" TooltipPlacement="bottom" TooltipOffset="2">
+        @Dropdown
+    </Popover>
+}
 
 @code {
     [Parameter] public RenderFragment? ChildContent { get; set; }
@@ -26,7 +28,8 @@
 
     private bool _openDropdown;
     
-    public ElementReference ButtonElementReference { get; set; }
+    public ElementReference? ButtonElementReference { get; set; }
+    public Popover? PopoverElement { get; set; }
 
     protected override void OnParametersSet() {
         if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
@@ -38,5 +41,17 @@
 
     private void HandleToggleDropdown() {
         _openDropdown ^= true;
+    }
+
+    public void ShowDropdown() {
+        if (_openDropdown) return;
+
+        _openDropdown = true;
+    }
+
+    public void HideDropdown() {
+        if (!_openDropdown) return;
+
+        _openDropdown = false;
     }
 }

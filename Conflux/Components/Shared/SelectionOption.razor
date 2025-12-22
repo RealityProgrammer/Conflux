@@ -1,4 +1,5 @@
 ﻿@using Conflux.Components.Shared.Icons
+@using Conflux.Helpers
 
 @typeparam TValue
 
@@ -62,6 +63,6 @@
             return;
         }
 
-        await SelectionDropdown.SelectValueAsync(Value);
+        SelectionDropdown.SetValue(Value);
     }
 }
