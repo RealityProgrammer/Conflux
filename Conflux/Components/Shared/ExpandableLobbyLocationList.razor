@@ -64,9 +64,9 @@
     }
 </button>
 
-<Dialog @bind-Open="_isShowingServerCreationCard" OnClickOutside="HandleCancelCreatingServer" class="flex flex-row justify-center items-center text-white">
+<Dialog @bind-Open="_isShowingServerCreationCard" OnClickOutside="HandleCancelCreatingServer" class="flex justify-center items-center text-white" ContainerCssClass="flex justify-center items-center">
     @if (_isAskingServerNameAndProfilePicture) {
-        <Card class="w-full z-10 overflow-hidden">
+        <Card class="z-10 overflow-hidden">
             <CardHeader Title="Input Information" Subtext="Give your new home a name, a face and a new life." OnCloseRequested="HandleCancelCreatingServer"/>
 
             <CardContent class="pb-3">
@@ -74,7 +74,7 @@
             </CardContent>
         </Card>
     } else {
-        <Card class="w-full z-10 overflow-hidden">
+        <Card class="z-10 overflow-hidden">
             <CardHeader Title="Create Your Own Paradise" Subtext="A community will need a place to stay. Make your own paradise and start chatting." OnCloseRequested="HandleCancelCreatingServer"/>
 
             <CardContent class="pb-3">

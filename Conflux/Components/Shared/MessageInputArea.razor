@@ -92,8 +92,8 @@
     </button>
 </footer>
 
-<Dialog @bind-Open="_reportSurpassedAttachmentMaxCount" OnClickOutside="CloseAttachmentCountReport" class="flex flex-row justify-center items-center">
-    <Card class="transition-transform duration-500 z-10">
+<Dialog @bind-Open="_reportSurpassedAttachmentMaxCount" OnClickOutside="CloseAttachmentCountReport" class="flex justify-center items-center" ContainerCssClass="flex justify-center items-center">
+    <Card>
         <CardHeader Title="Too much file..." OnCloseRequested="CloseAttachmentCountReport"/>
         
         <CardContent>
@@ -110,8 +110,8 @@
     </Card>
 </Dialog>
 
-<Dialog @bind-Open="_reportAttachmentSurpassedMaxSize" OnClickOutside="CloseAttachmentSizeReport" class="flex flex-row justify-center items-center">
-    <Card class="transition-transform duration-500 z-10">
+<Dialog @bind-Open="_reportAttachmentSurpassedMaxSize" OnClickOutside="CloseAttachmentSizeReport" class="flex justify-center items-center" ContainerCssClass="flex justify-center items-center">
+    <Card>
         <CardHeader Title="Comically large file detected!" OnCloseRequested="CloseAttachmentSizeReport"/>
         
         <CardContent>

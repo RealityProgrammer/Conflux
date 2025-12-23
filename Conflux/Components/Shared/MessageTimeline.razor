@@ -162,7 +162,7 @@
     }
 </div>
 
-<Dialog @bind-Open="_requestedMessageDelete" OnClickOutside="CloseMessageDelete" class="flex flex-row justify-center items-center">
+<Dialog @bind-Open="_requestedMessageDelete" OnClickOutside="CloseMessageDelete" class="flex justify-center items-center" ContainerCssClass="flex justify-center items-center">
     <Card class="transition-transform duration-500 z-10">
         <CardHeader Title="Delete Message" OnCloseRequested="CloseMessageDelete"/>
         

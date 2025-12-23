@@ -38,6 +38,7 @@
                         <AuthorizeView Policy="CommunityOwnershipPolicy" Resource="_community">
                             <Authorized>
                                 <button class="p-1.5 bg-transparent hover:bg-white/10 active:bg-black/8 cursor-pointer rounded-md text-left" @onclick="HandleDisplayCommunityExpandableMenu">Create channel category</button>
+                                <button class="p-1.5 bg-transparent hover:bg-white/10 active:bg-black/8 cursor-pointer rounded-md text-left" @onclick="HandleDisplayControlPanel">Open Control Panel</button>
                             </Authorized>
                         </AuthorizeView>
         
@@ -136,8 +137,8 @@
                     </section>
                 }
         
-                <Dialog @bind-Open="_showCreatingChannelModal" OnClickOutside="CloseCreatingChannelModal" class="flex flex-row justify-center items-center overflow-hidden">
-                    <Card class="lg:static transition-transform duration-500 z-10">
+                <Dialog @bind-Open="_showCreatingChannelModal" OnClickOutside="CloseCreatingChannelModal" class="flex justify-center items-center overflow-hidden" ContainerCssClass="flex justify-center items-center">
+                    <Card class="">
                         <CardHeader Title="Create Communicate Channel" Subtext="Building another room for your house" OnCloseRequested="CloseCreatingChannelModal"/>
         
                         <CardContent class="flex flex-col pb-1">
@@ -145,10 +146,21 @@
                         </CardContent>
                     </Card>
                 </Dialog>
+                
+                <Dialog @bind-Open="_showControlPanelModal" OnClickOutside="CloseControlPanelModal" ContainerCssClass="absolute inset-0">
+                    <Card class="absolute inset-6">
+                        <CardHeader Title="Control Panel" Subtext="Building another room for your house" OnCloseRequested="CloseControlPanelModal"/>
+        
+                        <CardContent class="flex flex-col pb-1">
+                            <p>Lmao</p>
+                            @* <CreateCommunityChannelForm OnCreateRequest="HandleChannelCreate"/> *@
+                        </CardContent>
+                    </Card>
+                </Dialog>
             </Authorized>
         </AuthorizeView>
         
-        <Dialog @bind-Open="_showInvitationUrlModal" OnClickOutside="CloseInvitationUrlModal" class="flex flex-row justify-center items-center overflow-hidden">
+        <Dialog @bind-Open="_showInvitationUrlModal" OnClickOutside="CloseInvitationUrlModal" class="flex justify-center items-center overflow-hidden" ContainerCssClass="flex justify-center items-center">
             <Card class="lg:static transition-transform duration-500 z-10">
                 <CardHeader Title="Invite Your Friends Here" Subtext="Ain't a community if you're alone" OnCloseRequested="CloseInvitationUrlModal"/>
         
@@ -156,7 +168,7 @@
                     <p class="mb-2">Send this community invitation URL to your friend and start the chat:</p>
         
                     <div class="relative">
-                        <input type="text" class="w-full h-12 input-field pr-22" value="@_invitationUrl" readonly>
+                        <input type="text" class="h-12 input-field pr-22" value="@_invitationUrl" readonly>
                         <button class="absolute top-1 bottom-1 right-1 w-20 button-primary py-0!" @onclick="EventUtils.AsNonRenderingEventHandler(HandleCopyInvitationUrl)">Copy</button>
                     </div>
                 </CardContent>
@@ -175,7 +187,7 @@
 
     private bool _showCommunityExpandableMenu, _isCreatingChannelCategory;
 
-    private bool _showCreatingChannelModal, _showInvitationUrlModal;
+    private bool _showCreatingChannelModal, _showInvitationUrlModal, _showControlPanelModal;
     private Guid _categoryChannelCreationReceiverId;
 
     private Community _community;
@@ -229,6 +241,7 @@
 
     private async Task HandleCreatingChannelCategoryBlur() {
         _showCommunityExpandableMenu = false;
+        _isCreatingChannelCategory = false;
     }
 
     private async Task HandleCreatingChannelCategoryChange(ChangeEventArgs args) {
@@ -284,6 +297,14 @@
 
     private async Task HandleCopyInvitationUrl() {
         await JavascriptRuntime.InvokeVoidAsync("window.copyToClipboard", _invitationUrl);
+    }
+
+    private void HandleDisplayControlPanel() {
+        _showControlPanelModal = true;
+    }
+
+    private void CloseControlPanelModal() {
+        _showControlPanelModal = false;
     }
 
     private void OnChannelCreated(ChannelCreatedEventArgs args) {

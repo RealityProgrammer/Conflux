@@ -1,36 +1,28 @@
 ﻿@page "/test"
 @using Conflux.Components.Shared
 
-<div class="w-screen h-screen">
-    <Tooltip TargetCssClass="inline-block" class="p-1.5 rounded-md bg-gray-700 text-white font-semibold shadow-md whitespace-nowrap" ArrowCssClass="bg-gray-700" TooltipPlacement="bottom" TooltipOffset="8">
-        <TargetContent>
-            <Avatar @ref="_avatar" ImageSrc="@null" ImageAlt="Some random image" class="peer size-16"/>
-        </TargetContent>
-        
-        <TooltipContent>
-            Some really interesting avatar
-        </TooltipContent>
-    </Tooltip>
-</div>
+<button class="button-primary" @onclick="ShowDialog">
+    Show Dialog
+</button>
 
-@* <div class="w-screen h-screen flex flex-row justify-center items-center"> *@
-@*     <Avatar @ref="_avatar" ImageSrc="@null" ImageAlt="Some random image" class="peer size-16"/> *@
-@* *@
-@*     <HoveringTooltip TargetReference="_avatar.RootElement" class="p-1.5 rounded-md bg-gray-700 text-white font-semibold shadow-md whitespace-nowrap" ArrowCssClass="bg-gray-700" TooltipPlacement="bottom" TooltipOffset="4"> *@
-@*         Some really interesting avatar *@
-@*     </HoveringTooltip> *@
-@* </div> *@
+<Dialog @bind-Open="_showDialog" OnClickOutside="HideDialog" class="text-white flex justify-center items-center" ContainerCssClass="flex justify-center items-center size-full">
+    <Card class="size-full">
+        <CardHeader Title="Status" Subtext="Thinking about what to think..." OnCloseRequested="HideDialog"/>
+                
+        <CardContent class="pb-3">
+            <p>Hello World</p>
+        </CardContent>
+    </Card>
+</Dialog>
 
 @code {
-    private Avatar? _avatar;
-}
+    private bool _showDialog;
 
-@* <div class="w-screen h-screen"> *@
-@*     <div class="relative"> *@
-@*         <Avatar ImageSrc="@null" ImageAlt="Some random image" class="peer size-16"/> *@
-@*      *@
-@*         <div class="hidden peer-hover:block absolute top-[calc(100%+4px)] left-1/2 -translate-x-1/2"> *@
-@*             Some really interesting avatar *@
-@*         </div> *@
-@*     </div> *@
-@* </div> *@
+    public void ShowDialog() {
+        _showDialog = true;
+    }
+
+    public void HideDialog() {
+        _showDialog = false;
+    }
+}
