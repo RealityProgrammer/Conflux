@@ -1,0 +1,48 @@
+﻿@using Conflux.Components.Shared.Icons
+
+<button class="text-left relative flex flex-row items-center cursor-pointer @_cssClass" @onclick="ToggleExpander">
+    <span class="flex-1">
+        @if (HeaderContent != null) {
+            @HeaderContent
+        }
+    </span>
+    
+    @{ string chevronCssClass = $"flex-none fill-white size-3 transition-transform duration-250 ease-in-out {(_isExpanded ? "rotate-0" : "rotate-180")}"; }
+    <Chevron class="@chevronCssClass" Direction="ChevronDirection.Down" Mode="ChevronMode.Normal"></Chevron>
+</button>
+
+@if (_isExpanded) {
+    @ChildContent
+}
+
+@code {
+    [Parameter] public bool IsExpanded { get; set; }
+    [Parameter] public EventCallback<bool> IsExpandedChanged { get; set; }
+    [Parameter] public Expression<Func<bool>> IsExpandedExpression { get; set; } = null!;
+    
+    [Parameter] public string? ButtonCssClass { get; set; }
+
+    [Parameter, EditorRequired] public required RenderFragment ChildContent { get; set; }
+    [Parameter] public RenderFragment? HeaderContent { get; set; }
+    
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+    private string? _cssClass;
+    
+    public ElementReference ContentElement { get; set; }
+    
+    protected override void OnParametersSet() {
+        if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
+            _cssClass = Convert.ToString(obj);
+        }
+
+        AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "class").ToDictionary();
+        _isExpanded = IsExpanded;
+    }
+    
+    private bool _isExpanded;
+
+    public async Task ToggleExpander() {
+        _isExpanded ^= true;
+        await IsExpandedChanged.InvokeAsync(_isExpanded);
+    }
+}
