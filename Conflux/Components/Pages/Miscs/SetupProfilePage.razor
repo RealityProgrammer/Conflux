@@ -349,7 +349,7 @@
     private void ValidateAvatar(object? sender, ValidationRequestedEventArgs args) {
         _avatarMessageStore.Clear();
         
-        if (AvatarModel!.File?.File is { } browserFile) {
+        if (AvatarModel!.File.Operation == ImageUploadOperation.Upload && AvatarModel!.File.File is { } browserFile) {
             if (browserFile.ContentType is not "image/png" and not "image/jpeg" and not "image/jpg") {
                 _avatarMessageStore.Add(_avatarFileField, "Avatar file is not valid PNG or JPEG.");
                 return;
@@ -368,7 +368,7 @@
 
     public async ValueTask DisposeAsync() {
         try {
-            if (AvatarModel?.File?.PreviewUrl is { } previewUrl) {
+            if (AvatarModel?.File.PreviewUrl is { } previewUrl) {
                 await JavascriptRuntime.InvokeVoidAsync("URL.revokeObjectURL", previewUrl);
             }
         } catch (JSDisconnectedException) {
@@ -383,7 +383,7 @@
     }
 
     private sealed class AvatarInputModel {
-        public BrowserFileWithPreview? File { get; set; }
+        public ImageUploading File { get; set; }
     }
 
     private sealed class ProfileInputModel {

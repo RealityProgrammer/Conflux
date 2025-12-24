@@ -2,7 +2,7 @@
     <section class="relative h-40">
         <div class="absolute inset-0 bg-cover bg-center bg-black rounded-t-lg">
             @if (!string.IsNullOrEmpty(BannerSrc)) {
-                <img src="@BannerSrc" alt="Preview banner of @(Name)">
+                <img src="@BannerSrc" alt="Preview banner of @(Name)" class="object-cover size-full">
             }
         </div>
 

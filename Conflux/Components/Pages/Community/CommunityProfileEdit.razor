@@ -1,20 +1,34 @@
 ﻿@using Conflux.Components.Pages.Settings
 @using Conflux.Components.Shared
+@using Conflux.Database
+@using Conflux.Services.Abstracts
 @using Microsoft.AspNetCore.Components.Sections
+@using Microsoft.EntityFrameworkCore
 
-<EditForm EditContext="_editContext" OnValidSubmit="OnSubmit" class="grid grid-cols-1 md:grid-cols-2 gap-2">
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IContentService ContentService
+
+<EditForm EditContext="_editContext" class="grid grid-cols-1 md:grid-cols-2 gap-2">
     <div>
         <label class="flex-none input-label">Avatar</label>
 
         <div class="flex justify-center">
-            <PreviewableImageInput @ref="_avatarInputElement" ContainerCssClass="flex justify-center" @bind-File="Model.Avatar" @bind-File:after="HandleAfterAvatarSet" class="flex-1 h-64 aspect-square rounded-full"/>
+            <PreviewableImageInput @ref="_avatarInputElement" 
+                                   ContainerCssClass="flex justify-center" 
+                                   @bind-File="Model.Avatar" @bind-File:after="HandleAfterAvatarSet" 
+                                   ImageSrc="@(string.IsNullOrEmpty(OriginalInputs.AvatarPath) ? null : ContentService.GetAssetPath(OriginalInputs.AvatarPath))"
+                                   class="flex-1 h-64 aspect-square rounded-full"/>
         </div>
     </div>
     
     <div>
         <label class="input-label">Banner</label>
         
-        <PreviewableImageInput @ref="_bannerInputElement" ContainerCssClass="flex-1 w-full h-64" @bind-File="Model.Banner" @bind-File:after="HandleAfterBannerSet" class="size-full"/>
+        <PreviewableImageInput @ref="_bannerInputElement" 
+                               ContainerCssClass="flex-1 w-full h-64"
+                               @bind-File="Model.Banner" @bind-File:after="HandleAfterBannerSet"
+                               ImageSrc="@(string.IsNullOrEmpty(OriginalInputs.BannerPath) ? null : ContentService.GetAssetPath(OriginalInputs.BannerPath))"
+                               class="size-full"/>
     </div>
     
     <div class="pb-1">
@@ -35,6 +49,7 @@
 </SectionContent>
 
 @code {
+    [Parameter, EditorRequired] public required Guid CommunityId { get; set; }
     [Parameter, EditorRequired] public required CommunityProfileTabContent.ProfileEditModel Model { get; set; }
     [Parameter, EditorRequired] public required CommunityProfileTabContent.OriginalInputs OriginalInputs { get; set; }
     
@@ -46,8 +61,6 @@
     [Parameter] public EventCallback<string?> BannerPreviewUrlChanged { get; set; }
     [Parameter] public Expression<Func<string?>> BannerPreviewUrlExpression { get; set; } = null!;
     
-    [Parameter] public EventCallback OnSubmit { get; set; }
-
     private EditContext _editContext = null!;
     private ValidationMessageStore _messageStore = null!;
     private FieldIdentifier _avatarFileField, _bannerFileField, _nameField, _descriptionField;
@@ -60,8 +73,7 @@
         _editContext = new(Model);
         _messageStore = new(_editContext);
 
-        _editContext.OnValidationRequested += ValidateAvatar;
-        _editContext.OnValidationRequested += ValidateBanner;
+        _editContext.OnValidationRequested += ValidateImages;
         
         _editContext.OnFieldChanged += (sender, args) => {
             if (_editContext.IsValid(args.FieldIdentifier)) {
@@ -75,31 +87,27 @@
         _descriptionField = FieldIdentifier.Create(() => Model.Description);
     }
     
-    private void ValidateAvatar(object? sender, ValidationRequestedEventArgs args) {
+    private void ValidateImages(object? sender, ValidationRequestedEventArgs args) {
         _messageStore.Clear();
         
-        if (Model.Avatar?.File is { } browserFile) {
-            if (browserFile.ContentType is not "image/png" and not "image/jpeg" and not "image/jpg") {
+        if (Model.Avatar is { Operation: ImageUploadOperation.Upload, File: { } avatarFile }) {
+            if (avatarFile.ContentType is not "image/png" and not "image/jpeg" and not "image/jpg") {
                 _messageStore.Add(_avatarFileField, "Avatar file is not valid PNG or JPEG.");
                 return;
             }
 
-            if (browserFile.Size > ApplicationConstants.MaxCommunityAvatarSize) {
+            if (avatarFile.Size > ApplicationConstants.MaxCommunityAvatarSize) {
                 _messageStore.Add(_avatarFileField, $"Avatar surpassed maximum allowed size of {ApplicationConstants.MaxCommunityAvatarSize} bytes.");
             }
         }
-    }
-    
-    private void ValidateBanner(object? sender, ValidationRequestedEventArgs args) {
-        _messageStore.Clear();
         
-        if (Model.Banner?.File is { } browserFile) {
-            if (browserFile.ContentType is not "image/png" and not "image/jpeg" and not "image/jpg") {
+        if (Model.Banner is { Operation: ImageUploadOperation.Upload, File: { } bannerFile }) {
+            if (bannerFile.ContentType is not "image/png" and not "image/jpeg" and not "image/jpg") {
                 _messageStore.Add(_avatarFileField, "Banner file is not valid PNG or JPEG.");
                 return;
             }
 
-            if (browserFile.Size > ApplicationConstants.MaxCommunityAvatarSize) {
+            if (bannerFile.Size > ApplicationConstants.MaxCommunityAvatarSize) {
                 _messageStore.Add(_avatarFileField, $"Banner surpassed maximum allowed size of {ApplicationConstants.MaxCommunityBannerSize} bytes.");
             }
         }
@@ -125,7 +133,72 @@
         StateHasChanged();
     }
 
-    private void SaveProfile() {
+    private async Task SaveProfile() {
+        if (!_editContext.Validate()) {
+            return;
+        }
+
+        string? avatarPath = null, bannerPath = null;
+
+        switch (Model.Avatar.Operation) {
+            case ImageUploadOperation.Upload:
+            {
+                await using var stream = Model.Avatar.File!.OpenReadStream(ApplicationConstants.MaxCommunityAvatarSize);
+                avatarPath = await ContentService.UploadCommunityAvatarAsync(stream, CommunityId);
+                break;
+            }
+
+            case ImageUploadOperation.Delete:
+            {
+                await ContentService.DeleteCommunityAvatarAsync(CommunityId);
+                break;
+            }
+        }
         
+        switch (Model.Banner.Operation) {
+            case ImageUploadOperation.Upload:
+            {
+                await using var stream = Model.Banner.File!.OpenReadStream(ApplicationConstants.MaxCommunityBannerSize);
+                bannerPath = await ContentService.UploadCommunityBannerAsync(stream, CommunityId);
+                break;
+            }
+
+            case ImageUploadOperation.Delete:
+            {
+                await ContentService.DeleteCommunityBannerAsync(CommunityId);
+                break;
+            }
+        }
+
+        await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        await dbContext.Communities.Where(x => x.Id == CommunityId).ExecuteUpdateAsync(builder => {
+            builder.SetProperty(x => x.Name, Model.Name);
+            builder.SetProperty(x => x.Description, Model.Description);
+            
+            switch (Model.Avatar.Operation) {
+                case ImageUploadOperation.Upload:
+                    builder.SetProperty(x => x.AvatarPath, avatarPath);
+                    break;
+
+                case ImageUploadOperation.Delete:
+                    builder.SetProperty(x => x.AvatarPath, (string?)null);
+                    break;
+            }
+        
+            switch (Model.Banner.Operation) {
+                case ImageUploadOperation.Upload:
+                    builder.SetProperty(x => x.BannerPath, bannerPath);
+                    break;
+
+                case ImageUploadOperation.Delete:
+                    builder.SetProperty(x => x.BannerPath, (string?)null);
+                    break;
+            }
+        });
+
+        _hasUnsavedChanges = false;
+        StateHasChanged();
     }
 }

@@ -5,8 +5,10 @@ namespace Conflux.Services;
 
 internal sealed class ApplicationContentTypeProvider : IContentTypeProvider {
     public bool TryGetContentType(string subpath, [MaybeNullWhen(false)] out string contentType) {
-        if (subpath.StartsWith("community/avatars") || 
-            subpath.StartsWith("/community/avatars") ||
+        if (subpath.StartsWith("communities/avatars") || 
+            subpath.StartsWith("/communities/avatars") ||
+            subpath.StartsWith("communities/banners") ||
+            subpath.StartsWith("/communities/banners") ||
             subpath.StartsWith("users/avatars") ||
             subpath.StartsWith("/users/avatars")
         ) {

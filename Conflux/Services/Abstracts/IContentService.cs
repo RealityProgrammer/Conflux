@@ -10,11 +10,11 @@ public interface IContentService {
     Task<string> UploadMessageAttachmentAsync(Stream attachmentStream, MessageAttachmentType type, CancellationToken cancellationToken);
     Task<bool> DeleteMessageAttachmentAsync(string attachmentRelativePath);
     
-    Task<string> UploadCommunityAvatarAsync(Stream stream, Guid serverId, CancellationToken cancellationToken = default);
-    Task DeleteCommunityAvatarAsync(Guid serverId);
+    Task<string> UploadCommunityAvatarAsync(Stream stream, Guid communityId, CancellationToken cancellationToken = default);
+    Task DeleteCommunityAvatarAsync(Guid communityId);
     
-    Task<string> UploadCommunityBannerAsync(Stream stream, Guid serverId, CancellationToken cancellationToken = default);
-    Task DeleteCommunityBannerAsync(Guid serverId);
+    Task<string> UploadCommunityBannerAsync(Stream stream, Guid communityId, CancellationToken cancellationToken = default);
+    Task DeleteCommunityBannerAsync(Guid communityId);
     
     string GetAssetPath(string resourcePath);
 }

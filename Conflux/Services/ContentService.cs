@@ -100,7 +100,7 @@ public class ContentService(IWebHostEnvironment environment, ILogger<ContentServ
         }
     }
     
-    public async Task<string> UploadCommunityAvatarAsync(Stream stream, Guid serverId, CancellationToken cancellationToken = default) {
+    public async Task<string> UploadCommunityAvatarAsync(Stream stream, Guid communityId, CancellationToken cancellationToken = default) {
         cancellationToken.ThrowIfCancellationRequested();
 
         string avatarDirectory = Path.Combine(environment.ContentRootPath, "Uploads", "communities", "avatars");
@@ -109,7 +109,7 @@ public class ContentService(IWebHostEnvironment environment, ILogger<ContentServ
             Directory.CreateDirectory(avatarDirectory);
         }
         
-        string path = Path.Combine("communities", "avatars", serverId.ToString());
+        string path = Path.Combine("communities", "avatars", communityId.ToString());
         string physicalPath = Path.Combine(environment.ContentRootPath, "Uploads", path);
         
         await using var destinationStream = File.OpenWrite(physicalPath);
@@ -121,9 +121,9 @@ public class ContentService(IWebHostEnvironment environment, ILogger<ContentServ
         return path;
     }
 
-    public Task DeleteCommunityAvatarAsync(Guid serverId) {
+    public Task DeleteCommunityAvatarAsync(Guid communityId) {
         try {
-            string path = Path.Combine("communities", "avatars", serverId.ToString());
+            string path = Path.Combine("communities", "avatars", communityId.ToString());
             string physicalPath = Path.Combine(environment.ContentRootPath, "Uploads", path);
 
             File.Delete(physicalPath);
@@ -133,7 +133,7 @@ public class ContentService(IWebHostEnvironment environment, ILogger<ContentServ
         return Task.CompletedTask;
     }
     
-    public async Task<string> UploadCommunityBannerAsync(Stream stream, Guid serverId, CancellationToken cancellationToken = default) {
+    public async Task<string> UploadCommunityBannerAsync(Stream stream, Guid communityId, CancellationToken cancellationToken = default) {
         cancellationToken.ThrowIfCancellationRequested();
 
         string avatarDirectory = Path.Combine(environment.ContentRootPath, "Uploads", "communities", "banners");
@@ -142,7 +142,7 @@ public class ContentService(IWebHostEnvironment environment, ILogger<ContentServ
             Directory.CreateDirectory(avatarDirectory);
         }
         
-        string path = Path.Combine("communities", "banners", serverId.ToString());
+        string path = Path.Combine("communities", "banners", communityId.ToString());
         string physicalPath = Path.Combine(environment.ContentRootPath, "Uploads", path);
         
         await using var destinationStream = File.OpenWrite(physicalPath);
@@ -154,9 +154,9 @@ public class ContentService(IWebHostEnvironment environment, ILogger<ContentServ
         return path;
     }
 
-    public Task DeleteCommunityBannerAsync(Guid serverId) {
+    public Task DeleteCommunityBannerAsync(Guid communityId) {
         try {
-            string path = Path.Combine("communities", "banners", serverId.ToString());
+            string path = Path.Combine("communities", "banners", communityId.ToString());
             string physicalPath = Path.Combine(environment.ContentRootPath, "Uploads", path);
 
             File.Delete(physicalPath);

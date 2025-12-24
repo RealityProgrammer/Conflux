@@ -2,11 +2,13 @@
 @using Conflux.Components.Shared
 @using Conflux.Components.Shared.Icons
 @using Conflux.Database
+@using Conflux.Services.Abstracts
 @using Microsoft.AspNetCore.Components.Sections
 @using Microsoft.EntityFrameworkCore
 @using System.ComponentModel.DataAnnotations
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IContentService ContentService
 
 @if (_isLoading) {
     <div class="flex justify-center items-center size-full">
@@ -32,14 +34,15 @@
         <TabContent TabId="preview">
             <CommunityProfileCard class="w-full mx-2 md:w-1/2 md:mx-auto"
                                   Name="@_inputModel.Name"
-                                  AvatarSrc="@_inputModel.Avatar?.PreviewUrl"
-                                  BannerSrc="@null"
+                                  AvatarSrc="@(_inputModel.Avatar.PreviewUrl ?? (string.IsNullOrEmpty(_originalInput.AvatarPath) ? null : ContentService.GetAssetPath(_originalInput.AvatarPath)))"
+                                  BannerSrc="@(_inputModel.Banner.PreviewUrl ?? (string.IsNullOrEmpty(_originalInput.BannerPath) ? null : ContentService.GetAssetPath(_originalInput.BannerPath)))"
                                   CreateDate="_createDate"
                                   Description="@_inputModel.Description"/>
         </TabContent>
 
         <TabContent TabId="edit" class="px-2 overflow-y-scroll" RenderStrategy="TabRenderStrategy.Visibility">
-            <CommunityProfileEdit Model="_inputModel"
+            <CommunityProfileEdit CommunityId="CommunityId"
+                                  Model="_inputModel"
                                   OriginalInputs="_originalInput"
                                   @bind-AvatarPreviewUrl="_avatarPreviewUrl"
                                   @bind-BannerPreviewUrl="_bannerPreviewUrl"/>
@@ -89,8 +92,8 @@
     }
 
     public sealed class ProfileEditModel {
-        public BrowserFileWithPreview? Avatar { get; set; }
-        public BrowserFileWithPreview? Banner { get; set; }
+        public ImageUploading Avatar { get; set; }
+        public ImageUploading Banner { get; set; }
         [StringLength(64, MinimumLength = 8)] public string Name { get; set; } = null!;
         public string? Description { get; set; }
     }
