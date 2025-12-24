@@ -161,7 +161,7 @@
     private FieldIdentifier _displayNameField, _pronounsField, _bioField, _avatarFileField, _requestDeleteAvatarField;
     private ValidationMessageStore _validationMessages = null!;
 
-    private bool _hasUnsavedChanges = false;
+    private bool _hasUnsavedChanges;
 
     protected override void OnInitialized() {
         ResetProfileForm();

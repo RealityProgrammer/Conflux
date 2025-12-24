@@ -1,6 +1,8 @@
-﻿@using Conflux.Components.Shared
+﻿@using Conflux.Components.Pages.Settings
+@using Conflux.Components.Shared
 @using Conflux.Components.Shared.Icons
 @using Conflux.Database
+@using Microsoft.AspNetCore.Components.Sections
 @using Microsoft.EntityFrameworkCore
 @using System.ComponentModel.DataAnnotations
 
@@ -36,13 +38,16 @@
                                   Description="@_inputModel.Description"/>
         </TabContent>
 
-        <TabContent TabId="edit" class="px-2 overflow-y-scroll">
+        <TabContent TabId="edit" class="px-2 overflow-y-scroll" RenderStrategy="TabRenderStrategy.Visibility">
             <CommunityProfileEdit Model="_inputModel"
+                                  OriginalInputs="_originalInput"
                                   @bind-AvatarPreviewUrl="_avatarPreviewUrl"
                                   @bind-BannerPreviewUrl="_bannerPreviewUrl"/>
         </TabContent>
     </Contents>
 </TabContainer>
+
+<SectionOutlet SectionName="Community.ControlPanel.Profile.OutsideContainer"/>
 
 @code {
     [Parameter] public Guid CommunityId { get; set; }
@@ -50,6 +55,8 @@
     private string _activeTabId = "preview";
 
     private ProfileEditModel _inputModel = new();
+    private OriginalInputs _originalInput = null!;
+    
     private string? _avatarPreviewUrl, _bannerPreviewUrl;
     
     private DateOnly _createDate;
@@ -63,15 +70,17 @@
             var data = await dbContext.Communities
                 .Where(x => x.Id == CommunityId)
                 .Select(x => new {
-                    Model = new ProfileEditModel {
-                        Description = x.Description,
-                        Name = x.Name,
-                    },
+                    Inputs = new OriginalInputs(x.AvatarPath, x.BannerPath, x.Name, x.Description),
                     x.CreatedAt,
                 })
                 .FirstAsync();
-
-            _inputModel = data.Model;
+            
+            _originalInput = data.Inputs;
+            _inputModel = new() {
+                Name = _originalInput.Name,
+                Description = _originalInput.Description,
+            };
+            
             _createDate = DateOnly.FromDateTime(data.CreatedAt);
 
             _isLoading = false;
@@ -82,7 +91,9 @@
     public sealed class ProfileEditModel {
         public BrowserFileWithPreview? Avatar { get; set; }
         public BrowserFileWithPreview? Banner { get; set; }
-        [StringLength(64, MinimumLength = 8)] public string? Name { get; set; }
+        [StringLength(64, MinimumLength = 8)] public string Name { get; set; } = null!;
         public string? Description { get; set; }
     }
+
+    public record OriginalInputs(string? AvatarPath, string? BannerPath, string Name, string? Description);
 }

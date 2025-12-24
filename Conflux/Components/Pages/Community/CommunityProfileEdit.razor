@@ -1,18 +1,20 @@
-﻿@using Conflux.Components.Shared
+﻿@using Conflux.Components.Pages.Settings
+@using Conflux.Components.Shared
+@using Microsoft.AspNetCore.Components.Sections
 
 <EditForm EditContext="_editContext" OnValidSubmit="OnSubmit" class="grid grid-cols-1 md:grid-cols-2 gap-2">
     <div>
         <label class="flex-none input-label">Avatar</label>
 
         <div class="flex justify-center">
-            <PreviewableImageInput ContainerCssClass="flex justify-center" @bind-File="Model.Avatar" class="flex-1 h-64 aspect-square rounded-full"/>
+            <PreviewableImageInput @ref="_avatarInputElement" ContainerCssClass="flex justify-center" @bind-File="Model.Avatar" @bind-File:after="HandleAfterAvatarSet" class="flex-1 h-64 aspect-square rounded-full"/>
         </div>
     </div>
     
     <div>
         <label class="input-label">Banner</label>
         
-        <PreviewableImageInput ContainerCssClass="flex-1 w-full h-64" @bind-File="Model.Banner" class="size-full"/>
+        <PreviewableImageInput @ref="_bannerInputElement" ContainerCssClass="flex-1 w-full h-64" @bind-File="Model.Banner" @bind-File:after="HandleAfterBannerSet" class="size-full"/>
     </div>
     
     <div class="pb-1">
@@ -28,8 +30,13 @@
     </div>
 </EditForm>
 
+<SectionContent SectionName="Community.ControlPanel.Profile.OutsideContainer">
+    <UnsavedChangesPopup IsShowing="_hasUnsavedChanges" OnCancelRequest="CancelEdit" OnSaveRequest="SaveProfile"/>
+</SectionContent>
+
 @code {
     [Parameter, EditorRequired] public required CommunityProfileTabContent.ProfileEditModel Model { get; set; }
+    [Parameter, EditorRequired] public required CommunityProfileTabContent.OriginalInputs OriginalInputs { get; set; }
     
     [Parameter] public string? AvatarPreviewUrl { get; set; }
     [Parameter] public EventCallback<string?> AvatarPreviewUrlChanged { get; set; }
@@ -42,8 +49,12 @@
     [Parameter] public EventCallback OnSubmit { get; set; }
 
     private EditContext _editContext = null!;
-    private ValidationMessageStore _messageStore;
+    private ValidationMessageStore _messageStore = null!;
     private FieldIdentifier _avatarFileField, _bannerFileField, _nameField, _descriptionField;
+
+    private bool _hasUnsavedChanges;
+
+    private PreviewableImageInput _avatarInputElement = null!, _bannerInputElement = null!;
 
     protected override void OnInitialized() {
         _editContext = new(Model);
@@ -51,6 +62,12 @@
 
         _editContext.OnValidationRequested += ValidateAvatar;
         _editContext.OnValidationRequested += ValidateBanner;
+        
+        _editContext.OnFieldChanged += (sender, args) => {
+            if (_editContext.IsValid(args.FieldIdentifier)) {
+                _hasUnsavedChanges = true;
+            }
+        };
         
         _avatarFileField = FieldIdentifier.Create(() => Model.Avatar);
         _bannerFileField = FieldIdentifier.Create(() => Model.Banner);
@@ -86,5 +103,29 @@
                 _messageStore.Add(_avatarFileField, $"Banner surpassed maximum allowed size of {ApplicationConstants.MaxCommunityBannerSize} bytes.");
             }
         }
+    }
+
+    private void HandleAfterAvatarSet() {
+        _hasUnsavedChanges = true;
+    }
+    
+    private void HandleAfterBannerSet() {
+        _hasUnsavedChanges = true;
+    }
+    
+    private async Task CancelEdit() {
+        await _avatarInputElement.RequestDelete();
+        await _bannerInputElement.RequestDelete();
+
+        Model.Name = OriginalInputs.Name;
+        Model.Description = OriginalInputs.Description;
+        
+        _hasUnsavedChanges = false;
+        
+        StateHasChanged();
+    }
+
+    private void SaveProfile() {
+        
     }
 }

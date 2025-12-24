@@ -62,7 +62,7 @@
         await FileChanged.InvokeAsync(new(args.File, previewUrl));
     }
 
-    private async Task RequestDelete() {
+    public async Task RequestDelete() {
         if (File.HasValue) {
             await JavascriptRuntime.InvokeVoidAsync("URL.revokeObjectURL", File.Value.PreviewUrl);
         }
