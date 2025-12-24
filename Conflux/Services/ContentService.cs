@@ -100,7 +100,7 @@ public class ContentService(IWebHostEnvironment environment, ILogger<ContentServ
         }
     }
     
-    public async Task<string> UploadServerAvatarAsync(Stream stream, Guid serverId, CancellationToken cancellationToken = default) {
+    public async Task<string> UploadCommunityAvatarAsync(Stream stream, Guid serverId, CancellationToken cancellationToken = default) {
         cancellationToken.ThrowIfCancellationRequested();
 
         string avatarDirectory = Path.Combine(environment.ContentRootPath, "Uploads", "communities", "avatars");
@@ -121,7 +121,7 @@ public class ContentService(IWebHostEnvironment environment, ILogger<ContentServ
         return path;
     }
 
-    public Task DeleteServerAvatarAsync(Guid serverId) {
+    public Task DeleteCommunityAvatarAsync(Guid serverId) {
         try {
             string path = Path.Combine("communities", "avatars", serverId.ToString());
             string physicalPath = Path.Combine(environment.ContentRootPath, "Uploads", path);
@@ -131,17 +131,6 @@ public class ContentService(IWebHostEnvironment environment, ILogger<ContentServ
         }
         
         return Task.CompletedTask;
-    }
-
-    public DateTime GetServerAvatarUploadTime(Guid serverId) {
-        try {
-            string path = Path.Combine("communities", "avatars", serverId.ToString());
-            string physicalPath = Path.Combine(environment.ContentRootPath, "Uploads", path);
-
-            return File.GetLastWriteTimeUtc(physicalPath);
-        } catch (Exception e) when (e is DirectoryNotFoundException or IOException or PathTooLongException) {
-            return default;
-        }
     }
 
     public string GetAssetPath(string resourcePath) {

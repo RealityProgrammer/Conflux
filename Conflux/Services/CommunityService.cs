@@ -119,7 +119,7 @@ public class CommunityService(
             });
             
             if (avatarStream != null) {
-                string path = await contentService.UploadServerAvatarAsync(avatarStream, community.Id);
+                string path = await contentService.UploadCommunityAvatarAsync(avatarStream, community.Id);
                 
                 community.AvatarPath = path;
             }

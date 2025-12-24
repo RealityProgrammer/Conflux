@@ -10,9 +10,8 @@ public interface IContentService {
     Task<string> UploadMessageAttachmentAsync(Stream attachmentStream, MessageAttachmentType type, CancellationToken cancellationToken);
     Task<bool> DeleteMessageAttachmentAsync(string attachmentRelativePath);
     
-    Task<string> UploadServerAvatarAsync(Stream stream, Guid serverId, CancellationToken cancellationToken = default);
-    Task DeleteServerAvatarAsync(Guid serverId);
-    DateTime GetServerAvatarUploadTime(Guid serverId);
+    Task<string> UploadCommunityAvatarAsync(Stream stream, Guid serverId, CancellationToken cancellationToken = default);
+    Task DeleteCommunityAvatarAsync(Guid serverId);
     
     string GetAssetPath(string resourcePath);
 }
