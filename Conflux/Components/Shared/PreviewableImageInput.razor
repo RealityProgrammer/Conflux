@@ -1,0 +1,70 @@
+﻿@using Conflux.Components.Shared.Icons
+@inject IJSRuntime JavascriptRuntime
+
+<div @ref="RootElementReference" class="relative inline-block">
+    @{ string? imageSrc = File.HasValue ? File.Value.PreviewUrl : ImageSrc; }
+    
+    <div class="z-0 relative bg-black overflow-hidden @_cssClass">
+        <img @ref="ImageElementReference" src="@imageSrc" alt="@(string.IsNullOrEmpty(ImageSrc) ? null : ImageAlt)" class="relative inset-0 object-cover pointer-events-none">
+    
+        <label class="absolute inset-0 flex size-full flex-row justify-center items-center cursor-pointer z-10 bg-black/40 opacity-0 group-hover:opacity-100 rounded-full transition-opacity duration-250">
+            <span class="text-white">Click to change</span>
+        
+            <InputFile @ref="InputFileElement" OnChange="HandleFileChange" class="hidden"></InputFile>
+        </label>
+    </div>
+    
+    @if (!string.IsNullOrEmpty(imageSrc)) {
+        <button class="absolute top-1 right-1 p-2 rounded-full bg-red-600 shadow-lg hover:bg-red-500 active:bg-red-700 cursor-pointer" @onclick="RequestDelete">
+            <Cross class="size-5 fill-white"/>
+        </button>
+    }
+</div>
+
+@code {
+    [Parameter] public string? ImageSrc { get; set; }
+    [Parameter] public string? ImageAlt { get; set; }
+    
+    [Parameter] public BrowserFileWithPreview? File { get; set; }
+    [Parameter] public EventCallback<BrowserFileWithPreview?> FileChanged { get; set; }
+    [Parameter] public Expression<Func<BrowserFileWithPreview?>> FileExpression { get; set; } = null!;
+    
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+    private string? _cssClass;
+
+    public ElementReference RootElementReference { get; set; }
+    public ElementReference ImageElementReference { get; set; }
+    public InputFile? InputFileElement { get; set; }
+    
+    protected override void OnParametersSet() {
+        if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
+            _cssClass = Convert.ToString(obj);
+        }
+        
+        AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "class").ToDictionary();
+        _cssClass += " group";
+    }
+    
+    private async Task HandleFileChange(InputFileChangeEventArgs args) {
+        if (InputFileElement?.Element is not { } inputFileElement) {
+            return;
+        }
+
+        if (File.HasValue) {
+            await JavascriptRuntime.InvokeVoidAsync("URL.revokeObjectURL", File.Value.PreviewUrl);
+        }
+
+        string previewUrl = await JavascriptRuntime.InvokeAsync<string>("window.createInputPreviewUrl", inputFileElement, 0);
+
+        await FileChanged.InvokeAsync(new(args.File, previewUrl));
+    }
+
+    private async Task RequestDelete() {
+        if (File.HasValue) {
+            await JavascriptRuntime.InvokeVoidAsync("URL.revokeObjectURL", File.Value.PreviewUrl);
+        }
+
+        File = null;
+        await FileChanged.InvokeAsync(null);
+    }
+}

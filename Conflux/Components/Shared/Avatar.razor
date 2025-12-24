@@ -11,10 +11,10 @@
     [Parameter] public string? ImageAlt { get; set; }
 
     [Parameter] public RenderFragment? ChildContent { get; set; }
-    
+
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
     private string? _cssClass;
-    
+
     public ElementReference ImageElement { get; set; }
     public ElementReference RootElement { get; set; }
 

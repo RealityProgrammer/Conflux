@@ -1,5 +1,5 @@
 ﻿<div class="mx-auto w-1/2 border border-gray-800 shadow-lg rounded-lg @_cssClass" @attributes="AdditionalAttributes">
-    <div class="relative h-40">
+    <section class="relative h-40">
         <div class="absolute inset-0 bg-cover bg-center bg-black rounded-t-lg">
             @if (!string.IsNullOrEmpty(BannerSrc)) {
                 <img src="@BannerSrc" alt="Preview banner of @(Name)">
@@ -11,9 +11,9 @@
                 <Avatar class="size-20 border-4 border-gray-700" ImageSrc="@AvatarSrc" ImageAlt="@($"Preview avatar of {Name}")"/>
             </div>
         </div>
-    </div>
+    </section>
 
-    <div class="px-2 pt-10 pb-2">
+    <section class="px-2 pt-10 pb-2">
         <p class="text-2xl font-bold">@Name</p>
 
         <p class="mt-1 text-sm">
@@ -23,7 +23,7 @@
         @if (!string.IsNullOrEmpty(Description)) {
             <p class="text-sm mt-1">@Description</p>
         }
-    </div>
+    </section>
 </div>
 
 @code {
