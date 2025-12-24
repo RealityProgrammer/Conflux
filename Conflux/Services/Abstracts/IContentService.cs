@@ -13,5 +13,8 @@ public interface IContentService {
     Task<string> UploadCommunityAvatarAsync(Stream stream, Guid serverId, CancellationToken cancellationToken = default);
     Task DeleteCommunityAvatarAsync(Guid serverId);
     
+    Task<string> UploadCommunityBannerAsync(Stream stream, Guid serverId, CancellationToken cancellationToken = default);
+    Task DeleteCommunityBannerAsync(Guid serverId);
+    
     string GetAssetPath(string resourcePath);
 }

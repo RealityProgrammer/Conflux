@@ -132,6 +132,39 @@ public class ContentService(IWebHostEnvironment environment, ILogger<ContentServ
         
         return Task.CompletedTask;
     }
+    
+    public async Task<string> UploadCommunityBannerAsync(Stream stream, Guid serverId, CancellationToken cancellationToken = default) {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        string avatarDirectory = Path.Combine(environment.ContentRootPath, "Uploads", "communities", "banners");
+
+        if (!Directory.Exists(avatarDirectory)) {
+            Directory.CreateDirectory(avatarDirectory);
+        }
+        
+        string path = Path.Combine("communities", "banners", serverId.ToString());
+        string physicalPath = Path.Combine(environment.ContentRootPath, "Uploads", path);
+        
+        await using var destinationStream = File.OpenWrite(physicalPath);
+        destinationStream.SetLength(0);
+        
+        await destinationStream.FlushAsync(cancellationToken);
+        await stream.CopyToAsync(destinationStream, cancellationToken);
+
+        return path;
+    }
+
+    public Task DeleteCommunityBannerAsync(Guid serverId) {
+        try {
+            string path = Path.Combine("communities", "banners", serverId.ToString());
+            string physicalPath = Path.Combine(environment.ContentRootPath, "Uploads", path);
+
+            File.Delete(physicalPath);
+        } catch (Exception e) when (e is DirectoryNotFoundException or IOException or PathTooLongException) {
+        }
+        
+        return Task.CompletedTask;
+    }
 
     public string GetAssetPath(string resourcePath) {
         return "uploads/" + resourcePath;
