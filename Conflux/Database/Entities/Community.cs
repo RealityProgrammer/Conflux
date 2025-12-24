@@ -13,6 +13,8 @@ public class Community : ICreatedAtColumn {
 
     public Guid InvitationId { get; set; }
     
+    [MaxLength(255)] public string? Description { get; set; }
+    
     public DateTime CreatedAt { get; set; }
 
     public ApplicationUser Owner { get; set; } = null!;

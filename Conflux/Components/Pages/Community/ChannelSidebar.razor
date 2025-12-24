@@ -1,4 +1,5 @@
-﻿@using Conflux.Components.Shared.Icons
+﻿@using Conflux.Components.Shared
+@using Conflux.Components.Shared.Icons
 @using Conflux.Database
 @using Conflux.Database.Entities
 @using Conflux.Helpers
@@ -148,12 +149,21 @@
                 </Dialog>
                 
                 <Dialog @bind-Open="_showControlPanelModal" OnClickOutside="CloseControlPanelModal" ContainerCssClass="absolute inset-0">
-                    <Card class="absolute inset-6">
-                        <CardHeader Title="Control Panel" Subtext="Building another room for your house" OnCloseRequested="CloseControlPanelModal"/>
+                    <Card class="absolute inset-0 rounded-none! lg:inset-6 lg:rounded-xl!">
+                        <CardHeader Title="Control Panel" OnCloseRequested="CloseControlPanelModal" class="border-b border-b-gray-600"/>
         
-                        <CardContent class="flex flex-col pb-1">
-                            <p>Lmao</p>
-                            @* <CreateCommunityChannelForm OnCreateRequest="HandleChannelCreate"/> *@
+                        <CardContent class="flex flex-col lg:flex-row overflow-hidden">
+                            <aside class="flex-none basis-16 order-2 lg:order-1 lg:basis-64 border-t border-t-gray-600 border-r-0 lg:border-r lg:border-r-gray-600 lg:border-t-0 overflow-y-scroll">
+                                @for (int i = 0; i < 100; i++) {
+                                    <p>@i</p>
+                                }
+                            </aside>
+                            
+                            <main class="flex-1 order-1 lg:order-2 overflow-y-scroll">
+                                @for (int i = 0; i < 100; i++) {
+                                    <p>@i</p>
+                                }
+                            </main>
                         </CardContent>
                     </Card>
                 </Dialog>
@@ -301,6 +311,7 @@
 
     private void HandleDisplayControlPanel() {
         _showControlPanelModal = true;
+        _showCommunityExpandableMenu = false;
     }
 
     private void CloseControlPanelModal() {
