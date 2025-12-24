@@ -1,7 +1,7 @@
 ﻿@using Conflux.Components.Shared.Icons
 @inject IJSRuntime JavascriptRuntime
 
-<div @ref="RootElementReference" class="relative inline-block">
+<div @ref="RootElementReference" class="relative @ContainerCssClass">
     @{ string? imageSrc = File.HasValue ? File.Value.PreviewUrl : ImageSrc; }
     
     <div class="z-0 relative bg-black overflow-hidden @_cssClass">
@@ -15,7 +15,7 @@
     </div>
     
     @if (!string.IsNullOrEmpty(imageSrc)) {
-        <button class="absolute top-1 right-1 p-2 rounded-full bg-red-600 shadow-lg hover:bg-red-500 active:bg-red-700 cursor-pointer" @onclick="RequestDelete">
+        <button type="button" class="absolute top-1 right-1 p-2 rounded-full bg-red-600 shadow-lg hover:bg-red-500 active:bg-red-700 cursor-pointer" @onclick="RequestDelete">
             <Cross class="size-5 fill-white"/>
         </button>
     }
@@ -24,6 +24,7 @@
 @code {
     [Parameter] public string? ImageSrc { get; set; }
     [Parameter] public string? ImageAlt { get; set; }
+    [Parameter] public string? ContainerCssClass { get; set; }
     
     [Parameter] public BrowserFileWithPreview? File { get; set; }
     [Parameter] public EventCallback<BrowserFileWithPreview?> FileChanged { get; set; }
@@ -43,6 +44,8 @@
         
         AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "class").ToDictionary();
         _cssClass += " group";
+
+        ContainerCssClass ??= "inline-block";
     }
     
     private async Task HandleFileChange(InputFileChangeEventArgs args) {

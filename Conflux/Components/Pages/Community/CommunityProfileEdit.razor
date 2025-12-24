@@ -1,10 +1,30 @@
-﻿<EditForm EditContext="_editContext" OnValidSubmit="OnSubmit" class="grid grid-cols-1 md:grid-cols-2 gap-y-2">
-    <div class="">
-        <label class="input-label">Avatar</label>
+﻿@using Conflux.Components.Shared
+
+<EditForm EditContext="_editContext" OnValidSubmit="OnSubmit" class="grid grid-cols-1 md:grid-cols-2 gap-2">
+    <div>
+        <label class="flex-none input-label">Avatar</label>
+
+        <div class="flex justify-center">
+            <PreviewableImageInput ContainerCssClass="flex justify-center" @bind-File="Model.Avatar" class="flex-1 h-64 aspect-square rounded-full"/>
+        </div>
     </div>
     
-    <div class="">
-        <label class="input-label">Profile</label>
+    <div>
+        <label class="input-label">Banner</label>
+        
+        <PreviewableImageInput ContainerCssClass="flex-1 w-full h-64" @bind-File="Model.Banner" class="size-full"/>
+    </div>
+    
+    <div class="pb-1">
+        <label class="input-label">Name</label>
+        
+        <InputText @bind-Value="Model.Name" class="input-field h-11 w-full mt-1" maxlength="64"/>
+    </div>
+    
+    <div class="pb-1">
+        <label class="input-label">Description</label>
+        
+        <InputText @bind-Value="Model.Description" class="input-field h-11 w-full mt-1" maxlength="255"/>
     </div>
 </EditForm>
 
@@ -41,7 +61,7 @@
     private void ValidateAvatar(object? sender, ValidationRequestedEventArgs args) {
         _messageStore.Clear();
         
-        if (Model.Avatar is { } browserFile) {
+        if (Model.Avatar?.File is { } browserFile) {
             if (browserFile.ContentType is not "image/png" and not "image/jpeg" and not "image/jpg") {
                 _messageStore.Add(_avatarFileField, "Avatar file is not valid PNG or JPEG.");
                 return;
@@ -56,7 +76,7 @@
     private void ValidateBanner(object? sender, ValidationRequestedEventArgs args) {
         _messageStore.Clear();
         
-        if (Model.Banner is { } browserFile) {
+        if (Model.Banner?.File is { } browserFile) {
             if (browserFile.ContentType is not "image/png" and not "image/jpeg" and not "image/jpg") {
                 _messageStore.Add(_avatarFileField, "Banner file is not valid PNG or JPEG.");
                 return;

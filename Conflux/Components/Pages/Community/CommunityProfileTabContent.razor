@@ -28,11 +28,18 @@
     </Buttons>
     <Contents>
         <TabContent TabId="preview">
-            <CommunityProfileCard class="w-full mx-2 md:w-1/2 md:mx-auto" Name="@_inputModel.Name" BannerSrc="@null" AvatarSrc="@null" CreateDate="_createDate"/>
+            <CommunityProfileCard class="w-full mx-2 md:w-1/2 md:mx-auto"
+                                  Name="@_inputModel.Name"
+                                  AvatarSrc="@_inputModel.Avatar?.PreviewUrl"
+                                  BannerSrc="@null"
+                                  CreateDate="_createDate"
+                                  Description="@_inputModel.Description"/>
         </TabContent>
 
         <TabContent TabId="edit" class="px-2 overflow-y-scroll">
-            <CommunityProfileEdit Model="_inputModel" @bind-AvatarPreviewUrl="_avatarPreviewUrl" @bind-BannerPreviewUrl="_bannerPreviewUrl"/>
+            <CommunityProfileEdit Model="_inputModel"
+                                  @bind-AvatarPreviewUrl="_avatarPreviewUrl"
+                                  @bind-BannerPreviewUrl="_bannerPreviewUrl"/>
         </TabContent>
     </Contents>
 </TabContainer>
@@ -73,8 +80,8 @@
     }
 
     public sealed class ProfileEditModel {
-        public IBrowserFile? Avatar { get; set; }
-        public IBrowserFile? Banner { get; set; }
+        public BrowserFileWithPreview? Avatar { get; set; }
+        public BrowserFileWithPreview? Banner { get; set; }
         [StringLength(64, MinimumLength = 8)] public string? Name { get; set; }
         public string? Description { get; set; }
     }

@@ -63,12 +63,12 @@
                 <EditForm FormName="Avatar" class="mt-2" EditContext="_avatarEditContext" method="post" OnSubmit="OnAvatarSubmit">
                     <AntiforgeryToken/>
                     
-                    <div class="flex flex-row justify-center">
-                        @{
-                            string cssClass = $"size-64 border-4 rounded-full {(_avatarEditContext.IsValid(_avatarFileField) ? "border-gray-700" : "border-red-700")}";
-                        }
+                    @{
+                        string imageCssClass = $"size-64 border-4 rounded-full {(_avatarEditContext.IsValid(_avatarFileField) ? "border-gray-700" : "border-red-700")}";
+                    }
                     
-                        <PreviewableImageInput @ref="_avatarInputElement" @bind-File="AvatarModel!.File" class="@cssClass" ImageSrc="@null"/>
+                    <div class="flex justify-center">
+                        <PreviewableImageInput class="@imageCssClass" @ref="_avatarInputElement" @bind-File="AvatarModel!.File" ImageSrc="@null"/>
                     </div>
                     
                     @if (_avatarInputElement != null) {
