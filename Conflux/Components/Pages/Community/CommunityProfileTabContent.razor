@@ -1,0 +1,81 @@
+﻿@using Conflux.Components.Shared
+@using Conflux.Components.Shared.Icons
+@using Conflux.Database
+@using Microsoft.EntityFrameworkCore
+@using System.ComponentModel.DataAnnotations
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+
+@if (_isLoading) {
+    <div class="flex justify-center items-center size-full">
+        <Spinner class="size-16 fill-white"/>
+    </div>
+
+    return;
+}
+
+<TabContainer @bind-ActiveId="_activeTabId" class="flex flex-col h-full" ButtonContainerCssClass="flex-none flex flex-row items-start" ContentContainerCssClass="flex-1 mt-2 min-h-0 overflow-y-scroll">
+    <Buttons>
+        <div class="flex-1 ml-2">
+            <h1 class="text-xl font-bold">Community Profile</h1>
+            <p class="text-sm text-gray-400">Customize how the community look in the eye of others.</p>
+        </div>
+
+        <div class="flex-none button-group">
+            <TabButton TabId="preview" class="border-gray-500 w-20 py-1 cursor-pointer bg-transparent hover:bg-white/15 active:bg-black/20" ActiveCssClass="bg-blue-600/70!">Preview</TabButton>
+            <TabButton TabId="edit" class="border-gray-500 w-20 py-1 cursor-pointer bg-transparent hover:bg-white/15 active:bg-black/20" ActiveCssClass="bg-blue-600/70!">Edit</TabButton>
+        </div>
+    </Buttons>
+    <Contents>
+        <TabContent TabId="preview">
+            <CommunityProfileCard class="w-full mx-2 md:w-1/2 md:mx-auto" Name="@_inputModel.Name" BannerSrc="@null" AvatarSrc="@null" CreateDate="_createDate"/>
+        </TabContent>
+
+        <TabContent TabId="edit" class="px-2 overflow-y-scroll">
+            <CommunityProfileEdit Model="_inputModel" @bind-AvatarPreviewUrl="_avatarPreviewUrl" @bind-BannerPreviewUrl="_bannerPreviewUrl"/>
+        </TabContent>
+    </Contents>
+</TabContainer>
+
+@code {
+    [Parameter] public Guid CommunityId { get; set; }
+    
+    private string _activeTabId = "preview";
+
+    private ProfileEditModel _inputModel = new();
+    private string? _avatarPreviewUrl, _bannerPreviewUrl;
+    
+    private DateOnly _createDate;
+    private bool _isLoading = true;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+            
+            var data = await dbContext.Communities
+                .Where(x => x.Id == CommunityId)
+                .Select(x => new {
+                    Model = new ProfileEditModel {
+                        Description = x.Description,
+                        Name = x.Name,
+                    },
+                    x.CreatedAt,
+                })
+                .FirstAsync();
+
+            _inputModel = data.Model;
+            _createDate = DateOnly.FromDateTime(data.CreatedAt);
+
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    public sealed class ProfileEditModel {
+        public IBrowserFile? Avatar { get; set; }
+        public IBrowserFile? Banner { get; set; }
+        [StringLength(64, MinimumLength = 8)] public string? Name { get; set; }
+        public string? Description { get; set; }
+    }
+}

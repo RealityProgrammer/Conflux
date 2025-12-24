@@ -7,6 +7,7 @@ public class Community : ICreatedAtColumn {
     
     [MaxLength(64)] public string Name { get; set; } = null!;
     [MaxLength(255)] public string? AvatarPath { get; set; }
+    [MaxLength(255)] public string? BannerPath { get; set; }
     
     [MaxLength(36)] public string OwnerId { get; set; } = null!;
     [MaxLength(36)] public string CreatorId { get; set; } = null!;

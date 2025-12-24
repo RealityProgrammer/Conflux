@@ -108,8 +108,8 @@
                 return;
             }
 
-            if (browserFile.Size > ApplicationConstants.MaxServerAvatarSize) {
-                _messageStore.Add(_avatarFileField, $"Avatar surpassed maximum allowed size of {ApplicationConstants.MaxServerAvatarSize} bytes.");
+            if (browserFile.Size > ApplicationConstants.MaxCommunityAvatarSize) {
+                _messageStore.Add(_avatarFileField, $"Avatar surpassed maximum allowed size of {ApplicationConstants.MaxCommunityAvatarSize} bytes.");
                 return;
             }
         }

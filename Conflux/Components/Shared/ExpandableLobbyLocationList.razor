@@ -149,7 +149,7 @@
         if (model.Avatar == null) {
             await CommunityService.CreateCommunityAsync(model.Name, null, id);
         } else {
-            using var avatarStream = model.Avatar.OpenReadStream(ApplicationConstants.MaxServerAvatarSize);
+            using var avatarStream = model.Avatar.OpenReadStream(ApplicationConstants.MaxCommunityAvatarSize);
 
             await CommunityService.CreateCommunityAsync(model.Name, avatarStream, id);
         }

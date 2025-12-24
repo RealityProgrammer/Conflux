@@ -1,0 +1,41 @@
+﻿@using Conflux.Components.Shared
+
+<Card class="absolute inset-0 rounded-none! lg:inset-6 lg:rounded-xl!">
+    <CardHeader Title="Control Panel" OnCloseRequested="OnCloseRequest" class="border-b border-b-gray-600"/>
+        
+    <CardContent>
+        <TabContainer @bind-ActiveId="_activeTabId" class="size-full flex flex-col lg:flex-row" ButtonContainerCssClass="flex-none order-2 lg:order-1 lg:basis-64 border-t border-t-gray-600 border-r-0 lg:border-r lg:border-r-gray-600 lg:border-t-0 overflow-x-scroll pt-1 lg:pr-2 flex flex-row items-center lg:items-start scrollbar-hide" ContentContainerCssClass="flex-1 order-1 lg:order-2 overflow-y-hidden">
+            <Buttons>
+                <section class="flex flex-row lg:flex-col items-center lg:items-start lg:w-full">
+                    <TabButton TabId="profile" class="flex-none cursor-pointer hover:bg-white/15 active:bg-black/20 inline-flex rounded-md" ActiveCssClass="bg-white/10!">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" class="fill-none stroke-1 stroke-white size-12">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
+                        </svg>
+
+                        <span class="hidden lg:block">Profile</span>
+                    </TabButton>
+                </section>
+                @* *@
+                @* <h1 class="text-sm font-bold text-gray-400 mt-2 hidden lg:block">People</h1> *@
+                @* <TabButton TabId="members" class="button-nav-menu mt-1">Members</TabButton> *@
+                @* <TabButton TabId="roles" class="button-nav-menu mt-1">Roles</TabButton> *@
+                @* <TabButton TabId="access" class="button-nav-menu mt-1">Access</TabButton> *@
+                @* *@
+                @* <h1 class="text-sm font-bold text-red-475 mt-2 hidden lg:block">Danger</h1> *@
+                @* <button class="button-nav-menu text-red-475 font-bold mt-1">Delete Community</button> *@
+            </Buttons>
+            <Contents>
+                <TabContent RenderStrategy="TabRenderStrategy.Visibility" TabId="profile" class="size-full">
+                    <CommunityProfileTabContent CommunityId="CommunityId"/>
+                </TabContent>
+            </Contents>
+        </TabContainer>
+    </CardContent>
+</Card>
+
+@code {
+    [Parameter] public Guid CommunityId { get; set; }
+    [Parameter] public EventCallback OnCloseRequest { get; set; }
+
+    private string _activeTabId = "profile";
+}

@@ -1,10 +1,7 @@
-﻿@using Conflux.Components.Shared.Icons
+﻿@using Conflux.Components.Shared
+@using Conflux.Components.Shared.Icons
 @using Conflux.Database.Entities
-@using Conflux.Services.Abstracts
 @using System.ComponentModel.DataAnnotations
-
-@inject ILogger<CommunityChannelList> Logger
-@inject ICommunityService CommunityService
 
 <EditForm EditContext="_channelCreationEditContext" OnValidSubmit="HandleSubmitChannelCreation">
     <AntiforgeryToken/>

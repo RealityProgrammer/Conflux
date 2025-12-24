@@ -1,0 +1,70 @@
+﻿<EditForm EditContext="_editContext" OnValidSubmit="OnSubmit" class="grid grid-cols-1 md:grid-cols-2 gap-y-2">
+    <div class="">
+        <label class="input-label">Avatar</label>
+    </div>
+    
+    <div class="">
+        <label class="input-label">Profile</label>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter, EditorRequired] public required CommunityProfileTabContent.ProfileEditModel Model { get; set; }
+    
+    [Parameter] public string? AvatarPreviewUrl { get; set; }
+    [Parameter] public EventCallback<string?> AvatarPreviewUrlChanged { get; set; }
+    [Parameter] public Expression<Func<string?>> AvatarPreviewUrlExpression { get; set; } = null!;
+    
+    [Parameter] public string? BannerPreviewUrl { get; set; }
+    [Parameter] public EventCallback<string?> BannerPreviewUrlChanged { get; set; }
+    [Parameter] public Expression<Func<string?>> BannerPreviewUrlExpression { get; set; } = null!;
+    
+    [Parameter] public EventCallback OnSubmit { get; set; }
+
+    private EditContext _editContext = null!;
+    private ValidationMessageStore _messageStore;
+    private FieldIdentifier _avatarFileField, _bannerFileField, _nameField, _descriptionField;
+
+    protected override void OnInitialized() {
+        _editContext = new(Model);
+        _messageStore = new(_editContext);
+
+        _editContext.OnValidationRequested += ValidateAvatar;
+        _editContext.OnValidationRequested += ValidateBanner;
+        
+        _avatarFileField = FieldIdentifier.Create(() => Model.Avatar);
+        _bannerFileField = FieldIdentifier.Create(() => Model.Banner);
+        _nameField = FieldIdentifier.Create(() => Model.Name);
+        _descriptionField = FieldIdentifier.Create(() => Model.Description);
+    }
+    
+    private void ValidateAvatar(object? sender, ValidationRequestedEventArgs args) {
+        _messageStore.Clear();
+        
+        if (Model.Avatar is { } browserFile) {
+            if (browserFile.ContentType is not "image/png" and not "image/jpeg" and not "image/jpg") {
+                _messageStore.Add(_avatarFileField, "Avatar file is not valid PNG or JPEG.");
+                return;
+            }
+
+            if (browserFile.Size > ApplicationConstants.MaxCommunityAvatarSize) {
+                _messageStore.Add(_avatarFileField, $"Avatar surpassed maximum allowed size of {ApplicationConstants.MaxCommunityAvatarSize} bytes.");
+            }
+        }
+    }
+    
+    private void ValidateBanner(object? sender, ValidationRequestedEventArgs args) {
+        _messageStore.Clear();
+        
+        if (Model.Banner is { } browserFile) {
+            if (browserFile.ContentType is not "image/png" and not "image/jpeg" and not "image/jpg") {
+                _messageStore.Add(_avatarFileField, "Banner file is not valid PNG or JPEG.");
+                return;
+            }
+
+            if (browserFile.Size > ApplicationConstants.MaxCommunityAvatarSize) {
+                _messageStore.Add(_avatarFileField, $"Banner surpassed maximum allowed size of {ApplicationConstants.MaxCommunityBannerSize} bytes.");
+            }
+        }
+    }
+}

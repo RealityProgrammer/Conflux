@@ -1,0 +1,20 @@
+﻿<div class="bg-gray-600 px-1 py-0.5 flex flex-row items-center rounded-full @_cssClass" @attributes="AdditionalAttributes">
+    <span class="bg-gray-300 rounded-full size-3 mr-1"></span>
+    
+    <p class="text-center text-xs">@Amount members</p>
+</div>
+
+@code {
+    [Parameter] public int Amount { get; set; }
+    
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+    private string? _cssClass;
+
+    protected override void OnParametersSet() {
+        if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
+            _cssClass = Convert.ToString(obj);
+        }
+
+        AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "class").ToDictionary();
+    }
+}

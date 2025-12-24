@@ -1,0 +1,48 @@
+﻿<div class="mx-auto w-1/2 border border-gray-800 shadow-lg rounded-lg @_cssClass" @attributes="AdditionalAttributes">
+    <div class="relative h-40">
+        <div class="absolute inset-0 bg-cover bg-center bg-black rounded-t-lg">
+            @if (!string.IsNullOrEmpty(BannerSrc)) {
+                <img src="@BannerSrc" alt="Preview banner of @(Name)">
+            }
+        </div>
+
+        <div class="absolute -bottom-8 left-4">
+            <div class="relative">
+                <Avatar class="size-20 border-4 border-gray-700" ImageSrc="@AvatarSrc" ImageAlt="@($"Preview avatar of {Name}")"/>
+            </div>
+        </div>
+    </div>
+
+    <div class="px-2 pt-10 pb-2">
+        <p class="text-2xl font-bold">@Name</p>
+
+        <p class="mt-1 text-sm">
+            <span class="font-semibold">Since </span> @CreateDate.ToString("yyyy/MM/dd")
+        </p>
+        
+        @if (!string.IsNullOrEmpty(Description)) {
+            <p class="text-sm mt-1">@Description</p>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? AvatarSrc { get; set; }
+    [Parameter] public string? BannerSrc { get; set; }
+    
+    [Parameter, EditorRequired] public required string Name { get; set; }
+    [Parameter, EditorRequired] public required DateOnly CreateDate { get; set; }
+    
+    [Parameter] public string? Description { get; set; }
+    
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+    private string? _cssClass;
+    
+    protected override void OnParametersSet() {
+        if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
+            _cssClass = Convert.ToString(obj);
+        }
+
+        AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "class").ToDictionary();
+    }
+}
