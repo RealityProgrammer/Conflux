@@ -12,11 +12,13 @@
 
 @attribute [Authorize]
 
+@implements IAsyncDisposable
+
 @inject IUserService UserService
 @inject ApplicationRedirectManager RedirectManager
 @inject UserManager<ApplicationUser> UserManager
 @inject IContentService ContentService
-@inject ILogger<SetupProfilePage> Logger
+@inject IJSRuntime JavascriptRuntime
 
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 
@@ -58,50 +60,36 @@
                 <h1 class="text-center font-bold text-3xl text-white">Setup Avatar</h1>
                 <p class="text-center text-gray-400 text-sm mt-2">Make yourself look special</p>
 
-                <EditForm FormName="Avatar" class="mt-2" EditContext="_avatarEditContext" method="post">
+                <EditForm FormName="Avatar" class="mt-2" EditContext="_avatarEditContext" method="post" OnSubmit="OnAvatarSubmit">
                     <AntiforgeryToken/>
                     
-                    <InputFile class="hidden" id="avatar" OnChange="HandleAvatarUpload"/>
-
-                    @{
-                        string avatarCssClass = $"size-64 border-4 {(_avatarEditContext.IsValid(_avatarFileField) ? "border-gray-700" : "border-red-700")}";
-                        string? imageSource = _processingAvatar || string.IsNullOrEmpty(_user.AvatarProfilePath) ? null : $"{ContentService.GetAssetPath(_user.AvatarProfilePath)}?v={ContentService.GetUserAvatarUploadTime(_user.Id):yyyyMMddHHmmssffff}";
-                    }
-                    
                     <div class="flex flex-row justify-center">
-                        <Avatar class="@avatarCssClass" ImageSrc="@imageSource" @ref="_avatarElement">
-                            @if (_processingAvatar) {
-                                <div class="absolute inset-0 flex flex-col justify-center items-center">
-                                    <Spinner class="size-1/2 fill-white"/>
-                                </div>
-                            } else {
-                                <label for="avatar" class="absolute inset-0 flex group bg-transparent flex-col justify-center items-center hover:bg-gray-600/40 cursor-pointer rounded-full">
-                                    <p class="hidden group-hover:block">Click to select Avatar</p>
-                                </label>
-                            }
-
-                            @if (!string.IsNullOrEmpty(imageSource)) {
-                                <button class="absolute top-0 right-0 p-2 rounded-full bg-red-600 shadow-lg hover:bg-red-500 active:bg-red-700 cursor-pointer" @onclick="HandleAvatarDelete">
-                                    <Cross class="size-5 fill-white"/>
-                                </button>
-                            }
-                        </Avatar>
+                        @{
+                            string cssClass = $"size-64 border-4 rounded-full {(_avatarEditContext.IsValid(_avatarFileField) ? "border-gray-700" : "border-red-700")}";
+                        }
+                    
+                        <PreviewableImageInput @ref="_avatarInputElement" @bind-File="AvatarModel!.File" class="@cssClass" ImageSrc="@null"/>
                     </div>
                     
-                    @if (_avatarElement != null) {
-                        <Popover TargetReference="_avatarElement.RootElement" IsShowing="!_avatarEditContext.IsValid(_avatarFileField)" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8">
+                    @if (_avatarInputElement != null) {
+                        <Popover TargetReference="_avatarInputElement.RootElementReference" IsShowing="!_avatarEditContext.IsValid(_avatarFileField)" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8">
                             <ValidationMessage For="() => AvatarModel!.File" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"/>
                         </Popover>
                     }
+                    
+                    <div class="flex flex-row justify-center">
+                        <ProcessingStateButton @bind-IsProcessing="_processingAvatar" class="mt-2 button-primary inline-flex flex-row items-center" type="submit">
+                            <ChildContent>
+                                Next <Arrow Direction="ArrowDirection.Right" class="ml-2 size-6 fill-white"/>
+                            </ChildContent>
+                            
+                            <ProcessingContent>
+                                <Spinner class="size-6 fill-white"/>
+                            </ProcessingContent>
+                        </ProcessingStateButton>
+                    </div>
                 </EditForm>
 
-                <div class="flex flex-row justify-center">
-                    <button class="mt-2 button-primary inline-flex flex-row items-center" @onclick="ToSetupProfile" disabled="@_processingAvatar">
-                        Next
-
-                        <Arrow Direction="ArrowDirection.Right" class="ml-2 size-6 fill-white"/>
-                    </button>
-                </div>
             </section>
         </div>
     </div>
@@ -223,13 +211,13 @@
     private bool _showPrompt = true;
     private SetupStage _stage;
     
-    private Avatar? _avatarElement;
     private InputText? _usernameInputElement, _displayNameInputElement, _pronounsInputElement;
     private InputTextArea? _bioInputElement;
     
     [SupplyParameterFromForm(FormName = "Avatar")] private AvatarInputModel? AvatarModel { get; set; }
     private EditContext _avatarEditContext = null!;
     private ValidationMessageStore _avatarMessageStore = null!;
+    private PreviewableImageInput? _avatarInputElement;
     private bool _processingAvatar;
     private FieldIdentifier _avatarFileField;
 
@@ -241,7 +229,7 @@
 
     private bool _isProcessingProfile;
 
-    protected override async Task OnInitializedAsync() {
+    protected override void OnInitialized() {
         AvatarModel ??= new();
         ProfileModel ??= new();
     }
@@ -287,49 +275,28 @@
         _stage = SetupStage.Avatar;
     }
 
-    private void ToSetupProfile() {
-        if (_processingAvatar || !_avatarEditContext.Validate()) return;
-        
-        _stage = SetupStage.Profile;
-    }
-
-    private async Task FinishSetup() {
-        RedirectManager.To(ReturnUrl ?? "/").Execute();
-    }
-
-    private async Task HandleAvatarUpload(InputFileChangeEventArgs args) {
-        AvatarModel!.File = args.File;
-        
-        if (!_avatarEditContext.Validate()) {
-            return;
-        }
-        
-        _processingAvatar = true;
-
-        try {
-            using var imageStream = AvatarModel.File.OpenReadStream(ApplicationConstants.MaxUserAvatarSize);
-
-            string databasePath = await ContentService.UploadUserAvatarAsync(imageStream, _user!.Id);
-            _user.AvatarProfilePath = databasePath;
-
-            await UserManager.UpdateAsync(_user);
-        } finally {
-            _processingAvatar = false;
-            StateHasChanged();
-        }
-    }
-
-    private async Task HandleAvatarDelete() {
-        _processingAvatar = true;
-        
-        try {
-            await ContentService.DeleteUserAvatarAsync(_user!.Id);
-            _user.AvatarProfilePath = null;
-
-            await UserManager.UpdateAsync(_user);
-        } finally {
-            _processingAvatar = false;
-            StateHasChanged();
+    private async Task OnAvatarSubmit() {
+        if (_avatarEditContext.Validate()) {
+            if (AvatarModel!.File is { } avatarFile) {
+                _processingAvatar = true;
+                
+                try {
+                    await using var imageStream = avatarFile.File.OpenReadStream(ApplicationConstants.MaxUserAvatarSize);
+                
+                    string databasePath = await ContentService.UploadUserAvatarAsync(imageStream, _user!.Id);
+                    _user.AvatarProfilePath = databasePath;
+                
+                    await UserManager.UpdateAsync(_user);
+                    
+                    _stage = SetupStage.Profile;
+                } finally {
+                    _processingAvatar = false;
+                    StateHasChanged();
+                }
+            } else {
+                await ContentService.DeleteUserAvatarAsync(_user!.Id);
+                _stage = SetupStage.Profile;
+            }
         }
     }
 
@@ -382,7 +349,7 @@
     private void ValidateAvatar(object? sender, ValidationRequestedEventArgs args) {
         _avatarMessageStore.Clear();
         
-        if (AvatarModel!.File is { } browserFile) {
+        if (AvatarModel!.File?.File is { } browserFile) {
             if (browserFile.ContentType is not "image/png" and not "image/jpeg" and not "image/jpg") {
                 _avatarMessageStore.Add(_avatarFileField, "Avatar file is not valid PNG or JPEG.");
                 return;
@@ -390,7 +357,6 @@
 
             if (browserFile.Size > ApplicationConstants.MaxUserAvatarSize) {
                 _avatarMessageStore.Add(_avatarFileField, $"Avatar surpassed maximum allowed size of {ApplicationConstants.MaxUserAvatarSize} bytes.");
-                return;
             }
         }
     }
@@ -398,6 +364,15 @@
     private void ValidateProfile(object? sender, ValidationRequestedEventArgs args) {
         _profileMessageStore.Clear();
         _usernameError = string.Empty;
+    }
+
+    public async ValueTask DisposeAsync() {
+        try {
+            if (AvatarModel?.File?.PreviewUrl is { } previewUrl) {
+                await JavascriptRuntime.InvokeVoidAsync("URL.revokeObjectURL", previewUrl);
+            }
+        } catch (JSDisconnectedException) {
+        }
     }
 
     private enum SetupStage {
@@ -408,7 +383,7 @@
     }
 
     private sealed class AvatarInputModel {
-        public IBrowserFile? File { get; set; }
+        public BrowserFileWithPreview? File { get; set; }
     }
 
     private sealed class ProfileInputModel {
@@ -421,9 +396,9 @@
         public string DisplayName { get; set; } = null!;
         
         [StringLength(32, ErrorMessage = "Pronouns can only have maximum length of {1} characters.")]
-        public string? Pronouns { get; set; } = null!;
+        public string? Pronouns { get; set; }
         
         [StringLength(255, ErrorMessage = "About Me can only have maximum length of {1} characters.")]
-        public string? Bio { get; set; } = null!;
+        public string? Bio { get; set; }
     }
 }
