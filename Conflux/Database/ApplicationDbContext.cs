@@ -16,6 +16,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<CommunityMember> CommunityMembers { get; set; } = null!;
     public DbSet<CommunityChannel> CommunityChannels { get; set; } = null!;
     public DbSet<CommunityChannelCategory> CommunityChannelCategories { get; set; } = null!;
+    public DbSet<CommunityRole> CommunityRoles { get; set; } = null!;
     
     public override int SaveChanges() {
         InsertTimestamps();
@@ -149,6 +150,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey(member => member.UserId)
                 .HasPrincipalKey(user => user.Id)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(member => member.Role)
+                .WithMany(role => role.MembersWithRole)
+                .HasForeignKey(member => member.RoleId)
+                .HasPrincipalKey(role => role.Id)
+                .OnDelete(DeleteBehavior.SetNull);
         }).Entity<CommunityChannelCategory>(entity => {
             entity.HasKey(x => x.Id);
 
