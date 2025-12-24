@@ -20,10 +20,10 @@
 
 <TabContainer @bind-ActiveId="_activeTabId" class="flex flex-col h-full" ButtonContainerCssClass="flex-none flex flex-row items-start" ContentContainerCssClass="flex-1 mt-2 min-h-0 overflow-y-scroll">
     <Buttons>
-        <div class="flex-1 ml-2">
+        <header class="flex-1 ml-2">
             <h1 class="text-xl font-bold">Community Profile</h1>
             <p class="text-sm text-gray-400">Customize how the community look in the eye of others.</p>
-        </div>
+        </header>
 
         <div class="flex-none button-group">
             <TabButton TabId="preview" class="border-gray-500 w-20 py-1 cursor-pointer bg-transparent hover:bg-white/15 active:bg-black/20" ActiveCssClass="bg-blue-600/70!">Preview</TabButton>
@@ -32,7 +32,7 @@
     </Buttons>
     <Contents>
         <TabContent TabId="preview">
-            <CommunityProfileCard class="w-full mx-2 md:w-1/2 md:mx-auto"
+            <CommunityProfileCard class="w-full mx-2 md:w-1/2 md:mx-auto overflow-hidden"
                                   Name="@_inputModel.Name"
                                   AvatarSrc="@(_inputModel.Avatar.PreviewUrl ?? (string.IsNullOrEmpty(_originalInput.AvatarPath) ? null : ContentService.GetAssetPath(_originalInput.AvatarPath)))"
                                   BannerSrc="@(_inputModel.Banner.PreviewUrl ?? (string.IsNullOrEmpty(_originalInput.BannerPath) ? null : ContentService.GetAssetPath(_originalInput.BannerPath)))"

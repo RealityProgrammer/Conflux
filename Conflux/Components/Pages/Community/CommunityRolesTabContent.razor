@@ -1,0 +1,73 @@
+﻿@using Conflux.Components.Shared
+@using Conflux.Components.Shared.Icons
+
+<div class="flex flex-col h-full gap-1">
+    <header class="flex-0 ml-2">
+        <h1 class="text-xl font-bold">Community Roles</h1>
+        <p class="text-sm text-gray-400">See and change moderation permissions.</p>
+    </header>
+    
+    <main class="flex-1 h-full min-h-0 px-2">
+        <div class="flex flex-col md:flex-row gap-1 md:items-center">
+            <label class="flex-none input-label md:flex-1">Role</label>
+            
+            <SelectionDropdown @bind-Value="_role" ButtonCssClass="h-10 md:flex-3" PopoverCssClass="z-10 w-lg p-1">
+                <div class="flex flex-col gap-1">
+                    <SelectionOption class="select-none p-1.5 text-left bg-transparent hover:bg-white/15 active:bg-black/25 cursor-pointer rounded-md" Value="@("Owners")">Owners</SelectionOption>
+
+                    <li class="flex flex-row items-center">
+                        <input type="text" class="flex-1 input-field h-10 mr-1">
+                        
+                        <ProcessingStateButton @bind-IsProcessing="_isCreatingRole" class="button-primary w-20 px-2" ProcessingCssClass="flex flex-row justify-center" @onclick="HandleCreateRole">
+                            <ChildContent>
+                                Create
+                            </ChildContent>
+                            
+                            <ProcessingContent>
+                                <Spinner class="size-6 fill-white"/>
+                            </ProcessingContent>
+                        </ProcessingStateButton>
+                    </li>
+                </div>
+            </SelectionDropdown>
+        </div>
+        
+        <Collapsible class="w-full mt-2 border-b border-b-gray-600 pb-1.5" @bind-IsExpanded="_expandPermissionCollapsible">
+            <HeaderContent>
+                Permissions
+            </HeaderContent>
+            
+            <ChildContent>
+                This is the permission page.
+            </ChildContent>
+        </Collapsible>
+        
+        <Collapsible class="w-full mt-2 border-b border-b-gray-600 pb-1.5" @bind-IsExpanded="_expandPeopleCollapsible">
+            <HeaderContent>
+                People
+            </HeaderContent>
+            
+            <ChildContent>
+                This is the people page.
+            </ChildContent>
+        </Collapsible>
+    </main>
+</div>
+
+@code {
+    [Parameter] public Guid CommunityId { get; set; }
+
+    private bool _isCreatingRole;
+    private string _role = "Role 1";
+    private bool _expandPermissionCollapsible, _expandPeopleCollapsible;
+
+    private async Task HandleCreateRole() {
+        _isCreatingRole = true;
+
+        try {
+            await Task.Delay(1000);
+        } finally {
+            _isCreatingRole = false;
+        }
+    }
+}
