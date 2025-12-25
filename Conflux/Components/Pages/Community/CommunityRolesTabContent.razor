@@ -1,5 +1,14 @@
 ﻿@using Conflux.Components.Shared
 @using Conflux.Components.Shared.Icons
+@using Conflux.Database
+@using Conflux.Services.Abstracts
+@using Microsoft.EntityFrameworkCore
+
+@implements IDisposable
+
+@inject ICommunityService CommunityService
+@inject ILogger<CommunityRolesTabContent> Logger
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 
 <div class="flex flex-col h-full gap-1">
     <header class="flex-0 ml-2">
@@ -12,23 +21,39 @@
             <label class="flex-none input-label md:flex-1">Role</label>
             
             <SelectionDropdown @bind-Value="_role" ButtonCssClass="h-10 md:flex-3" PopoverCssClass="z-10 w-lg p-1">
-                <div class="flex flex-col gap-1">
+                <div class="flex flex-col gap-1 max-h-62 overflow-y-scroll">
                     <SelectionOption class="select-none p-1.5 text-left bg-transparent hover:bg-white/15 active:bg-black/25 cursor-pointer rounded-md" Value="@("Owners")">Owners</SelectionOption>
 
-                    <li class="flex flex-row items-center">
-                        <input type="text" class="flex-1 input-field h-10 mr-1">
-                        
-                        <ProcessingStateButton @bind-IsProcessing="_isCreatingRole" class="button-primary w-20 px-2" ProcessingCssClass="flex flex-row justify-center" @onclick="HandleCreateRole">
-                            <ChildContent>
-                                Create
-                            </ChildContent>
-                            
-                            <ProcessingContent>
-                                <Spinner class="size-6 fill-white"/>
-                            </ProcessingContent>
-                        </ProcessingStateButton>
-                    </li>
+                    @if (_roles == null) {
+                        <div class="flex justify-center">
+                            <Spinner class="size-6 fill-white"/>
+                        </div>
+                    } else {
+                        foreach (var role in _roles) {
+                            <SelectionOption class="select-none p-1.5 text-left bg-transparent hover:bg-white/15 active:bg-black/25 cursor-pointer rounded-md" Value="@role.Name">@role.Name</SelectionOption>
+                        }
+                    }
                 </div>
+                
+                <li class="flex flex-row items-center mt-1">
+                    <input @ref="_roleNameInputElement" type="text" @bind="_creatingRoleName" class="flex-1 input-field h-10 mr-1">
+
+                    @if (_roleNameInputElement.HasValue) {
+                        <Popover TargetReference="_roleNameInputElement.Value" IsShowing="@(!string.IsNullOrEmpty(_roleNameErrorMessage))" ArrowCssClass="bg-[#ff4b6a]" Placement="bottom" Offset="4">
+                            <p class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md">@_roleNameErrorMessage</p>
+                        </Popover>
+                    }
+
+                    <ProcessingStateButton @bind-IsProcessing="_isCreatingRole" class="button-primary w-20 px-2" ProcessingCssClass="flex flex-row justify-center" @onclick="HandleCreateRole">
+                        <ChildContent>
+                            Create
+                        </ChildContent>
+
+                        <ProcessingContent>
+                            <Spinner class="size-6 fill-white"/>
+                        </ProcessingContent>
+                    </ProcessingStateButton>
+                </li>
             </SelectionDropdown>
         </div>
         
@@ -58,16 +83,81 @@
     [Parameter] public Guid CommunityId { get; set; }
 
     private bool _isCreatingRole;
-    private string _role = "Role 1";
+    private string _role = "Role 1", _creatingRoleName = string.Empty;
     private bool _expandPermissionCollapsible, _expandPeopleCollapsible;
+
+    private ElementReference? _roleNameInputElement;
+    private string? _roleNameErrorMessage;
+
+    private List<RoleDTO>? _roles;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+
+            _roles = await dbContext.CommunityRoles
+                .Where(x => x.CommunityId == CommunityId)
+                .OrderBy(x => x.CreatedAt)
+                .Select(x => new RoleDTO(x.Id, x.Name))
+                .ToListAsync();
+            
+            StateHasChanged();
+
+            CommunityService.OnRoleCreated += OnRoleCreated;
+        }
+    }
 
     private async Task HandleCreateRole() {
         _isCreatingRole = true;
 
         try {
-            await Task.Delay(1000);
+            _creatingRoleName = _creatingRoleName.Trim();
+
+            if (string.IsNullOrEmpty(_creatingRoleName)) {
+                _roleNameErrorMessage = "Enter Role Name";
+                return;
+            }
+
+            if (_creatingRoleName.Length > 32) {
+                _roleNameErrorMessage = "Role name cannot exceed 32 characters.";
+                return;
+            }
+
+            if (_creatingRoleName == "Owners") {
+                _roleNameErrorMessage = "Role name \"Owners\" is reserved.";
+                return;
+            }
+
+            var status = await CommunityService.CreateRoleAsync(CommunityId, _creatingRoleName);
+
+            switch (status) {
+                case ICommunityService.CreateRoleStatus.Failure:
+                    _roleNameErrorMessage = "Failed to create Role.";
+                    break;
+                    
+                case ICommunityService.CreateRoleStatus.NameExists:
+                    _roleNameErrorMessage = "Role name already exists.";
+                    break;
+                    
+                case ICommunityService.CreateRoleStatus.Success:
+                    _creatingRoleName = string.Empty;
+                    break;
+            }
         } finally {
             _isCreatingRole = false;
         }
     }
+
+    private void OnRoleCreated(CommunityRoleCreatedEventArgs args) {
+        var role = args.Role;
+        
+        _roles?.Add(new(role.Id, role.Name));
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose() {
+        CommunityService.OnRoleCreated -= OnRoleCreated;
+    }
+
+    private record struct RoleDTO(Guid Id, string Name);
 }

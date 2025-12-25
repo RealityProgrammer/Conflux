@@ -12,7 +12,7 @@
 </button>
 
 @if (ButtonElementReference.HasValue) {
-    <Popover @ref="PopoverElement" class="@PopoverCssClass" DisplayArrow="false" CloseWhenClickOutside="true" @bind-IsShowing="_openDropdown" TargetReference="ButtonElementReference.Value" TooltipPlacement="bottom" TooltipOffset="2">
+    <Popover @ref="PopoverElement" class="@PopoverCssClass" DisplayArrow="false" CloseWhenClickOutside="true" @bind-IsShowing="_openDropdown" TargetReference="ButtonElementReference.Value" Placement="bottom" Offset="2">
         @Dropdown
     </Popover>
 }

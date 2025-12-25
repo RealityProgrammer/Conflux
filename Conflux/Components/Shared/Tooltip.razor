@@ -25,8 +25,8 @@
     [Parameter] public string? TargetCssClass { get; set; }
     [Parameter] public string? ArrowCssClass { get; set; }
     
-    [Parameter, EditorRequired] public required string TooltipPlacement { get; set; }
-    [Parameter] public int TooltipOffset { get; set; }
+    [Parameter, EditorRequired] public required string Placement { get; set; }
+    [Parameter] public int Offset { get; set; }
     
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
     private string? _cssClass;
@@ -47,7 +47,7 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (_showTooltip) {
-            await JavascriptRuntime.InvokeVoidAsync("window.updateTooltipPosition", TargetElement, TooltipElement, ArrowElement, TooltipPlacement, TooltipOffset);
+            await JavascriptRuntime.InvokeVoidAsync("window.updateTooltipPosition", TargetElement, TooltipElement, ArrowElement, Placement, Offset);
         }
     }
 

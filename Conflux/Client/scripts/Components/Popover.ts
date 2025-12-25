@@ -1,4 +1,6 @@
-﻿import { computePosition, flip, shift, arrow, autoUpdate, offset, ComputePositionReturn, Placement } from "@floating-ui/dom";
+﻿import {
+    computePosition, flip, shift, arrow, autoUpdate, offset, ComputePositionReturn, Placement,
+} from "@floating-ui/dom";
 
 interface TooltipDisposer {
     tooltipDisposer: () => void;

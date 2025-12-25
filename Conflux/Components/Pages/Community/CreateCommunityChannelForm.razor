@@ -42,7 +42,7 @@
     <InputText @ref="_inputText" class="h-11 input-field w-full" @bind-Value="Model!.Name" placeholder="Give me a name"/>
                 
     @if (_inputText?.Element is { } element) {
-        <Popover TargetReference="element" IsShowing="@(!_channelCreationEditContext!.IsValid(() => Model!.Name))" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="bottom" TooltipOffset="8">
+        <Popover TargetReference="element" IsShowing="@(!_channelCreationEditContext!.IsValid(() => Model!.Name))" ArrowCssClass="bg-[#ff4b6a]" Placement="bottom" Offset="8">
             <ValidationMessage For="() => Model!.Name" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"/>
         </Popover>
     }

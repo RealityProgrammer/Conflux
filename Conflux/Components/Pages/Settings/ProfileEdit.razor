@@ -34,7 +34,7 @@
                 </Avatar>
                 
                 @if (_avatarElement != null) {
-                    <Popover TargetReference="_avatarElement.RootElement" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" ShowTooltip="@(!_editContext.IsValid(_avatarFileField))" class="max-w-[90%]">
+                    <Popover TargetReference="_avatarElement.RootElement" ArrowCssClass="bg-[#ff4b6a]" Placement="top" Offset="8" ShowTooltip="@(!_editContext.IsValid(_avatarFileField))" class="max-w-[90%]">
                         <ValidationMessage For="() => Model.Avatar.File" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"></ValidationMessage>
                     </Popover>
                 }
@@ -94,7 +94,7 @@
             <InputText @ref="_displayNameElement" type="text" @bind-Value="Model.DisplayName" placeholder="Display Name" class="@classes" maxlength="32"/>
             
             @if (_displayNameElement?.Element.HasValue ?? false) {
-                <Popover TargetReference="_displayNameElement.Element.Value" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" ShowTooltip="@(!_editContext.IsValid(_displayNameField))" class="max-w-[90%]">
+                <Popover TargetReference="_displayNameElement.Element.Value" ArrowCssClass="bg-[#ff4b6a]" Placement="top" Offset="8" ShowTooltip="@(!_editContext.IsValid(_displayNameField))" class="max-w-[90%]">
                     <ValidationMessage For="() => Model.DisplayName" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"></ValidationMessage>
                 </Popover>
             }
@@ -110,7 +110,7 @@
             <InputText @ref="_pronounsElement" type="text" @bind-Value="Model.Pronouns" placeholder="Pronouns" class="@classes" maxlength="32"/>
             
             @if (_pronounsElement?.Element.HasValue ?? false) {
-                <Popover TargetReference="_pronounsElement.Element.Value" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" ShowTooltip="@(!_editContext.IsValid(_pronounsField))" class="max-w-[90%]">
+                <Popover TargetReference="_pronounsElement.Element.Value" ArrowCssClass="bg-[#ff4b6a]" Placement="top" Offset="8" ShowTooltip="@(!_editContext.IsValid(_pronounsField))" class="max-w-[90%]">
                     <ValidationMessage For="() => Model.Pronouns" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"></ValidationMessage>
                 </Popover>
             }
@@ -126,7 +126,7 @@
             <InputTextArea @ref="_bioElement" type="text" @bind-Value="Model.Bio" class="@classes" placeholder="Biography"/>
             
             @if (_bioElement?.Element.HasValue ?? false) {
-                <Popover TargetReference="_bioElement.Element.Value" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" ShowTooltip="@(!_editContext.IsValid(_bioField))" class="max-w-[90%]">
+                <Popover TargetReference="_bioElement.Element.Value" ArrowCssClass="bg-[#ff4b6a]" Placement="top" Offset="8" ShowTooltip="@(!_editContext.IsValid(_bioField))" class="max-w-[90%]">
                     <ValidationMessage For="() => Model.Bio" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"></ValidationMessage>
                 </Popover>
             }

@@ -12,7 +12,7 @@
 
 <section class="z-1000 absolute top-0 inset-x-0 h-16 bg-(--bg-color-1) shadow-lg transition-all duration-500 @(_isDrawerExpanded ? "translate-y-0" : "-translate-y-full")">
     <div class="overflow-x-auto flex flex-row items-center gap-2 h-full p-2">
-        <Tooltip TargetCssClass="inline-block h-full aspect-square" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" TooltipPlacement="bottom" TooltipOffset="8">
+        <Tooltip TargetCssClass="inline-block h-full aspect-square" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" Placement="bottom" Offset="8">
             <TargetContent>
                 <NavLink class="bg-gray-800 hover:bg-gray-750 active:bg-gray-825 hover:shadow-md rounded-full h-full aspect-square flex-none cursor-pointer overflow-hidden flex flex-row justify-center items-center" ActiveClass="border-2 border-blue-700!" href="/lobby" Match="NavLinkMatch.Prefix">
                     <House class="size-6 fill-white"/>
@@ -28,7 +28,7 @@
             <Spinner class="fill-white h-full aspect-square"/>
         } else {
             @foreach (var joinedServer in _joinedServers) {
-                <Tooltip TargetCssClass="inline-block h-full aspect-square" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" TooltipPlacement="bottom" TooltipOffset="8">
+                <Tooltip TargetCssClass="inline-block h-full aspect-square" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" Placement="bottom" Offset="8">
                     <TargetContent>
                         <NavLink class="bg-gray-800 hover:bg-gray-750 active:bg-gray-825 hover:shadow-md rounded-full h-full aspect-square flex-none cursor-pointer overflow-hidden flex flex-row justify-center items-center" ActiveClass="border-2 border-blue-700!" href="@($"/community/{joinedServer.Id}")" Match="NavLinkMatch.Prefix">
                             <Avatar class="w-full aspect-square" ImageSrc="@(string.IsNullOrEmpty(joinedServer.AvatarPath) ? null : ContentService.GetAssetPath(joinedServer.AvatarPath))" ImageAlt="@($"Avatar of {joinedServer.Name}")"/>
@@ -41,7 +41,7 @@
                 </Tooltip>
             }
             
-            <Tooltip TargetCssClass="inline-block h-full aspect-square" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" TooltipPlacement="bottom" TooltipOffset="8">
+            <Tooltip TargetCssClass="inline-block h-full aspect-square" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" Placement="bottom" Offset="8">
                 <TargetContent>
                     <button class="bg-gray-800 hover:bg-gray-750 active:bg-gray-825 hover:shadow-md rounded-full h-full aspect-square flex-none cursor-pointer overflow-hidden flex flex-row justify-center items-center" @onclick="() => _isShowingServerCreationCard = true">
                         <Plus class="size-6 fill-white" Large="true"/>

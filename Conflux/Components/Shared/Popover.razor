@@ -24,8 +24,8 @@
     [Parameter] public bool IsShowing { get; set; }
     [Parameter] public EventCallback<bool> IsShowingChanged { get; set; }
 
-    [Parameter] public string TooltipPlacement { get; set; } = "right";
-    [Parameter] public float TooltipOffset { get; set; }
+    [Parameter] public string Placement { get; set; } = "right";
+    [Parameter] public float Offset { get; set; }
     [Parameter] public bool CloseWhenClickOutside { get; set; }
 
     [Parameter] public bool DisplayArrow { get; set; } = true;
@@ -57,7 +57,7 @@
         if (_module != null) {
             if (IsShowing) {
                 if (_tooltipId == 0) {
-                    _tooltipId = await _module.InvokeAsync<int>("registerTooltip", TargetReference, _tooltip, _arrow, TooltipPlacement, TooltipOffset, _objectReference, CloseWhenClickOutside);
+                    _tooltipId = await _module.InvokeAsync<int>("registerTooltip", TargetReference, _tooltip, _arrow, Placement, Offset, _objectReference, CloseWhenClickOutside);
                 }
             } else if (_tooltipId != 0) {
                 await _module!.InvokeVoidAsync("unregisterTooltip", _tooltipId);

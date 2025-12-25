@@ -24,6 +24,7 @@ public class CommunityService(
     private const string ChannelCategoryCreatedEventName = "ChannelCategoryCreated";
     private const string ChannelCreatedEventName = "ChannelCreated";
     private const string MemberJoinedEventName = "MemberJoined";
+    private const string RoleCreatedEventName = "RoleCreated";
     
     private readonly ConcurrentDictionary<Guid, HubConnection> _hubConnections = [];
 
@@ -31,6 +32,7 @@ public class CommunityService(
     public event Action<ChannelCreatedEventArgs>? OnChannelCreated;
     public event Action<CommunityCreatedEventArgs>? OnUserCreatedCommunity;
     public event Action<CommunityMemberJoinedEventArgs>? OnMemberJoined;
+    public event Action<CommunityRoleCreatedEventArgs>? OnRoleCreated;
     
     public async Task JoinCommunityHubAsync(Guid communityId) {
         // TODO: Revise this code due to possible race-condition.
@@ -48,6 +50,10 @@ public class CommunityService(
 
         connection.On<CommunityMemberJoinedEventArgs>(MemberJoinedEventName, args => {
             OnMemberJoined?.Invoke(args);
+        });
+
+        connection.On<CommunityRoleCreatedEventArgs>(RoleCreatedEventName, args => {
+            OnRoleCreated?.Invoke(args);
         });
         
         await connection.StartAsync();
@@ -85,7 +91,7 @@ public class CommunityService(
                     options.Headers.Add(header.Key, header.Value);
                 }
 
-                options.HttpMessageHandlerFactory = (input) => {
+                options.HttpMessageHandlerFactory = _ => {
                     var clientHandler = new HttpClientHandler {
                         PreAuthenticate = true,
                         CookieContainer = cookieContainer,
@@ -182,6 +188,29 @@ public class CommunityService(
         await transaction.CommitAsync();
         
         await hubContext.Clients.Group(communityId.ToString()).SendAsync(ChannelCreatedEventName, new ChannelCreatedEventArgs(channelCategoryId, channel.Id));
+    }
+
+    public async Task<ICommunityService.CreateRoleStatus> CreateRoleAsync(Guid communityId, string roleName) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+
+        if (dbContext.CommunityRoles.Any(x => x.CommunityId == communityId && x.Name == roleName)) {
+            return ICommunityService.CreateRoleStatus.NameExists;
+        }
+        
+        CommunityRole role = new() {
+            CommunityId = communityId,
+            Name = roleName,
+        };
+        
+        dbContext.CommunityRoles.Add(role);
+
+        if (await dbContext.SaveChangesAsync() > 0) {
+            await hubContext.Clients.Group(communityId.ToString()).SendAsync(RoleCreatedEventName, new CommunityRoleCreatedEventArgs(role));
+            
+            return ICommunityService.CreateRoleStatus.Success;
+        }
+        
+        return ICommunityService.CreateRoleStatus.Failure;
     }
 
     public async Task<bool> JoinCommunityAsync(string userId, Guid communityId, Guid invitationId) {

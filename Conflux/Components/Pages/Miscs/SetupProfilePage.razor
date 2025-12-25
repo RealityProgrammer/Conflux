@@ -72,7 +72,7 @@
                     </div>
                     
                     @if (_avatarInputElement != null) {
-                        <Popover TargetReference="_avatarInputElement.RootElementReference" IsShowing="!_avatarEditContext.IsValid(_avatarFileField)" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8">
+                        <Popover TargetReference="_avatarInputElement.RootElementReference" IsShowing="!_avatarEditContext.IsValid(_avatarFileField)" ArrowCssClass="bg-[#ff4b6a]" Placement="top" Offset="8">
                             <ValidationMessage For="() => AvatarModel!.File" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"/>
                         </Popover>
                     }
@@ -112,7 +112,7 @@
                             <InputText @ref="_usernameInputElement" @bind-Value="ProfileModel!.UserName" class="mt-2 input-field h-11 w-full" maxlength="32"/>
                             
                             @if (_usernameInputElement?.Element.HasValue ?? false) {
-                                <Popover TargetReference="_usernameInputElement.Element.Value" IsShowing="!string.IsNullOrEmpty(_usernameError) || !_profileEditContext.IsValid(_usernameField)" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" class="max-w-[90%]">
+                                <Popover TargetReference="_usernameInputElement.Element.Value" IsShowing="!string.IsNullOrEmpty(_usernameError) || !_profileEditContext.IsValid(_usernameField)" ArrowCssClass="bg-[#ff4b6a]" Placement="top" Offset="8" class="max-w-[90%]">
                                     @if (string.IsNullOrEmpty(_usernameError)) {
                                         <ValidationMessage For="() => ProfileModel!.UserName" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"/>
                                     } else {
@@ -130,7 +130,7 @@
                             <InputText @ref="_displayNameInputElement" @bind-Value="ProfileModel!.DisplayName" class="mt-2 input-field h-11 w-full" maxlength="32"/>
                             
                             @if (_displayNameInputElement?.Element.HasValue ?? false) {
-                                <Popover TargetReference="_displayNameInputElement.Element.Value" IsShowing="!_profileEditContext.IsValid(_displayNameField)" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" class="max-w-[90%]">
+                                <Popover TargetReference="_displayNameInputElement.Element.Value" IsShowing="!_profileEditContext.IsValid(_displayNameField)" ArrowCssClass="bg-[#ff4b6a]" Placement="top" Offset="8" class="max-w-[90%]">
                                     <ValidationMessage For="() => ProfileModel!.DisplayName" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md]"/>
                                 </Popover>
                             }
@@ -142,7 +142,7 @@
                             <InputText @ref="_pronounsInputElement" @bind-Value="ProfileModel!.Pronouns" class="mt-2 input-field h-11 w-full" maxlength="32"/>
                             
                             @if (_pronounsInputElement?.Element.HasValue ?? false) {
-                                <Popover TargetReference="_pronounsInputElement.Element.Value" IsShowing="!_profileEditContext.IsValid(_pronounsField)" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" class="max-w-[90%]">
+                                <Popover TargetReference="_pronounsInputElement.Element.Value" IsShowing="!_profileEditContext.IsValid(_pronounsField)" ArrowCssClass="bg-[#ff4b6a]" Placement="top" Offset="8" class="max-w-[90%]">
                                     <ValidationMessage For="() => ProfileModel!.Pronouns" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"/>
                                 </Popover>
                             }
@@ -154,7 +154,7 @@
                             <InputTextArea @ref="_bioInputElement" @bind-Value="ProfileModel!.Bio" class="mt-2 input-field h-55 w-full px-1.5 py-1" maxlength="255"/>
                             
                             @if (_bioInputElement?.Element.HasValue ?? false) {
-                                <Popover TargetReference="_bioInputElement.Element.Value" IsShowing="!_profileEditContext.IsValid(_bioField)" ArrowCssClass="bg-[#ff4b6a]" TooltipPlacement="top" TooltipOffset="8" class="max-w-[90%]">
+                                <Popover TargetReference="_bioInputElement.Element.Value" IsShowing="!_profileEditContext.IsValid(_bioField)" ArrowCssClass="bg-[#ff4b6a]" Placement="top" Offset="8" class="max-w-[90%]">
                                     <ValidationMessage For="() => ProfileModel!.Bio" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"/>
                                 </Popover>
                             }

@@ -34,7 +34,7 @@
                     <Gear class="size-5 fill-white"/>
                 </button>
         
-                <Popover TargetReference="_serverOptionsButton" @bind-IsShowing="_showCommunityExpandableMenu" TooltipPlacement="left" TooltipOffset="4" CloseWhenClickOutside="true">
+                <Popover TargetReference="_serverOptionsButton" @bind-IsShowing="_showCommunityExpandableMenu" Placement="left" Offset="4" CloseWhenClickOutside="true">
                     <div class="bg-gray-600 p-1 text-white text-sm rounded-lg shadow-md flex flex-col gap-1 z-50" tabindex="-1">
                         <AuthorizeView Policy="CommunityOwnershipPolicy" Resource="_community">
                             <Authorized>
@@ -94,7 +94,7 @@
                     <AuthorizeView Policy="CommunityOwnershipPolicy" Resource="_community">
                         <Authorized>
                             <span class="flex-none">
-                                <Tooltip TargetCssClass="inline-block" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" TooltipPlacement="right" TooltipOffset="8">
+                                <Tooltip TargetCssClass="inline-block" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" Placement="right" Offset="8">
                                     <TargetContent>
                                         <button class="bg-transparent cursor-pointer" @onclick="() => ShowCreateChannelDialog(channelCategory.Id)">
                                             <Plus Large="true" class="size-4 fill-white"/>
