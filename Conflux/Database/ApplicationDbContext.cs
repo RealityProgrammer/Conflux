@@ -115,32 +115,38 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
             entity.Property(x => x.InvitationId).HasValueGenerator<GuidValueGenerator>();
             
-            entity.HasOne(server => server.Owner)
-                .WithMany(owner => owner.OwnedServers)
-                .HasForeignKey(server => server.OwnerId)
+            entity.HasOne(community => community.Owner)
+                .WithMany(user => user.OwnedCommunities)
+                .HasForeignKey(community => community.OwnerId)
                 .HasPrincipalKey(user => user.Id)
                 .IsRequired();
 
-            entity.HasOne(server => server.Creator)
-                .WithMany(creator => creator.CreatedServers)
-                .HasForeignKey(server => server.CreatorId)
+            entity.HasOne(community => community.Creator)
+                .WithMany(user => user.CreatedCommunities)
+                .HasForeignKey(community => community.CreatorId)
                 .HasPrincipalKey(user => user.Id)
                 .IsRequired();
 
-            entity.HasMany(server => server.ChannelCategories)
+            entity.HasMany(community => community.ChannelCategories)
                 .WithOne(channelCategory => channelCategory.Community)
                 .HasForeignKey(channelCategory => channelCategory.CommunityId)
                 .HasPrincipalKey(channel => channel.Id)
                 .OnDelete(DeleteBehavior.Cascade)
                 .IsRequired();
+
+            entity.HasMany(community => community.Roles)
+                .WithOne(role => role.Community)
+                .HasForeignKey(role => role.CommunityId)
+                .HasPrincipalKey(community => community.Id)
+                .OnDelete(DeleteBehavior.Cascade)
+                .IsRequired();
         }).Entity<CommunityMember>(entity => {
             entity.HasKey(x => x.Id);
 
-            entity.HasIndex(x => new {
-                CommunityServerId = x.CommunityId, x.UserId }).IsUnique();
+            entity.HasIndex(x => new { x.CommunityId, x.UserId }).IsUnique();
             
             entity.HasOne(member => member.Community)
-                .WithMany(server => server.Members)
+                .WithMany(community => community.Members)
                 .HasForeignKey(member => member.CommunityId)
                 .HasPrincipalKey(member => member.Id)
                 .OnDelete(DeleteBehavior.Cascade);

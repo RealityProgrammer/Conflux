@@ -23,4 +23,5 @@ public class Community : ICreatedAtColumn {
 
     public ICollection<CommunityMember> Members { get; set; } = null!;
     public IList<CommunityChannelCategory> ChannelCategories { get; set; } = null!;
+    public ICollection<CommunityRole> Roles { get; set; } = null!;
 }
