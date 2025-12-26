@@ -1,0 +1,42 @@
+﻿@using Conflux.Components.Shared.Icons
+
+@inherits InputCheckbox
+
+<label class="relative flex flex-row cursor-pointer group flex-none" @attributes="AdditionalAttributes">
+    @if (_disabled) {
+        <div class="px-1 py-0.5 border border-gray-600/70 rounded-l-md">
+            @{ string crossCssClass = $"size-6 {(CurrentValue ? "fill-red-500/30 scale-80" : "fill-red-500/60 scale-110")}"; }
+            <Cross class="@crossCssClass"/>
+        </div>
+
+        <div class="px-1 py-0.5 border-y border-r border-gray-600/70 rounded-r-md">
+            @{ string checkCssClass = $"size-6 {(CurrentValue ? "fill-green-500/60 scale-110" : "fill-green-500/30 scale-80")}"; }
+            <Check class="@checkCssClass"/>
+        </div>
+    } else {
+        <div class="px-1 py-0.5 border border-gray-600 rounded-l-md">
+            <Cross class="size-6 fill-red-500 scale-110 group-has-checked:fill-red-500/50 group-has-checked:scale-80 transition-all duration-150 ease-in-out"/>
+        </div>
+
+        <div class="px-1 py-0.5 border-y border-r border-gray-600 rounded-r-md">
+            <Check class="size-6 fill-green-500/50 scale-80 group-has-checked:fill-green-500 group-has-checked:scale-110 transition-all duration-150 ease-in-out"/>
+        </div>
+
+        <input type="checkbox" @bind="CurrentValue" name="@NameAttributeValue" class="hidden" disabled="@_disabled">
+    }
+    
+</label>
+
+@code {
+    private bool _disabled;
+
+    protected override void OnParametersSet() {
+        base.OnParametersSet();
+
+        if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("disabled", out object? obj)) {
+            _disabled = Convert.ToBoolean(obj);
+        }
+
+        AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "class").ToDictionary();
+    }
+}
