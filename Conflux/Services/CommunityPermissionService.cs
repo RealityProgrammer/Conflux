@@ -11,13 +11,12 @@ public sealed class CommunityPermissionService(
     IDbContextFactory<ApplicationDbContext> dbContextFactory
 ) : ICommunityPermissionService {
     
+    private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
+    
     public async Task<ICommunityPermissionService.Permissions?> GetPermissionsAsync(Guid roleId) {
-        Span<char> cacheKey = stackalloc char["CommunityRoles.".Length + 32 + ".Permissions".Length];
-        GeneratePermissionCacheKey(cacheKey, roleId);
-
-        string strCacheKey = cacheKey.ToString();
+        string cacheKey = GeneratePermissionCacheKey(roleId);
         
-        if (memoryCache.TryGetValue<ICommunityPermissionService.Permissions>(strCacheKey, out var cached)) {
+        if (memoryCache.TryGetValue<ICommunityPermissionService.Permissions>(cacheKey, out var cached)) {
             return cached!;
         }
 
@@ -27,7 +26,7 @@ public sealed class CommunityPermissionService(
             return null;
         }
         
-        memoryCache.Set(strCacheKey, permissions, TimeSpan.FromMinutes(5));
+        memoryCache.Set(cacheKey, permissions, CacheDuration);
 
         return permissions;
     }
@@ -40,16 +39,16 @@ public sealed class CommunityPermissionService(
             .Where(x => x.Id == roleId)
             .ExecuteUpdateAsync(builder => {
                 builder.SetProperty(x => x.ChannelPermissions, permissions.ChannelPermissions);
+                builder.SetProperty(x => x.RolePermissions, permissions.RolePermissions);
             });
 
         if (numUpdatedRows == 0) {
             return false;
         }
         
-        Span<char> cacheKey = stackalloc char["CommunityRoles.".Length + 32 + ".Permissions".Length];
-        GeneratePermissionCacheKey(cacheKey, roleId);
+        string cacheKey = GeneratePermissionCacheKey(roleId);
         
-        memoryCache.Remove(cacheKey.ToString());
+        memoryCache.Set(cacheKey, permissions, CacheDuration);
 
         return true;
     }
@@ -60,16 +59,18 @@ public sealed class CommunityPermissionService(
 
         return await dbContext.CommunityRoles
             .Where(x => x.Id == roleId)
-            .Select(x => new ICommunityPermissionService.Permissions(x.ChannelPermissions))
+            .Select(x => new ICommunityPermissionService.Permissions(x.ChannelPermissions, x.RolePermissions))
             .FirstOrDefaultAsync();
     }
 
-    private static void GeneratePermissionCacheKey(Span<char> buffer, Guid roleId) {
-        Debug.Assert(buffer.Length == "CommunityRoles.".Length + 32 + ".Permissions".Length);
-        
-        "CommunityRoles.".CopyTo(buffer);
-        bool formatSuccessful = roleId.TryFormat(buffer.Slice("CommunityRoles.".Length, 32), out _, "N");
-        Debug.Assert(formatSuccessful);
-        ".Permissions".CopyTo(buffer[("CommunityRoles.".Length + 32)..]);
+    private static string GeneratePermissionCacheKey(Guid roleId) {
+        return string.Create("CommunityRoles.".Length + 32 + ".Permissions".Length, roleId, CreateCallback);
+
+        static void CreateCallback(Span<char> buffer, Guid state) {
+            "CommunityRoles.".CopyTo(buffer);
+            bool formatSuccessful = state.TryFormat(buffer.Slice("CommunityRoles.".Length, 32), out _, "N");
+            Debug.Assert(formatSuccessful);
+            ".Permissions".CopyTo(buffer[("CommunityRoles.".Length + 32)..]);
+        }
     }
 }

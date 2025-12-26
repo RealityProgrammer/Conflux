@@ -6,5 +6,8 @@ public interface ICommunityPermissionService {
     Task<Permissions?> GetPermissionsAsync(Guid roleId);
     Task<bool> UpdatePermissionsAsync(Guid roleId, Permissions permissions);
     
-    public record Permissions(CommunityRole.ChannelPermissionFlags ChannelPermissions);
+    public record Permissions(
+        CommunityRole.ChannelPermissionFlags ChannelPermissions,
+        CommunityRole.RolePermissionFlags RolePermissions
+    );
 }
