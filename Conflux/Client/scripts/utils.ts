@@ -1,4 +1,5 @@
 ﻿import { computePosition, flip, shift, arrow, offset, ComputePositionReturn, Placement } from "@floating-ui/dom";
+import {animate, random} from "animejs";
 
 function createInputPreviewUrl(inputElement: HTMLInputElement, fileIndex: number) : string|null {
     if (!inputElement || !inputElement.files || inputElement.files.length < fileIndex) return null;
@@ -56,14 +57,34 @@ function copyToClipboard(text: string): void {
     });
 }
 
+function animateShake(element: HTMLElement, duration: number, powerX: number, powerY: number): void {
+    const oldTransform: string = element.style.transform;
+    
+    animate(element, {
+        x: {
+            to: '10000px',
+            modifier: _v => random(-powerX, powerX),
+        },
+        y: {
+            to: '10000px',
+            modifier: _v => random(-powerY, powerY),
+        },
+        duration: duration,
+    }).then(() => {
+        element.style.transform = oldTransform;
+    });
+}
+
 declare global {
     interface Window {
         createInputPreviewUrl: (inputElement: HTMLInputElement, fileIndex: number) => string|null;
         updateTooltipPosition: (targetElement: Element, tooltipElement: HTMLElement, arrowElement: HTMLElement | null, tooltipPlacement: Placement, tooltipOffset: number) => void;
         copyToClipboard: (text: string) => void;
+        animateShake: (element: Element, duration: number, powerX: number, powerY: number) => void;
     }
 }
 
 window.createInputPreviewUrl = createInputPreviewUrl;
 window.updateTooltipPosition = updateTooltipPosition;
 window.copyToClipboard = copyToClipboard;
+window.animateShake = animateShake;
