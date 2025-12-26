@@ -191,6 +191,10 @@ public class CommunityService(
     }
 
     public async Task<ICommunityService.CreateRoleStatus> CreateRoleAsync(Guid communityId, string roleName) {
+        if (roleName == "Owners") {
+            return ICommunityService.CreateRoleStatus.ReservedName;
+        }
+        
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
 
         if (dbContext.CommunityRoles.Any(x => x.CommunityId == communityId && x.Name == roleName)) {

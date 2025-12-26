@@ -31,5 +31,6 @@ public interface ICommunityService {
         Success,
         Failure,
         NameExists,
+        ReservedName,
     }
 }

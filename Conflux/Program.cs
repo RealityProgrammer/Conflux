@@ -85,6 +85,8 @@ builder.Services.AddScoped<RoleManager<IdentityRole>>();
 // builder.Services.AddSingleton<IEmailSender<ApplicationUser>, ...>();
 
 // System services.
+builder.Services.AddMemoryCache();
+
 builder.Services.AddScoped<ApplicationRedirectManager>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IFriendshipService, FriendshipService>();
@@ -102,6 +104,7 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IConversationService, ConversationService>();
 builder.Services.AddScoped<ISnackbarService, SnackbarService>();
 builder.Services.AddScoped<ICommunityService, CommunityService>();
+builder.Services.AddSingleton<ICommunityPermissionService, CommunityPermissionService>();
 
 // SignalR related services.
 builder.Services.AddSignalR(options => {
