@@ -80,7 +80,7 @@ declare global {
         createInputPreviewUrl: (inputElement: HTMLInputElement, fileIndex: number) => string|null;
         updateTooltipPosition: (targetElement: Element, tooltipElement: HTMLElement, arrowElement: HTMLElement | null, tooltipPlacement: Placement, tooltipOffset: number) => void;
         copyToClipboard: (text: string) => void;
-        animateShake: (element: Element, duration: number, powerX: number, powerY: number) => void;
+        animateShake: (element: HTMLElement, duration: number, powerX: number, powerY: number) => void;
     }
 }
 
