@@ -281,7 +281,7 @@
     private async Task HandleAcceptFriendRequest(UserSearchResult item) {
         if (_processingFriendRequests.TryAdd(item.Id, FriendRequestProcessingAction.Accepting)) {
             try {
-                if (!await FriendshipService.RejectFriendRequest(item.Id, _userId)) {
+                if (!await FriendshipService.AcceptFriendRequest(item.Id, _userId)) {
                     Logger.LogWarning("Failed to accept friend request from user {f} to {r}.", item.Id, _userId);
                 }
                 
