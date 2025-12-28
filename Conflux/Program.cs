@@ -61,8 +61,7 @@ builder.Services.AddSingleton<IAuthorizationHandler, CommunityAuthorizationCrudH
 // Add database services.
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options => {
     options
-        .UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
-        .EnableSensitiveDataLogging();
+        .UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 
 // More authentication services.
@@ -130,6 +129,16 @@ using (var scope = app.Services.CreateScope()) {
     if (context.Database.GetPendingMigrations().Any()) {
         context.Database.Migrate();
     }
+    
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    
+    await CreateRoles(roleManager);
+
+    var environment = scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>();
+
+    if (environment.IsDevelopment()) {
+        await CreateFakeUsers(scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>());
+    }
 }
 
 app.UseResponseCompression();
@@ -190,19 +199,6 @@ app.MapPost("/auth/logout", async (ClaimsPrincipal claims, [FromServices] SignIn
 app.MapHub<NotificationHub>("/hub/notification");
 app.MapHub<ConversationHub>("/hub/conversation");
 app.MapHub<CommunityHub>("/hub/community");
-
-// Setup Application stuffs.
-using (var scope = app.Services.CreateScope()) {
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    
-    await CreateRoles(roleManager);
-
-    var environment = scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>();
-
-    if (environment.IsDevelopment()) {
-        await CreateFakeUsers(scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>());
-    }
-}
 
 // Add Roles, and assign to users.
 app.Run();
