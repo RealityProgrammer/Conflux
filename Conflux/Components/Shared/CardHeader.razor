@@ -12,7 +12,7 @@
     
     @if (OnCloseRequested.HasDelegate) {
         <button class="bg-transparent hover:bg-white/30 p-2 rounded-full cursor-pointer" @onclick="EventUtils.AsNonRenderingEventHandler(OnCloseRequested)">
-            <Cross class="size-5 fill-white"></Cross>
+            <Cross class="size-4 fill-white" Size="CrossSize.Large"></Cross>
         </button>
     }
 </header>
