@@ -59,19 +59,6 @@ namespace Conflux.Database.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Conversations",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Type = table.Column<int>(type: "integer", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Conversations", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "AspNetRoleClaims",
                 columns: table => new
                 {
@@ -184,22 +171,24 @@ namespace Conflux.Database.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     AvatarPath = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    OwnerId = table.Column<string>(type: "character varying(36)", maxLength: 36, nullable: false),
+                    BannerPath = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     CreatorId = table.Column<string>(type: "character varying(36)", maxLength: 36, nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    InvitationId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Description = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ApplicationUserId = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Communities", x => x.Id);
                     table.ForeignKey(
+                        name: "FK_Communities_AspNetUsers_ApplicationUserId",
+                        column: x => x.ApplicationUserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id");
+                    table.ForeignKey(
                         name: "FK_Communities_AspNetUsers_CreatorId",
                         column: x => x.CreatorId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_Communities_AspNetUsers_OwnerId",
-                        column: x => x.OwnerId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -210,8 +199,8 @@ namespace Conflux.Database.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    SenderId = table.Column<string>(type: "text", nullable: false),
-                    ReceiverId = table.Column<string>(type: "text", nullable: false),
+                    SenderId = table.Column<string>(type: "character varying(36)", maxLength: 36, nullable: false),
+                    ReceiverId = table.Column<string>(type: "character varying(36)", maxLength: 36, nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     ResponseAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
@@ -229,6 +218,130 @@ namespace Conflux.Database.Migrations
                         name: "FK_FriendRequests_AspNetUsers_SenderId",
                         column: x => x.SenderId,
                         principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "CommunityChannelCategories",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Name = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CommunityId = table.Column<Guid>(type: "uuid", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CommunityChannelCategories", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_CommunityChannelCategories_Communities_CommunityId",
+                        column: x => x.CommunityId,
+                        principalTable: "Communities",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "CommunityRoles",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Name = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
+                    CommunityId = table.Column<Guid>(type: "uuid", nullable: false),
+                    RolePermissions = table.Column<byte>(type: "smallint", nullable: false),
+                    ChannelPermissions = table.Column<byte>(type: "smallint", nullable: false),
+                    AccessPermissions = table.Column<int>(type: "integer", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CommunityRoles", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_CommunityRoles_Communities_CommunityId",
+                        column: x => x.CommunityId,
+                        principalTable: "Communities",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "CommunityChannels",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Name = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
+                    ChannelCategoryId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Type = table.Column<int>(type: "integer", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CommunityChannels", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_CommunityChannels_CommunityChannelCategories_ChannelCategor~",
+                        column: x => x.ChannelCategoryId,
+                        principalTable: "CommunityChannelCategories",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "CommunityMembers",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    CommunityId = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<string>(type: "character varying(36)", maxLength: 36, nullable: false),
+                    RoleId = table.Column<Guid>(type: "uuid", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CommunityMembers", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_CommunityMembers_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_CommunityMembers_Communities_CommunityId",
+                        column: x => x.CommunityId,
+                        principalTable: "Communities",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_CommunityMembers_CommunityRoles_RoleId",
+                        column: x => x.RoleId,
+                        principalTable: "CommunityRoles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Conversations",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Type = table.Column<int>(type: "integer", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    FriendRequestId = table.Column<Guid>(type: "uuid", nullable: true),
+                    CommunityChannelId = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Conversations", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Conversations_CommunityChannels_CommunityChannelId",
+                        column: x => x.CommunityChannelId,
+                        principalTable: "CommunityChannels",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Conversations_FriendRequests_FriendRequestId",
+                        column: x => x.FriendRequestId,
+                        principalTable: "FriendRequests",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -270,77 +383,6 @@ namespace Conflux.Database.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ConversationMembers",
-                columns: table => new
-                {
-                    ConversationId = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserId = table.Column<string>(type: "text", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ConversationMembers", x => new { x.ConversationId, x.UserId });
-                    table.ForeignKey(
-                        name: "FK_ConversationMembers_AspNetUsers_UserId",
-                        column: x => x.UserId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_ConversationMembers_Conversations_ConversationId",
-                        column: x => x.ConversationId,
-                        principalTable: "Conversations",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "CommunityChannelCategories",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CommunityServerId = table.Column<Guid>(type: "uuid", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_CommunityChannelCategories", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_CommunityChannelCategories_Communities_CommunityServerId",
-                        column: x => x.CommunityServerId,
-                        principalTable: "Communities",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "CommunityMembers",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    CommunityServerId = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserId = table.Column<string>(type: "character varying(36)", maxLength: 36, nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_CommunityMembers", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_CommunityMembers_AspNetUsers_UserId",
-                        column: x => x.UserId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_CommunityMembers_Communities_CommunityServerId",
-                        column: x => x.CommunityServerId,
-                        principalTable: "Communities",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "MessageAttachments",
                 columns: table => new
                 {
@@ -357,27 +399,6 @@ namespace Conflux.Database.Migrations
                         name: "FK_MessageAttachments_ChatMessages_MessageId",
                         column: x => x.MessageId,
                         principalTable: "ChatMessages",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "CommunityChannels",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ServerChannelCategoryId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Type = table.Column<int>(type: "integer", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_CommunityChannels", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_CommunityChannels_CommunityChannelCategories_ServerChannelC~",
-                        column: x => x.ServerChannelCategoryId,
-                        principalTable: "CommunityChannelCategories",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -435,30 +456,35 @@ namespace Conflux.Database.Migrations
                 column: "SenderId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Communities_ApplicationUserId",
+                table: "Communities",
+                column: "ApplicationUserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Communities_CreatorId",
                 table: "Communities",
                 column: "CreatorId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Communities_OwnerId",
-                table: "Communities",
-                column: "OwnerId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_CommunityChannelCategories_CommunityServerId",
+                name: "IX_CommunityChannelCategories_CommunityId",
                 table: "CommunityChannelCategories",
-                column: "CommunityServerId");
+                column: "CommunityId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_CommunityChannels_ServerChannelCategoryId",
+                name: "IX_CommunityChannels_ChannelCategoryId",
                 table: "CommunityChannels",
-                column: "ServerChannelCategoryId");
+                column: "ChannelCategoryId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_CommunityMembers_CommunityServerId_UserId",
+                name: "IX_CommunityMembers_CommunityId_UserId",
                 table: "CommunityMembers",
-                columns: new[] { "CommunityServerId", "UserId" },
+                columns: new[] { "CommunityId", "UserId" },
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CommunityMembers_RoleId",
+                table: "CommunityMembers",
+                column: "RoleId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_CommunityMembers_UserId",
@@ -466,9 +492,21 @@ namespace Conflux.Database.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ConversationMembers_UserId",
-                table: "ConversationMembers",
-                column: "UserId");
+                name: "IX_CommunityRoles_CommunityId",
+                table: "CommunityRoles",
+                column: "CommunityId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Conversations_CommunityChannelId",
+                table: "Conversations",
+                column: "CommunityChannelId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Conversations_FriendRequestId",
+                table: "Conversations",
+                column: "FriendRequestId",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_FriendRequests_ReceiverId",
@@ -506,16 +544,7 @@ namespace Conflux.Database.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
-                name: "CommunityChannels");
-
-            migrationBuilder.DropTable(
                 name: "CommunityMembers");
-
-            migrationBuilder.DropTable(
-                name: "ConversationMembers");
-
-            migrationBuilder.DropTable(
-                name: "FriendRequests");
 
             migrationBuilder.DropTable(
                 name: "MessageAttachments");
@@ -524,16 +553,25 @@ namespace Conflux.Database.Migrations
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
-                name: "CommunityChannelCategories");
+                name: "CommunityRoles");
 
             migrationBuilder.DropTable(
                 name: "ChatMessages");
 
             migrationBuilder.DropTable(
-                name: "Communities");
+                name: "Conversations");
 
             migrationBuilder.DropTable(
-                name: "Conversations");
+                name: "CommunityChannels");
+
+            migrationBuilder.DropTable(
+                name: "FriendRequests");
+
+            migrationBuilder.DropTable(
+                name: "CommunityChannelCategories");
+
+            migrationBuilder.DropTable(
+                name: "Communities");
 
             migrationBuilder.DropTable(
                 name: "AspNetUsers");

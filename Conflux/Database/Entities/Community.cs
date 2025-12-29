@@ -9,7 +9,6 @@ public class Community : ICreatedAtColumn {
     [MaxLength(255)] public string? AvatarPath { get; set; }
     [MaxLength(255)] public string? BannerPath { get; set; }
     
-    [MaxLength(36)] public string OwnerId { get; set; } = null!;
     [MaxLength(36)] public string CreatorId { get; set; } = null!;
 
     public Guid InvitationId { get; set; }
@@ -18,7 +17,6 @@ public class Community : ICreatedAtColumn {
     
     public DateTime CreatedAt { get; set; }
 
-    public ApplicationUser Owner { get; set; } = null!;
     public ApplicationUser Creator { get; set; } = null!;
 
     public ICollection<CommunityMember> Members { get; set; } = null!;

@@ -114,12 +114,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.HasKey(x => x.Id);
 
             entity.Property(x => x.InvitationId).HasValueGenerator<GuidValueGenerator>();
-            
-            entity.HasOne(community => community.Owner)
-                .WithMany(user => user.OwnedCommunities)
-                .HasForeignKey(community => community.OwnerId)
-                .HasPrincipalKey(user => user.Id)
-                .IsRequired();
 
             entity.HasOne(community => community.Creator)
                 .WithMany(user => user.CreatedCommunities)

@@ -160,6 +160,9 @@ namespace Conflux.Database.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("ApplicationUserId")
+                        .HasColumnType("text");
+
                     b.Property<string>("AvatarPath")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
@@ -188,16 +191,11 @@ namespace Conflux.Database.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
-                    b.Property<string>("OwnerId")
-                        .IsRequired()
-                        .HasMaxLength(36)
-                        .HasColumnType("character varying(36)");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("CreatorId");
+                    b.HasIndex("ApplicationUserId");
 
-                    b.HasIndex("OwnerId");
+                    b.HasIndex("CreatorId");
 
                     b.ToTable("Communities");
                 });
@@ -290,6 +288,9 @@ namespace Conflux.Database.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<int>("AccessPermissions")
+                        .HasColumnType("integer");
 
                     b.Property<byte>("ChannelPermissions")
                         .HasColumnType("smallint");
@@ -568,21 +569,17 @@ namespace Conflux.Database.Migrations
 
             modelBuilder.Entity("Conflux.Database.Entities.Community", b =>
                 {
+                    b.HasOne("Conflux.Database.Entities.ApplicationUser", null)
+                        .WithMany("OwnedCommunities")
+                        .HasForeignKey("ApplicationUserId");
+
                     b.HasOne("Conflux.Database.Entities.ApplicationUser", "Creator")
                         .WithMany("CreatedCommunities")
                         .HasForeignKey("CreatorId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Conflux.Database.Entities.ApplicationUser", "Owner")
-                        .WithMany("OwnedCommunities")
-                        .HasForeignKey("OwnerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("Creator");
-
-                    b.Navigation("Owner");
                 });
 
             modelBuilder.Entity("Conflux.Database.Entities.CommunityChannel", b =>

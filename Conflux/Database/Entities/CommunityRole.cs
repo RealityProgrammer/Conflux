@@ -12,6 +12,7 @@ public class CommunityRole : ICreatedAtColumn {
     
     public RolePermissionFlags RolePermissions { get; set; }
     public ChannelPermissionFlags ChannelPermissions { get; set; }
+    public AccessPermissionFlags AccessPermissions { get; set; }
     
     public DateTime CreatedAt { get; set; }
 
@@ -40,5 +41,14 @@ public class CommunityRole : ICreatedAtColumn {
         DeleteChannel = 1 << 3,
         
         All = CreateChannelCategory | DeleteChannelCategory | CreateChannel | DeleteChannel,
+    }
+
+    [Flags]
+    public enum AccessPermissionFlags {
+        None = 0,
+        
+        AccessControlPanel = 1 << 0,
+        
+        All = AccessControlPanel,
     }
 }
