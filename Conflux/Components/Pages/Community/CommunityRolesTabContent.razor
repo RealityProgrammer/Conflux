@@ -5,13 +5,13 @@
 @using Conflux.Database.Entities
 @using Conflux.Services.Abstracts
 @using Microsoft.EntityFrameworkCore
+@using System.Collections.Concurrent
 
 @implements IDisposable
 
 @inject ICommunityService CommunityService
 @inject ILogger<CommunityRolesTabContent> Logger
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
-@inject ICommunityPermissionService CommunityPermissionService
 @inject IJSRuntime JavascriptRuntime
 @inject IContentService ContentService
 
@@ -154,8 +154,16 @@
                     <div class="flex-1 overflow-y-scroll scrollbar-hide mt-1">
                         <Virtualize ItemsProvider="RoleMembersProvider" @ref="_roleMembersVirtualizeReference">
                             <ItemContent Context="item">
-                                <div class="p-2 bg-transparent hover:bg-white/15 rounded-md">
-                                    <p>@item.DisplayName</p>
+                                <div class="p-1 flex flex-row items-center bg-transparent hover:bg-white/8 rounded-md">
+                                    <Avatar ImageSrc="@(string.IsNullOrEmpty(item.Avatar) ? null : ContentService.GetAssetPath(item.Avatar))" ImageAlt="@($"Avatar of {item.DisplayName}")" class="size-9 mr-1"/>
+
+                                    <p class="flex-1">@item.DisplayName</p>
+                                    
+                                    @if (_selectedRole.Name != "Owners") {
+                                        <button class="p-1.5 bg-transparent hover:bg-white/15 rounded-full cursor-pointer" @onclick="@(e => HandleOpenRemoveRoleDialog(item.MemberId))">
+                                            <Cross class="flex-none size-4 fill-white" Size="CrossSize.Large"/>
+                                        </button>
+                                    }
                                 </div>
                             </ItemContent>
                             
@@ -191,7 +199,7 @@
                             
                             <Check class="flex-none size-5 fill-white hidden group-has-checked:block" Variation="CheckVariation.Large"/>
                             
-                            <input type="checkbox" class="hidden peer" @bind:get="_selectedMemberIds.Contains(item.Id)" @bind:set="@(value => HandleMemberSelection(value, item.Id))">
+                            <input type="checkbox" class="hidden peer" @bind:get="_selectedMemberIds.Contains(item.MemberId)" @bind:set="@(value => HandleMemberSelection(value, item.MemberId))">
                         </label>
                     </ItemContent>
                     
@@ -201,15 +209,6 @@
                         </div>
                     </EmptyContent>
                 </Virtualize>
-                
-                @* @for (int i = 0; i < 100; i++) { *@
-                @*     <div class="p-2 bg-transparent hover:bg-white/8 rounded-md"> *@
-                @*         @{ int local_i = i; } *@
-                @*         <input type="checkbox" @bind:get="_set.Contains(local_i)" @bind:set="@(() => SetSomeValue(local_i))"/> *@
-                @* *@
-                @*         @i *@
-                @*     </div> *@
-                @* } *@
             </section>
         </CardContent>
         
@@ -221,6 +220,21 @@
                 
                 <ProcessingContent><Spinner class="size-5 fill-white"/></ProcessingContent>
             </ProcessingStateButton>
+        </CardFooter>
+    </Card>
+</Dialog>
+
+<Dialog @bind-Open="_openRemoveRoleDialog" class="flex flex-col justify-center items-center text-white" ContainerCssClass="flex flex-row justify-center" OnClickOutside="HandleCloseRemoveRoleDialog">
+    <Card>
+        <CardHeader Title="Delete Member's Role" OnCloseRequested="HandleCloseRemoveRoleDialog"/>
+        
+        <CardContent>
+            <p>Are you sure you want to remove the role of this user?</p>
+        </CardContent>
+        
+        <CardFooter class="flex flex-row justify-end gap-2">
+            <button class="button-danger w-24" @onclick="HandleCloseRemoveRoleDialog">Cancel</button>
+            <button class="button-primary w-24" @onclick="@(e => HandleRemoveMemberRole(_removeRoleMemberId))">Remove</button>
         </CardFooter>
     </Card>
 </Dialog>
@@ -238,7 +252,7 @@
     // Role permissions
     [SupplyParameterFromForm] private PermissionInputModel PermissionInput { get; set; } = null!;
     private EditContext _permissionEditContext = null!;
-    private ICommunityPermissionService.Permissions _originalPermissions = null!;
+    private ICommunityService.Permissions _originalPermissions = null!;
     
     // Role members
     private string _roleMembersSearchString = string.Empty;
@@ -246,7 +260,12 @@
     // Add role members
     private bool _openAddMemberDialog, _isProcessingMemberAdd;
     private string _addMemberNameSearch = string.Empty;
-    private HashSet<string> _selectedMemberIds = [];
+    private HashSet<Guid> _selectedMemberIds = [];
+    
+    // Remove member's role.
+    private bool _openRemoveRoleDialog;
+    private Guid _removeRoleMemberId;
+    private ConcurrentDictionary<Guid, byte> _processingRoleRemovalRequests = [];
 
     private ElementReference? _roleNameInputElement, _unsavedChangesShakeTarget;
     private Virtualize<MemberDTO>? _roleMembersVirtualizeReference;
@@ -273,6 +292,7 @@
             StateHasChanged();
             
             CommunityService.OnRoleCreated += OnRoleCreated;
+            CommunityService.OnMemberRoleChanged += OnMemberRoleChanged;
         }
     }
 
@@ -282,7 +302,7 @@
         } else {
             _selectedRole = role;
 
-            var permissions = await CommunityPermissionService.GetPermissionsAsync(_selectedRole.Id);
+            var permissions = await CommunityService.GetPermissionsAsync(_selectedRole.Id);
 
             if (permissions != null) {
                 PermissionInput = new() {
@@ -307,7 +327,7 @@
     }
 
     private async Task HandleSavePermission() {
-        await CommunityPermissionService.UpdatePermissionsAsync(_selectedRole.Id, new(PermissionInput.ChannelPermissions, PermissionInput.RolePermissions));
+        await CommunityService.UpdatePermissionsAsync(_selectedRole.Id, new(PermissionInput.ChannelPermissions, PermissionInput.RolePermissions));
         _permissionEditContext.MarkAsUnmodified();
     }
 
@@ -365,11 +385,10 @@
             // TODO: Multiple owners implementation.
             var owners = await dbContext.Communities
                 .Where(x => x.Id == CommunityId)
-                .Select(x => x.Owner)
                 .Select(x => new MemberDTO {
-                    Avatar = x.AvatarProfilePath,
-                    DisplayName = x.DisplayName,
-                    Id = x.Id,
+                    Avatar = x.Owner.AvatarProfilePath,
+                    DisplayName = x.Owner.DisplayName,
+                    MemberId = x.Id,
                 }).ToListAsync();
             
             return new(owners, owners.Count);
@@ -384,13 +403,12 @@
             }
 
             var members = await query
-                .Select(x => x.User)
-                .OrderBy(x => x.DisplayName)
                 .Select(x => new MemberDTO {
-                    Avatar = x.AvatarProfilePath,
-                    DisplayName = x.DisplayName,
-                    Id = x.Id,
+                    Avatar = x.User.AvatarProfilePath,
+                    DisplayName = x.User.DisplayName,
+                    MemberId = x.Id,
                 })
+                .OrderBy(x => x.DisplayName)
                 .Skip(request.StartIndex)
                 .Take(request.Count)
                 .ToListAsync();
@@ -412,13 +430,12 @@
         }
 
         var members = await query
-            .Select(x => x.User)
-            .OrderBy(x => x.DisplayName)
             .Select(x => new MemberDTO {
-                Avatar = x.AvatarProfilePath,
-                DisplayName = x.DisplayName,
-                Id = x.Id,
+                Avatar = x.User.AvatarProfilePath,
+                DisplayName = x.User.DisplayName,
+                MemberId = x.Id,
             })
+            .OrderBy(x => x.DisplayName)
             .Skip(request.StartIndex)
             .Take(request.Count)
             .ToListAsync();
@@ -441,33 +458,72 @@
         _isProcessingMemberAdd = true;
 
         try {
-            await Task.Delay(1000);
+            await CommunityService.SetMembersRole(_selectedMemberIds, _selectedRole.Id);
             
             _openAddMemberDialog = false;
             _selectedMemberIds.Clear();
         } finally {
             _isProcessingMemberAdd = false;
         }
-        
     }
 
-    private void HandleMemberSelection(bool value, string userId) {
+    private void HandleMemberSelection(bool value, Guid memberId) {
         if (value) {
-            _selectedMemberIds.Add(userId);
+            _selectedMemberIds.Add(memberId);
         } else {
-            _selectedMemberIds.Remove(userId);
+            _selectedMemberIds.Remove(memberId);
+        }
+    }
+
+    private void OnMemberRoleChanged(MemberRoleChangedEventArgs args) {
+        if (args.RoleId != _selectedRole.Id) {
+            return;
+        }
+
+        InvokeAsync(async () => {
+            if (_roleMembersVirtualizeReference != null) {
+                await _roleMembersVirtualizeReference.RefreshDataAsync();
+                StateHasChanged();
+            }
+        });
+    }
+
+    private void HandleOpenRemoveRoleDialog(Guid memberId) {
+        _openRemoveRoleDialog = true;
+        _removeRoleMemberId = memberId;
+    }
+
+    private void HandleCloseRemoveRoleDialog() {
+        _openRemoveRoleDialog = false;
+    }
+
+    private async Task HandleRemoveMemberRole(Guid memberId) {
+        HandleCloseRemoveRoleDialog();
+        
+        if (_processingRoleRemovalRequests.TryAdd(memberId, 0)) {
+            try {
+                await CommunityService.RemoveMemberRole(memberId);
+            } finally {
+                _processingRoleRemovalRequests.TryRemove(memberId, out _);
+
+                if (_processingRoleRemovalRequests.IsEmpty && _roleMembersVirtualizeReference != null) {
+                    await _roleMembersVirtualizeReference.RefreshDataAsync();
+                    StateHasChanged();
+                }
+            }
         }
     }
 
     public void Dispose() {
         CommunityService.OnRoleCreated -= OnRoleCreated;
+        CommunityService.OnMemberRoleChanged -= OnMemberRoleChanged;
     }
 
     private readonly record struct RoleDTO(Guid Id, string Name) {
         public override string ToString() => Name;
     }
 
-    private record struct MemberDTO(string Id, string DisplayName, string? Avatar);
+    private record struct MemberDTO(Guid MemberId, string DisplayName, string? Avatar);
 
     private sealed class PermissionInputModel {
         public CommunityRole.RolePermissionFlags RolePermissions { get; set; }

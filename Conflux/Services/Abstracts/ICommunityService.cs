@@ -7,6 +7,7 @@ public readonly record struct ChannelCategoryCreatedEventArgs(Guid CommunityId, 
 public readonly record struct ChannelCreatedEventArgs(Guid ChannelCategoryId, Guid ChannelId);
 public readonly record struct CommunityMemberJoinedEventArgs(CommunityMember Member);
 public readonly record struct CommunityRoleCreatedEventArgs(CommunityRole Role);
+public readonly record struct MemberRoleChangedEventArgs(Guid CommunityId, Guid? RoleId);
 
 public interface ICommunityService {
     event Action<ChannelCategoryCreatedEventArgs>? OnChannelCategoryCreated;
@@ -14,6 +15,7 @@ public interface ICommunityService {
     event Action<CommunityCreatedEventArgs>? OnUserCreatedCommunity;
     event Action<CommunityMemberJoinedEventArgs>? OnMemberJoined;
     event Action<CommunityRoleCreatedEventArgs>? OnRoleCreated;
+    event Action<MemberRoleChangedEventArgs>? OnMemberRoleChanged;
     
     Task JoinCommunityHubAsync(Guid communityId);
     Task LeaveCommunityHubAsync(Guid communityId);
@@ -26,6 +28,12 @@ public interface ICommunityService {
     Task<CreateRoleStatus> CreateRoleAsync(Guid communityId, string roleName);
 
     Task<bool> JoinCommunityAsync(string userId, Guid communityId, Guid invitationId);
+    
+    Task<Permissions?> GetPermissionsAsync(Guid roleId);
+    Task<bool> UpdatePermissionsAsync(Guid roleId, Permissions permissions);
+
+    Task<bool> SetMembersRole(IReadOnlyCollection<Guid> memberIds, Guid roleId);
+    Task<bool> RemoveMemberRole(Guid memberId);
 
     public enum CreateRoleStatus {
         Success,
@@ -33,4 +41,9 @@ public interface ICommunityService {
         NameExists,
         ReservedName,
     }
+    
+    public record Permissions(
+        CommunityRole.ChannelPermissionFlags ChannelPermissions,
+        CommunityRole.RolePermissionFlags RolePermissions
+    );
 }

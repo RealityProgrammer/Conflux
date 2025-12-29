@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;
+using Microsoft.Extensions.Caching.Memory;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
@@ -19,12 +20,16 @@ public class CommunityService(
     IHubContext<CommunityHub> hubContext,
     NavigationManager navigationManager,
     IHttpContextAccessor httpContextAccessor,
+    IMemoryCache memoryCache,
     ILogger<CommunityService> logger
 ) : ICommunityService, IAsyncDisposable {
     private const string ChannelCategoryCreatedEventName = "ChannelCategoryCreated";
     private const string ChannelCreatedEventName = "ChannelCreated";
     private const string MemberJoinedEventName = "MemberJoined";
     private const string RoleCreatedEventName = "RoleCreated";
+    private const string MemberRoleChangedEventName = "MemberRoleChanged";
+    
+    private static readonly TimeSpan PermissionCacheDuration = TimeSpan.FromMinutes(5);
     
     private readonly ConcurrentDictionary<Guid, HubConnection> _hubConnections = [];
 
@@ -33,6 +38,7 @@ public class CommunityService(
     public event Action<CommunityCreatedEventArgs>? OnUserCreatedCommunity;
     public event Action<CommunityMemberJoinedEventArgs>? OnMemberJoined;
     public event Action<CommunityRoleCreatedEventArgs>? OnRoleCreated;
+    public event Action<MemberRoleChangedEventArgs>? OnMemberRoleChanged;
     
     public async Task JoinCommunityHubAsync(Guid communityId) {
         // TODO: Revise this code due to possible race-condition.
@@ -54,6 +60,10 @@ public class CommunityService(
 
         connection.On<CommunityRoleCreatedEventArgs>(RoleCreatedEventName, args => {
             OnRoleCreated?.Invoke(args);
+        });
+
+        connection.On<MemberRoleChangedEventArgs>(MemberRoleChangedEventName, args => {
+            OnMemberRoleChanged?.Invoke(args);
         });
         
         await connection.StartAsync();
@@ -244,6 +254,115 @@ public class CommunityService(
         }
 
         return false;
+    }
+    
+    public async Task<ICommunityService.Permissions?> GetPermissionsAsync(Guid roleId) {
+        string cacheKey = GeneratePermissionCacheKey(roleId);
+        
+        if (memoryCache.TryGetValue<ICommunityService.Permissions>(cacheKey, out var cached)) {
+            return cached!;
+        }
+
+        var permissions = await CollectPermissions(roleId);
+
+        if (permissions == null) {
+            return null;
+        }
+        
+        memoryCache.Set(cacheKey, permissions, PermissionCacheDuration);
+
+        return permissions;
+    }
+
+    public async Task<bool> UpdatePermissionsAsync(Guid roleId, ICommunityService.Permissions permissions) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        int numUpdatedRows = await dbContext.CommunityRoles
+            .Where(x => x.Id == roleId)
+            .ExecuteUpdateAsync(builder => {
+                builder.SetProperty(x => x.ChannelPermissions, permissions.ChannelPermissions);
+                builder.SetProperty(x => x.RolePermissions, permissions.RolePermissions);
+            });
+
+        if (numUpdatedRows == 0) {
+            return false;
+        }
+        
+        string cacheKey = GeneratePermissionCacheKey(roleId);
+        
+        memoryCache.Set(cacheKey, permissions, PermissionCacheDuration);
+
+        return true;
+    }
+
+    private async Task<ICommunityService.Permissions?> CollectPermissions(Guid roleId) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        return await dbContext.CommunityRoles
+            .Where(x => x.Id == roleId)
+            .Select(x => new ICommunityService.Permissions(x.ChannelPermissions, x.RolePermissions))
+            .FirstOrDefaultAsync();
+    }
+
+    private static string GeneratePermissionCacheKey(Guid roleId) {
+        return string.Create("CommunityRoles.".Length + 32 + ".Permissions".Length, roleId, CreateCallback);
+
+        static void CreateCallback(Span<char> buffer, Guid state) {
+            "CommunityRoles.".CopyTo(buffer);
+            bool formatSuccessful = state.TryFormat(buffer.Slice("CommunityRoles.".Length, 32), out _, "N");
+            Debug.Assert(formatSuccessful);
+            ".Permissions".CopyTo(buffer[("CommunityRoles.".Length + 32)..]);
+        }
+    }
+
+    public async Task<bool> SetMembersRole(IReadOnlyCollection<Guid> memberIds, Guid roleId) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        Guid communityId = await dbContext.CommunityRoles
+            .Where(x => x.Id == roleId)
+            .Select(x => x.CommunityId)
+            .FirstOrDefaultAsync();
+
+        if (communityId == Guid.Empty) {
+            return false;
+        }
+
+        int affected = await dbContext.CommunityMembers
+            .Where(x => memberIds.Contains(x.Id) && x.RoleId == null)
+            .ExecuteUpdateAsync(builder => {
+                builder.SetProperty(x => x.RoleId, roleId);
+            });
+
+        if (affected > 0) {
+            await hubContext.Clients.Group(communityId.ToString()).SendAsync(MemberRoleChangedEventName, new MemberRoleChangedEventArgs(communityId, roleId));
+        }
+
+        return true;
+    }
+    
+    public async Task<bool> RemoveMemberRole(Guid memberId) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        int affected = await dbContext.CommunityMembers
+            .Where(x => x.Id == memberId)
+            .ExecuteUpdateAsync(builder => {
+                builder.SetProperty(x => x.RoleId, (Guid?)null);
+            });
+
+        if (affected > 0) {
+            var communityId = await dbContext.CommunityMembers
+                .Where(x => x.Id == memberId)
+                .Select(x => x.CommunityId)
+                .FirstAsync();
+            
+            await hubContext.Clients.Group(communityId.ToString()).SendAsync(MemberRoleChangedEventName, new MemberRoleChangedEventArgs(communityId, null));
+        }
+
+        return true;
     }
 
     public async ValueTask DisposeAsync() {

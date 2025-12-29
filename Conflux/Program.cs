@@ -103,7 +103,6 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IConversationService, ConversationService>();
 builder.Services.AddScoped<ISnackbarService, SnackbarService>();
 builder.Services.AddScoped<ICommunityService, CommunityService>();
-builder.Services.AddSingleton<ICommunityPermissionService, CommunityPermissionService>();
 
 // SignalR related services.
 builder.Services.AddSignalR(options => {
