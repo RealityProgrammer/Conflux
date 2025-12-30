@@ -1,0 +1,58 @@
+﻿@page "/community/{CommunityId:guid}/{Channel?}"
+
+@using Conflux.Components.Layout
+@using Conflux.Database.Entities
+@using Conflux.Services.Abstracts
+@using Microsoft.AspNetCore.Components.Sections
+@using System.Security.Claims
+
+@layout SidebarLobbyLayout
+
+@inject ICommunityService CommunityService
+
+@implements IAsyncDisposable
+
+<CascadingValue Value="_userPermissions">
+    <SectionContent SectionName="lobby-sidebar">
+        <ChannelSidebar CommunityId="CommunityId"/>
+    </SectionContent>
+    
+    @if (_userPermissions == null) {
+        <p>Null permissions</p>
+    } else {
+        <p>@_userPermissions.ToString()</p>
+    }
+</CascadingValue>
+
+@code {
+    [Parameter] public Guid CommunityId { get; set; }
+    [Parameter] public string? Channel { get; set; }
+
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+    
+    private Guid _previousCommunityId;
+    private ICommunityService.Permissions? _userPermissions;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (_previousCommunityId != CommunityId) {
+            await CommunityService.LeaveCommunityHubAsync(_previousCommunityId);
+            await CommunityService.JoinCommunityHubAsync(CommunityId);
+
+            var authState = await AuthenticationState;
+        
+            if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is { } userId) {
+                _userPermissions = 
+                    await CommunityService.GetUserRolePermissionsAsync(userId, CommunityId) ?? 
+                    new(CommunityRole.ChannelPermissionFlags.None, CommunityRole.RolePermissionFlags.None, CommunityRole.AccessPermissionFlags.None);
+            }
+            
+            _previousCommunityId = CommunityId;
+            
+            StateHasChanged();
+        }
+    }
+
+    public async ValueTask DisposeAsync() {
+        await CommunityService.LeaveCommunityHubAsync(CommunityId);
+    }
+}

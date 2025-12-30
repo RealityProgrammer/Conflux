@@ -2,4 +2,4 @@
 
 namespace Conflux.Services.Authorization;
 
-public class CommunityOwnershipRequirement : IAuthorizationRequirement;
+public sealed class CreateCommunityChannelRequirement : IAuthorizationRequirement;

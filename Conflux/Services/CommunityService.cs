@@ -122,16 +122,26 @@ public class CommunityService(
         Community community = new() {
             Name = name,
             CreatorId = creatorId,
-            OwnerId = creatorId,
             AvatarPath = null,
         };
 
         dbContext.Communities.Add(community);
 
+        CommunityRole ownerRole = new() {
+            Name = "Owners",
+            AccessPermissions = CommunityRole.AccessPermissionFlags.All,
+            ChannelPermissions = CommunityRole.ChannelPermissionFlags.All,
+            RolePermissions = CommunityRole.RolePermissionFlags.All,
+            CommunityId = community.Id,
+        };
+
+        dbContext.CommunityRoles.Add(ownerRole);
+
         if (await dbContext.SaveChangesAsync() > 0) {
             dbContext.CommunityMembers.Add(new() {
                 Community = community,
                 UserId = creatorId,
+                RoleId = ownerRole.Id,
             });
             
             if (avatarStream != null) {
@@ -262,8 +272,41 @@ public class CommunityService(
         if (memoryCache.TryGetValue<ICommunityService.Permissions>(cacheKey, out var cached)) {
             return cached!;
         }
+        
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
-        var permissions = await CollectPermissions(roleId);
+        var permissions = await CollectPermissions(dbContext, roleId);
+
+        if (permissions == null) {
+            return null;
+        }
+        
+        memoryCache.Set(cacheKey, permissions, PermissionCacheDuration);
+
+        return permissions;
+    }
+
+    public async Task<ICommunityService.Permissions?> GetUserRolePermissionsAsync(string userId, Guid communityId) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+        
+        Guid? memberRoleId = await dbContext.CommunityMembers
+            .Where(x => x.UserId == userId && x.CommunityId == communityId)
+            .Select(x => x.RoleId)
+            .FirstOrDefaultAsync();
+
+        if (memberRoleId is not { } roleId) {
+            return null;
+        }
+        
+        string cacheKey = GeneratePermissionCacheKey(roleId);
+        
+        if (memoryCache.TryGetValue<ICommunityService.Permissions>(cacheKey, out var cached)) {
+            return cached!;
+        }
+        
+        var permissions = await CollectPermissions(dbContext, roleId);
 
         if (permissions == null) {
             return null;
@@ -283,6 +326,7 @@ public class CommunityService(
             .ExecuteUpdateAsync(builder => {
                 builder.SetProperty(x => x.ChannelPermissions, permissions.ChannelPermissions);
                 builder.SetProperty(x => x.RolePermissions, permissions.RolePermissions);
+                builder.SetProperty(x => x.AccessPermissions, permissions.AccessPermissions);
             });
 
         if (numUpdatedRows == 0) {
@@ -296,13 +340,10 @@ public class CommunityService(
         return true;
     }
 
-    private async Task<ICommunityService.Permissions?> CollectPermissions(Guid roleId) {
-        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
-        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-
+    private async Task<ICommunityService.Permissions?> CollectPermissions(ApplicationDbContext dbContext, Guid roleId) {
         return await dbContext.CommunityRoles
             .Where(x => x.Id == roleId)
-            .Select(x => new ICommunityService.Permissions(x.ChannelPermissions, x.RolePermissions))
+            .Select(x => new ICommunityService.Permissions(x.ChannelPermissions, x.RolePermissions, x.AccessPermissions))
             .FirstOrDefaultAsync();
     }
 

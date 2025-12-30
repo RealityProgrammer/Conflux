@@ -36,9 +36,14 @@
         
                 <Popover TargetReference="_serverOptionsButton" @bind-IsShowing="_showCommunityExpandableMenu" Placement="left" Offset="4" CloseWhenClickOutside="true">
                     <div class="bg-gray-600 p-1 text-white text-sm rounded-lg shadow-md flex flex-col gap-1 z-50" tabindex="-1">
-                        <AuthorizeView Policy="CommunityOwnershipPolicy" Resource="_community">
+                        <AuthorizeView Policy="CreateCommunityChannelCategory" Resource="UserPermissions">
                             <Authorized>
                                 <button class="p-1.5 bg-transparent hover:bg-white/10 active:bg-black/8 cursor-pointer rounded-md text-left" @onclick="HandleDisplayCommunityExpandableMenu">Create channel category</button>
+                            </Authorized>
+                        </AuthorizeView>
+                        
+                        <AuthorizeView Policy="AccessCommunityControlPanel" Resource="UserPermissions">
+                            <Authorized>
                                 <button class="p-1.5 bg-transparent hover:bg-white/10 active:bg-black/8 cursor-pointer rounded-md text-left" @onclick="HandleDisplayControlPanel">Open Control Panel</button>
                             </Authorized>
                         </AuthorizeView>
@@ -86,12 +91,12 @@
             </div>
         </section>
         
-        @foreach (var channelCategory in _community.ChannelCategories) {
+        @foreach (var channelCategory in _community.ChannelCategories ?? []) {
             <section @key="channelCategory.Id" class="px-2 mt-2 min-w-0 group border-t border-t-gray-600">
                 <h1 class="text-sm font-bold text-gray-400 mt-2 mb-2 overflow-hidden break-all whitespace-normal flex flex-row items-start">
                     <span class="flex-1 mr-1">@channelCategory.Name</span>
         
-                    <AuthorizeView Policy="CommunityOwnershipPolicy" Resource="_community">
+                    <AuthorizeView Policy="CreateCommunityChannel" Resource="UserPermissions">
                         <Authorized>
                             <span class="flex-none">
                                 <Tooltip TargetCssClass="inline-block" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" Placement="right" Offset="8">
@@ -111,7 +116,7 @@
                 </h1>
         
                 <div class="flex flex-col gap-1">
-                    @foreach (var channel in channelCategory.Channels) {
+                    @foreach (var channel in channelCategory.Channels ?? []) {
                         <NavLink class="flex flex-row items-center p-1.5 rounded-md hover:bg-white/15 active:bg-black/8" ActiveClass="bg-white/8!" href="@($"/community/{CommunityId}/{channel.Id}")" Match="NavLinkMatch.All">
                             @switch (channel.Type) {
                                 case CommunityChannelType.Text:
@@ -130,14 +135,18 @@
             </section>
         }
         
-        <AuthorizeView Policy="CommunityOwnershipPolicy" Resource="_community">
+        <AuthorizeView Policy="CreateCommunityChannelCategory" Resource="UserPermissions">
             <Authorized Context="authState">
                 @if (_isCreatingChannelCategory) {
                     <section class="px-2 mt-2">
                         <input type="text" maxlength="32" class="w-full h-10 input-field" autofocus @onkeydown="HandleCreatingChannelCategoryKeyDown" @onblur="HandleCreatingChannelCategoryBlur" @onchange="HandleCreatingChannelCategoryChange">
                     </section>
                 }
+            </Authorized>
+        </AuthorizeView>
         
+        <AuthorizeView Policy="CreateCommunityChannel" Resource="UserPermissions">
+            <Authorized Context="authState">
                 <Dialog @bind-Open="_showCreatingChannelModal" OnClickOutside="CloseCreatingChannelModal" class="flex justify-center items-center overflow-hidden" ContainerCssClass="flex justify-center items-center">
                     <Card class="">
                         <CardHeader Title="Create Communicate Channel" Subtext="Building another room for your house" OnCloseRequested="CloseCreatingChannelModal"/>
@@ -147,7 +156,11 @@
                         </CardContent>
                     </Card>
                 </Dialog>
-                
+            </Authorized>
+        </AuthorizeView>
+        
+        <AuthorizeView Policy="AccessCommunityControlPanel" Resource="UserPermissions">
+            <Authorized Context="authState">
                 <Dialog @bind-Open="_showControlPanelModal" OnClickOutside="CloseControlPanelModal" ContainerCssClass="absolute inset-0">
                     <CommunityControlPanel CommunityId="CommunityId" OnCloseRequest="CloseControlPanelModal"/>
                 </Dialog>
@@ -186,6 +199,8 @@
 
     private Community _community;
     private string _invitationUrl;
+
+    [CascadingParameter] private ICommunityService.Permissions? UserPermissions { get; set; }
     
     protected override void OnParametersSet() {
         if (_previousCommunityId != CommunityId) {

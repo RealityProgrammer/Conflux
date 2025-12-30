@@ -32,6 +32,8 @@ public interface ICommunityService {
     Task<Permissions?> GetPermissionsAsync(Guid roleId);
     Task<bool> UpdatePermissionsAsync(Guid roleId, Permissions permissions);
 
+    Task<Permissions?> GetUserRolePermissionsAsync(string userId, Guid communityId);
+
     Task<bool> SetMembersRole(IReadOnlyCollection<Guid> memberIds, Guid roleId);
     Task<bool> RemoveMemberRole(Guid memberId);
 
@@ -44,6 +46,7 @@ public interface ICommunityService {
     
     public record Permissions(
         CommunityRole.ChannelPermissionFlags ChannelPermissions,
-        CommunityRole.RolePermissionFlags RolePermissions
+        CommunityRole.RolePermissionFlags RolePermissions,
+        CommunityRole.AccessPermissionFlags AccessPermissions
     );
 }

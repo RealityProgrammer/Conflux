@@ -12,5 +12,5 @@ public class CommunityChannelCategory : ICreatedAtColumn {
     public Guid CommunityId { get; set; }
 
     public Community Community { get; set; } = null!;
-    public IList<CommunityChannel> Channels { get; set; } = null!;
+    public ICollection<CommunityChannel> Channels { get; set; } = null!;
 }

@@ -27,8 +27,6 @@
             
             <SelectionDropdown @bind-Value:get="_selectedRole" @bind-Value:set="SetSelectedRole" ButtonCssClass="h-10 md:flex-3" PopoverCssClass="z-10 w-lg p-1">
                 <div class="flex flex-col gap-1 max-h-62 overflow-y-scroll">
-                    <SelectionOption class="select-none p-1.5 text-left bg-transparent hover:bg-white/15 active:bg-black/25 cursor-pointer rounded-md" Value="@(new RoleDTO(Guid.Empty, "Owners"))">Owners</SelectionOption>
-
                     @if (_roles == null) {
                         <div class="flex justify-center">
                             <Spinner class="size-6 fill-white"/>
@@ -68,9 +66,22 @@
             </HeaderContent>
             
             <ChildContent>
-                @{ bool shouldDisabled = _selectedRole.Name == "Owners"; }
+                @{ bool shouldDisabled = false; }
                 
                 <EditForm class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-2" EditContext="_permissionEditContext">
+                    <section>
+                        <header class="border-b border-b-gray-600 pb-1">Access</header>
+                        
+                        <div class="mt-1.5 flex flex-col gap-1.5">
+                            <div class="flex flex-row items-center">
+                                <label class="flex-1">Access Control Panel</label>
+
+                                <PermissionToggle @bind-Value="PermissionInput.AccessControlPanel" class="flex-none" disabled="@shouldDisabled"/>
+                            </div>
+
+                        </div>
+                    </section>
+                    
                     <section>
                         <header class="border-b border-b-gray-600 pb-1">Roles</header>
 
@@ -146,7 +157,7 @@
                     <div class="flex-none flex flex-row items-center">
                         <SearchField @bind-Value="_roleMembersSearchString" class="mr-1"/>
                         
-                        <button class="button-primary flex-none" @onclick="HandleOpenAddMemberDialog" disabled="@(_selectedRole.Name == "Owners")">
+                        <button class="button-primary flex-none" @onclick="HandleOpenAddMemberDialog">
                             Add Member
                         </button>
                     </div>
@@ -159,11 +170,9 @@
 
                                     <p class="flex-1">@item.DisplayName</p>
                                     
-                                    @if (_selectedRole.Name != "Owners") {
-                                        <button class="p-1.5 bg-transparent hover:bg-white/15 rounded-full cursor-pointer" @onclick="@(e => HandleOpenRemoveRoleDialog(item.MemberId))">
-                                            <Cross class="flex-none size-4 fill-white" Size="CrossSize.Large"/>
-                                        </button>
-                                    }
+                                    <button class="p-1.5 bg-transparent hover:bg-white/15 rounded-full cursor-pointer" @onclick="@(e => HandleOpenRemoveRoleDialog(item.MemberId))">
+                                        <Cross class="flex-none size-4 fill-white" Size="CrossSize.Large"/>
+                                    </button>
                                 </div>
                             </ItemContent>
                             
@@ -245,7 +254,7 @@
     // Role Selection.
     private List<RoleDTO>? _roles;
     private bool _isCreatingRole;
-    private RoleDTO _selectedRole = new(Guid.Empty, "Owners");
+    private RoleDTO _selectedRole;
     private string _creatingRoleName = string.Empty;
     private bool _expandPermissionCollapsible, _expandPeopleCollapsible;
 
@@ -275,6 +284,7 @@
         PermissionInput ??= new() {
             ChannelPermissions = CommunityRole.ChannelPermissionFlags.All,
             RolePermissions = CommunityRole.RolePermissionFlags.All,
+            AccessPermissions = CommunityRole.AccessPermissionFlags.All,
         };
         _permissionEditContext = new(PermissionInput);
     }
@@ -288,6 +298,13 @@
                 .OrderBy(x => x.CreatedAt)
                 .Select(x => new RoleDTO(x.Id, x.Name))
                 .ToListAsync();
+
+            _selectedRole = await dbContext.CommunityRoles
+                .Where(x => x.CommunityId == CommunityId && x.Name == "Owners")
+                .Select(x => new RoleDTO(x.Id, x.Name))
+                .FirstAsync();
+
+            _originalPermissions = await CommunityService.GetPermissionsAsync(_selectedRole.Id)!;
 
             StateHasChanged();
             
@@ -308,6 +325,7 @@
                 PermissionInput = new() {
                     ChannelPermissions = permissions.ChannelPermissions,
                     RolePermissions = permissions.RolePermissions,
+                    AccessPermissions = permissions.AccessPermissions,
                 };
 
                 _originalPermissions = permissions;
@@ -322,12 +340,13 @@
     private void HandleCancelPermissionEdit() {
         PermissionInput.ChannelPermissions = _originalPermissions.ChannelPermissions;
         PermissionInput.RolePermissions = _originalPermissions.RolePermissions;
+        PermissionInput.AccessPermissions = _originalPermissions.AccessPermissions;
         
         _permissionEditContext.MarkAsUnmodified();
     }
 
     private async Task HandleSavePermission() {
-        await CommunityService.UpdatePermissionsAsync(_selectedRole.Id, new(PermissionInput.ChannelPermissions, PermissionInput.RolePermissions));
+        await CommunityService.UpdatePermissionsAsync(_selectedRole.Id, new(PermissionInput.ChannelPermissions, PermissionInput.RolePermissions, PermissionInput.AccessPermissions));
         _permissionEditContext.MarkAsUnmodified();
     }
 
@@ -380,48 +399,35 @@
 
     private async ValueTask<ItemsProviderResult<MemberDTO>> RoleMembersProvider(ItemsProviderRequest request) {
         await using var dbContext = await DbContextFactory.CreateDbContextAsync();
-        
-        if (_selectedRole.Name == "Owners") {
-            // TODO: Multiple owners implementation.
-            var owners = await dbContext.Communities
-                .Where(x => x.Id == CommunityId)
-                .Select(x => new MemberDTO {
-                    Avatar = x.Owner.AvatarProfilePath,
-                    DisplayName = x.Owner.DisplayName,
-                    MemberId = x.Id,
-                }).ToListAsync();
-            
-            return new(owners, owners.Count);
-        } else {
-            var query = dbContext.CommunityMembers
-                .Where(x => x.CommunityId == CommunityId && x.RoleId == _selectedRole.Id);
 
-            int count = await query.CountAsync();
+        var query = dbContext.CommunityMembers
+            .Where(x => x.CommunityId == CommunityId && x.RoleId == _selectedRole.Id);
 
-            if (count == 0) {
-                return new([], 0);
-            }
+        int count = await query.CountAsync();
 
-            var members = await query
-                .Select(x => new MemberDTO {
-                    Avatar = x.User.AvatarProfilePath,
-                    DisplayName = x.User.DisplayName,
-                    MemberId = x.Id,
-                })
-                .OrderBy(x => x.DisplayName)
-                .Skip(request.StartIndex)
-                .Take(request.Count)
-                .ToListAsync();
-
-            return new(members, count);
+        if (count == 0) {
+            return new([], 0);
         }
+
+        var members = await query
+            .Select(x => new MemberDTO {
+                Avatar = x.User.AvatarProfilePath,
+                DisplayName = x.User.DisplayName,
+                MemberId = x.Id,
+            })
+            .OrderBy(x => x.DisplayName)
+            .Skip(request.StartIndex)
+            .Take(request.Count)
+            .ToListAsync();
+
+        return new(members, count);
     }
     
     private async ValueTask<ItemsProviderResult<MemberDTO>> MemberSearchProvider(ItemsProviderRequest request) {
         await using var dbContext = await DbContextFactory.CreateDbContextAsync();
         
         var query = dbContext.CommunityMembers
-            .Where(x => x.CommunityId == CommunityId && x.RoleId == null && x.UserId != x.Community.OwnerId);
+            .Where(x => x.CommunityId == CommunityId && x.RoleId == null);
 
         int count = await query.CountAsync();
 
@@ -528,6 +534,7 @@
     private sealed class PermissionInputModel {
         public CommunityRole.RolePermissionFlags RolePermissions { get; set; }
         public CommunityRole.ChannelPermissionFlags ChannelPermissions { get; set; }
+        public CommunityRole.AccessPermissionFlags AccessPermissions { get; set; }
         
         public bool CreateRole {
             get => RolePermissions.HasFlag(CommunityRole.RolePermissionFlags.CreateRole);
@@ -567,6 +574,11 @@
         public bool DeleteChannel {
             get => ChannelPermissions.HasFlag(CommunityRole.ChannelPermissionFlags.DeleteChannel);
             set => ChannelPermissions = value ? ChannelPermissions | CommunityRole.ChannelPermissionFlags.DeleteChannel : ChannelPermissions & ~CommunityRole.ChannelPermissionFlags.DeleteChannel;
+        }
+        
+        public bool AccessControlPanel {
+            get => AccessPermissions.HasFlag(CommunityRole.AccessPermissionFlags.AccessControlPanel);
+            set => AccessPermissions = value ? AccessPermissions | CommunityRole.AccessPermissionFlags.AccessControlPanel : AccessPermissions & ~CommunityRole.AccessPermissionFlags.AccessControlPanel;
         }
     }
 }

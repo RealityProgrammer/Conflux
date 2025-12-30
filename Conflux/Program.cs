@@ -50,13 +50,23 @@ builder.Services.AddAuthorization(options => {
     options.AddPolicy("RequireAuthenticatedUser", policy => {
         policy.RequireAuthenticatedUser();
     });
-    options.AddPolicy("CommunityOwnershipPolicy", policy => {
-        policy.Requirements.Add(new CommunityOwnershipRequirement());
+    
+    options.AddPolicy("CreateCommunityChannelCategory", policy => {
+        policy.Requirements.Add(new CreateCommunityChannelCategoryRequirement());
+    });
+    
+    options.AddPolicy("CreateCommunityChannel", policy => {
+        policy.Requirements.Add(new CreateCommunityChannelRequirement());
+    });
+    
+    options.AddPolicy("AccessCommunityControlPanel", policy => {
+        policy.Requirements.Add(new AccessCommunityControlPanelRequirement());
     });
 });
 
-builder.Services.AddSingleton<IAuthorizationHandler, CommunityOwnershipAuthorizationHandler>();
-builder.Services.AddSingleton<IAuthorizationHandler, CommunityAuthorizationCrudHandler>();
+builder.Services.AddSingleton<IAuthorizationHandler, CreateCommunityChannelCategoryAuthorizationHandler>();
+builder.Services.AddSingleton<IAuthorizationHandler, CreateCommunityChannelAuthorizationHandler>();
+builder.Services.AddSingleton<IAuthorizationHandler, AccessCommunityControlPanelAuthorizationHandler>();
 
 // Add database services.
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options => {
