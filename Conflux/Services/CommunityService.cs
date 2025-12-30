@@ -2,7 +2,9 @@
 using Conflux.Database.Entities;
 using Conflux.Services.Abstracts;
 using Conflux.Services.Hubs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.EntityFrameworkCore;
@@ -21,8 +23,12 @@ public class CommunityService(
     NavigationManager navigationManager,
     IHttpContextAccessor httpContextAccessor,
     IMemoryCache memoryCache,
+    // AuthenticationStateProvider authenticationStateProvider,
+    // IAuthorizationService authorizationService,
     ILogger<CommunityService> logger
 ) : ICommunityService, IAsyncDisposable {
+    // TODO: Authorization.
+    
     private const string ChannelCategoryCreatedEventName = "ChannelCategoryCreated";
     private const string ChannelCreatedEventName = "ChannelCreated";
     private const string MemberJoinedEventName = "MemberJoined";

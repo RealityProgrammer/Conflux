@@ -126,36 +126,6 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
 
         dbContext.Conversations.Add(conversation);
             
-        // string[] userIds = [user1, user2];
-        
-        // Conversation? conversation = await dbContext.Conversations
-        //     .AsNoTracking()
-        //     .Where(c => c.Type == ConversationType.DirectMessage)
-        //     .Where(c => c.Members.Select(m => m.UserId).Intersect(userIds).Count() == 2)
-        //     .FirstOrDefaultAsync();
-        //
-        // if (conversation != null) {
-        //     return conversation;
-        // }
-        //
-        // conversation = new() {
-        //     Type = ConversationType.DirectMessage,
-        // };
-        //
-        // dbContext.Add(conversation);
-        // await dbContext.SaveChangesAsync();
-        //
-        // dbContext.ConversationMembers.AddRange(
-        //     new() {
-        //         UserId = user1,
-        //         ConversationId = conversation.Id,
-        //     },
-        //     new() {
-        //         UserId = user2,
-        //         ConversationId = conversation.Id,
-        //     }
-        // );
-        
         await dbContext.SaveChangesAsync();
 
         return conversation;

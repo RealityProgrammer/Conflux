@@ -4,6 +4,8 @@
 @using Conflux.Database
 @using Conflux.Database.Entities
 @using Conflux.Services.Abstracts
+@using Conflux.Services.Authorization
+@using Microsoft.AspNetCore.Authentication
 @using Microsoft.EntityFrameworkCore
 @using System.Collections.Concurrent
 
@@ -14,6 +16,7 @@
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject IJSRuntime JavascriptRuntime
 @inject IContentService ContentService
+@inject IAuthorizationService AuthorizationService
 
 <div class="flex flex-col h-full gap-1 overflow-y-scroll">
     <header class="flex-0 ml-2">
@@ -38,25 +41,29 @@
                     }
                 </div>
                 
-                <li class="flex flex-row items-center mt-1">
-                    <input @ref="_roleNameInputElement" type="text" @bind="_creatingRoleName" class="flex-1 input-field h-10 mr-1">
+                <AuthorizeView Policy="CreateCommunityRole" Resource="UserPermissions">
+                    <Authorized>
+                        <li class="flex flex-row items-center mt-1">
+                            <input @ref="_roleNameInputElement" type="text" @bind="_creatingRoleName" class="flex-1 input-field h-10 mr-1">
 
-                    @if (_roleNameInputElement.HasValue) {
-                        <Popover TargetReference="_roleNameInputElement.Value" IsShowing="@(!string.IsNullOrEmpty(_roleNameErrorMessage))" ArrowCssClass="bg-[#ff4b6a]" Placement="bottom" Offset="4">
-                            <p class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md">@_roleNameErrorMessage</p>
-                        </Popover>
-                    }
+                            @if (_roleNameInputElement.HasValue) {
+                                <Popover TargetReference="_roleNameInputElement.Value" IsShowing="@(!string.IsNullOrEmpty(_roleNameErrorMessage))" ArrowCssClass="bg-[#ff4b6a]" Placement="bottom" Offset="4">
+                                    <p class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md">@_roleNameErrorMessage</p>
+                                </Popover>
+                            }
 
-                    <ProcessingStateButton @bind-IsProcessing="_isCreatingRole" class="button-primary w-20 px-2" ProcessingCssClass="flex flex-row justify-center" @onclick="HandleCreateRole">
-                        <ChildContent>
-                            Create
-                        </ChildContent>
+                            <ProcessingStateButton @bind-IsProcessing="_isCreatingRole" class="button-primary w-20 px-2" ProcessingCssClass="flex flex-row justify-center" @onclick="HandleCreateRole">
+                                <ChildContent>
+                                    Create
+                                </ChildContent>
 
-                        <ProcessingContent>
-                            <Spinner class="size-6 fill-white"/>
-                        </ProcessingContent>
-                    </ProcessingStateButton>
-                </li>
+                                <ProcessingContent>
+                                    <Spinner class="size-6 fill-white"/>
+                                </ProcessingContent>
+                            </ProcessingStateButton>
+                        </li>
+                    </Authorized>
+                </AuthorizeView>
             </SelectionDropdown>
         </div>
         
@@ -66,7 +73,7 @@
             </HeaderContent>
             
             <ChildContent>
-                @{ bool shouldDisabled = false; }
+                @{ bool shouldDisabled = !_allowsUpdateRolePermissions; }
                 
                 <EditForm class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-2" EditContext="_permissionEditContext">
                     <section>
@@ -78,7 +85,6 @@
 
                                 <PermissionToggle @bind-Value="PermissionInput.AccessControlPanel" class="flex-none" disabled="@shouldDisabled"/>
                             </div>
-
                         </div>
                     </section>
                     
@@ -153,14 +159,18 @@
             <ChildContent>
                 <p class="text-white mt-2">Members with the role "@_selectedRole" will be displayed here.</p>
                 
-                <section class="border border-gray-600 bg-gray-725 shadow-md rounded-lg mt-2 h-128 w-full md:w-2/3 mx-auto p-1 flex flex-col">
-                    <div class="flex-none flex flex-row items-center">
-                        <SearchField @bind-Value="_roleMembersSearchString" class="mr-1"/>
-                        
-                        <button class="button-primary flex-none" @onclick="HandleOpenAddMemberDialog">
-                            Add Member
-                        </button>
-                    </div>
+                <section class="border border-gray-600 bg-gray-725 shadow-md rounded-lg mt-2 h-128 w-full md:w-2/3 mx-auto p-1 pt-0 flex flex-col">
+                    <AuthorizeView Policy="UpdateCommunityMemberRole" Resource="UserPermissions">
+                        <Authorized>
+                            <div class="flex-none flex flex-row items-center mt-1">
+                                <SearchField @bind-Value="_roleMembersSearchString" class="mr-1"/>
+                                
+                                <button class="button-primary flex-none" @onclick="HandleOpenAddMemberDialog">
+                                    Add Member
+                                </button>
+                            </div>
+                        </Authorized>
+                    </AuthorizeView>
                     
                     <div class="flex-1 overflow-y-scroll scrollbar-hide mt-1">
                         <Virtualize ItemsProvider="RoleMembersProvider" @ref="_roleMembersVirtualizeReference">
@@ -170,9 +180,13 @@
 
                                     <p class="flex-1">@item.DisplayName</p>
                                     
-                                    <button class="p-1.5 bg-transparent hover:bg-white/15 rounded-full cursor-pointer" @onclick="@(e => HandleOpenRemoveRoleDialog(item.MemberId))">
-                                        <Cross class="flex-none size-4 fill-white" Size="CrossSize.Large"/>
-                                    </button>
+                                    <AuthorizeView Policy="UpdateCommunityMemberRole" Resource="UserPermissions">
+                                        <Authorized>
+                                            <button class="p-1.5 bg-transparent hover:bg-white/15 rounded-full cursor-pointer" @onclick="@(e => HandleOpenRemoveRoleDialog(item.MemberId))">
+                                                <Cross class="flex-none size-4 fill-white" Size="CrossSize.Large"/>
+                                            </button>
+                                        </Authorized>
+                                    </AuthorizeView>
                                 </div>
                             </ItemContent>
                             
@@ -250,6 +264,9 @@
 
 @code {
     [Parameter] public Guid CommunityId { get; set; }
+    
+    [CascadingParameter] private ICommunityService.Permissions? UserPermissions { get; set; } = null!;
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
 
     // Role Selection.
     private List<RoleDTO>? _roles;
@@ -279,6 +296,9 @@
     private ElementReference? _roleNameInputElement, _unsavedChangesShakeTarget;
     private Virtualize<MemberDTO>? _roleMembersVirtualizeReference;
     private string? _roleNameErrorMessage;
+    
+    // Authorization properties
+    private bool _allowsUpdateRolePermissions;
 
     protected override void OnInitialized() {
         PermissionInput ??= new() {
@@ -304,13 +324,16 @@
                 .Select(x => new RoleDTO(x.Id, x.Name))
                 .FirstAsync();
 
-            _originalPermissions = await CommunityService.GetPermissionsAsync(_selectedRole.Id)!;
+            _originalPermissions = (await CommunityService.GetPermissionsAsync(_selectedRole.Id))!;
 
             StateHasChanged();
             
             CommunityService.OnRoleCreated += OnRoleCreated;
             CommunityService.OnMemberRoleChanged += OnMemberRoleChanged;
         }
+
+        var authState = await AuthenticationState;
+        _allowsUpdateRolePermissions = (await AuthorizationService.AuthorizeAsync(authState.User, UserPermissions, new UpdateCommunityRolePermissionsRequirement())).Succeeded;
     }
 
     private async Task SetSelectedRole(RoleDTO role) {
