@@ -277,11 +277,11 @@
 
     private async Task OnAvatarSubmit() {
         if (_avatarEditContext.Validate()) {
-            if (AvatarModel!.File is { } avatarFile) {
+            if (AvatarModel!.File is { File: { } avatarFile }) {
                 _processingAvatar = true;
                 
                 try {
-                    await using var imageStream = avatarFile.File.OpenReadStream(ApplicationConstants.MaxUserAvatarSize);
+                    await using var imageStream = avatarFile.OpenReadStream(ApplicationConstants.MaxUserAvatarSize);
                 
                     string databasePath = await ContentService.UploadUserAvatarAsync(imageStream, _user!.Id);
                     _user.AvatarProfilePath = databasePath;
