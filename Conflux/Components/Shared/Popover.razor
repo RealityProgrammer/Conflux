@@ -3,6 +3,7 @@
 @implements IAsyncDisposable
 
 @inject IJSRuntime JavascriptRuntime
+@inject ILogger<Popover> Logger
 
 @if (IsShowing) {
     <div class="absolute inset-0 pointer-events-none z-10" tabindex="-1">

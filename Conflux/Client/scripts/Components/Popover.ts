@@ -47,6 +47,10 @@ function updateTooltipPosition(targetElement: Element, tooltipElement: HTMLEleme
 }
 
 export function registerTooltip(targetElement: Element, tooltipElement: HTMLElement, arrowElement: HTMLElement | null, tooltipPlacement: Placement, tooltipOffset: number, dotnetHelper: any, closeWhenClickOutside: boolean): number {
+    if (!targetElement || !tooltipElement) {
+        return 0;
+    }
+    
     const tooltipDisposer = autoUpdate(targetElement, tooltipElement, () => {
         updateTooltipPosition(targetElement, tooltipElement, arrowElement, tooltipPlacement, tooltipOffset);
     });
