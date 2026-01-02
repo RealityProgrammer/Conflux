@@ -13,15 +13,17 @@
 @implements IAsyncDisposable
 
 <CascadingValue Value="_userPermissions">
-    <SectionContent SectionName="lobby-sidebar">
-        <ChannelSidebar CommunityId="CommunityId"/>
-    </SectionContent>
-    
-    @if (_userPermissions == null) {
-        <p>Null permissions</p>
-    } else {
-        <p>@_userPermissions.ToString()</p>
-    }
+    <CascadingValue Value="_userRoleId" Name="UserRoleId">
+        <SectionContent SectionName="lobby-sidebar">
+            <ChannelSidebar CommunityId="CommunityId"/>
+        </SectionContent>
+
+        @if (_userPermissions == null) {
+            <p>Null permissions</p>
+        } else {
+            <p>@_userPermissions.ToString()</p>
+        }
+    </CascadingValue>
 </CascadingValue>
 
 @code {
@@ -31,6 +33,7 @@
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
     
     private Guid _previousCommunityId;
+    private Guid? _userRoleId;
     private ICommunityService.Permissions? _userPermissions;
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
@@ -41,18 +44,57 @@
             var authState = await AuthenticationState;
         
             if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is { } userId) {
-                _userPermissions = 
-                    await CommunityService.GetUserRolePermissionsAsync(userId, CommunityId) ?? 
-                    new(CommunityRole.ChannelPermissionFlags.None, CommunityRole.RolePermissionFlags.None, CommunityRole.AccessPermissionFlags.None);
+                await QueryUserRoleInformation(userId);
             }
             
             _previousCommunityId = CommunityId;
             
             StateHasChanged();
+
+            CommunityService.OnMemberRoleChanged += OnMemberRoleChanged;
+            CommunityService.OnRolePermissionUpdated += OnRolePermissionUpdated;
+        }
+    }
+
+    private void OnMemberRoleChanged(MemberRoleChangedEventArgs args) {
+        InvokeAsync(async () => {
+            var authState = await AuthenticationState;
+        
+            if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is { } userId) {
+                await QueryUserRoleInformation(userId);
+                StateHasChanged();
+            }
+        });
+    }
+
+    private void OnRolePermissionUpdated(CommunityRolePermissionUpdatedEventArg args) {
+        if (args.RoleId != _userRoleId) return;
+        
+        InvokeAsync(async () => {
+            var authState = await AuthenticationState;
+        
+            if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is { } userId) {
+                await QueryUserRoleInformation(userId);
+                StateHasChanged();
+            }
+        });
+    }
+
+    private async Task QueryUserRoleInformation(string userId) {
+        var result = await CommunityService.GetUserRoleInformationAsync(CommunityId, userId);
+
+        if (result == null) {
+            _userRoleId = null;
+            _userPermissions = new(CommunityRole.ChannelPermissionFlags.None, CommunityRole.RolePermissionFlags.None, CommunityRole.AccessPermissionFlags.None);
+        } else {
+            (_userRoleId, _userPermissions) = result.Value;
         }
     }
 
     public async ValueTask DisposeAsync() {
+        CommunityService.OnMemberRoleChanged -= OnMemberRoleChanged;
+        CommunityService.OnRolePermissionUpdated -= OnRolePermissionUpdated;
+        
         await CommunityService.LeaveCommunityHubAsync(CommunityId);
     }
 }

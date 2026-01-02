@@ -136,7 +136,7 @@
         }
         
         <AuthorizeView Policy="CreateCommunityChannelCategory" Resource="UserPermissions">
-            <Authorized Context="authState">
+            <Authorized Context="_">
                 @if (_isCreatingChannelCategory) {
                     <section class="px-2 mt-2">
                         <input type="text" maxlength="32" class="w-full h-10 input-field" autofocus @onkeydown="HandleCreatingChannelCategoryKeyDown" @onblur="HandleCreatingChannelCategoryBlur" @onchange="HandleCreatingChannelCategoryChange">
@@ -197,8 +197,8 @@
     private bool _showCreatingChannelModal, _showInvitationUrlModal, _showControlPanelModal;
     private Guid _categoryChannelCreationReceiverId;
 
-    private Community _community;
-    private string _invitationUrl;
+    private Community _community = null!;
+    private string _invitationUrl = null!;
 
     [CascadingParameter] private ICommunityService.Permissions? UserPermissions { get; set; }
     
@@ -248,7 +248,7 @@
         }
     }
 
-    private async Task HandleCreatingChannelCategoryBlur() {
+    private void HandleCreatingChannelCategoryBlur() {
         _showCommunityExpandableMenu = false;
         _isCreatingChannelCategory = false;
     }
@@ -287,8 +287,6 @@
     }
 
     private void OnChannelCategoryCreated(ChannelCategoryCreatedEventArgs args) {
-        if (args.CommunityId != CommunityId) return;
-
         InvokeAsync(async () => {
             await using var dbContext = await DbContextFactory.CreateDbContextAsync();
             dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
@@ -347,10 +345,6 @@
         CommunityService.OnChannelCategoryCreated -= OnChannelCategoryCreated;
         CommunityService.OnChannelCreated -= OnChannelCreated;
     }
-
-    private readonly record struct ChannelCategoryDTO(Guid Id, string Name, List<ChannelDTO> Channels);
-
-    private readonly record struct ChannelDTO(Guid Id, CommunityChannelType Type, string Name);
 
     private enum State {
         Loading,

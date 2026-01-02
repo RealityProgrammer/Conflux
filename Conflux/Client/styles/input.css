@@ -154,7 +154,7 @@
     }
     
     .input-label {
-        @apply text-sm font-semibold text-gray-300;
+        @apply text-sm font-semibold text-gray-200;
     }
     
     .input-field {

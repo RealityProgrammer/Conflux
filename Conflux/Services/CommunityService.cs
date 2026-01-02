@@ -33,6 +33,9 @@ public class CommunityService(
     private const string ChannelCreatedEventName = "ChannelCreated";
     private const string MemberJoinedEventName = "MemberJoined";
     private const string RoleCreatedEventName = "RoleCreated";
+    private const string RoleRenamedEventName = "RoleRenamed";
+    private const string RoleDeletedEventName = "RoleDeleted";
+    private const string RolePermissionUpdatedEventName = "RolePermissionUpdated";
     private const string MemberRoleChangedEventName = "MemberRoleChanged";
     
     private static readonly TimeSpan PermissionCacheDuration = TimeSpan.FromMinutes(5);
@@ -44,6 +47,9 @@ public class CommunityService(
     public event Action<CommunityCreatedEventArgs>? OnUserCreatedCommunity;
     public event Action<CommunityMemberJoinedEventArgs>? OnMemberJoined;
     public event Action<CommunityRoleCreatedEventArgs>? OnRoleCreated;
+    public event Action<CommunityRoleRenamedEventArgs>? OnRoleRenamed;
+    public event Action<CommunityRoleDeletedEventArgs>? OnRoleDeleted;
+    public event Action<CommunityRolePermissionUpdatedEventArg>? OnRolePermissionUpdated;
     public event Action<MemberRoleChangedEventArgs>? OnMemberRoleChanged;
     
     public async Task JoinCommunityHubAsync(Guid communityId) {
@@ -68,6 +74,18 @@ public class CommunityService(
             OnRoleCreated?.Invoke(args);
         });
 
+        connection.On<CommunityRoleRenamedEventArgs>(RoleRenamedEventName, args => {
+            OnRoleRenamed?.Invoke(args);
+        });
+
+        connection.On<CommunityRoleDeletedEventArgs>(RoleDeletedEventName, args => {
+            OnRoleDeleted?.Invoke(args);
+        });
+
+        connection.On<CommunityRolePermissionUpdatedEventArg>(RolePermissionUpdatedEventName, args => {
+            OnRolePermissionUpdated?.Invoke(args);
+        });
+        
         connection.On<MemberRoleChangedEventArgs>(MemberRoleChangedEventName, args => {
             OnMemberRoleChanged?.Invoke(args);
         });
@@ -178,7 +196,7 @@ public class CommunityService(
         dbContext.CommunityChannelCategories.Add(category);
 
         if (await dbContext.SaveChangesAsync() > 0) {
-            await hubContext.Clients.Group(communityId.ToString()).SendAsync(ChannelCategoryCreatedEventName, new ChannelCategoryCreatedEventArgs(communityId, category.Id));
+            await hubContext.Clients.Group(communityId.ToString()).SendAsync(ChannelCategoryCreatedEventName, new ChannelCategoryCreatedEventArgs(category.Id));
         }
     }
 
@@ -293,6 +311,16 @@ public class CommunityService(
         return permissions;
     }
 
+    public async Task<Guid?> GetUserRoleAsync(Guid communityId, string userId) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        return await dbContext.CommunityMembers
+            .Where(x => x.CommunityId == communityId && x.UserId == userId)
+            .Select(x => x.RoleId)
+            .FirstOrDefaultAsync();
+    }
+
     public async Task<ICommunityService.Permissions?> GetUserRolePermissionsAsync(string userId, Guid communityId) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
@@ -323,12 +351,29 @@ public class CommunityService(
         return permissions;
     }
 
-    public async Task<bool> UpdatePermissionsAsync(Guid roleId, ICommunityService.Permissions permissions) {
+    public async Task<(Guid?, ICommunityService.Permissions)?> GetUserRoleInformationAsync(Guid communityId, string userId) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        var result = await dbContext.CommunityMembers
+            .Where(x => x.CommunityId == communityId && x.UserId == userId)
+            .Select(x => ValueTuple.Create(
+                x.RoleId,
+                x.Role == null ? 
+                    new(CommunityRole.ChannelPermissionFlags.None, CommunityRole.RolePermissionFlags.None, CommunityRole.AccessPermissionFlags.None) : 
+                    new ICommunityService.Permissions(x.Role.ChannelPermissions, x.Role.RolePermissions, x.Role.AccessPermissions)
+            ))
+            .FirstOrDefaultAsync();
+
+        return result;
+    }
+
+    public async Task<bool> UpdatePermissionsAsync(Guid communityId, Guid roleId, ICommunityService.Permissions permissions) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
         int numUpdatedRows = await dbContext.CommunityRoles
-            .Where(x => x.Id == roleId)
+            .Where(x => x.CommunityId == communityId && x.Id == roleId)
             .ExecuteUpdateAsync(builder => {
                 builder.SetProperty(x => x.ChannelPermissions, permissions.ChannelPermissions);
                 builder.SetProperty(x => x.RolePermissions, permissions.RolePermissions);
@@ -342,6 +387,8 @@ public class CommunityService(
         string cacheKey = GeneratePermissionCacheKey(roleId);
         
         memoryCache.Set(cacheKey, permissions, PermissionCacheDuration);
+        
+        await hubContext.Clients.Group(communityId.ToString()).SendAsync(RolePermissionUpdatedEventName, new CommunityRolePermissionUpdatedEventArg(roleId));
 
         return true;
     }
@@ -364,52 +411,64 @@ public class CommunityService(
         }
     }
 
-    public async Task<bool> SetMembersRole(IReadOnlyCollection<Guid> memberIds, Guid roleId) {
+    public async Task<bool> SetMembersRole(Guid communityId, IReadOnlyCollection<Guid> memberIds, Guid? roleId) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
-        Guid communityId = await dbContext.CommunityRoles
-            .Where(x => x.Id == roleId)
-            .Select(x => x.CommunityId)
-            .FirstOrDefaultAsync();
-
-        if (communityId == Guid.Empty) {
-            return false;
-        }
-
         int affected = await dbContext.CommunityMembers
-            .Where(x => memberIds.Contains(x.Id) && x.RoleId == null)
+            .Where(x => memberIds.Contains(x.Id))
             .ExecuteUpdateAsync(builder => {
                 builder.SetProperty(x => x.RoleId, roleId);
             });
 
         if (affected > 0) {
-            await hubContext.Clients.Group(communityId.ToString()).SendAsync(MemberRoleChangedEventName, new MemberRoleChangedEventArgs(communityId, roleId));
+            await hubContext.Clients.Group(communityId.ToString()).SendAsync(MemberRoleChangedEventName, new MemberRoleChangedEventArgs(roleId));
         }
 
         return true;
     }
-    
-    public async Task<bool> RemoveMemberRole(Guid memberId) {
+
+    public async Task<bool> RenameRole(Guid communityId, Guid roleId, string name) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-
-        int affected = await dbContext.CommunityMembers
-            .Where(x => x.Id == memberId)
+        
+        int affected = await dbContext.CommunityRoles
+            .Where(x => x.CommunityId == communityId && x.Id == roleId)
             .ExecuteUpdateAsync(builder => {
-                builder.SetProperty(x => x.RoleId, (Guid?)null);
+                builder.SetProperty(x => x.Name, name);
             });
 
         if (affected > 0) {
-            var communityId = await dbContext.CommunityMembers
-                .Where(x => x.Id == memberId)
-                .Select(x => x.CommunityId)
-                .FirstAsync();
-            
-            await hubContext.Clients.Group(communityId.ToString()).SendAsync(MemberRoleChangedEventName, new MemberRoleChangedEventArgs(communityId, null));
+            await hubContext.Clients.Group(communityId.ToString()).SendAsync(RoleRenamedEventName, new CommunityRoleRenamedEventArgs(roleId, name));
+            return true;
         }
 
-        return true;
+        return false;
+    }
+
+    public async Task<bool> DeleteRole(Guid communityId, Guid roleId) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        string? roleName = await dbContext.CommunityRoles
+            .Where(r => r.CommunityId == communityId && r.Id == roleId)
+            .Select(x => x.Name)
+            .FirstOrDefaultAsync();
+
+        if (string.IsNullOrEmpty(roleName) || roleName == "Owners") {
+            return false;
+        }
+
+        int affected = await dbContext.CommunityRoles
+            .Where(r => r.CommunityId == communityId && r.Id == roleId)
+            .ExecuteDeleteAsync();
+
+        if (affected > 0) {
+            await hubContext.Clients.Group(communityId.ToString()).SendAsync(RoleDeletedEventName, new CommunityRoleDeletedEventArgs(roleId));
+            return true;
+        }
+
+        return false;
     }
 
     public async ValueTask DisposeAsync() {

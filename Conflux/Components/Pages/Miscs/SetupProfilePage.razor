@@ -395,10 +395,10 @@
         [Required(ErrorMessage = "Display Name is required.")]
         public string DisplayName { get; set; } = null!;
         
-        [StringLength(32, ErrorMessage = "Pronouns can only have maximum length of {1} characters.")]
+        [StringLength(32, ErrorMessage = "Pronouns cannot be longer than {1} characters.")]
         public string? Pronouns { get; set; }
         
-        [StringLength(255, ErrorMessage = "About Me can only have maximum length of {1} characters.")]
+        [StringLength(255, ErrorMessage = "About Me cannot be longer than {1} characters.")]
         public string? Bio { get; set; }
     }
 }

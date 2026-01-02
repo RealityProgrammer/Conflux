@@ -63,6 +63,14 @@ builder.Services.AddAuthorization(options => {
         policy.Requirements.Add(new CreateCommunityRoleRequirement());
     });
     
+    options.AddPolicy("DeleteCommunityRole", policy => {
+        policy.Requirements.Add(new DeleteCommunityRoleRequirement());
+    });
+    
+    options.AddPolicy("RenameCommunityRole", policy => {
+        policy.Requirements.Add(new RenameCommunityRoleRequirement());
+    });
+    
     options.AddPolicy("AccessCommunityControlPanel", policy => {
         policy.Requirements.Add(new AccessCommunityControlPanelRequirement());
     });
@@ -79,6 +87,8 @@ builder.Services.AddAuthorization(options => {
 builder.Services.AddSingleton<IAuthorizationHandler, CreateCommunityChannelCategoryAuthorizationHandler>();
 builder.Services.AddSingleton<IAuthorizationHandler, CreateCommunityChannelAuthorizationHandler>();
 builder.Services.AddSingleton<IAuthorizationHandler, CreateCommunityRoleAuthorizationHandler>();
+builder.Services.AddSingleton<IAuthorizationHandler, DeleteCommunityRoleAuthorizationHandler>();
+builder.Services.AddSingleton<IAuthorizationHandler, RenameCommunityRoleAuthorizationHandler>();
 builder.Services.AddSingleton<IAuthorizationHandler, UpdateCommunityRolePermissionsAuthorizationHandler>();
 builder.Services.AddSingleton<IAuthorizationHandler, AccessCommunityControlPanelAuthorizationHandler>();
 builder.Services.AddSingleton<IAuthorizationHandler, UpdateCommunityMemberRoleAuthorizationHandler>();

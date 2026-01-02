@@ -68,7 +68,7 @@
     }
     
     public sealed class InputModel {
-        [Required(ErrorMessage = "Name is required."), StringLength(32, ErrorMessage = "Name cannot surpass 32 characters.")] public string Name { get; set; }
+        [Required(ErrorMessage = "Name is required."), StringLength(32, ErrorMessage = "Name cannot be longer than 32 characters.")] public string Name { get; set; }
         public CommunityChannelType Type { get; set; }
     }
 }
