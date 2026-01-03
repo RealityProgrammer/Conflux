@@ -1,0 +1,9 @@
+﻿@using Conflux.Core
+@using Conflux.Services.Abstracts
+
+@code {
+    [Parameter, EditorRequired] public required Guid CommunityId { get; set; }
+    [Parameter, EditorRequired] public required Guid ChannelId { get; set; }
+
+    [CascadingParameter] private RolePermissions? UserPermissions { get; set; }
+}

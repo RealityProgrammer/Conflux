@@ -1,16 +1,17 @@
-﻿using Conflux.Database.Entities;
+﻿using Conflux.Core;
+using Conflux.Database.Entities;
 using Conflux.Services.Abstracts;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Conflux.Services.Authorization;
 
-public class CreateCommunityChannelCategoryAuthorizationHandler : AuthorizationHandler<CreateCommunityChannelCategoryRequirement, ICommunityService.Permissions> {
+public class CreateCommunityChannelCategoryAuthorizationHandler : AuthorizationHandler<CreateCommunityChannelCategoryRequirement, RolePermissions> {
     protected override Task HandleRequirementAsync(
         AuthorizationHandlerContext context, 
         CreateCommunityChannelCategoryRequirement requirement, 
-        ICommunityService.Permissions permissions)
+        RolePermissions permissions)
     {
-        if (permissions.ChannelPermissions.HasFlag(CommunityRole.ChannelPermissionFlags.CreateChannelCategory)) {
+        if (permissions.Channel.HasFlag(CommunityRole.ChannelPermissionFlags.CreateChannelCategory)) {
             context.Succeed(requirement);
         }
         

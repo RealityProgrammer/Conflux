@@ -1,6 +1,7 @@
 ﻿@using Conflux.Components.Pages.Settings
 @using Conflux.Components.Shared
 @using Conflux.Components.Shared.Icons
+@using Conflux.Core
 @using Conflux.Database
 @using Conflux.Database.Entities
 @using Conflux.Services.Abstracts
@@ -377,7 +378,7 @@
 @code {
     [Parameter] public Guid CommunityId { get; set; }
     
-    [CascadingParameter] private ICommunityService.Permissions? UserPermissions { get; set; }
+    [CascadingParameter] private MemberRolePermissions? UserPermissions { get; set; }
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
 
     // Role Selection Dropdown.
@@ -388,7 +389,7 @@
     // Forms
     [SupplyParameterFromForm(Name = "MainForm")] private InputModel Model { get; set; } = null!;
     private EditContext _editContext = null!;
-    private ICommunityService.Permissions _originalPermissions = null!;
+    private RolePermissions _originalPermissions = null!;
     private FieldIdentifier _roleModificationsField, _roleNameField;
 
     [SupplyParameterFromForm(Name = "AddMember")] private AddMemberInputModel AddMemberModel { get; set; } = null!;
@@ -468,9 +469,9 @@
             var permissions = await CommunityService.GetPermissionsAsync(_selectedRole.Id);
 
             if (permissions != null) {
-                Model.ChannelPermissions = permissions.ChannelPermissions;
-                Model.RolePermissions = permissions.RolePermissions;
-                Model.AccessPermissions = permissions.AccessPermissions;
+                Model.ChannelPermissions = permissions.Channel;
+                Model.RolePermissions = permissions.Role;
+                Model.AccessPermissions = permissions.Access;
 
                 _originalPermissions = permissions;
             }
@@ -484,9 +485,9 @@
     }
 
     private async Task HandleCancelEdit() {
-        Model.ChannelPermissions = _originalPermissions.ChannelPermissions;
-        Model.RolePermissions = _originalPermissions.RolePermissions;
-        Model.AccessPermissions = _originalPermissions.AccessPermissions;
+        Model.ChannelPermissions = _originalPermissions.Channel;
+        Model.RolePermissions = _originalPermissions.Role;
+        Model.AccessPermissions = _originalPermissions.Access;
         Model.RoleModifications.Clear();
         Model.RoleName = _selectedRole.Name;
 

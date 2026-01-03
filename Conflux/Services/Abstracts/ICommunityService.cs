@@ -1,4 +1,5 @@
-﻿using Conflux.Database.Entities;
+﻿using Conflux.Core;
+using Conflux.Database.Entities;
 
 namespace Conflux.Services.Abstracts;
 
@@ -35,12 +36,10 @@ public interface ICommunityService {
 
     Task<bool> JoinCommunityAsync(string userId, Guid communityId, Guid invitationId);
     
-    Task<Permissions?> GetPermissionsAsync(Guid roleId);
-    Task<bool> UpdatePermissionsAsync(Guid communityId, Guid roleId, Permissions permissions);
+    Task<RolePermissions?> GetPermissionsAsync(Guid roleId);
+    Task<bool> UpdatePermissionsAsync(Guid communityId, Guid roleId, RolePermissions permissions);
 
-    Task<Guid?> GetUserRoleAsync(Guid communityId, string userId);
-    Task<Permissions?> GetUserRolePermissionsAsync(string userId, Guid communityId);
-    Task<(Guid?, Permissions)?> GetUserRoleInformationAsync(Guid communityId, string userId);
+     Task<MemberRolePermissions?> GetUserRolePermissionsAsync(string userId, Guid communityId);
 
     Task<bool> SetMembersRole(Guid communityId, IReadOnlyCollection<Guid> memberIds, Guid? roleId);
 
@@ -54,10 +53,4 @@ public interface ICommunityService {
         NameExists,
         ReservedName,
     }
-    
-    public record Permissions(
-        CommunityRole.ChannelPermissionFlags ChannelPermissions,
-        CommunityRole.RolePermissionFlags RolePermissions,
-        CommunityRole.AccessPermissionFlags AccessPermissions
-    );
 }

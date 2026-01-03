@@ -1,16 +1,17 @@
-﻿using Conflux.Database.Entities;
+﻿using Conflux.Core;
+using Conflux.Database.Entities;
 using Conflux.Services.Abstracts;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Conflux.Services.Authorization;
 
-public class DeleteCommunityRoleAuthorizationHandler : AuthorizationHandler<DeleteCommunityRoleRequirement, ICommunityService.Permissions> {
+public class DeleteCommunityRoleAuthorizationHandler : AuthorizationHandler<DeleteCommunityRoleRequirement, RolePermissions> {
     protected override Task HandleRequirementAsync(
         AuthorizationHandlerContext context, 
         DeleteCommunityRoleRequirement requirement, 
-        ICommunityService.Permissions permissions)
+        RolePermissions permissions)
     {
-        if (permissions.RolePermissions.HasFlag(CommunityRole.RolePermissionFlags.DeleteRole)) {
+        if (permissions.Role.HasFlag(CommunityRole.RolePermissionFlags.DeleteRole)) {
             context.Succeed(requirement);
         }
         

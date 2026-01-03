@@ -1,16 +1,17 @@
-﻿using Conflux.Database.Entities;
+﻿using Conflux.Core;
+using Conflux.Database.Entities;
 using Conflux.Services.Abstracts;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Conflux.Services.Authorization;
 
-public class UpdateCommunityMemberRoleAuthorizationHandler : AuthorizationHandler<UpdateCommunityMemberRoleRequirement, ICommunityService.Permissions> {
+public class UpdateCommunityMemberRoleAuthorizationHandler : AuthorizationHandler<UpdateCommunityMemberRoleRequirement, RolePermissions> {
     protected override Task HandleRequirementAsync(
         AuthorizationHandlerContext context, 
         UpdateCommunityMemberRoleRequirement requirement, 
-        ICommunityService.Permissions permissions)
+        RolePermissions permissions)
     {
-        if (permissions.RolePermissions.HasFlag(CommunityRole.RolePermissionFlags.ModifyMemberRole)) {
+        if (permissions.Role.HasFlag(CommunityRole.RolePermissionFlags.ModifyMemberRole)) {
             context.Succeed(requirement);
         }
         

@@ -1,7 +1,6 @@
 ﻿@page "/community/{CommunityId:guid}/{Channel?}"
 
 @using Conflux.Components.Layout
-@using Conflux.Database.Entities
 @using Conflux.Services.Abstracts
 @using Microsoft.AspNetCore.Components.Sections
 @using System.Security.Claims
@@ -12,89 +11,46 @@
 
 @implements IAsyncDisposable
 
-<CascadingValue Value="_userPermissions">
-    <CascadingValue Value="_userRoleId" Name="UserRoleId">
-        <SectionContent SectionName="lobby-sidebar">
-            <ChannelSidebar CommunityId="CommunityId"/>
-        </SectionContent>
+<SectionContent SectionName="lobby-sidebar">
+    <ChannelSidebar CommunityId="CommunityId"/>
+</SectionContent>
 
-        @if (_userPermissions == null) {
-            <p>Null permissions</p>
-        } else {
-            <p>@_userPermissions.ToString()</p>
-        }
-    </CascadingValue>
-</CascadingValue>
+@switch (Channel) {
+    case "welcome" or null:
+        <p>Welcome</p>
+        break;
+
+    case "events":
+        <p>Events</p>
+        break;
+
+    case "rules":
+        <p>Rules</p>
+        break;
+
+    case var _ when Guid.TryParse(Channel, out var channelId):
+        <ChannelContentInterface CommunityId="CommunityId" ChannelId="channelId"/>
+        break;
+}
 
 @code {
     [Parameter] public Guid CommunityId { get; set; }
-    [Parameter] public string? Channel { get; set; }
-
-    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
-    
     private Guid _previousCommunityId;
-    private Guid? _userRoleId;
-    private ICommunityService.Permissions? _userPermissions;
+    
+    [Parameter] public string? Channel { get; set; }
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (_previousCommunityId != CommunityId) {
             await CommunityService.LeaveCommunityHubAsync(_previousCommunityId);
             await CommunityService.JoinCommunityHubAsync(CommunityId);
-
-            var authState = await AuthenticationState;
-        
-            if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is { } userId) {
-                await QueryUserRoleInformation(userId);
-            }
             
             _previousCommunityId = CommunityId;
-            
+
             StateHasChanged();
-
-            CommunityService.OnMemberRoleChanged += OnMemberRoleChanged;
-            CommunityService.OnRolePermissionUpdated += OnRolePermissionUpdated;
         }
     }
-
-    private void OnMemberRoleChanged(MemberRoleChangedEventArgs args) {
-        InvokeAsync(async () => {
-            var authState = await AuthenticationState;
-        
-            if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is { } userId) {
-                await QueryUserRoleInformation(userId);
-                StateHasChanged();
-            }
-        });
-    }
-
-    private void OnRolePermissionUpdated(CommunityRolePermissionUpdatedEventArg args) {
-        if (args.RoleId != _userRoleId) return;
-        
-        InvokeAsync(async () => {
-            var authState = await AuthenticationState;
-        
-            if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is { } userId) {
-                await QueryUserRoleInformation(userId);
-                StateHasChanged();
-            }
-        });
-    }
-
-    private async Task QueryUserRoleInformation(string userId) {
-        var result = await CommunityService.GetUserRoleInformationAsync(CommunityId, userId);
-
-        if (result == null) {
-            _userRoleId = null;
-            _userPermissions = new(CommunityRole.ChannelPermissionFlags.None, CommunityRole.RolePermissionFlags.None, CommunityRole.AccessPermissionFlags.None);
-        } else {
-            (_userRoleId, _userPermissions) = result.Value;
-        }
-    }
-
+    
     public async ValueTask DisposeAsync() {
-        CommunityService.OnMemberRoleChanged -= OnMemberRoleChanged;
-        CommunityService.OnRolePermissionUpdated -= OnRolePermissionUpdated;
-        
         await CommunityService.LeaveCommunityHubAsync(CommunityId);
     }
 }

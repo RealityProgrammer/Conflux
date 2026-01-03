@@ -1,16 +1,17 @@
-﻿using Conflux.Database.Entities;
+﻿using Conflux.Core;
+using Conflux.Database.Entities;
 using Conflux.Services.Abstracts;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Conflux.Services.Authorization;
 
-public class RenameCommunityRoleAuthorizationHandler : AuthorizationHandler<RenameCommunityRoleRequirement, ICommunityService.Permissions> {
+public class RenameCommunityRoleAuthorizationHandler : AuthorizationHandler<RenameCommunityRoleRequirement, RolePermissions> {
     protected override Task HandleRequirementAsync(
         AuthorizationHandlerContext context, 
         RenameCommunityRoleRequirement requirement, 
-        ICommunityService.Permissions permissions)
+        RolePermissions permissions)
     {
-        if (permissions.RolePermissions.HasFlag(CommunityRole.RolePermissionFlags.RenameRole)) {
+        if (permissions.Role.HasFlag(CommunityRole.RolePermissionFlags.RenameRole)) {
             context.Succeed(requirement);
         }
         

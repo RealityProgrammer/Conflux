@@ -1,12 +1,16 @@
-﻿using Conflux.Database.Entities;
-using Conflux.Services.Abstracts;
+﻿using Conflux.Core;
+using Conflux.Database.Entities;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Conflux.Services.Authorization;
 
-public sealed class AccessCommunityControlPanelAuthorizationHandler : AuthorizationHandler<AccessCommunityControlPanelRequirement, ICommunityService.Permissions> {
-    protected override Task HandleRequirementAsync(AuthorizationHandlerContext context, AccessCommunityControlPanelRequirement requirement, ICommunityService.Permissions permissions) {
-        if (permissions.AccessPermissions.HasFlag(CommunityRole.AccessPermissionFlags.AccessControlPanel)) {
+public sealed class AccessCommunityControlPanelAuthorizationHandler : AuthorizationHandler<AccessCommunityControlPanelRequirement, RolePermissions> {
+    protected override Task HandleRequirementAsync(
+        AuthorizationHandlerContext context, 
+        AccessCommunityControlPanelRequirement requirement, 
+        RolePermissions permissions
+    ) {
+        if (permissions.Access.HasFlag(CommunityRole.AccessPermissionFlags.AccessControlPanel)) {
             context.Succeed(requirement);
         }
         
