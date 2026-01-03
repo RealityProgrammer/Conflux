@@ -44,7 +44,7 @@
                     }
                 </div>
                 
-                <AuthorizeView Policy="CreateCommunityRole" Resource="UserPermissions">
+                <AuthorizeView Policy="CreateCommunityRole" Resource="UserPermissions?.Permissions">
                     <Authorized>
                         <li class="flex flex-row items-center mt-1">
                             <input @ref="_roleNameInputElement" type="text" @bind="_creatingRoleName" class="flex-1 input-field h-10 mr-1">
@@ -187,7 +187,7 @@
 
                                             <p class="flex-1">@item.DisplayName</p>
 
-                                            <AuthorizeView Policy="UpdateCommunityMemberRole" Resource="UserPermissions">
+                                            <AuthorizeView Policy="UpdateCommunityMemberRole" Resource="UserPermissions?.Permissions">
                                                 <Authorized>
                                                     @if (isBeingRemoved) {
                                                         <button type="button" class="p-1.5 bg-transparent hover:bg-white/15 rounded-full cursor-pointer" @onclick="@(e => UndoMemberRoleRemove(item.MemberId))">
@@ -212,7 +212,7 @@
                             </div>
                         </section>
 
-                        <AuthorizeView Policy="UpdateCommunityMemberRole" Resource="UserPermissions">
+                        <AuthorizeView Policy="UpdateCommunityMemberRole" Resource="UserPermissions?.Permissions">
                             <Authorized>
                                 <section class="flex-1">
                                     <p>Appending members:</p>
@@ -258,7 +258,7 @@
                     <div class="mt-2 flex flex-col md:flex-row gap-1 md:items-center">
                         <label class="flex-none input-label md:flex-1">Role Name</label>
 
-                        <AuthorizeView Policy="RenameCommunityRole" Resource="UserPermissions">
+                        <AuthorizeView Policy="RenameCommunityRole" Resource="UserPermissions?.Permissions">
                             <Authorized>
                                 @if (_selectedRole.Name == "Owners") {
                                     <input type="text" class="h-10 md:flex-3 input-field" readonly disabled value="Owners"/>
@@ -280,7 +280,7 @@
                     </div>
 
                     @if (_selectedRole.Name != "Owners") {
-                        <AuthorizeView Policy="DeleteCommunityRole" Resource="UserPermissions">
+                        <AuthorizeView Policy="DeleteCommunityRole" Resource="UserPermissions?.Permissions">
                             <Authorized>
                                 <section class="mt-1 border border-red-500 p-2 rounded-lg">
                                     <div class="flex flex-col md:flex-row items-center">
@@ -345,7 +345,7 @@
 </Dialog>
 
 @if (_selectedRole.Name != "Owners") {
-    <AuthorizeView Policy="DeleteCommunityRole" Resource="UserPermissions">
+    <AuthorizeView Policy="DeleteCommunityRole" Resource="UserPermissions?.Permissions">
         <Dialog @bind-Open="_openDeleteRoleDialog" OnClickOutside="CloseDeleteRoleDialog" class="flex justify-center items-center overflow-hidden" ContainerCssClass="flex justify-center items-center">
             <Card class="lg:static transition-transform duration-500 z-10">
                 <CardHeader Title="Delete Role" Subtext="About to cause some job loss." OnCloseRequested="CloseDeleteRoleDialog"/>
@@ -382,7 +382,7 @@
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
 
     // Role Selection Dropdown.
-    private List<RoleDTO> _roles = [];
+    private List<RoleDTO>? _roles;
     private bool _isCreatingRole;
     private RoleDTO _selectedRole;
 
@@ -454,7 +454,7 @@
             CommunityService.OnRoleDeleted += OnRoleDeleted;
             
             var authState = await AuthenticationState;
-            _allowsUpdateRolePermissions = (await AuthorizationService.AuthorizeAsync(authState.User, UserPermissions, new UpdateCommunityRolePermissionsRequirement())).Succeeded;
+            _allowsUpdateRolePermissions = (await AuthorizationService.AuthorizeAsync(authState.User, UserPermissions?.Permissions, new UpdateCommunityRolePermissionsRequirement())).Succeeded;
             
             StateHasChanged();
         }
@@ -742,7 +742,7 @@
     private void OnMemberRoleChanged(MemberRoleChangedEventArgs args) {
         InvokeAsync(async () => {
             var authState = await AuthenticationState;
-            _allowsUpdateRolePermissions = (await AuthorizationService.AuthorizeAsync(authState.User, UserPermissions, new UpdateCommunityRolePermissionsRequirement())).Succeeded;
+            _allowsUpdateRolePermissions = (await AuthorizationService.AuthorizeAsync(authState.User, UserPermissions?.Permissions, new UpdateCommunityRolePermissionsRequirement())).Succeeded;
 
             if (args.RoleId == _selectedRole.Id && _roleMembersVirtualizeReference != null) {
                 await _roleMembersVirtualizeReference.RefreshDataAsync();
@@ -766,6 +766,8 @@
     }
 
     private void OnRoleDeleted(CommunityRoleDeletedEventArgs args) {
+        if (_roles == null) return;
+            
         InvokeAsync(async () => {
             int index = -1;
             

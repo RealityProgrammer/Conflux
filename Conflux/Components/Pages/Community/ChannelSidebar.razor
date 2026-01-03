@@ -29,16 +29,6 @@
         break;
 
     case State.Success:
-        <AuthorizeView Policy="CreateCommunityChannelCategory" Resource="_userPermissions">
-            <Authorized>
-                <p>Can create channel category</p>
-            </Authorized>
-            
-            <NotAuthorized>
-                <p>Can't create channel category: @_userPermissions</p>
-            </NotAuthorized>
-        </AuthorizeView>
-        
         <section>
             <div class="w-full h-32 bg-black relative">
                 <button @ref="_serverOptionsButton" class="absolute top-0 right-0 p-1.5 bg-transparent hover:bg-white/15 rounded-full" @onclick="@(() => _showCommunityExpandableMenu = true)">
@@ -47,13 +37,13 @@
         
                 <Popover TargetReference="_serverOptionsButton" @bind-IsShowing="_showCommunityExpandableMenu" Placement="left" Offset="4" CloseWhenClickOutside="true">
                     <div class="bg-gray-600 p-1 text-white text-sm rounded-lg shadow-md flex flex-col gap-1 z-50" tabindex="-1">
-                        <AuthorizeView Policy="CreateCommunityChannelCategory" Resource="_userPermissions">
+                        <AuthorizeView Policy="CreateCommunityChannelCategory" Resource="UserPermissions?.Permissions">
                             <Authorized>
                                 <button class="p-1.5 bg-transparent hover:bg-white/10 active:bg-black/8 cursor-pointer rounded-md text-left" @onclick="HandleDisplayCommunityExpandableMenu">Create channel category</button>
                             </Authorized>
                         </AuthorizeView>
                         
-                        <AuthorizeView Policy="AccessCommunityControlPanel" Resource="_userPermissions">
+                        <AuthorizeView Policy="AccessCommunityControlPanel" Resource="UserPermissions?.Permissions">
                             <Authorized>
                                 <button class="p-1.5 bg-transparent hover:bg-white/10 active:bg-black/8 cursor-pointer rounded-md text-left" @onclick="HandleDisplayControlPanel">Open Control Panel</button>
                             </Authorized>
@@ -107,7 +97,7 @@
                 <h1 class="text-sm font-bold text-gray-400 mt-2 mb-2 overflow-hidden break-all whitespace-normal flex flex-row items-start">
                     <span class="flex-1 mr-1">@channelCategory.Name</span>
         
-                    <AuthorizeView Policy="CreateCommunityChannel" Resource="_userPermissions">
+                    <AuthorizeView Policy="CreateCommunityChannel" Resource="UserPermissions?.Permissions">
                         <Authorized>
                             <span class="flex-none">
                                 <Tooltip TargetCssClass="inline-block" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" Placement="right" Offset="8">
@@ -146,7 +136,7 @@
             </section>
         }
         
-        <AuthorizeView Policy="CreateCommunityChannelCategory" Resource="_userPermissions">
+        <AuthorizeView Policy="CreateCommunityChannelCategory" Resource="UserPermissions?.Permissions">
             <Authorized Context="_">
                 @if (_isCreatingChannelCategory) {
                     <section class="px-2 mt-2">
@@ -156,7 +146,7 @@
             </Authorized>
         </AuthorizeView>
         
-        <AuthorizeView Policy="CreateCommunityChannel" Resource="_userPermissions">
+        <AuthorizeView Policy="CreateCommunityChannel" Resource="UserPermissions?.Permissions">
             <Authorized Context="authState">
                 <Dialog @bind-Open="_showCreatingChannelModal" OnClickOutside="CloseCreatingChannelModal" class="flex justify-center items-center overflow-hidden" ContainerCssClass="flex justify-center items-center">
                     <Card class="">
@@ -170,7 +160,7 @@
             </Authorized>
         </AuthorizeView>
         
-        <AuthorizeView Policy="AccessCommunityControlPanel" Resource="_userPermissions">
+        <AuthorizeView Policy="AccessCommunityControlPanel" Resource="UserPermissions?.Permissions">
             <Authorized Context="authState">
                 <Dialog @bind-Open="_showControlPanelModal" OnClickOutside="CloseControlPanelModal" ContainerCssClass="absolute inset-0">
                     <CommunityControlPanel CommunityId="CommunityId" OnCloseRequest="CloseControlPanelModal"/>
@@ -211,7 +201,7 @@
     private Community _community = null!;
     private string _invitationUrl = null!;
 
-    private RolePermissions? _userPermissions;
+    [CascadingParameter] private MemberRolePermissions? UserPermissions { get; set; }
     
     protected override void OnParametersSet() {
         if (_previousCommunityId != CommunityId) {

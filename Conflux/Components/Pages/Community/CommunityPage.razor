@@ -1,6 +1,7 @@
 ﻿@page "/community/{CommunityId:guid}/{Channel?}"
 
 @using Conflux.Components.Layout
+@using Conflux.Core
 @using Conflux.Services.Abstracts
 @using Microsoft.AspNetCore.Components.Sections
 @using System.Security.Claims
@@ -11,27 +12,29 @@
 
 @implements IAsyncDisposable
 
-<SectionContent SectionName="lobby-sidebar">
-    <ChannelSidebar CommunityId="CommunityId"/>
-</SectionContent>
+<CascadingValue Value="_memberRole">
+    <SectionContent SectionName="lobby-sidebar">
+        <ChannelSidebar CommunityId="CommunityId"/>
+    </SectionContent>
 
-@switch (Channel) {
-    case "welcome" or null:
-        <p>Welcome</p>
-        break;
+    @switch (Channel) {
+        case "welcome" or null:
+            <p>Welcome</p>
+            break;
 
-    case "events":
-        <p>Events</p>
-        break;
+        case "events":
+            <p>Events</p>
+            break;
 
-    case "rules":
-        <p>Rules</p>
-        break;
+        case "rules":
+            <p>Rules</p>
+            break;
 
-    case var _ when Guid.TryParse(Channel, out var channelId):
-        <ChannelContentInterface CommunityId="CommunityId" ChannelId="channelId"/>
-        break;
-}
+        case var _ when Guid.TryParse(Channel, out var channelId):
+            <ChannelContentInterface CommunityId="CommunityId" ChannelId="channelId"/>
+            break;
+    }
+</CascadingValue>
 
 @code {
     [Parameter] public Guid CommunityId { get; set; }
@@ -39,14 +42,22 @@
     
     [Parameter] public string? Channel { get; set; }
 
+    private MemberRolePermissions? _memberRole;
+
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (_previousCommunityId != CommunityId) {
             await CommunityService.LeaveCommunityHubAsync(_previousCommunityId);
             await CommunityService.JoinCommunityHubAsync(CommunityId);
+
+            var authState = await AuthenticationState;
+            var userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
             
-            _previousCommunityId = CommunityId;
+            _memberRole = await CommunityService.GetUserRolePermissionsAsync(userId, CommunityId);
 
             StateHasChanged();
+            _previousCommunityId = CommunityId;
         }
     }
     
