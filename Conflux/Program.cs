@@ -46,43 +46,34 @@ builder.Services.AddAuthentication(options => {
     });
 });
 
-builder.Services.AddAuthorization(options => {
-    options.AddPolicy("RequireAuthenticatedUser", policy => {
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy("RequireAuthenticatedUser", policy => {
         policy.RequireAuthenticatedUser();
-    });
-    
-    options.AddPolicy("CreateCommunityChannelCategory", policy => {
+    })
+    .AddPolicy("CreateCommunityChannelCategory", policy => {
         policy.Requirements.Add(new CreateCommunityChannelCategoryRequirement());
-    });
-    
-    options.AddPolicy("CreateCommunityChannel", policy => {
+    })
+    .AddPolicy("CreateCommunityChannel", policy => {
         policy.Requirements.Add(new CreateCommunityChannelRequirement());
-    });
-    
-    options.AddPolicy("CreateCommunityRole", policy => {
+    })
+    .AddPolicy("CreateCommunityRole", policy => {
         policy.Requirements.Add(new CreateCommunityRoleRequirement());
-    });
-    
-    options.AddPolicy("DeleteCommunityRole", policy => {
+    })
+    .AddPolicy("DeleteCommunityRole", policy => {
         policy.Requirements.Add(new DeleteCommunityRoleRequirement());
-    });
-    
-    options.AddPolicy("RenameCommunityRole", policy => {
+    })
+    .AddPolicy("RenameCommunityRole", policy => {
         policy.Requirements.Add(new RenameCommunityRoleRequirement());
-    });
-    
-    options.AddPolicy("AccessCommunityControlPanel", policy => {
+    })
+    .AddPolicy("AccessCommunityControlPanel", policy => {
         policy.Requirements.Add(new AccessCommunityControlPanelRequirement());
-    });
-    
-    options.AddPolicy("UpdateCommunityRolePermissions", policy => {
+    })
+    .AddPolicy("UpdateCommunityRolePermissions", policy => {
         policy.Requirements.Add(new UpdateCommunityRolePermissionsRequirement());
-    });
-    
-    options.AddPolicy("UpdateCommunityMemberRole", policy => {
+    })
+    .AddPolicy("UpdateCommunityMemberRole", policy => {
         policy.Requirements.Add(new UpdateCommunityMemberRoleRequirement());
     });
-});
 
 builder.Services.AddSingleton<IAuthorizationHandler, CreateCommunityChannelCategoryAuthorizationHandler>();
 builder.Services.AddSingleton<IAuthorizationHandler, CreateCommunityChannelAuthorizationHandler>();

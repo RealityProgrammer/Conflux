@@ -752,6 +752,8 @@
     }
 
     private void OnRoleRenamed(CommunityRoleRenamedEventArgs args) {
+        if (_roles == null) return;
+        
         InvokeAsync(() => {
             for (int i = 0; i < _roles.Count; i++) {
                 if (_roles[i].Id == args.RoleId) {
@@ -779,9 +781,7 @@
                 }
             }
 
-            var destinationRole = _roles[int.Clamp(index, 0, _roles.Count - 1)];
-
-            await SetSelectedRole(destinationRole);
+            await SetSelectedRole(_roles[int.Clamp(index, 0, _roles.Count - 1)]);
             StateHasChanged();
         });
     }

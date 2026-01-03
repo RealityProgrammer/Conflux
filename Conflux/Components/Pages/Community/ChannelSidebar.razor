@@ -56,7 +56,7 @@
         
             <p class="text-center">
                 Welcome to<br/>
-                <span class="font-bold text-lg">@_community.Name</span>
+                <span class="font-bold text-lg">@_community!.Name</span>
             </p>
         </section>
         
@@ -93,7 +93,7 @@
         </section>
         
         @foreach (var channelCategory in _community.ChannelCategories ?? []) {
-            <section @key="channelCategory.Id" class="px-2 mt-2 min-w-0 group border-t border-t-gray-600">
+            <section class="px-2 mt-2 min-w-0 group border-t border-t-gray-600">
                 <h1 class="text-sm font-bold text-gray-400 mt-2 mb-2 overflow-hidden break-all whitespace-normal flex flex-row items-start">
                     <span class="flex-1 mr-1">@channelCategory.Name</span>
         
@@ -198,21 +198,23 @@
     private bool _showCreatingChannelModal, _showInvitationUrlModal, _showControlPanelModal;
     private Guid _categoryChannelCreationReceiverId;
 
-    private Community _community = null!;
-    private string _invitationUrl = null!;
+    private Community? _community;
+    private string? _invitationUrl;
 
     [CascadingParameter] private MemberRolePermissions? UserPermissions { get; set; }
     
     protected override void OnParametersSet() {
         if (_previousCommunityId != CommunityId) {
             _state = State.Loading;
+            _community = null!;
+            _invitationUrl = null!;
         }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
-        if (_previousCommunityId != CommunityId) {
-            CommunityService.OnChannelCategoryCreated -= OnChannelCategoryCreated;
-            CommunityService.OnChannelCreated -= OnChannelCreated;
+        if (firstRender) {
+            CommunityService.OnChannelCategoryCreated += OnChannelCategoryCreated;
+            CommunityService.OnChannelCreated += OnChannelCreated;
         }
         
         if (_state == State.Loading) {
@@ -235,9 +237,6 @@
 
             StateHasChanged();
             _previousCommunityId = CommunityId;
-            
-            CommunityService.OnChannelCategoryCreated += OnChannelCategoryCreated;
-            CommunityService.OnChannelCreated += OnChannelCreated;
         }
     }
 
@@ -300,7 +299,7 @@
                 .FirstOrDefaultAsync();
 
             if (channelCategory != null) {
-                _community.ChannelCategories.Add(channelCategory);
+                _community!.ChannelCategories.Add(channelCategory);
                 StateHasChanged();
             }
         });
@@ -322,14 +321,16 @@
     private void OnChannelCreated(ChannelCreatedEventArgs args) {
         int index = -1;
 
-        for (int i = 0; i < _community.ChannelCategories.Count; i++) {
+        for (int i = 0; i < _community!.ChannelCategories.Count; i++) {
             if (_community.ChannelCategories[i].Id == args.ChannelCategoryId) {
                 index = i;
                 break;
             }
         }
 
-        if (index == -1) return;
+        if (index == -1) {
+            return;
+        }
 
         InvokeAsync(async () => {
             await using var dbContext = await DbContextFactory.CreateDbContextAsync();
@@ -346,6 +347,8 @@
     }
 
     public void Dispose() {
+        Logger.LogInformation("Dispose: Unsubscribes.");
+        
         CommunityService.OnChannelCategoryCreated -= OnChannelCategoryCreated;
         CommunityService.OnChannelCreated -= OnChannelCreated;
     }

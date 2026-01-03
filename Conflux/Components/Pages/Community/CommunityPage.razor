@@ -19,19 +19,31 @@
 
     @switch (Channel) {
         case "welcome" or null:
-            <p>Welcome</p>
+            <div class="flex justify-center items-center h-full">
+                <p class="text-sm text-gray-400">Customizable WELCOME page is currently being constructed.</p>
+            </div>
             break;
 
         case "events":
-            <p>Events</p>
+            <div class="flex justify-center items-center h-full">
+                <p class="text-sm text-gray-400">Customizable EVENTS page is currently being constructed.</p>
+            </div>
             break;
 
         case "rules":
-            <p>Rules</p>
+            <div class="flex justify-center items-center h-full">
+                <p class="text-sm text-gray-400">Customizable RULES page is currently being constructed.</p>
+            </div>
             break;
 
         case var _ when Guid.TryParse(Channel, out var channelId):
             <ChannelContentInterface CommunityId="CommunityId" ChannelId="channelId"/>
+            break;
+            
+        default:
+            <div class="flex justify-center items-center h-full">
+                <p class="text-sm text-gray-400">Hmmm how did you get here?</p>
+            </div>
             break;
     }
 </CascadingValue>
