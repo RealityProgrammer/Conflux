@@ -1,0 +1,51 @@
+﻿@implements IAsyncDisposable
+
+@inject IJSRuntime JavascriptRuntime
+
+<div @ref="OverlayElement" class="cursor-default absolute inset-0 bg-black invisible" style="opacity: 0"></div>
+
+<aside @ref="RootElement" class="fixed top-0 left-0 h-full shadow-lg ease-linear z-50 @_cssClass" @attributes="AdditionalAttributes" style="transform: translateX(-100%);">
+    @if (ChildContent != null) {
+        @ChildContent
+    }
+</aside>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+    private string? _cssClass;
+
+    public ElementReference RootElement { get; set; }
+    public ElementReference OverlayElement { get; set; }
+
+    private IJSObjectReference? _module, _hammerManager;
+    
+    protected override void OnParametersSet() {
+        if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
+            _cssClass = Convert.ToString(obj);
+        }
+
+        AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "class").ToDictionary();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            _module = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import", "./js/Components/Sidebar.js");
+            _hammerManager = await _module.InvokeAsync<IJSObjectReference>("initializeSidebar", RootElement, OverlayElement, null);
+        }
+    }
+
+    public async ValueTask DisposeAsync() {
+        try {
+            if (_module != null) {
+                await _module.InvokeVoidAsync("disposeSidebar", _hammerManager);
+                _hammerManager = null;
+                
+                await _module.DisposeAsync();
+                _module = null;
+            }
+        } catch (JSDisconnectedException e) {
+        }
+    }
+}
