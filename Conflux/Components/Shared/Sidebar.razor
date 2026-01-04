@@ -1,10 +1,11 @@
 ﻿@implements IAsyncDisposable
 
 @inject IJSRuntime JavascriptRuntime
+@inject ILogger<Sidebar> Logger
 
-<div @ref="OverlayElement" class="cursor-default absolute inset-0 bg-black invisible" style="opacity: 0"></div>
+<div @ref="OverlayElement" class="cursor-default absolute inset-0 bg-black invisible lg:hidden" style="opacity: 0"></div>
 
-<aside @ref="RootElement" class="fixed top-0 left-0 h-full shadow-lg ease-linear z-50 @_cssClass" @attributes="AdditionalAttributes" style="transform: translateX(-100%);">
+<aside @ref="RootElement" class="h-full fixed top-0 left-0 shadow-lg ease-linear -translate-x-full z-50 lg:translate-x-0 lg:static @_cssClass" @attributes="AdditionalAttributes">
     @if (ChildContent != null) {
         @ChildContent
     }
@@ -19,7 +20,7 @@
     public ElementReference RootElement { get; set; }
     public ElementReference OverlayElement { get; set; }
 
-    private IJSObjectReference? _module, _hammerManager;
+    private IJSObjectReference? _module, _disposeState;
     
     protected override void OnParametersSet() {
         if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
@@ -32,15 +33,15 @@
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
             _module = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import", "./js/Components/Sidebar.js");
-            _hammerManager = await _module.InvokeAsync<IJSObjectReference>("initializeSidebar", RootElement, OverlayElement, null);
+            _disposeState = await _module.InvokeAsync<IJSObjectReference>("initializeSidebar", RootElement, OverlayElement);
         }
     }
 
     public async ValueTask DisposeAsync() {
         try {
             if (_module != null) {
-                await _module.InvokeVoidAsync("disposeSidebar", _hammerManager);
-                _hammerManager = null;
+                await _module.InvokeVoidAsync("disposeSidebar", _disposeState);
+                _disposeState = null;
                 
                 await _module.DisposeAsync();
                 _module = null;
