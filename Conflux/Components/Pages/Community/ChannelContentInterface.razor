@@ -1,9 +1,119 @@
-﻿@using Conflux.Core
-@using Conflux.Services.Abstracts
+﻿@using Conflux.Components.Shared.Icons
+@using Conflux.Core
+@using Conflux.Database
+@using Conflux.Database.Entities
+@using Microsoft.EntityFrameworkCore
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+
+<div class="flex flex-col size-full overflow-hidden">
+    <header class="flex-none basis-10 px-2 border-b border-b-gray-600 bg-gray-725 flex flex-row items-center gap-2">
+        @switch (_state) {
+            case State.InitialLoading:
+                <p class="animate-pulse">Loading...</p>
+                break;
+
+            case State.InvalidChannel:
+                <p>But nobody came...</p>
+                break;
+
+            case State.SequentialLoading or State.Success:
+            {
+                ChannelInformationDTO channelInfo = _channelInfo!.Value;
+
+                switch (channelInfo.Type) {
+                    case CommunityChannelType.Text:
+                        <SpeechBubble ArrowDirection="ChatArrowDirection.Left" Content="ChatContent.Text"
+                                      class="size-5 fill-white flex-none"/>
+                        break;
+
+                    case CommunityChannelType.Audio:
+                        <Volume Variation="VolumeVariations.Up" Filled="false" class="size-5 fill-white flex-none"/>
+                        break;
+                }
+
+                <p class="flex-none">@channelInfo.ChannelName</p>
+                break;
+            }
+        }
+    </header>
+</div>
+
+@* @switch (_state) { *@
+@*     case State.Loading: *@
+@*         <div class="flex justify-center items-center h-full"> *@
+@*             <Spinner class="size-6 fill-white"/> *@
+@*         </div> *@
+@*         break; *@
+@*          *@
+@*     case State.InvalidChannel: *@
+@*         <div class="flex justify-center items-center h-full"> *@
+@*             <p class="text-sm text-gray-400">Nothing here...</p> *@
+@*         </div> *@
+@*         break; *@
+@*          *@
+@*     case State.Success: *@
+@*         switch (_channelType!.Value) { *@
+@*             case CommunityChannelType.Text: *@
+@*                 <p>Text channel goes here.</p> *@
+@*                 break; *@
+@*                  *@
+@*             case CommunityChannelType.Audio: *@
+@*                 <div class="flex justify-center items-center h-full"> *@
+@*                     <p class="text-sm text-gray-400">Audio Channel is being implemented.</p> *@
+@*                 </div> *@
+@*                 break; *@
+@*         } *@
+@*         break; *@
+@* } *@
 
 @code {
     [Parameter, EditorRequired] public required Guid CommunityId { get; set; }
     [Parameter, EditorRequired] public required Guid ChannelId { get; set; }
 
+    private Guid _previousCommunityId, _previousChannelId;
+
     [CascadingParameter] private RolePermissions? UserPermissions { get; set; }
+
+    private State _state;
+    private ChannelInformationDTO? _channelInfo;
+
+    protected override void OnInitialized() {
+        _state = State.InitialLoading;
+    }
+
+    protected override void OnParametersSet() {
+        if (_state is not State.InitialLoading and not State.SequentialLoading && (_previousCommunityId != CommunityId || _previousChannelId != ChannelId)) {
+            _state = State.SequentialLoading;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (_state is State.InitialLoading or State.SequentialLoading) {
+            await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+            
+            _channelInfo = await dbContext.CommunityChannels
+                .Where(x => x.Id == ChannelId && x.ChannelCategory.CommunityId == CommunityId)
+                .Select(x => new ChannelInformationDTO(x.Name, x.Type))
+                .Cast<ChannelInformationDTO?>()
+                .FirstOrDefaultAsync();
+
+            _state = _channelInfo.HasValue ? State.Success : State.InvalidChannel;
+            
+            StateHasChanged();
+
+            _previousCommunityId = CommunityId;
+            _previousChannelId = ChannelId;
+        }
+    }
+
+    private enum State {
+        InitialLoading,
+        SequentialLoading,
+        InvalidChannel,
+        Success,
+    }
+
+    private readonly record struct ChannelInformationDTO(string ChannelName, CommunityChannelType Type);
 }

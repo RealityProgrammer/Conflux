@@ -347,8 +347,6 @@
     }
 
     public void Dispose() {
-        Logger.LogInformation("Dispose: Unsubscribes.");
-        
         CommunityService.OnChannelCategoryCreated -= OnChannelCategoryCreated;
         CommunityService.OnChannelCreated -= OnChannelCreated;
     }
