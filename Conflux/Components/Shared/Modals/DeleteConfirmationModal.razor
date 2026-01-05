@@ -1,0 +1,51 @@
+﻿@using Conflux.Components.Shared.Icons
+@inherits BaseModal
+
+<div class="flex flex-row justify-center items-center size-full text-white">
+    <Card class="z-10 overflow-hidden">
+        <CardHeader Title="@Title" Subtext="@Subtitle" OnCloseRequested="CloseModal"/>
+
+        <CardContent class="pb-3">
+            @Body
+        </CardContent>
+        
+        <CardFooter class="flex flex-row justify-end gap-2">
+            <button type="button" class="button-primary w-24" @onclick="CloseModal">Cancel</button>
+            
+            <ProcessingStateButton IsProcessing="_isProcessingDelete" class="button-danger w-24" ProcessingCssClass="flex flex-row justify-center items-center" @onclick="HandleConfirmDelete">
+                <ChildContent>
+                    Confirm
+                </ChildContent>
+                        
+                <ProcessingContent>
+                    <Spinner class="size-5 fill-white"/>
+                </ProcessingContent>
+            </ProcessingStateButton>
+        </CardFooter>
+    </Card>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; }
+    [Parameter] public string? Subtitle { get; set; }
+    
+    [Parameter, EditorRequired] public RenderFragment Body { get; set; }
+    
+    [Parameter, EditorRequired] public EventCallback OnConfirmDelete { get; set; }
+
+    private bool _isProcessingDelete;
+
+    private async Task HandleConfirmDelete() {
+        if (OnConfirmDelete.HasDelegate) {
+            _isProcessingDelete = true;
+
+            try {
+                await OnConfirmDelete.InvokeAsync();
+            } finally {
+                _isProcessingDelete = false;
+            }
+        }
+        
+        CloseModal();
+    }
+}
