@@ -24,7 +24,7 @@
                     string classes = $"w-full h-11 input-field {(_statusEditContext.IsValid(_statusTextField) ? string.Empty : "border-red-700")}";
                 }
 
-                <InputText @ref="_statusInputText" @bind-Value="StatusModel!.StatusText" placeholder="Hmmm..." class="@classes"/>
+                <InputText @ref="_statusInputText" @bind-Value="StatusModel!.StatusText" placeholder="Hmmm..." class="@classes" maxlength="128"/>
                         
                 @if (_statusInputText?.Element is { } elementReference) {
                     <Popover TargetReference="elementReference" ArrowCssClass="bg-[#ff4b6a]" Placement="top" Offset="8" IsShowing="@(!_statusEditContext.IsValid(_statusTextField))">
@@ -103,7 +103,7 @@
                     });
             }
 
-            CloseModal();
+            CloseModal(status);
         } finally {
             _isProcessingStatus = false;
         }

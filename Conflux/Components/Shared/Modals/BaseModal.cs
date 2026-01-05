@@ -8,7 +8,7 @@ public abstract class BaseModal : ComponentBase {
     
     [CascadingParameter] private ModalService.ModalInfo ModalInfo { get; set; }
 
-    public void CloseModal() {
-        ModalService.Close(ModalInfo.Id);
+    public void CloseModal(object? returnValue = null) {
+        ModalService.Close(ModalInfo.Id, returnValue);
     }
 }
