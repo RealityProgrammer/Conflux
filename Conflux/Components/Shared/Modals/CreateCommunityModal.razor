@@ -1,0 +1,65 @@
+﻿@using Conflux.Services
+@using Conflux.Services.Abstracts
+@using System.Security.Claims
+
+@inject ModalService ModalService
+@inject ICommunityService CommunityService
+
+<div class="flex flex-row justify-center items-center size-full text-white">
+    @switch (_state) {
+        case State.TemplateSelection:
+            <Card class="z-10 overflow-hidden">
+                <CardHeader Title="Create Your Own Paradise" Subtext="A community will need a place to stay. Make your own paradise and start chatting." OnCloseRequested="CloseModal"/>
+
+                <CardContent class="pb-3">
+                    <button class="border border-gray-600 bg-black/5 hover:bg-black/2 active:bg-black/8 w-full p-3 rounded-lg shadow-lg cursor-pointer" @onclick="() => _state = State.InputInfo">
+                        Create a fresh server
+                    </button>
+                </CardContent>
+            </Card>
+            break;
+            
+        case State.InputInfo:
+            <Card class="z-10 overflow-hidden">
+                <CardHeader Title="Input Information" Subtext="Give your new home a name, a face and a new life." OnCloseRequested="CloseModal"/>
+
+                <CardContent class="pb-3">
+                    <CreateCommunityForm OnRequestCreateServer="HandleCreateServer"/>
+                </CardContent>
+            </Card>
+            break;
+    }
+</div>
+
+@code {
+    [CascadingParameter] private ModalService.ModalInfo ModalInfo { get; set; }
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+    
+    private State _state;
+    
+    private async Task HandleCreateServer(CreateCommunityForm.InputModel model) {
+        var authState = await AuthenticationState;
+        string? id = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(id)) return;
+
+        if (model.Avatar == null) {
+            await CommunityService.CreateCommunityAsync(model.Name, null, id);
+        } else {
+            await using var avatarStream = model.Avatar.OpenReadStream(ApplicationConstants.MaxCommunityAvatarSize);
+
+            await CommunityService.CreateCommunityAsync(model.Name, avatarStream, id);
+        }
+
+        CloseModal();
+    }
+
+    private void CloseModal() {
+        ModalService.Close(ModalInfo.Id);
+    }
+    
+    private enum State {
+        TemplateSelection,
+        InputInfo,
+    }
+}

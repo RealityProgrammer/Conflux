@@ -9,16 +9,6 @@
 
 @foreach (var info in ModalService.Modals) {
     <ModalElementContainer Info="info"></ModalElementContainer>
-    
-    @* <div @key="info.Id" class="cursor-default fixed inset-0 z-1000 pointer-events-none flex justify-center items-center"> *@
-    @*     <div class="cursor-default absolute inset-0 pointer-events-auto duration-200 ease-in-out bg-black/80" @onclick="@(() => CloseModal(info.Id))"></div> *@
-    @* *@
-    @*     <div class="transition-all duration-200 ease-in-out w-full flex justify-center items-center"> *@
-    @*         <CascadingValue Value="info"> *@
-    @*             <DynamicComponent Type="info.Type" Parameters="info.Parameters"/> *@
-    @*         </CascadingValue> *@
-    @*     </div> *@
-    @* </div> *@
 }
 
 @code {
@@ -30,10 +20,6 @@
 
     private void OnModalChanged() {
         StateHasChanged();
-    }
-
-    private void CloseModal(Guid id) {
-        ModalService.Close(id);
     }
 
     public void Dispose() {

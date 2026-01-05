@@ -1,5 +1,7 @@
 ﻿@using Conflux.Components.Shared.Icons
+@using Conflux.Components.Shared.Modals
 @using Conflux.Database
+@using Conflux.Services
 @using Conflux.Services.Abstracts
 @using Microsoft.EntityFrameworkCore
 @using System.Security.Claims
@@ -9,6 +11,7 @@
 @inject ICommunityService CommunityService
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject IContentService ContentService
+@inject ModalService ModalService
 
 <section class="z-1000 absolute top-0 inset-x-0 h-16 bg-(--bg-color-1) shadow-lg transition-all duration-500 @(_isDrawerExpanded ? "translate-y-0" : "-translate-y-full")">
     <div class="overflow-x-auto flex flex-row items-center gap-2 h-full p-2">
@@ -43,7 +46,7 @@
             
             <Tooltip TargetCssClass="inline-block h-full aspect-square" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" Placement="bottom" Offset="8">
                 <TargetContent>
-                    <button class="bg-gray-800 hover:bg-gray-750 active:bg-gray-825 hover:shadow-md rounded-full h-full aspect-square flex-none cursor-pointer overflow-hidden flex flex-row justify-center items-center" @onclick="() => _isShowingServerCreationCard = true">
+                    <button class="bg-gray-800 hover:bg-gray-750 active:bg-gray-825 hover:shadow-md rounded-full h-full aspect-square flex-none cursor-pointer overflow-hidden flex flex-row justify-center items-center" @onclick="HandleOpenCreateCommunityModal">
                         <Plus class="size-6 fill-white" Large="true"/>
                     </button>
                 </TargetContent>
@@ -64,33 +67,8 @@
     }
 </button>
 
-<Dialog @bind-Open="_isShowingServerCreationCard" OnClickOutside="HandleCancelCreatingServer" class="flex justify-center items-center text-white" ContainerCssClass="flex justify-center items-center">
-    @if (_isAskingServerNameAndProfilePicture) {
-        <Card class="z-10 overflow-hidden">
-            <CardHeader Title="Input Information" Subtext="Give your new home a name, a face and a new life." OnCloseRequested="HandleCancelCreatingServer"/>
-
-            <CardContent class="pb-3">
-                <CreateCommunityForm OnRequestCreateServer="HandleCreateServer"/>
-            </CardContent>
-        </Card>
-    } else {
-        <Card class="z-10 overflow-hidden">
-            <CardHeader Title="Create Your Own Paradise" Subtext="A community will need a place to stay. Make your own paradise and start chatting." OnCloseRequested="HandleCancelCreatingServer"/>
-
-            <CardContent class="pb-3">
-                <button class="border border-gray-600 bg-black/5 hover:bg-black/2 active:bg-black/8 w-full p-3 rounded-lg shadow-lg cursor-pointer" @onclick="HandleClickFreshServerCreation">
-                    Create a fresh server
-                </button>
-            </CardContent>
-        </Card>
-    }
-</Dialog>
-
 @code {
     private bool _isDrawerExpanded;
-    private bool _isShowingServerCreationCard;
-    private bool _isAskingServerNameAndProfilePicture;
-
     private bool _isLoadingJoinedServers;
 
     private List<CommunityServerDTO> _joinedServers = [];
@@ -131,31 +109,8 @@
         _isDrawerExpanded ^= true;
     }
 
-    private void HandleCancelCreatingServer() {
-        _isShowingServerCreationCard = false;
-        _isAskingServerNameAndProfilePicture = false;
-    }
-
-    private void HandleClickFreshServerCreation() {
-        _isAskingServerNameAndProfilePicture = true;
-    }
-
-    private async Task HandleCreateServer(CreateCommunityForm.InputModel model) {
-        var authState = await AuthenticationState;
-        string? id = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (string.IsNullOrEmpty(id)) return;
-
-        if (model.Avatar == null) {
-            await CommunityService.CreateCommunityAsync(model.Name, null, id);
-        } else {
-            using var avatarStream = model.Avatar.OpenReadStream(ApplicationConstants.MaxCommunityAvatarSize);
-
-            await CommunityService.CreateCommunityAsync(model.Name, avatarStream, id);
-        }
-        
-        _isShowingServerCreationCard = false;
-        _isAskingServerNameAndProfilePicture = false;
+    private void HandleOpenCreateCommunityModal() {
+        ModalService.Add<CreateCommunityModal>();
     }
 
     private void OnUserCreatedCommunity(CommunityCreatedEventArgs args) {
