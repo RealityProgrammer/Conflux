@@ -27,7 +27,7 @@
         <p class="text-sm text-gray-400">See and change moderation permissions.</p>
     </header>
     
-    <main class="flex-1 h-full min-h-0 px-2" @ref="_unsavedChangesShakeTarget">
+    <section class="flex-1 h-full min-h-0 px-2" @ref="_unsavedChangesShakeTarget">
         <div class="flex flex-col md:flex-row gap-1 md:items-center">
             <label class="flex-none input-label md:flex-1">Role</label>
             
@@ -300,7 +300,7 @@
                 </ChildContent>
             </Collapsible>
         </EditForm>
-    </main>
+    </section>
 </div>
 
 <UnsavedChangesPopup IsShowing="_editContext.IsModified()" OnCancelRequest="HandleCancelEdit" OnSaveRequest="HandleSaveEdit"/>
