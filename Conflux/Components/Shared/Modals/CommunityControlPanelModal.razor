@@ -1,13 +1,17 @@
 ﻿@using Conflux.Components.Pages.Community
+@using Conflux.Core
 @using Conflux.Helpers
 @inherits BaseModal
 
 @inject IJSRuntime JavascriptRuntime
 
 <div class="flex flex-row justify-center items-center size-full text-white">
-    <CommunityControlPanel CommunityId="CommunityId" OnCloseRequest="CloseModal"/>
+    <CascadingValue Value="MemberRolePermissions">
+        <CommunityControlPanel CommunityId="CommunityId" OnCloseRequest="CloseModal"/>
+    </CascadingValue>
 </div>
 
 @code {
     [Parameter, EditorRequired] public Guid CommunityId { get; set; }
+    [Parameter, EditorRequired] public MemberRolePermissions? MemberRolePermissions { get; set; }
 }

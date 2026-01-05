@@ -252,6 +252,7 @@
         if ((await AuthorizationService.AuthorizeAsync(authState.User, UserPermissions?.Permissions, "AccessCommunityControlPanel")).Succeeded) {
             ModalService.Open<CommunityControlPanelModal>(parameters: new Dictionary<string, object> {
                 [nameof(CommunityControlPanelModal.CommunityId)] = CommunityId,
+                [nameof(CommunityControlPanelModal.MemberRolePermissions)] = UserPermissions!,
             });
         }
     }
