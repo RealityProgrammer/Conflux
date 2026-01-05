@@ -3,7 +3,6 @@
 @using Conflux.Services.Abstracts
 @using Microsoft.AspNetCore.Components.Sections
 @using Microsoft.AspNetCore.Identity
-@using System.Security.Claims
 
 @implements IAsyncDisposable
 
@@ -17,63 +16,21 @@
         <DataAnnotationsValidator/>
 
         <div>
-            <label class="font-semibold">Avatar</label>
-                            
-            @* Hidden InputFile *@
-            <InputFile @ref="_avatarInputFile" type="file" class="hidden" accept="image/png, image/jpeg" OnChange="HandleAvatarChange" id="avatar"/>
-                            
+            <label class="font-semibold">Avatar (@_editContext.GetValidationMessages(_avatarOperationField).Count())</label>
+    
             <div class="mt-2">
-                @{
-                    string? displayImageSrc = Model.Avatar.RequestDelete ? null : AvatarPreviewUrl ?? (string.IsNullOrEmpty(User.AvatarProfilePath) ? null : ContentService.GetAssetPath(User.AvatarProfilePath));
-                }
-                                
-                <Avatar @ref="_avatarElement" class="size-96 mx-auto group" ImageSrc="@displayImageSrc">
-                    <p class="absolute inset-0 hidden group-hover:flex size-full text-center flex-row justify-center items-center cursor-pointer" @onclick="OpenAvatarModal">
-                        Click to change Avatar
-                    </p>
-                </Avatar>
+                <PreviewableImageInput @ref="_avatarElement"
+                                       @bind-File="Model.Avatar.FileOperation"
+                                       @bind-File:after="OnAvatarOperationChanged"
+                                       ImageSrc="@(string.IsNullOrEmpty(User.AvatarProfilePath) ? null : ContentService.GetAssetPath(User.AvatarProfilePath))" 
+                                       ImageAlt="Avatar"
+                                       class="size-96 rounded-full"/>
                 
-                @if (_avatarElement != null) {
-                    <Popover TargetReference="_avatarElement.RootElement" ArrowCssClass="bg-[#ff4b6a]" Placement="top" Offset="8" ShowTooltip="@(!_editContext.IsValid(_avatarFileField))" class="max-w-[90%]">
-                        <ValidationMessage For="() => Model.Avatar.File" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"></ValidationMessage>
+                @if (_avatarElement?.RootElementReference is { } targetElement) {
+                    <Popover TargetReference="targetElement" ArrowCssClass="bg-[#ff4b6a]" Placement="top" Offset="8" IsShowing="@(!_editContext.IsValid(_avatarOperationField))" class="max-w-[90%]">
+                        <ValidationMessage For="() => Model.Avatar.FileOperation" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"></ValidationMessage>
                     </Popover>
                 }
-
-                <Dialog @bind-Open="_showAvatarModal" OnClickOutside="CloseAvatarModal" class="flex justify-center items-center overflow-hidden" ContainerCssClass="flex justify-center items-center">
-                    <Card class="lg:static transition-transform duration-500 z-10">
-                        <CardHeader Title="Avatar Adjustment" OnCloseRequested="CloseAvatarModal"/>
-                                    
-                        <CardContent class="grid grid-cols-1 lg:grid-cols-2 lg:mt-2">
-                            <section class="w-full lg:border-r lg:border-r-gray-600 lg:p-3">
-                                @{
-                                    string? displayImageSrc = Model.Avatar.RequestDelete ? null : AvatarPreviewUrl ?? (string.IsNullOrEmpty(User.AvatarProfilePath) ? null : ContentService.GetAssetPath(User.AvatarProfilePath));
-                                }
-                                    
-                                <Avatar class="size-64 sm:size-80 lg:size-96 mt-2 mx-auto group" ImageSrc="@displayImageSrc" >
-                                    <label class="absolute inset-0 hidden group-hover:flex size-full flex-row justify-center items-center cursor-pointer z-10 bg-black/40 rounded-full" for="avatar">
-                                        Click to change Avatar
-                                    </label>
-                                </Avatar>
-                            </section>
-                                    
-                            <section class="mt-2 lg:mt-0 lg:p-3 text-white">
-                                <p class="font-semibold text-xl">Adjustments</p>
-                                    
-                                @if (!string.IsNullOrEmpty(AvatarPreviewUrl) || !string.IsNullOrEmpty(User.AvatarProfilePath)) {
-                                    @if (Model.Avatar.RequestDelete) {
-                                        <button class="button-primary mt-2 w-full" @onclick="MarkAvatarNotDelete">
-                                            Restore
-                                        </button>
-                                    } else {
-                                        <button class="button-danger mt-2 w-full" @onclick="MarkAvatarDelete">
-                                            Delete
-                                        </button>
-                                    }
-                                }
-                            </section>
-                        </CardContent>
-                    </Card>
-                </Dialog>
             </div>
         </div>
 
@@ -82,19 +39,17 @@
             <input type="text" readonly value="@User.UserName" class="mt-2 input-field h-11 w-full" disabled>
         </div>
         
-        @{ string classes; }
-
         <div class="relative">
             <label class="font-semibold">Display Name</label>
-                            
+
             @{
-                classes = $"w-full h-11 mt-2 input-field {(_editContext.IsValid(_displayNameField) ? string.Empty : "border-red-700")}";
+                string classes = $"w-full h-11 mt-2 input-field {(_editContext.IsValid(_displayNameField) ? string.Empty : "border-red-700")}";
             }
 
             <InputText @ref="_displayNameElement" type="text" @bind-Value="Model.DisplayName" placeholder="Display Name" class="@classes" maxlength="32"/>
             
             @if (_displayNameElement?.Element.HasValue ?? false) {
-                <Popover TargetReference="_displayNameElement.Element.Value" ArrowCssClass="bg-[#ff4b6a]" Placement="top" Offset="8" ShowTooltip="@(!_editContext.IsValid(_displayNameField))" class="max-w-[90%]">
+                <Popover TargetReference="_displayNameElement.Element.Value" ArrowCssClass="bg-[#ff4b6a]" Placement="top" Offset="8" IsShowing="@(!_editContext.IsValid(_displayNameField))" class="max-w-[90%]">
                     <ValidationMessage For="() => Model.DisplayName" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"></ValidationMessage>
                 </Popover>
             }
@@ -110,7 +65,7 @@
             <InputText @ref="_pronounsElement" type="text" @bind-Value="Model.Pronouns" placeholder="Pronouns" class="@classes" maxlength="32"/>
             
             @if (_pronounsElement?.Element.HasValue ?? false) {
-                <Popover TargetReference="_pronounsElement.Element.Value" ArrowCssClass="bg-[#ff4b6a]" Placement="top" Offset="8" ShowTooltip="@(!_editContext.IsValid(_pronounsField))" class="max-w-[90%]">
+                <Popover TargetReference="_pronounsElement.Element.Value" ArrowCssClass="bg-[#ff4b6a]" Placement="top" Offset="8" IsShowing="@(!_editContext.IsValid(_pronounsField))" class="max-w-[90%]">
                     <ValidationMessage For="() => Model.Pronouns" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"></ValidationMessage>
                 </Popover>
             }
@@ -126,7 +81,7 @@
             <InputTextArea @ref="_bioElement" type="text" @bind-Value="Model.Bio" class="@classes" placeholder="Biography"/>
             
             @if (_bioElement?.Element.HasValue ?? false) {
-                <Popover TargetReference="_bioElement.Element.Value" ArrowCssClass="bg-[#ff4b6a]" Placement="top" Offset="8" ShowTooltip="@(!_editContext.IsValid(_bioField))" class="max-w-[90%]">
+                <Popover TargetReference="_bioElement.Element.Value" ArrowCssClass="bg-[#ff4b6a]" Placement="top" Offset="8" IsShowing="@(!_editContext.IsValid(_bioField))" class="max-w-[90%]">
                     <ValidationMessage For="() => Model.Bio" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"></ValidationMessage>
                 </Popover>
             }
@@ -150,15 +105,11 @@
 
     private EditContext _editContext = null!;
 
-    private bool _showAvatarModal;
-
-    private Avatar? _avatarElement;
+    private PreviewableImageInput? _avatarElement;
     private InputText? _displayNameElement, _pronounsElement;
     private InputTextArea? _bioElement;
     
-    private InputFile _avatarInputFile = null!;
-
-    private FieldIdentifier _displayNameField, _pronounsField, _bioField, _avatarFileField, _requestDeleteAvatarField;
+    private FieldIdentifier _displayNameField, _pronounsField, _bioField, _avatarOperationField;
     private ValidationMessageStore _validationMessages = null!;
 
     private bool _hasUnsavedChanges;
@@ -171,8 +122,7 @@
         _displayNameField = FieldIdentifier.Create(() => Model.DisplayName);
         _pronounsField = FieldIdentifier.Create(() => Model.Pronouns);
         _bioField = FieldIdentifier.Create(() => Model.Bio);
-        _avatarFileField = FieldIdentifier.Create(() => Model.Avatar.File);
-        _requestDeleteAvatarField = FieldIdentifier.Create(() => Model.Avatar.RequestDelete);
+        _avatarOperationField = FieldIdentifier.Create(() => Model.Avatar.FileOperation);
     }
 
     private void ResetProfileForm() {
@@ -190,38 +140,28 @@
     private void ValidationRequested(object? sender, ValidationRequestedEventArgs args) {
         _validationMessages.Clear();
 
-        if (Model.Avatar.File is { } avatarFile) {
-            string extension = Path.GetExtension(avatarFile.Name).ToLowerInvariant();
-
-            string[] allowedExtensions = [".jpeg", ".jpg", ".png"];
-
-            if (string.IsNullOrEmpty(extension) || !allowedExtensions.Contains(extension)) {
-                _validationMessages.Add(_avatarFileField, "Invalid file format.");
+        if (Model.Avatar.FileOperation.File is { } avatarFile) {
+            if (!avatarFile.ContentType.StartsWith("image/")) {
+                _validationMessages.Add(_avatarOperationField, "Invalid file format.");
+                return;
             }
 
             if (avatarFile.Size > ApplicationConstants.MaxUserAvatarSize) {
-                _validationMessages.Add(_avatarFileField, $"Avatar surpassed maximum allowed size of {ApplicationConstants.MaxUserAvatarSize} bytes.");
+                _validationMessages.Add(_avatarOperationField, $"Avatar surpassed maximum allowed size of {ApplicationConstants.MaxUserAvatarSize} bytes.");
             }
         }
     }
 
-    private void OpenAvatarModal() {
-        _showAvatarModal = true;
-        StateHasChanged();
-    }
-
-    private void MarkAvatarDelete() {
-        Model.Avatar.RequestDelete = true;
-        _editContext.NotifyFieldChanged(_requestDeleteAvatarField);
-    }
-
-    private void MarkAvatarNotDelete() {
-        Model.Avatar.RequestDelete = false;
-        _editContext.NotifyFieldChanged(_requestDeleteAvatarField);
-    }
-
-    private void CloseAvatarModal() {
-        _showAvatarModal = false;
+    private void OnAvatarOperationChanged() {
+        switch (Model.Avatar.FileOperation.Operation) {
+            case ImageUploadOperation.Delete or ImageUploadOperation.Upload:
+                _editContext.NotifyFieldChanged(_avatarOperationField);
+                break;
+                
+            case ImageUploadOperation.Nothing:
+                _editContext.MarkAsUnmodified(_avatarOperationField);
+                break;
+        }
     }
 
     private async Task SaveProfile() {
@@ -236,17 +176,21 @@
             User.Bio = Model.Bio?.Trim();
 
             // Process Avatar.
-            if (Model.Avatar.File is { } imageFile) {
-                using var srcStream = imageFile.OpenReadStream(ApplicationConstants.MaxUserAvatarSize);
+            switch (Model.Avatar.FileOperation.Operation) {
+                case ImageUploadOperation.Upload:
+                {
+                    await using var srcStream = Model.Avatar.FileOperation.File!.OpenReadStream(ApplicationConstants.MaxUserAvatarSize);
 
-                string databasePath = await ContentService.UploadUserAvatarAsync(srcStream, User.Id);
+                    string databasePath = await ContentService.UploadUserAvatarAsync(srcStream, User.Id);
 
-                User.AvatarProfilePath = databasePath;
-            } else if (Model.Avatar.RequestDelete && !string.IsNullOrEmpty(User.AvatarProfilePath)) {
-                // User.ProfilePicturePath has form "upload/images/avatar"
-
-                await ContentService.DeleteUserAvatarAsync(User.Id);
-                User.AvatarProfilePath = null;
+                    User.AvatarProfilePath = databasePath;
+                    break;
+                }
+                    
+                case ImageUploadOperation.Delete:
+                    await ContentService.DeleteUserAvatarAsync(User.Id);
+                    User.AvatarProfilePath = null;
+                    break;
             }
 
             User.IsProfileSetup = true; // Mark user as profile setup, vibe checked.
@@ -259,7 +203,7 @@
 
             await JavascriptRuntime.InvokeVoidAsync("URL.revokeObjectURL", AvatarPreviewUrl);
             AvatarPreviewUrl = null;
-            Model.Avatar.File = null!;
+            Model.Avatar.FileOperation = default;
         } finally {
             _hasUnsavedChanges = false;
         }
@@ -271,7 +215,7 @@
         Model.DisplayName = User.DisplayName;
         Model.Pronouns = User.Pronouns;
         Model.Bio = User.Bio;
-        Model.Avatar.RequestDelete = false;
+        Model.Avatar.FileOperation = default;
 
         AvatarPreviewUrl = null;
         
@@ -279,24 +223,6 @@
         await AvatarPreviewUrlChanged.InvokeAsync(null);
 
         ResetProfileForm();
-    }
-
-    private async Task HandleAvatarChange(InputFileChangeEventArgs args) {
-        if (_avatarInputFile.Element is not { } inputFileElement) {
-            return;
-        }
-
-        Model.Avatar.RequestDelete = false;
-
-        await JavascriptRuntime.InvokeVoidAsync("URL.revokeObjectURL", AvatarPreviewUrl);
-
-        string url = await JavascriptRuntime.InvokeAsync<string>("window.createInputPreviewUrl", inputFileElement, 0);
-        Model.Avatar.File = args.File;
-        AvatarPreviewUrl = url;
-
-        _hasUnsavedChanges = true;
-        
-        await AvatarPreviewUrlChanged.InvokeAsync(url);
     }
 
     public async ValueTask DisposeAsync() {

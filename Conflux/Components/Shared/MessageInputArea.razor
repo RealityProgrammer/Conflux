@@ -1,12 +1,14 @@
 ﻿@using Conflux.Components.Shared.Icons
+@using Conflux.Components.Shared.Modals
 @using Conflux.Database
+@using Conflux.Services
 @using Microsoft.EntityFrameworkCore
 
 @implements IAsyncDisposable
 
 @inject IJSRuntime JavascriptRuntime
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
-@inject ILogger<MessageInputArea> Logger
+@inject ModalService ModalService
 
 <footer class="flex flex-row items-end gap-1 @_cssClass" @attributes="AdditionalAttributes">
     <section class="flex-1 flex flex-col min-w-0">
@@ -84,49 +86,13 @@
     <label class="flex-none rounded-full bg-transparent hover:bg-white/15 active:bg-black/15 p-2 cursor-pointer group disabled:bg-transparent disabled:cursor-default" disabled="@_disabled">
         <Paperclip class="size-6 fill-white group-disabled:fill-gray-400"/>
 
-        <AccumulatedInputFile @ref="_inputFile" OnChange="HandleAttachmentChanged"></AccumulatedInputFile>
+        <AccumulatedInputFile OnChange="HandleAttachmentChanged"></AccumulatedInputFile>
     </label>
     
     <button class="flex-none rounded-full bg-transparent hover:bg-white/15 active:bg-black/15 p-2 cursor-pointer group disabled:bg-transparent disabled:cursor-default" disabled="@_disabled">
         <Media Type="MediaType.Gif" class="size-6 fill-none stroke-white group-disabled:stroke-gray-400"/>
     </button>
 </footer>
-
-<Dialog @bind-Open="_reportSurpassedAttachmentMaxCount" OnClickOutside="CloseAttachmentCountReport" class="flex justify-center items-center" ContainerCssClass="flex justify-center items-center">
-    <Card>
-        <CardHeader Title="Too much file..." OnCloseRequested="CloseAttachmentCountReport"/>
-        
-        <CardContent>
-            <p>
-                Whoa there buddy, you cannot send this much file for the time being.
-                <br/>
-                If you need to send more, attach it to another message.
-            </p>
-        </CardContent>
-        
-        <CardFooter class="mt-2 flex flex-row justify-end gap-2 border-none!">
-            <button class="button-primary w-24" @onclick="CloseAttachmentCountReport">Ok</button>
-        </CardFooter>
-    </Card>
-</Dialog>
-
-<Dialog @bind-Open="_reportAttachmentSurpassedMaxSize" OnClickOutside="CloseAttachmentSizeReport" class="flex justify-center items-center" ContainerCssClass="flex justify-center items-center">
-    <Card>
-        <CardHeader Title="Comically large file detected!" OnCloseRequested="CloseAttachmentSizeReport"/>
-        
-        <CardContent>
-            <p>
-                Whoa there buddy, one of the files you want to transfer over is way too large.
-                <br/>
-                You will have to find another way to send these files. Either compress them or <i>cough cough</i> use third party services <i>cough</i>.
-            </p>
-        </CardContent>
-        
-        <CardFooter class="mt-2 flex flex-row justify-end gap-2 border-none!">
-            <button class="button-primary w-24" @onclick="CloseAttachmentSizeReport">Ok</button>
-        </CardFooter>
-    </Card>
-</Dialog>
 
 @code {
     [Parameter] public EventCallback<MessageData> OnSubmit { get; set; }
@@ -143,12 +109,6 @@
     
     private ReplyMessageDTO _replyMessageData;
     private List<UploadingFile> _uploadingFiles = [];
-    private int _numberOfInputFiles = 1;
-    
-    private bool _reportSurpassedAttachmentMaxCount;
-    private bool _reportAttachmentSurpassedMaxSize;
-
-    private AccumulatedInputFile _inputFile = null!;
     
     protected override void OnParametersSet() {
         if (AdditionalAttributes != null) {
@@ -199,33 +159,64 @@
         await DisposeUploadingFiles();
         await InvokeAsync(StateHasChanged);
     }
+    
+    private static RenderFragment SurpassedAttachmentCountModalBody =
+        @<p>
+            Whoa there buddy, you cannot send this much file for the time being.
+            <br/>
+            If you need to send more, attach it to another message.
+        </p>;
+    
+    private static RenderFragment SurpassedAttachmentMaxSizeModalBody =
+        @<p>
+            Whoa there buddy, one of the files you want to transfer over is way too large.
+            <br/>
+            You will have to find another way to send these files. Either compress them or <i>cough cough</i> use third party services <i>cough</i>.
+        </p>;
 
     private async Task HandleAttachmentChanged(AccumulatedInputFileChangeEventArgs args) {
         IReadOnlyList<IBrowserFile> files;
 
+        bool surpassedMaxAttachmentCount = false, surpassedAttachmentMaxSize = false;
+
+        // Validation.
         try {
-            files = args.ChangeEventArgs.GetMultipleFiles(ApplicationConstants.MaxAttachmentsPerMessage);
-        } catch (InvalidOperationException) {
-            _reportSurpassedAttachmentMaxCount = true;
-            return;
-        }
-
-        // Validate attachment count.
-        if (_uploadingFiles.Count + files.Count > ApplicationConstants.MaxAttachmentsPerMessage) {
-            _reportSurpassedAttachmentMaxCount = true;
-            return;
-        }
-
-        // Validate attachment size.
-        for (int i = 0; i < files.Count; i++) {
-            if (files[i].Size > ApplicationConstants.MaxSizePerAttachment) {
-                _reportAttachmentSurpassedMaxSize = true;
+            try {
+                files = args.ChangeEventArgs.GetMultipleFiles(ApplicationConstants.MaxAttachmentsPerMessage);
+            } catch (InvalidOperationException) {
+                surpassedMaxAttachmentCount = true;
                 return;
             }
+
+            // Validate attachment count.
+            if (_uploadingFiles.Count + files.Count > ApplicationConstants.MaxAttachmentsPerMessage) {
+                surpassedMaxAttachmentCount = true;
+                return;
+            }
+
+            // Validate attachment size.
+            for (int i = 0; i < files.Count; i++) {
+                if (files[i].Size > ApplicationConstants.MaxSizePerAttachment) {
+                    surpassedAttachmentMaxSize = true;
+                    return;
+                }
+            }
+        } finally {
+            if (surpassedMaxAttachmentCount) {
+                ModalService.Open<InformationModal>(parameters: new Dictionary<string, object> {
+                    [nameof(InformationModal.Title)] = "Too many file...",
+                    [nameof(InformationModal.Body)] = SurpassedAttachmentCountModalBody,
+                });
+            }
+
+            if (surpassedAttachmentMaxSize) {
+                ModalService.Open<InformationModal>(parameters: new Dictionary<string, object> {
+                    [nameof(InformationModal.Title)] = "Too many file...",
+                    [nameof(InformationModal.Body)] = SurpassedAttachmentMaxSizeModalBody,
+                });
+            }
         }
-        
-        _numberOfInputFiles++;
-        
+
         for (int i = 0; i < files.Count; i++) {
             IBrowserFile file = files[i];
             string? previewUrl = file.ContentType switch {
@@ -235,14 +226,6 @@
 
             _uploadingFiles.Add(new(Guid.CreateVersion7(), file, previewUrl, false));
         }
-    }
-
-    private void CloseAttachmentCountReport() {
-        _reportSurpassedAttachmentMaxCount = false;
-    }
-
-    private void CloseAttachmentSizeReport() {
-        _reportAttachmentSurpassedMaxSize = false;
     }
 
     private async Task HandleCancelReply() {

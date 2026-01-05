@@ -94,21 +94,11 @@
         public AvatarModel Avatar { get; set; } = new();
     
         public sealed class AvatarModel : INotifyPropertyChanged {
-            public IBrowserFile? File {
+            public ImageUploading FileOperation {
                 get;
                 set {
                     field = value;
                     OnPropertyChanged();
-                }
-            }
-
-            public bool RequestDelete {
-                get;
-                set {
-                    if (field != value) {
-                        field = value;
-                        OnPropertyChanged();
-                    }
                 }
             }
 

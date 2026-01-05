@@ -1,0 +1,28 @@
+﻿@inherits BaseModal
+
+<div class="flex flex-row justify-center items-center size-full text-white">
+    <Card>
+        <CardHeader Title="Avatar Adjustment" OnCloseRequested="CloseModal"/>
+
+        <CardContent class="flex flex-row justify-center items-center">
+            <PreviewableImageInput File="File" FileChanged="FileChanged" FileExpression="FileExpression"
+                                   ImageSrc="@OriginalAvatarSource" 
+                                   ImageAlt="Avatar"
+                                   class="size-80 rounded-full"/>
+        </CardContent>
+    </Card>
+</div>
+
+@code {
+    [Parameter] public string? OriginalAvatarSource { get; set; }
+
+    [Parameter] public ImageUploading File { get; set; }
+    [Parameter] public EventCallback<ImageUploading> FileChanged { get; set; }
+    [Parameter] public Expression<Func<ImageUploading>> FileExpression { get; set; } = null!;
+    //
+    // [Parameter] public FieldIdentifier FieldIdentifier { get; set; }
+    //
+    // [CascadingParameter] private EditContext EditContext { get; set; } = null!;
+    //
+    // private PreviewableImageInput? _avatarInputElement;
+}

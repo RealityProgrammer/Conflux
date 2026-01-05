@@ -9,6 +9,7 @@
     <ItemGroup>
       <Folder Include="Client\public\" />
       <Folder Include="Client\scripts\Pages\settings\" />
+      <Folder Include="Uploads\users\avatars\" />
       <None Remove="Uploads\" />
     </ItemGroup>
 

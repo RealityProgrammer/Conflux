@@ -17,7 +17,11 @@
             <div class="absolute -bottom-8 left-4">
                 <div class="relative">
                     @{
-                        string? displayImageSrc = Model.Avatar.RequestDelete ? null : AvatarPreviewUrl ?? (string.IsNullOrEmpty(User.AvatarProfilePath) ? null : ContentService.GetAssetPath(User.AvatarProfilePath));
+                        string? displayImageSrc = Model.Avatar.FileOperation.Operation switch {
+                            ImageUploadOperation.Upload => Model.Avatar.FileOperation.PreviewUrl,
+                            ImageUploadOperation.Nothing => string.IsNullOrEmpty(User.AvatarProfilePath) ? null : ContentService.GetAssetPath(User.AvatarProfilePath),
+                            _ => null,
+                        };
                     }
                                     
                     <Avatar class="size-20 border-4 border-gray-700" ImageSrc="@displayImageSrc" ImageAlt="Preview Avatar"/>
