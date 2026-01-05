@@ -75,12 +75,38 @@ function animateShake(element: HTMLElement, duration: number, powerX: number, po
     });
 }
 
+function animateModal(element: HTMLElement, overlay: HTMLElement, duration: number): void {
+    animate(overlay, {
+        opacity: {
+            from: '0%',
+            to: '100%',
+            ease: 'inOutQuad',
+        },
+        duration: duration,
+    });
+    
+    animate(element, {
+        scale: {
+            from: '80%',
+            to: '100%',
+            ease: 'inOutQuad',
+        },
+        opacity: {
+            from: '0%',
+            to: '100%',
+            ease: 'inOutQuad',
+        },
+        duration: duration,
+    });
+}
+
 declare global {
     interface Window {
         createInputPreviewUrl: (inputElement: HTMLInputElement, fileIndex: number) => string|null;
         updateTooltipPosition: (targetElement: Element, tooltipElement: HTMLElement, arrowElement: HTMLElement | null, tooltipPlacement: Placement, tooltipOffset: number) => void;
         copyToClipboard: (text: string) => void;
         animateShake: (element: HTMLElement, duration: number, powerX: number, powerY: number) => void;
+        animateModal: (element: HTMLElement, overlay: HTMLElement, duration: number) => void;
     }
 }
 
@@ -88,3 +114,4 @@ window.createInputPreviewUrl = createInputPreviewUrl;
 window.updateTooltipPosition = updateTooltipPosition;
 window.copyToClipboard = copyToClipboard;
 window.animateShake = animateShake;
+window.animateModal = animateModal;
