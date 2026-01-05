@@ -8,11 +8,27 @@ interface DisposeState {
 }
 
 export function initializeSidebar(sidebarElement: HTMLElement, overlayElement: HTMLElement): DisposeState {
-    let isOpen = false, dragging = false, startX = 0, translate = -100;
-
     const checkSurpassBreakpoint = () => {
         return window.innerWidth >= 1024; // lg breakpoint
     };
+    
+    const enableSidebarTransition = () => {
+        sidebarElement.classList.add('transform-translate', 'duration-150');
+    };
+    
+    const disableSidebarTransition = () => {
+        sidebarElement.classList.remove('transform-translate', 'duration-150');
+    };
+    
+    const enableOverlayTransition = () => {
+        overlayElement.classList.add('transform-opacity', 'duration-150');
+    };
+
+    const disableOverlayTransition = () => {
+        overlayElement.classList.remove('transform-opacity', 'duration-150');
+    };
+
+    let isOpen = false, dragging = false, startX = 0, translate = -100;
     
     let surpassedBreakpoint = checkSurpassBreakpoint();
     
@@ -52,10 +68,13 @@ export function initializeSidebar(sidebarElement: HTMLElement, overlayElement: H
         dragging = true;
         startX = e.center.x;
 
-        sidebarElement.classList.remove('-translate-x-full', 'translate-x-0', 'transform-translate', 'duration-150');
+        sidebarElement.classList.remove('-translate-x-full', 'translate-x-0');
+        disableSidebarTransition();
+        
         sidebarElement.style.transform = isOpen ? 'translateX(0)' : 'translateX(-100%)';
         
-        overlayElement.classList.remove('invisible', 'transform-opacity', 'duration-150');
+        overlayElement.classList.remove('invisible');
+        disableOverlayTransition();
     });
     
     hammer.on('panmove', (e: HammerInput) => {
@@ -81,10 +100,10 @@ export function initializeSidebar(sidebarElement: HTMLElement, overlayElement: H
         
         dragging = false;
 
-        sidebarElement.classList.add('transform-translate', 'duration-150');
+        enableSidebarTransition();
         sidebarElement.style.transform = '';
         
-        overlayElement.classList.add('transform-opacity', 'duration-150');
+        enableOverlayTransition();
         translate > -50 ? open() : close();
     });
     
@@ -94,6 +113,7 @@ export function initializeSidebar(sidebarElement: HTMLElement, overlayElement: H
         
         if (wasSurpassedBreakpoint !== surpassedBreakpoint) {
             if (surpassedBreakpoint) {
+                disableSidebarTransition();
                 sidebarElement.classList.remove('-translate-x-full', 'translate-x-0');
                 close();
             } else {
