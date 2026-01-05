@@ -2,7 +2,8 @@
 @using Conflux.Services.Abstracts
 @using System.Security.Claims
 
-@inject ModalService ModalService
+@inherits BaseModal
+
 @inject ICommunityService CommunityService
 
 <div class="flex flex-row justify-center items-center size-full text-white">
@@ -32,7 +33,6 @@
 </div>
 
 @code {
-    [CascadingParameter] private ModalService.ModalInfo ModalInfo { get; set; }
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
     
     private State _state;
@@ -54,10 +54,6 @@
         CloseModal();
     }
 
-    private void CloseModal() {
-        ModalService.Close(ModalInfo.Id);
-    }
-    
     private enum State {
         TemplateSelection,
         InputInfo,

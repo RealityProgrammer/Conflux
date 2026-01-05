@@ -1,19 +1,22 @@
 ﻿@using Conflux.Components.Shared
 @using Conflux.Components.Shared.Icons
+@using Conflux.Components.Shared.Modals
 @using Conflux.Core
 @using Conflux.Database
 @using Conflux.Database.Entities
 @using Conflux.Helpers
+@using Conflux.Services
 @using Conflux.Services.Abstracts
 @using Microsoft.EntityFrameworkCore
 
 @implements IDisposable
 
-@inject ILogger<ChannelSidebar> Logger
+@inject ModalService ModalService
 @inject ICommunityService CommunityService
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JavascriptRuntime
+@inject IAuthorizationService AuthorizationService
 
 @switch (_state) {
     case State.Loading:
@@ -31,11 +34,11 @@
     case State.Success:
         <section>
             <div class="w-full h-32 bg-black relative">
-                <button @ref="_serverOptionsButton" class="absolute top-0 right-0 p-1.5 bg-transparent hover:bg-white/15 rounded-full" @onclick="@(() => _showCommunityExpandableMenu = true)">
+                <button @ref="_optionButton" class="absolute top-0 right-0 p-1.5 bg-transparent hover:bg-white/15 rounded-full" @onclick="@(() => _showExpandableMenu = true)">
                     <Gear class="size-5 fill-white"/>
                 </button>
         
-                <Popover TargetReference="_serverOptionsButton" @bind-IsShowing="_showCommunityExpandableMenu" Placement="left" Offset="4" CloseWhenClickOutside="true">
+                <Popover TargetReference="_optionButton" @bind-IsShowing="_showExpandableMenu" Placement="left" Offset="4" CloseWhenClickOutside="true">
                     <div class="bg-gray-600 p-1 text-white text-sm rounded-lg shadow-md flex flex-col gap-1 z-50" tabindex="-1">
                         <AuthorizeView Policy="CreateCommunityChannelCategory" Resource="UserPermissions?.Permissions">
                             <Authorized>
@@ -45,11 +48,11 @@
                         
                         <AuthorizeView Policy="AccessCommunityControlPanel" Resource="UserPermissions?.Permissions">
                             <Authorized>
-                                <button class="p-1.5 bg-transparent hover:bg-white/10 active:bg-black/8 cursor-pointer rounded-md text-left" @onclick="HandleDisplayControlPanel">Open Control Panel</button>
+                                <button class="p-1.5 bg-transparent hover:bg-white/10 active:bg-black/8 cursor-pointer rounded-md text-left" @onclick="OpenControlPanelModal">Open Control Panel</button>
                             </Authorized>
                         </AuthorizeView>
         
-                        <button class="p-1.5 bg-transparent hover:bg-white/10 active:bg-black/8 cursor-pointer rounded-md text-left" @onclick="HandleDisplayInvitationUrlModal">Get invitation URL</button>
+                        <button class="p-1.5 bg-transparent hover:bg-white/10 active:bg-black/8 cursor-pointer rounded-md text-left" @onclick="OpenInvitationUrlModal">Get invitation URL</button>
                     </div>
                 </Popover>
             </div>
@@ -102,7 +105,7 @@
                             <span class="flex-none">
                                 <Tooltip TargetCssClass="inline-block" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" Placement="right" Offset="8">
                                     <TargetContent>
-                                        <button class="bg-transparent cursor-pointer" @onclick="() => ShowCreateChannelDialog(channelCategory.Id)">
+                                        <button class="bg-transparent cursor-pointer" @onclick="() => OpenCreateChannelModal(channelCategory.Id)">
                                             <Plus Large="true" class="size-4 fill-white"/>
                                         </button>
                                     </TargetContent>
@@ -145,43 +148,6 @@
                 }
             </Authorized>
         </AuthorizeView>
-        
-        <AuthorizeView Policy="CreateCommunityChannel" Resource="UserPermissions?.Permissions">
-            <Authorized Context="authState">
-                <Dialog @bind-Open="_showCreatingChannelModal" OnClickOutside="CloseCreatingChannelModal" class="flex justify-center items-center overflow-hidden" ContainerCssClass="flex justify-center items-center">
-                    <Card class="">
-                        <CardHeader Title="Create Communicate Channel" Subtext="Building another room for your house" OnCloseRequested="CloseCreatingChannelModal"/>
-        
-                        <CardContent class="flex flex-col pb-1">
-                            <CreateCommunityChannelForm OnCreateRequest="HandleChannelCreate"/>
-                        </CardContent>
-                    </Card>
-                </Dialog>
-            </Authorized>
-        </AuthorizeView>
-        
-        <AuthorizeView Policy="AccessCommunityControlPanel" Resource="UserPermissions?.Permissions">
-            <Authorized Context="authState">
-                <Dialog @bind-Open="_showControlPanelModal" OnClickOutside="CloseControlPanelModal" ContainerCssClass="absolute inset-0">
-                    <CommunityControlPanel CommunityId="CommunityId" OnCloseRequest="CloseControlPanelModal"/>
-                </Dialog>
-            </Authorized>
-        </AuthorizeView>
-        
-        <Dialog @bind-Open="_showInvitationUrlModal" OnClickOutside="CloseInvitationUrlModal" class="flex justify-center items-center overflow-hidden" ContainerCssClass="flex justify-center items-center">
-            <Card class="lg:static transition-transform duration-500 z-10">
-                <CardHeader Title="Invite Your Friends Here" Subtext="Ain't a community if you're alone" OnCloseRequested="CloseInvitationUrlModal"/>
-        
-                <CardContent class="flex flex-col pb-1">
-                    <p class="mb-2">Send this community invitation URL to your friend and start the chat:</p>
-        
-                    <div class="relative">
-                        <input type="text" class="h-12 input-field pr-22 w-full" value="@_invitationUrl" readonly>
-                        <button class="absolute top-1 bottom-1 right-1 w-20 button-primary py-0!" @onclick="EventUtils.AsNonRenderingEventHandler(HandleCopyInvitationUrl)">Copy</button>
-                    </div>
-                </CardContent>
-            </Card>
-        </Dialog>
         break;
 }
 
@@ -191,17 +157,15 @@
 
     private State _state;
 
-    private ElementReference _serverOptionsButton;
+    private ElementReference _optionButton;
 
-    private bool _showCommunityExpandableMenu, _isCreatingChannelCategory;
-
-    private bool _showCreatingChannelModal, _showInvitationUrlModal, _showControlPanelModal;
-    private Guid _categoryChannelCreationReceiverId;
+    private bool _showExpandableMenu, _isCreatingChannelCategory;
 
     private Community? _community;
     private string? _invitationUrl;
 
     [CascadingParameter] private MemberRolePermissions? UserPermissions { get; set; }
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
     
     protected override void OnParametersSet() {
         if (_previousCommunityId != CommunityId) {
@@ -241,7 +205,7 @@
     }
 
     private void HandleDisplayCommunityExpandableMenu() {
-        _showCommunityExpandableMenu = false;
+        _showExpandableMenu = false;
         _isCreatingChannelCategory = true;
     }
 
@@ -252,7 +216,7 @@
     }
 
     private void HandleCreatingChannelCategoryBlur() {
-        _showCommunityExpandableMenu = false;
+        _showExpandableMenu = false;
         _isCreatingChannelCategory = false;
     }
 
@@ -266,29 +230,32 @@
         _isCreatingChannelCategory = false;
     }
 
-    private void ShowCreateChannelDialog(Guid categoryId) {
-        _showCreatingChannelModal = true;
-        _categoryChannelCreationReceiverId = categoryId;
+    private async Task OpenCreateChannelModal(Guid categoryId) {
+        var authState = await AuthenticationState;
+        
+        if ((await AuthorizationService.AuthorizeAsync(authState.User, UserPermissions?.Permissions, "CreateCommunityChannel")).Succeeded) {
+            ModalService.Open<CreateCommunityChannelModal>(parameters: new Dictionary<string, object> {
+                [nameof(CreateCommunityChannelModal.ReceiverChannelCategoryId)] = categoryId,
+            });
+        }
     }
 
-    private void CloseCreatingChannelModal() {
-        _showCreatingChannelModal = false;
-    }
-
-    private async Task HandleChannelCreate(CreateCommunityChannelForm.InputModel model) {
-        _showCreatingChannelModal = false;
-        await CommunityService.CreateChannelAsync(model.Name, model.Type, _categoryChannelCreationReceiverId);
+    private void OpenInvitationUrlModal() {
+        ModalService.Open<CommunityInvitationUrlModal>(parameters: new Dictionary<string, object> {
+            [nameof(CommunityInvitationUrlModal.InvitationUrl)] = _invitationUrl!,
+        });
     }
     
-    private void HandleDisplayInvitationUrlModal() {
-        _showInvitationUrlModal = true;
-        _showCommunityExpandableMenu = false;
+    private async Task OpenControlPanelModal() {
+        var authState = await AuthenticationState;
+
+        if ((await AuthorizationService.AuthorizeAsync(authState.User, UserPermissions?.Permissions, "AccessCommunityControlPanel")).Succeeded) {
+            ModalService.Open<CommunityControlPanelModal>(parameters: new Dictionary<string, object> {
+                [nameof(CommunityControlPanelModal.CommunityId)] = CommunityId,
+            });
+        }
     }
     
-    private void CloseInvitationUrlModal() {
-        _showInvitationUrlModal = false;
-    }
-
     private void OnChannelCategoryCreated(ChannelCategoryCreatedEventArgs args) {
         InvokeAsync(async () => {
             await using var dbContext = await DbContextFactory.CreateDbContextAsync();
@@ -304,20 +271,7 @@
             }
         });
     }
-
-    private async Task HandleCopyInvitationUrl() {
-        await JavascriptRuntime.InvokeVoidAsync("window.copyToClipboard", _invitationUrl);
-    }
-
-    private void HandleDisplayControlPanel() {
-        _showControlPanelModal = true;
-        _showCommunityExpandableMenu = false;
-    }
-
-    private void CloseControlPanelModal() {
-        _showControlPanelModal = false;
-    }
-
+    
     private void OnChannelCreated(ChannelCreatedEventArgs args) {
         int index = -1;
 

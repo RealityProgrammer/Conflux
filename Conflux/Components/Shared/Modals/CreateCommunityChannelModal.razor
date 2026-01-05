@@ -1,0 +1,25 @@
+﻿@using Conflux.Components.Pages.Community
+@using Conflux.Services.Abstracts
+
+@inherits BaseModal
+
+@inject ICommunityService CommunityService
+
+<div class="flex flex-row justify-center items-center size-full text-white">
+    <Card>
+        <CardHeader Title="Create Communicate Channel" Subtext="Building another room for your house" OnCloseRequested="CloseModal"/>
+        
+        <CardContent class="flex flex-col pb-1">
+            <CreateCommunityChannelForm OnCreateRequest="HandleChannelCreate"/>
+        </CardContent>
+    </Card>
+</div>
+
+@code {
+    [Parameter] public Guid ReceiverChannelCategoryId { get; set; }
+    
+    private async Task HandleChannelCreate(CreateCommunityChannelForm.InputModel model) {
+        await CommunityService.CreateChannelAsync(model.Name, model.Type, ReceiverChannelCategoryId);
+        CloseModal();
+    }
+}
