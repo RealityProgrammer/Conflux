@@ -12,9 +12,13 @@ public sealed class ModalService {
         _modals = [];
     }
     
-    public void Add<T>(IDictionary<string, object>? parameters = null) where T : ComponentBase {
-        _modals.Add(new(Guid.CreateVersion7(), typeof(T), parameters));
+    public ModalInfo Add<T>(IDictionary<string, object>? parameters = null) where T : ComponentBase {
+        var info = new ModalInfo(Guid.CreateVersion7(), typeof(T), parameters);
+        
+        _modals.Add(info);
         OnModalChanged?.Invoke();
+
+        return info;
     }
 
     public bool Close(Guid modalId) {
