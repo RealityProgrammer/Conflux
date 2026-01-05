@@ -14,12 +14,12 @@
     } else {
         <Avatar class="h-full flex-none" ImageSrc="@_avatarSrc" ImageAlt="User's Avatar"/>
         
-        <div class="ml-2 flex-1 hidden lg:flex flex-col justify-center text-white">
+        <div class="ml-2 flex-1 flex flex-col justify-center text-white">
             <p>@_userDisplayName</p>
             <p class="text-xs">@_username</p>
         </div>
         
-        <div class="flex-none hidden lg:flex flex-row items-center">
+        <div class="flex-none flex flex-row items-center">
             <NavLink class="rounded-full p-2 flex-none hover:bg-white/15 active:bg-black/15" href="/settings/account" Match="NavLinkMatch.Prefix">
                 <Gear class="size-5 fill-white flex-none"/>
             </NavLink>

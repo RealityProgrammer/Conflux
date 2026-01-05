@@ -5,16 +5,6 @@
 @layout LobbyLayout
 
 <main class="relative size-full overflow-hidden flex flex-row">
-    @* <aside class="flex-1 bg-gray-750 h-full overflow-hidden text-white flex flex-col border-r border-r-gray-600"> *@
-    @*     <section class="flex-1 overflow-y-auto scrollbar-hide"> *@
-    @*         <SectionOutlet SectionName="lobby-sidebar"/> *@
-    @*     </section> *@
-    @* *@
-    @*     <div class="flex-none px-1 pb-1"> *@
-    @*         <UserProfileCard class="rounded-lg bg-gray-700"/> *@
-    @*     </div> *@
-    @* </aside> *@
-    
     <Sidebar class="@("border-r border-r-gray-600 bg-gray-750 overflow-hidden text-white flex flex-col w-80")">
         <section class="flex-1 overflow-y-auto scrollbar-hide">
             <SectionOutlet SectionName="lobby-sidebar"/>
