@@ -1,4 +1,5 @@
 ﻿import 'hammerjs';
+import {animate} from "animejs";
 
 const MAX_OVERLAY_OPACITY = 60;
 
@@ -11,22 +12,17 @@ export function initializeSidebar(sidebarElement: HTMLElement, overlayElement: H
     const checkSurpassBreakpoint = () => {
         return window.innerWidth >= 1024; // lg breakpoint
     };
-    
-    const enableSidebarTransition = () => {
-        sidebarElement.classList.add('transform-translate', 'duration-150');
-    };
-    
-    const disableSidebarTransition = () => {
-        sidebarElement.classList.remove('transform-translate', 'duration-150');
-    };
-    
-    const enableOverlayTransition = () => {
-        overlayElement.classList.add('transform-opacity', 'duration-150');
-    };
 
-    const disableOverlayTransition = () => {
-        overlayElement.classList.remove('transform-opacity', 'duration-150');
-    };
+    const handleResponsiveness = () => {
+        if (surpassedBreakpoint) {
+            sidebarElement.style.transform = '';
+            isOpen = false;
+            translate = 0;
+            overlayElement.classList.add('hidden');
+        } else {
+            sidebarElement.style.transform = isOpen ? 'translateX(0)' : 'translateX(-100%)';
+        }
+    }
 
     let isOpen = false, dragging = false, startX = 0, translate = -100;
     
@@ -35,25 +31,44 @@ export function initializeSidebar(sidebarElement: HTMLElement, overlayElement: H
     const getWidth = () => sidebarElement.getBoundingClientRect().width;
 
     const open = () => {
-        if (surpassedBreakpoint || isOpen) return;
-        
         isOpen = true;
         translate = 0;
-        sidebarElement.classList.add('translate-x-0');
-        sidebarElement.classList.remove('-translate-x-full');
+
+        animate(sidebarElement, {
+            x: '0%',
+            duration: 150,
+            ease: 'linear',
+        });
         
-        overlayElement.classList.remove('invisible');
-        overlayElement.style.opacity = `${MAX_OVERLAY_OPACITY}%`;
+        animate(overlayElement, {
+            opacity: `${MAX_OVERLAY_OPACITY / 100}`,
+            duration: 150,
+            ease: 'linear',
+        });
+        
+        overlayElement.classList.remove('hidden');
     };
 
     const close = () => {
         isOpen = false;
         translate = -100;
-        sidebarElement.classList.remove('translate-x-0');
-        sidebarElement.classList.add('-translate-x-full');
 
-        overlayElement.classList.add('invisible');
-        overlayElement.style.opacity = '0%';
+        animate(sidebarElement, {
+            x: '-100%',
+            duration: 150,
+            ease: 'linear',
+            onComplete: () => {
+                sidebarElement.classList.add('-translate-x-full');
+            },
+        });
+        
+        animate(overlayElement, {
+            opacity: `0%`,
+            duration: 150,
+            ease: 'linear',
+        })
+        
+        overlayElement.classList.add('hidden');
     };
 
     overlayElement.onclick = close;
@@ -68,13 +83,10 @@ export function initializeSidebar(sidebarElement: HTMLElement, overlayElement: H
         dragging = true;
         startX = e.center.x;
 
-        sidebarElement.classList.remove('-translate-x-full', 'translate-x-0');
-        disableSidebarTransition();
-        
         sidebarElement.style.transform = isOpen ? 'translateX(0)' : 'translateX(-100%)';
         
-        overlayElement.classList.remove('invisible');
-        disableOverlayTransition();
+        sidebarElement.classList.remove('-translate-x-full');
+        overlayElement.classList.remove('hidden');
     });
     
     hammer.on('panmove', (e: HammerInput) => {
@@ -89,10 +101,10 @@ export function initializeSidebar(sidebarElement: HTMLElement, overlayElement: H
         
         sidebarElement.style.transform = `translateX(${translate}%)`;
 
-        // Remap translate from -100 to 0 into opacity 0 to 40.
+        // Remap translate from -100 to 0 into opacity 0 to MAX_OVERLAY_OPACITY.
         const opacity = (translate + 100) * MAX_OVERLAY_OPACITY / 100;
         overlayElement.style.opacity = `${opacity}%`;
-        overlayElement.classList.toggle('invisible', opacity <= 0);
+        overlayElement.classList.toggle('hidden', opacity <= 0);
     });
     
     hammer.on('panend', (_e: HammerInput) => {
@@ -100,10 +112,6 @@ export function initializeSidebar(sidebarElement: HTMLElement, overlayElement: H
         
         dragging = false;
 
-        enableSidebarTransition();
-        sidebarElement.style.transform = '';
-        
-        enableOverlayTransition();
         translate > -50 ? open() : close();
     });
     
@@ -112,14 +120,7 @@ export function initializeSidebar(sidebarElement: HTMLElement, overlayElement: H
         surpassedBreakpoint = checkSurpassBreakpoint();
         
         if (wasSurpassedBreakpoint !== surpassedBreakpoint) {
-            if (surpassedBreakpoint) {
-                disableSidebarTransition();
-                sidebarElement.classList.remove('-translate-x-full', 'translate-x-0');
-                close();
-            } else {
-                sidebarElement.classList.add(isOpen ? 'translate-x-0' : '-translate-x-full');
-                sidebarElement.style.transform = '';
-            }
+            handleResponsiveness();
         }
     };
     
