@@ -96,7 +96,7 @@
     }
 
     private void OnModalChanged(ModalChangedEventArgs args) {
-        if (args is not { Type: ModalChangedEventType.Closed, Info.Name: "Activity.Status", ReturnValue: string returnValue }) {
+        if (args is not { Type: ModalChangedEventType.Closed, Instance.Name: "Activity.Status", ReturnValue: string returnValue }) {
             return;
         }
 

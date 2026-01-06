@@ -1,9 +1,11 @@
 ﻿@using Conflux.Components.Pages.Settings
 @using Conflux.Components.Shared
 @using Conflux.Components.Shared.Icons
+@using Conflux.Components.Shared.Modals
 @using Conflux.Core
 @using Conflux.Database
 @using Conflux.Database.Entities
+@using Conflux.Services
 @using Conflux.Services.Abstracts
 @using Conflux.Services.Authorization
 @using Microsoft.AspNetCore.Authentication
@@ -15,11 +17,11 @@
 @implements IDisposable
 
 @inject ICommunityService CommunityService
-@inject ILogger<CommunityRolesTabContent> Logger
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject IJSRuntime JavascriptRuntime
 @inject IContentService ContentService
 @inject IAuthorizationService AuthorizationService
+@inject ModalService ModalService
 
 <div class="flex flex-col h-full gap-1 overflow-y-scroll">
     <header class="flex-0 ml-2">
@@ -177,7 +179,7 @@
                                 <Virtualize ItemsProvider="RoleMembersProvider" @ref="_roleMembersVirtualizeReference">
                                     <ItemContent Context="item">
                                         @{
-                                            bool isBeingRemoved = Model.GetRoleModificationStatus(item.MemberId) == RoleModificationStatus.Remove;
+                                            bool isBeingRemoved = Model.RemoveRoles.Contains(item.MemberId);
                                             string backgroundCssClass = isBeingRemoved ? "bg-red-500/45 hover:bg-[#BA4659]" : "bg-transparent hover:bg-white/8";
 
                                         }
@@ -305,76 +307,6 @@
 
 <UnsavedChangesPopup IsShowing="_editContext.IsModified()" OnCancelRequest="HandleCancelEdit" OnSaveRequest="HandleSaveEdit"/>
 
-<Dialog @bind-Open="_openAddMemberDialog" class="flex justify-center items-center text-white" ContainerCssClass="absolute inset-0" OnClickOutside="HandleCloseAddMemberDialog">
-    <EditForm Model="AddMemberModel" FormName="AddMember">
-        <Card class="absolute inset-3 md:w-1/2 md:mx-auto lg:w-1/3">
-            <CardHeader Title="Add Member" Subtext="Authorize somebody to be in charge while you're gone." OnCloseRequested="HandleCloseAddMemberDialog"/>
-
-            <CardContent class="flex flex-col">
-                <SearchField @bind-Value="_addMemberNameSearch" class="flex-none mt-1"/>
-
-                <section class="flex-1 h-full border border-gray-600 rounded-md mt-1 overflow-y-scroll scrollbar-hide p-1">
-                    <Virtualize ItemsProvider="AddMemberSearchProvider">
-                        <ItemContent Context="item">
-                            <label class="p-1.5 flex flex-row items-center bg-transparent hover:bg-white/8 rounded-md active:scale-95 transition-transform duration-200 ease-in-out pointer-events-auto group">
-                                <Avatar ImageSrc="@(string.IsNullOrEmpty(item.Avatar) ? null : ContentService.GetAssetPath(item.Avatar))" ImageAlt="@($"Avatar of {item.DisplayName}")" class="size-9 mr-1"/>
-
-                                <p class="flex-1">@item.DisplayName</p>
-
-                                <Check class="flex-none size-5 fill-white hidden group-has-checked:block" Variation="CheckVariation.Large"/>
-
-                                <input type="checkbox" class="hidden peer" @bind:get="AddMemberModel!.IsMemberAdded(item.MemberId)" @bind:set="@(value => AddMemberModel.SetMemberAdded(item.MemberId, value))">
-                            </label>
-                        </ItemContent>
-
-                        <EmptyContent>
-                            <div class="h-full flex justify-center items-center">
-                                <p class="text-sm text-gray-400">Nobody here...</p>
-                            </div>
-                        </EmptyContent>
-                    </Virtualize>
-                </section>
-            </CardContent>
-            
-            <CardFooter class="flex flex-row justify-end gap-2">
-                <button type="button" class="button-danger w-24" @onclick="HandleCloseAddMemberDialog">Cancel</button>
-                <button type="button" class="button-primary w-24" @onclick="HandleApplyAddMember">Apply</button>
-            </CardFooter>
-        </Card>
-    </EditForm>
-</Dialog>
-
-@if (_selectedRole.Name != "Owners") {
-    <AuthorizeView Policy="DeleteCommunityRole" Resource="UserPermissions?.Permissions">
-        <Dialog @bind-Open="_openDeleteRoleDialog" OnClickOutside="CloseDeleteRoleDialog" class="flex justify-center items-center overflow-hidden" ContainerCssClass="flex justify-center items-center">
-            <Card class="lg:static transition-transform duration-500 z-10">
-                <CardHeader Title="Delete Role" Subtext="About to cause some job loss." OnCloseRequested="CloseDeleteRoleDialog"/>
-
-                <CardContent class="flex flex-col pb-1">
-                    <p>
-                        Are you sure you want to delete this role?<br/>
-                        This action cannot be undone!
-                    </p>
-                </CardContent>
-
-                <CardFooter class="flex flex-row justify-end gap-2">
-                    <button class="button-primary w-24" @onclick="CloseDeleteRoleDialog">Cancel</button>
-
-                    <ProcessingStateButton type="button" @bind-IsProcessing="_isDeletingRole" class="button-danger w-24" @onclick="HandleDeleteRole" ProcessingCssClass="flex flex-row justify-center items-center">
-                        <ChildContent>
-                            Delete
-                        </ChildContent>
-
-                        <ProcessingContent>
-                            <Spinner class="size-5 fill-white"/>
-                        </ProcessingContent>
-                    </ProcessingStateButton>
-                </CardFooter>
-            </Card>
-        </Dialog>
-    </AuthorizeView>
-}
-
 @code {
     [Parameter] public Guid CommunityId { get; set; }
     
@@ -390,25 +322,19 @@
     [SupplyParameterFromForm(Name = "MainForm")] private InputModel Model { get; set; } = null!;
     private EditContext _editContext = null!;
     private RolePermissions _originalPermissions = null!;
-    private FieldIdentifier _roleModificationsField, _roleNameField;
-
-    [SupplyParameterFromForm(Name = "AddMember")] private AddMemberInputModel AddMemberModel { get; set; } = null!;
+    private FieldIdentifier _removeRolesField, _addRolesField, _roleNameField;
 
     private InputText? _roleRenameInputElement;
     
     private string _roleMembersSearchString = string.Empty;
     private string _creatingRoleName = string.Empty;
     
-    private bool _openAddMemberDialog, _openDeleteRoleDialog;
-    private string _addMemberNameSearch = string.Empty;
     private Virtualize<MemberDTO>? _addingMembersVirtualizeReference;
     
     private ElementReference? _roleNameInputElement, _unsavedChangesShakeTarget;
     private Virtualize<MemberDTO>? _roleMembersVirtualizeReference;
     private string? _roleNameErrorMessage;
 
-    private bool _isDeletingRole;
-    
     // Collapsible
     private bool _expandPermissionCollapsible, _expandPeopleCollapsible, _expandActionCollapsible;
     
@@ -423,10 +349,17 @@
         };
         _editContext = new(Model);
 
-        AddMemberModel ??= new();
-
-        _roleModificationsField = FieldIdentifier.Create(() => Model.RoleModifications);
+        _removeRolesField = FieldIdentifier.Create(() => Model.RemoveRoles);
+        _addRolesField = FieldIdentifier.Create(() => Model.AddRoles);
         _roleNameField = FieldIdentifier.Create(() => Model.RoleName);
+    }
+
+    protected override void OnParametersSet() {
+        if (UserPermissions?.Permissions is { } permissions) {
+            Model.ChannelPermissions = permissions.Channel;
+            Model.RolePermissions = permissions.Role;
+            Model.AccessPermissions = permissions.Access;
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
@@ -452,6 +385,8 @@
             CommunityService.OnMemberRoleChanged += OnMemberRoleChanged;
             CommunityService.OnRoleRenamed += OnRoleRenamed;
             CommunityService.OnRoleDeleted += OnRoleDeleted;
+
+            ModalService.OnModalChanged += OnAddMemberPanelClosed;
             
             var authState = await AuthenticationState;
             _allowsUpdateRolePermissions = (await AuthorizationService.AuthorizeAsync(authState.User, UserPermissions?.Permissions, new UpdateCommunityRolePermissionsRequirement())).Succeeded;
@@ -488,7 +423,8 @@
         Model.ChannelPermissions = _originalPermissions.Channel;
         Model.RolePermissions = _originalPermissions.Role;
         Model.AccessPermissions = _originalPermissions.Access;
-        Model.RoleModifications.Clear();
+        Model.RemoveRoles.Clear();
+        Model.AddRoles.Clear();
         Model.RoleName = _selectedRole.Name;
 
         if (_roleMembersVirtualizeReference != null) {
@@ -509,15 +445,18 @@
         
         await CommunityService.UpdatePermissionsAsync(CommunityId, _selectedRole.Id, new(Model.ChannelPermissions, Model.RolePermissions, Model.AccessPermissions));
 
-        if (_editContext.IsModified(_roleModificationsField)) {
-            await CommunityService.SetMembersRole(CommunityId, Model.RoleModifications.Where(kvp => kvp.Value == RoleModificationStatus.Add).Select(x => x.Key).ToList(), _selectedRole.Id);
-            await CommunityService.SetMembersRole(CommunityId, Model.RoleModifications.Where(kvp => kvp.Value == RoleModificationStatus.Remove).Select(x => x.Key).ToList(), null);
-            
-            Model.RoleModifications.Clear();
-            
+        if (_editContext.IsModified(_removeRolesField)) {
+            await CommunityService.SetMembersRole(CommunityId, Model.RemoveRoles, null);
+            Model.RemoveRoles.Clear();
+
             if (_roleMembersVirtualizeReference != null) {
                 await _roleMembersVirtualizeReference.RefreshDataAsync();
             }
+        }
+
+        if (_editContext.IsModified(_addRolesField)) {
+            await CommunityService.SetMembersRole(CommunityId, Model.AddRoles, _selectedRole.Id);
+            Model.AddRoles.Clear();
         
             if (_addingMembersVirtualizeReference != null) {
                 await _addingMembersVirtualizeReference.RefreshDataAsync();
@@ -605,41 +544,10 @@
     }
 
     private async ValueTask<ItemsProviderResult<MemberDTO>> AddingMembersItemProvider(ItemsProviderRequest request) {
-        IEnumerable<Guid> addingMembers = Model.RoleModifications
-            .Where(kvp => kvp.Value == RoleModificationStatus.Add)
-            .Select(kvp => kvp.Key)
-            .ToList();
-        
         await using var dbContext = await DbContextFactory.CreateDbContextAsync();
         
         var query = dbContext.CommunityMembers
-            .Where(x => addingMembers.Contains(x.Id) && x.CommunityId == CommunityId);
-
-        int count = await query.CountAsync();
-
-        if (count == 0) {
-            return new([], 0);
-        }
-
-        var members = await query
-            .Select(x => new MemberDTO {
-                Avatar = x.User.AvatarProfilePath,
-                DisplayName = x.User.DisplayName,
-                MemberId = x.Id,
-            })
-            .OrderBy(x => x.DisplayName)
-            .Skip(request.StartIndex)
-            .Take(request.Count)
-            .ToListAsync();
-
-        return new(members, count);
-    }
-    
-    private async ValueTask<ItemsProviderResult<MemberDTO>> AddMemberSearchProvider(ItemsProviderRequest request) {
-        await using var dbContext = await DbContextFactory.CreateDbContextAsync();
-        
-        var query = dbContext.CommunityMembers
-            .Where(x => x.CommunityId == CommunityId && x.RoleId == null);
+            .Where(x => Model.AddRoles.Contains(x.Id) && x.CommunityId == CommunityId);
 
         int count = await query.CountAsync();
 
@@ -662,77 +570,57 @@
     }
 
     private void HandleOpenAddMemberDialog() {
-        _openAddMemberDialog = true;
-
-        AddMemberModel.MemberIds.Clear();
-
-        foreach ((var id, var modification) in Model.RoleModifications) {
-            if (modification == RoleModificationStatus.Add) {
-                AddMemberModel.MemberIds.Add(id);
-            }
-        }
+        ModalService.Open<RoleAddMemberPanel>(name: "Community.ControlPanel.Roles.AddMember", parameters: new Dictionary<string, object> {
+            [nameof(RoleAddMemberPanel.CommunityId)] = CommunityId,
+            [nameof(RoleAddMemberPanel.AddedMembers)] = Model.AddRoles,
+        });
     }
 
-    private void HandleCloseAddMemberDialog() {
-        _openAddMemberDialog = false;
-        AddMemberModel.MemberIds.Clear();
-    }
+    private static readonly RenderFragment _roleDeleteBodyFragment =
+        @<p>
+            Are you sure you want to delete this role?<br/>
+            This action cannot be undone!
+        </p>;
 
     private void OpenDeleteRoleDialog() {
-        _openDeleteRoleDialog = true;
+        ModalService.Open<DeleteConfirmationModal>(parameters: new Dictionary<string, object> {
+            [nameof(DeleteConfirmationModal.Title)] = "Delete Role",
+            [nameof(DeleteConfirmationModal.Subtitle)] = "Committing massive job loss...",
+            [nameof(DeleteConfirmationModal.Body)] = _roleDeleteBodyFragment,
+            [nameof(DeleteConfirmationModal.OnConfirmDelete)] = EventCallback.Factory.Create(this, async () => {
+                await CommunityService.DeleteRole(CommunityId, _selectedRole.Id);
+            }),
+        });
     }
 
-    private void CloseDeleteRoleDialog() {
-        _openDeleteRoleDialog = false;
-    }
-    
-    private async Task HandleApplyAddMember() {
-        Debug.Assert(AddMemberModel != null);
-
-        _openAddMemberDialog = false;
-
-        if (AddMemberModel.MemberIds.Count > 0) {
-            foreach (var memberId in AddMemberModel.MemberIds) {
-                Model.RoleModifications[memberId] = RoleModificationStatus.Add;
-            }
-
-            AddMemberModel.MemberIds.Clear();
-
-            if (_addingMembersVirtualizeReference != null) {
-                await _addingMembersVirtualizeReference.RefreshDataAsync();
-            }
+    private void OnAddMemberPanelClosed(ModalChangedEventArgs args) {
+        if (args is { Type: ModalChangedEventType.Closed, Instance.Name: "Community.ControlPanel.Roles.AddMember", ReturnValue: HashSet<Guid> { Count: > 0 } members }) {
+            Model.AddRoles = members;
+            _editContext.NotifyFieldChanged(_addRolesField);
             
-            _editContext.NotifyFieldChanged(_roleModificationsField);
-        }
-    }
-
-    private async Task HandleDeleteRole() {
-        if (_isDeletingRole) return;
-        
-        _isDeletingRole = true;
-
-        try {
-            await CommunityService.DeleteRole(CommunityId, _selectedRole.Id);
-        } finally {
-            _isDeletingRole = false;
-            _openDeleteRoleDialog = false;
+            InvokeAsync(async () => {
+                if (_addingMembersVirtualizeReference != null) {
+                    await _addingMembersVirtualizeReference.RefreshDataAsync();
+                }
+            });
         }
     }
 
     private void ApplyMemberRoleRemove(Guid memberId) {
-        Model.SetRoleModificationStatus(memberId, RoleModificationStatus.Remove);
-        _editContext.NotifyFieldChanged(_roleModificationsField);
+        Model.RemoveRoles.Add(memberId);
+        _editContext.NotifyFieldChanged(_removeRolesField);
     }
 
     private void UndoMemberRoleRemove(Guid memberId) {
-        Model.SetRoleModificationStatus(memberId, RoleModificationStatus.Nothing);
-        _editContext.NotifyFieldChanged(_roleModificationsField);
+        Model.RemoveRoles.Remove(memberId);
+
+        if (Model.RemoveRoles.Count == 0) {
+            _editContext.MarkAsUnmodified(_removeRolesField);
+        }
     }
 
     private async Task RemoveFromAppendingCollection(Guid memberId) {
-        if (Model.RoleModifications.TryGetValue(memberId, out var modification) && modification == RoleModificationStatus.Add) {
-            Model.RoleModifications.Remove(memberId);
-
+        if (Model.AddRoles.Remove(memberId)) {
             if (_addingMembersVirtualizeReference != null) {
                 await _addingMembersVirtualizeReference.RefreshDataAsync();
             }
@@ -787,6 +675,8 @@
     }
 
     public void Dispose() {
+        ModalService.OnModalChanged -= OnAddMemberPanelClosed;
+        
         CommunityService.OnRoleCreated -= OnRoleCreated;
         CommunityService.OnMemberRoleChanged -= OnMemberRoleChanged;
         CommunityService.OnRoleRenamed -= OnRoleRenamed;
@@ -854,40 +744,11 @@
             set => AccessPermissions = value ? AccessPermissions | CommunityRole.AccessPermissionFlags.AccessControlPanel : AccessPermissions & ~CommunityRole.AccessPermissionFlags.AccessControlPanel;
         }
 
-        public Dictionary<Guid, RoleModificationStatus> RoleModifications { get; } = [];
-
-        public RoleModificationStatus GetRoleModificationStatus(Guid communityMemberId) {
-            return RoleModifications.GetValueOrDefault(communityMemberId, RoleModificationStatus.Nothing);
-        }
-
-        public void SetRoleModificationStatus(Guid communityMemberId, RoleModificationStatus status) {
-            RoleModifications[communityMemberId] = status;
-        }
+        public HashSet<Guid> RemoveRoles { get; set; } = [];
+        public HashSet<Guid> AddRoles { get; set; } = [];
 
         [StringLength(32, ErrorMessage = "Role Name cannot be longer than 32 characters.")]
         [Required(ErrorMessage = "Role Name is required.")] 
         public string RoleName { get; set; } = string.Empty;
-    }
-
-    private sealed class AddMemberInputModel {
-        public HashSet<Guid> MemberIds { get; } = [];
-
-        public bool IsMemberAdded(Guid memberId) {
-            return MemberIds.Contains(memberId);
-        }
-
-        public void SetMemberAdded(Guid memberId, bool added) {
-            if (added) {
-                MemberIds.Add(memberId);
-            } else {
-                MemberIds.Remove(memberId);
-            }
-        }
-    }
-    
-    private enum RoleModificationStatus {
-        Nothing,
-        Add,
-        Remove,
     }
 }

@@ -1,0 +1,125 @@
+﻿@using Conflux.Components.Shared.Icons
+@using Conflux.Database
+@using Conflux.Services.Abstracts
+@using Microsoft.EntityFrameworkCore
+@inherits BaseModal
+
+@inject IContentService ContentService
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+
+<div class="flex flex-row justify-center items-center size-full text-white">
+    <EditForm Model="Model" FormName="AddMember" onkeydown="return event.keyCode !== 13;" OnValidSubmit="HandleFormSubmit">
+        <Card class="absolute inset-3 md:w-1/2 md:mx-auto lg:w-1/3">
+            <CardHeader Title="Add Member" Subtext="Authorize somebody to be in charge while you're gone." OnCloseRequested="CloseModal"/>
+
+            <CardContent class="flex flex-col">
+                <SearchField @bind-Value="_nameSearch" @bind-Value:after="HandleSearch" class="flex-none mt-1"/>
+
+                <section class="flex-1 h-full border border-gray-600 rounded-md mt-1 overflow-y-scroll scrollbar-hide p-1">
+                    <Virtualize @ref="_virtualize" ItemsProvider="MemberSearchProvider">
+                        <ItemContent Context="item">
+                            <label class="p-1.5 flex flex-row items-center bg-transparent hover:bg-white/8 rounded-md active:scale-95 transition-transform duration-200 ease-in-out pointer-events-auto group">
+                                <Avatar ImageSrc="@(string.IsNullOrEmpty(item.Avatar) ? null : ContentService.GetAssetPath(item.Avatar))" ImageAlt="@($"Avatar of {item.DisplayName}")" class="size-9 mr-1"/>
+
+                                <p class="flex-1">@item.DisplayName</p>
+
+                                <Check class="flex-none size-5 fill-white hidden group-has-checked:block" Variation="CheckVariation.Large"/>
+
+                                <input type="checkbox" class="hidden peer" @bind:get="Model!.IsMemberAdded(item.MemberId)" @bind:set="@(value => Model.SetMemberAdded(item.MemberId, value))">
+                            </label>
+                        </ItemContent>
+
+                        <EmptyContent>
+                            <div class="h-full flex justify-center items-center">
+                                <p class="text-sm text-gray-400">Nobody here...</p>
+                            </div>
+                        </EmptyContent>
+                    </Virtualize>
+                </section>
+            </CardContent>
+            
+            <CardFooter class="flex flex-row justify-end gap-2">
+                <button type="button" class="button-danger w-24" @onclick="CloseModal">Cancel</button>
+                <button type="submit" class="button-primary w-24">Apply</button>
+            </CardFooter>
+        </Card>
+    </EditForm>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public required Guid CommunityId { get; set; }
+    [Parameter] public IEnumerable<Guid>? AddedMembers { get; set; }
+    
+    private string _nameSearch = string.Empty;
+    [SupplyParameterFromForm] private InputModel? Model { get; set; }
+
+    private Virtualize<MemberDTO> _virtualize = null!;
+
+    protected override void OnInitialized() {
+        Model ??= new();
+    }
+
+    protected override void OnParametersSet() {
+        foreach (var addedMember in AddedMembers ?? []) {
+            Model!.MemberIds.Add(addedMember);
+        }
+    }
+
+    private async Task HandleSearch() {
+        await _virtualize.RefreshDataAsync();
+    }
+
+    private async ValueTask<ItemsProviderResult<MemberDTO>> MemberSearchProvider(ItemsProviderRequest request) {
+        await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+        
+        var query = dbContext.CommunityMembers
+            .Where(x => x.CommunityId == CommunityId && x.RoleId == null);
+
+        if (!string.IsNullOrEmpty(_nameSearch)) {
+            var pattern = $"%{_nameSearch}%";
+            
+            query = query.Where(m => EF.Functions.ILike(m.User.DisplayName, pattern) || (m.User.NormalizedUserName != null && EF.Functions.ILike(m.User.NormalizedUserName, pattern)));
+        }
+
+        int count = await query.CountAsync();
+
+        if (count == 0) {
+            return new([], 0);
+        }
+
+        var members = await query
+            .Select(x => new MemberDTO {
+                Avatar = x.User.AvatarProfilePath,
+                DisplayName = x.User.DisplayName,
+                MemberId = x.Id,
+            })
+            .OrderBy(x => x.DisplayName)
+            .Skip(request.StartIndex)
+            .Take(request.Count)
+            .ToListAsync();
+
+        return new(members, count);
+    }
+
+    private void HandleFormSubmit() {
+        CloseModal(Model!.MemberIds);
+    }
+    
+    private sealed class InputModel {
+        public HashSet<Guid> MemberIds { get; } = [];
+    
+        public bool IsMemberAdded(Guid memberId) {
+            return MemberIds.Contains(memberId);
+        }
+    
+        public void SetMemberAdded(Guid memberId, bool added) {
+            if (added) {
+                MemberIds.Add(memberId);
+            } else {
+                MemberIds.Remove(memberId);
+            }
+        }
+    }
+    
+    private record struct MemberDTO(Guid MemberId, string DisplayName, string? Avatar);
+}

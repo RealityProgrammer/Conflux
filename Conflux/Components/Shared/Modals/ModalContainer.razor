@@ -7,8 +7,8 @@
 @inject ModalService ModalService
 @inject ILogger<ModalContainer> Logger
 
-@foreach (var info in ModalService.Modals) {
-    <ModalElementContainer Info="info"></ModalElementContainer>
+@foreach (var instance in ModalService.Modals) {
+    <ModalElementContainer @key="instance.Id" Instance="instance"/>
 }
 
 @code {

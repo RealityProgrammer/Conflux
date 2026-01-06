@@ -160,14 +160,14 @@
         await InvokeAsync(StateHasChanged);
     }
     
-    private static RenderFragment SurpassedAttachmentCountModalBody =
+    private static readonly RenderFragment SurpassedAttachmentCountModalBody =
         @<p>
             Whoa there buddy, you cannot send this much file for the time being.
             <br/>
             If you need to send more, attach it to another message.
         </p>;
     
-    private static RenderFragment SurpassedAttachmentMaxSizeModalBody =
+    private static readonly RenderFragment SurpassedAttachmentMaxSizeModalBody =
         @<p>
             Whoa there buddy, one of the files you want to transfer over is way too large.
             <br/>

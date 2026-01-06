@@ -248,7 +248,7 @@
     
     private async Task OpenControlPanelModal() {
         var authState = await AuthenticationState;
-
+        
         if ((await AuthorizationService.AuthorizeAsync(authState.User, UserPermissions?.Permissions, "AccessCommunityControlPanel")).Succeeded) {
             ModalService.Open<CommunityControlPanelModal>(parameters: new Dictionary<string, object> {
                 [nameof(CommunityControlPanelModal.CommunityId)] = CommunityId,
@@ -256,7 +256,7 @@
             });
         }
     }
-    
+
     private void OnChannelCategoryCreated(ChannelCategoryCreatedEventArgs args) {
         InvokeAsync(async () => {
             await using var dbContext = await DbContextFactory.CreateDbContextAsync();
