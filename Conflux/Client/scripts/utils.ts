@@ -107,6 +107,7 @@ declare global {
         copyToClipboard: (text: string) => void;
         animateShake: (element: HTMLElement, duration: number, powerX: number, powerY: number) => void;
         animateModal: (element: HTMLElement, overlay: HTMLElement, duration: number) => void;
+        isUserMobile: () => boolean;
     }
 }
 

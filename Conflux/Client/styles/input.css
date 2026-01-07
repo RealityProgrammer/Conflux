@@ -214,6 +214,12 @@
         -ms-overflow-style: none;
         scrollbar-width: none;
     }
+
+    .dragging-container,
+    .dragging-container * {
+        -ms-touch-action: none;
+        touch-action: none;
+    }
 }
 
 /*@layer utilities {*/
