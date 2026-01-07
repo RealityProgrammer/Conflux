@@ -354,12 +354,15 @@
         _roleNameField = FieldIdentifier.Create(() => Model.RoleName);
     }
 
-    protected override void OnParametersSet() {
+    protected override async Task OnParametersSetAsync() {
         if (UserPermissions?.Permissions is { } permissions) {
             Model.ChannelPermissions = permissions.Channel;
             Model.RolePermissions = permissions.Role;
             Model.AccessPermissions = permissions.Access;
         }
+        
+        var authState = await AuthenticationState;
+        _allowsUpdateRolePermissions = (await AuthorizationService.AuthorizeAsync(authState.User, UserPermissions?.Permissions, new UpdateCommunityRolePermissionsRequirement())).Succeeded;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
@@ -387,9 +390,6 @@
             CommunityService.OnRoleDeleted += OnRoleDeleted;
 
             ModalService.OnModalChanged += OnAddMemberPanelClosed;
-            
-            var authState = await AuthenticationState;
-            _allowsUpdateRolePermissions = (await AuthorizationService.AuthorizeAsync(authState.User, UserPermissions?.Permissions, new UpdateCommunityRolePermissionsRequirement())).Succeeded;
             
             StateHasChanged();
         }
