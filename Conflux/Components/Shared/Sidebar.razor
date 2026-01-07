@@ -3,9 +3,9 @@
 @inject IJSRuntime JavascriptRuntime
 @inject ILogger<Sidebar> Logger
 
-<div @ref="OverlayElement" class="cursor-default absolute inset-0 bg-black hidden lg:hidden z-1000" style="opacity: 0"></div>
+<div @ref="OverlayElement" class="cursor-default absolute inset-0 bg-black hidden lg:hidden z-100" style="opacity: 0"></div>
 
-<aside @ref="RootElement" class="h-full absolute top-0 left-0 z-1001 lg:static -translate-x-full lg:translate-x-0 @_cssClass" @attributes="AdditionalAttributes">
+<aside @ref="RootElement" class="h-full absolute top-0 left-0 z-101 lg:static -translate-x-full lg:translate-x-0 @_cssClass" @attributes="AdditionalAttributes">
     @if (ChildContent != null) {
         @ChildContent
     }
