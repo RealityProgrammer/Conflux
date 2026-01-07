@@ -102,8 +102,6 @@ export function initializeSidebar(sidebarElement: HTMLElement, overlayElement: H
                 overlayElement.classList.remove('hidden');
             },
             move: (e: any) => {
-                console.log(deltaX);
-                
                 if (!dragging || surpassedBreakpoint) return;
                 
                 const width = getWidth();
@@ -124,7 +122,6 @@ export function initializeSidebar(sidebarElement: HTMLElement, overlayElement: H
                 if (!dragging || surpassedBreakpoint) return;
 
                 dragging = false;
-                console.log("stop dragging.")
                 
                 translate > -50 ? open() : close();
             },
