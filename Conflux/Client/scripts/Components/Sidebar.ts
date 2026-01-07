@@ -79,7 +79,7 @@ export function initializeSidebar(sidebarElement: HTMLElement, overlayElement: H
     hammer.on('panstart', (e: HammerInput) => {
         if (surpassedBreakpoint) return;
         
-        if (e.center.x > 40 && !isOpen) return;
+        if (e.center.x > 40 || isOpen) return;
         dragging = true;
         startX = e.center.x;
 
