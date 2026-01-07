@@ -48,42 +48,4 @@
     <ItemGroup>
       <None Remove="appsettings.Development.json.example" />
     </ItemGroup>
-
-    <ItemGroup>
-      <_ContentIncludedByDefault Remove="Components\Pages\Profile\ProfilePage.razor" />
-      <_ContentIncludedByDefault Remove="wwwroot\css\styles.bundle.min.css" />
-      <_ContentIncludedByDefault Remove="wwwroot\dist\css\styles.css" />
-      <_ContentIncludedByDefault Remove="wwwroot\dist\js\components-Dq9s6XrS.js" />
-      <_ContentIncludedByDefault Remove="wwwroot\dist\js\components.js" />
-      <_ContentIncludedByDefault Remove="wwwroot\dist\js\Pages\home.js" />
-      <_ContentIncludedByDefault Remove="wwwroot\dist\js\Pages\login.js" />
-      <_ContentIncludedByDefault Remove="wwwroot\dist\js\Pages\register.js" />
-      <_ContentIncludedByDefault Remove="wwwroot\dist\js\components-Cuj-2xuo.js" />
-      <_ContentIncludedByDefault Remove="wwwroot\dist\js\Components\Shared\MessageInputArea.js" />
-      <_ContentIncludedByDefault Remove="wwwroot\dist\js\Components\Shared\MessageTextArea.js" />
-      <_ContentIncludedByDefault Remove="wwwroot\dist\js\Components\Shared\MessageTimeline.js" />
-      <_ContentIncludedByDefault Remove="wwwroot\dist\js\Pages\Client\scripts\Pages\HomePage.js" />
-      <_ContentIncludedByDefault Remove="wwwroot\dist\js\Pages\Client\scripts\Pages\LoginPage.js" />
-      <_ContentIncludedByDefault Remove="wwwroot\dist\js\Pages\Client\scripts\Pages\RegisterPage.js" />
-      <_ContentIncludedByDefault Remove="wwwroot\dist\Client\scripts\Pages\HomePage.js" />
-      <_ContentIncludedByDefault Remove="wwwroot\dist\Client\scripts\Pages\LoginPage.js" />
-      <_ContentIncludedByDefault Remove="wwwroot\dist\Client\scripts\Pages\RegisterPage.js" />
-      <_ContentIncludedByDefault Remove="wwwroot\js\Client\scripts\Pages\HomePage-C1QNmML5.bundle.min.js" />
-      <_ContentIncludedByDefault Remove="wwwroot\js\Client\scripts\Pages\LoginPage-DgOg9t_C.bundle.min.js" />
-      <_ContentIncludedByDefault Remove="wwwroot\js\Client\scripts\Pages\RegisterPage-DgOg9t_C.bundle.min.js" />
-      <_ContentIncludedByDefault Remove="wwwroot\js\components-DeYbmem9.chunk.min.js" />
-      <_ContentIncludedByDefault Remove="wwwroot\js\lib-BbHIF8kK.chunk.min.js" />
-      <_ContentIncludedByDefault Remove="wwwroot\css\styles.css" />
-      <_ContentIncludedByDefault Remove="wwwroot\js\components.js" />
-      <_ContentIncludedByDefault Remove="wwwroot\js\Components\MessageTextArea.js" />
-      <_ContentIncludedByDefault Remove="wwwroot\js\Components\MessageTimeline.js" />
-      <_ContentIncludedByDefault Remove="wwwroot\js\lib.js" />
-      <_ContentIncludedByDefault Remove="wwwroot\js\Pages\HomePage.js" />
-      <_ContentIncludedByDefault Remove="wwwroot\js\Pages\LoginPage.js" />
-      <_ContentIncludedByDefault Remove="wwwroot\js\Pages\RegisterPage.js" />
-      <_ContentIncludedByDefault Remove="wwwroot\js\utils.js" />
-      <_ContentIncludedByDefault Remove="wwwroot\styles\styles.css" />
-      <_ContentIncludedByDefault Remove="wwwroot\js\Components\Popover.js" />
-    </ItemGroup>
-
 </Project>
