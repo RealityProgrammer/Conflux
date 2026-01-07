@@ -15,7 +15,7 @@
             <CardContent class="flex flex-col">
                 <SearchField @bind-Value="_nameSearch" @bind-Value:after="HandleSearch" class="flex-none mt-1"/>
 
-                <section class="flex-1 h-full border border-gray-600 rounded-md mt-1 overflow-y-scroll scrollbar-hide p-1">
+                <section class="flex-1 h-full border border-gray-600 rounded-md mt-1 overflow-y-auto scrollbar-hide p-1">
                     <Virtualize @ref="_virtualize" ItemsProvider="MemberSearchProvider">
                         <ItemContent Context="item">
                             <label class="p-1.5 flex flex-row items-center bg-transparent hover:bg-white/8 rounded-md active:scale-95 transition-transform duration-200 ease-in-out pointer-events-auto group">

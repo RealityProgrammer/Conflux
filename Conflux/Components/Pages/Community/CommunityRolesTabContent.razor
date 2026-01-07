@@ -23,7 +23,7 @@
 @inject IAuthorizationService AuthorizationService
 @inject ModalService ModalService
 
-<div class="flex flex-col h-full gap-1 overflow-y-scroll">
+<div class="flex flex-col h-full gap-1 overflow-y-auto">
     <header class="flex-0 ml-2">
         <h1 class="text-xl font-bold">Community Roles</h1>
         <p class="text-sm text-gray-400">See and change moderation permissions.</p>
@@ -34,7 +34,7 @@
             <label class="flex-none input-label md:flex-1">Role</label>
             
             <SelectionDropdown @bind-Value:get="_selectedRole" @bind-Value:set="SetSelectedRole" ButtonCssClass="h-10 md:flex-3" PopoverCssClass="z-10 w-lg p-1">
-                <div class="flex flex-col gap-1 max-h-62 overflow-y-scroll">
+                <div class="flex flex-col gap-1 max-h-62 overflow-y-auto">
                     @if (_roles == null) {
                         <div class="flex justify-center">
                             <Spinner class="size-6 fill-white"/>
@@ -175,7 +175,7 @@
                         <section class="flex-1">
                             <p>Members with Role:</p>
 
-                            <div class="mt-1 border border-gray-600 bg-gray-725 shadow-md rounded-lg h-128 p-1 overflow-y-scroll scrollbar-hide flex flex-col">
+                            <div class="mt-1 border border-gray-600 bg-gray-725 shadow-md rounded-lg h-128 p-1 overflow-y-auto scrollbar-hide flex flex-col">
                                 <Virtualize ItemsProvider="RoleMembersProvider" @ref="_roleMembersVirtualizeReference">
                                     <ItemContent Context="item">
                                         @{
@@ -228,7 +228,7 @@
                                             </button>
                                         </header>
 
-                                        <div class="mt-1 overflow-y-scroll scrollbar-hide">
+                                        <div class="mt-1 overflow-y-auto scrollbar-hide">
                                             <Virtualize ItemsProvider="AddingMembersItemProvider" @ref="_addingMembersVirtualizeReference">
                                                 <ItemContent Context="item">
                                                     <div class="p-1 flex flex-row items-center rounded-md">
