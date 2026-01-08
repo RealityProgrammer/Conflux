@@ -33,7 +33,7 @@
         <div class="flex flex-col md:flex-row gap-1 md:items-center">
             <label class="flex-none input-label md:flex-1">Role</label>
             
-            <SelectionDropdown @bind-Value:get="_selectedRole" @bind-Value:set="SetSelectedRole" ButtonCssClass="h-10 md:flex-3" PopoverCssClass="z-10 w-lg p-1">
+            <SelectionDropdown @bind-Value:get="_selectedRole" @bind-Value:set="SetSelectedRole" ContainerCssClass="md:flex-3" ButtonCssClass="h-10 w-full" PopoverCssClass="z-10 w-full lg:w-lg p-1">
                 <div class="flex flex-col gap-1 max-h-62 overflow-y-auto">
                     @if (_roles == null) {
                         <div class="flex justify-center">

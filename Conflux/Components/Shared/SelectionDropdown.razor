@@ -2,7 +2,7 @@
 
 @inherits InputSelect<TValue>
 
-<DropdownButton @ref="DropdownButtonReference" class="@ButtonCssClass" PopoverCssClass="@PopoverCssClass">
+<DropdownButton @ref="DropdownButtonReference" class="@ButtonCssClass" ContainerCssClass="@ContainerCssClass" PopoverCssClass="@PopoverCssClass">
     <ChildContent>
         @CurrentValueAsString
     </ChildContent>
@@ -17,6 +17,7 @@
 </DropdownButton>
 
 @code {
+    [Parameter] public string? ContainerCssClass { get; set; }
     [Parameter] public string? ButtonCssClass { get; set; }
     [Parameter] public string? PopoverCssClass { get; set; }
     

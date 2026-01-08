@@ -57,42 +57,20 @@
                 <div class="flex flex-row h-full">
                     <MessagingArea class="flex-1" ConversationId="_channelInfo!.Value.ConversationId" LoadCount="ApplicationConstants.MessageLoadCount"></MessagingArea>
 
-                    <aside class="flex-none basis-80 hidden md:block bg-gray-750 border-l border-l-gray-600">
-                        <p>Members</p>
+                    <aside class="flex-none basis-80 hidden md:block bg-gray-750 border-l border-l-gray-600 px-1">
+                        <SelectionDropdown @bind-Value="_selectedRole">
+                            <SelectionOption Value="@((RoleDTO?)null)" class="select-none p-1.5 text-left bg-transparent hover:bg-white/15 active:bg-black/25 cursor-pointer rounded-md">Members</SelectionOption>
+                        
+                            @foreach (var role in _communityRoles) {
+                                <SelectionOption Value="role" class="select-none p-1.5 text-left bg-transparent hover:bg-white/15 active:bg-black/25 cursor-pointer rounded-md">@role.RoleName</SelectionOption>
+                            }
+                        </SelectionDropdown>
                     </aside>
                 </div>
                 break;
         }
     </section>
 </div>
-
-@* @switch (_state) { *@
-@*     case State.Loading: *@
-@*         <div class="flex justify-center items-center h-full"> *@
-@*             <Spinner class="size-6 fill-white"/> *@
-@*         </div> *@
-@*         break; *@
-@* *@
-@*     case State.InvalidChannel: *@
-@*         <div class="flex justify-center items-center h-full"> *@
-@*             <p class="text-sm text-gray-400">Nothing here...</p> *@
-@*         </div> *@
-@*         break; *@
-@* *@
-@*     case State.Success: *@
-@*         switch (_channelType!.Value) { *@
-@*             case CommunityChannelType.Text: *@
-@*                 <p>Text channel goes here.</p> *@
-@*                 break; *@
-@* *@
-@*             case CommunityChannelType.Audio: *@
-@*                 <div class="flex justify-center items-center h-full"> *@
-@*                     <p class="text-sm text-gray-400">Audio Channel is being implemented.</p> *@
-@*                 </div> *@
-@*                 break; *@
-@*         } *@
-@*         break; *@
-@* } *@
 
 @code {
     [Parameter, EditorRequired] public required Guid CommunityId { get; set; }
@@ -105,6 +83,9 @@
     private State _state;
     private ChannelInformationDTO? _channelInfo;
 
+    private RoleDTO? _selectedRole;
+    private List<RoleDTO> _communityRoles = [];
+    
     protected override void OnInitialized() {
         _state = State.InitialLoading;
     }
@@ -126,6 +107,11 @@
                 .Cast<ChannelInformationDTO?>()
                 .FirstOrDefaultAsync();
 
+            _communityRoles = await dbContext.CommunityRoles
+                .Where(x => x.CommunityId == CommunityId)
+                .Select(x => new RoleDTO(x.Name, x.Id))
+                .ToListAsync();
+
             _state = _channelInfo.HasValue ? State.Success : State.InvalidChannel;
             
             StateHasChanged();
@@ -143,4 +129,7 @@
     }
 
     private readonly record struct ChannelInformationDTO(string ChannelName, CommunityChannelType Type, Guid ConversationId);
+
+    private readonly record struct RoleDTO(string RoleName, Guid RoleId);
+
 }
