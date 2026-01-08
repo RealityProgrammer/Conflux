@@ -26,7 +26,7 @@ public sealed class NotificationService(
     public event Action<FriendRequestCanceledEventArgs>? OnFriendRequestCanceled;
     public event Action<FriendRequestAcceptedEventArgs>? OnFriendRequestAccepted;
 
-    public async Task InitializeConnection(CancellationToken cancellationToken) {
+    public async Task JoinNotificationHub(CancellationToken cancellationToken) {
         if (_hubConnection != null) return;
         
         _hubConnection = new HubConnectionBuilder()
@@ -92,6 +92,12 @@ public sealed class NotificationService(
         await _hubConnection.StartAsync(cancellationToken);
     }
 
+    public async Task LeaveNotificationHub(CancellationToken cancellationToken) {
+        if (_hubConnection != null) {
+            await _hubConnection.DisposeAsync();
+        }
+    }
+
     public Task NotifyFriendRequestReceivedAsync(FriendRequestReceivedEventArgs eventArgs) {
         var user = hubContext.Clients.User(eventArgs.ReceiverId);
         
@@ -118,8 +124,6 @@ public sealed class NotificationService(
     }
 
     public async ValueTask DisposeAsync() {
-        if (_hubConnection != null) {
-            await _hubConnection.DisposeAsync();
-        }
+        await LeaveNotificationHub(CancellationToken.None);
     }
 }

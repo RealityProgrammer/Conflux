@@ -13,7 +13,8 @@ public interface INotificationService : IAsyncDisposable {
     event Action<FriendRequestCanceledEventArgs>? OnFriendRequestCanceled;
     event Action<FriendRequestAcceptedEventArgs>? OnFriendRequestAccepted;
     
-    Task InitializeConnection(CancellationToken cancellationToken);
+    Task JoinNotificationHub(CancellationToken cancellationToken);
+    Task LeaveNotificationHub(CancellationToken cancellationToken);
     
     Task NotifyFriendRequestReceivedAsync(FriendRequestReceivedEventArgs eventArgs);
     Task NotifyFriendRequestCanceledAsync(FriendRequestCanceledEventArgs eventArgs);

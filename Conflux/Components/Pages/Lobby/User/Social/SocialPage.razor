@@ -5,8 +5,6 @@
 @using Conflux.Services
 @using Conflux.Services.Abstracts
 
-@inject INotificationService NotificationService
-
 <TabContainer class="h-full px-4 py-4 flex flex-col text-white" ButtonContainerCssClass="flex-none border-b border-b-gray-600 pb-2 flex flex-row justify-between" ContentContainerCssClass="min-h-0 flex-1 mt-3" @bind-ActiveId="_activeTabId">
     <Buttons Context="_">
         <h1 class="text-2xl font-bold">Social</h1>
@@ -69,8 +67,4 @@
 
 @code {
     private string _activeTabId = "friends";
-    
-    protected override void OnInitialized() {
-        NotificationService.InitializeConnection(CancellationToken.None);
-    }
 }

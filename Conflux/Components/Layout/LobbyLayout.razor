@@ -1,8 +1,13 @@
 ﻿@using Conflux.Components.Guards
 @using Conflux.Components.Shared
+@using Conflux.Services.Abstracts
 
 @inherits LayoutComponentBase
 @layout MainLayout
+
+@implements IAsyncDisposable
+
+@inject INotificationService NotificationService
 
 <RedirectToProfileSetup/>
 
@@ -11,3 +16,13 @@
 <div class="h-dvh w-dvw">
     @Body
 </div>
+
+@code {
+    protected override void OnInitialized() {
+        NotificationService.JoinNotificationHub(CancellationToken.None);
+    }
+
+    public async ValueTask DisposeAsync() {
+        await NotificationService.LeaveNotificationHub(CancellationToken.None);
+    }
+}
