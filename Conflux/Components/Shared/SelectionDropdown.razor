@@ -4,7 +4,11 @@
 
 <DropdownButton @ref="DropdownButtonReference" class="@ButtonCssClass" ContainerCssClass="@ContainerCssClass" PopoverCssClass="@PopoverCssClass">
     <ChildContent>
-        @CurrentValueAsString
+        @if (ValueDisplayContent == null) {
+            @CurrentValueAsString
+        } else {
+            @ValueDisplayContent(CurrentValue)
+        }
     </ChildContent>
     
     <Dropdown>
@@ -20,6 +24,8 @@
     [Parameter] public string? ContainerCssClass { get; set; }
     [Parameter] public string? ButtonCssClass { get; set; }
     [Parameter] public string? PopoverCssClass { get; set; }
+    
+    [Parameter] public RenderFragment<TValue?>? ValueDisplayContent { get; set; }
     
     public DropdownButton? DropdownButtonReference { get; set; }
 

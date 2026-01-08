@@ -55,16 +55,28 @@
                 
             case State.Success:
                 <div class="flex flex-row h-full">
-                    <MessagingArea class="flex-1" ConversationId="_channelInfo!.Value.ConversationId" LoadCount="ApplicationConstants.MessageLoadCount"></MessagingArea>
+                    <MessagingArea class="flex-1" ConversationId="_channelInfo!.Value.ConversationId" LoadCount="ApplicationConstants.MessageLoadCount"/>
 
-                    <aside class="flex-none basis-80 hidden md:block bg-gray-750 border-l border-l-gray-600 px-1">
-                        <SelectionDropdown @bind-Value="_selectedRole">
-                            <SelectionOption Value="@((RoleDTO?)null)" class="select-none p-1.5 text-left bg-transparent hover:bg-white/15 active:bg-black/25 cursor-pointer rounded-md">Members</SelectionOption>
-                        
-                            @foreach (var role in _communityRoles) {
-                                <SelectionOption Value="role" class="select-none p-1.5 text-left bg-transparent hover:bg-white/15 active:bg-black/25 cursor-pointer rounded-md">@role.RoleName</SelectionOption>
-                            }
+                    <aside class="flex-none basis-80 hidden md:flex bg-gray-750 border-l border-l-gray-600 px-1 pt-1 flex-col gap-1 overflow-y-hidden">
+                        <SelectionDropdown @bind-Value="_selectedRole" ContainerCssClass="w-full" ButtonCssClass="w-full h-9" PopoverCssClass="w-full flex-none">
+                            <ValueDisplayContent Context="Value">
+                                @if (Value.RoleId == Guid.Empty) {
+                                    <p>None</p>
+                                } else {
+                                    <p>@Value.RoleName</p>
+                                }
+                            </ValueDisplayContent>
+
+                            <ChildContent>
+                                <SelectionOption Value="@(new RoleDTO(string.Empty, Guid.Empty))" class="select-none px-1.5 py-1 text-left bg-transparent hover:bg-white/15 active:bg-black/25 cursor-pointer rounded-md">None</SelectionOption>
+
+                                @foreach (var role in _communityRoles) {
+                                    <SelectionOption Value="role" class="select-none px-1.5 py-1 text-left bg-transparent hover:bg-white/15 active:bg-black/25 cursor-pointer rounded-md">@role.RoleName</SelectionOption>
+                                }
+                            </ChildContent>
                         </SelectionDropdown>
+
+                        <CommunityMemberList RoleId="@(_selectedRole.RoleId == Guid.Empty ? null : _selectedRole.RoleId)" class="flex-1 overflow-y-auto scrollbar-hide pb-1"/>
                     </aside>
                 </div>
                 break;
@@ -83,7 +95,7 @@
     private State _state;
     private ChannelInformationDTO? _channelInfo;
 
-    private RoleDTO? _selectedRole;
+    private RoleDTO _selectedRole;
     private List<RoleDTO> _communityRoles = [];
     
     protected override void OnInitialized() {

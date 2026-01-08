@@ -23,10 +23,7 @@ public class CommunityService(
     IHubContext<CommunityHub> hubContext,
     NavigationManager navigationManager,
     IHttpContextAccessor httpContextAccessor,
-    IMemoryCache memoryCache,
-    // AuthenticationStateProvider authenticationStateProvider,
-    // IAuthorizationService authorizationService,
-    ILogger<CommunityService> logger
+    ICommunityCacheService communityCache
 ) : ICommunityService, IAsyncDisposable {
     // TODO: Authorization.
     
@@ -38,8 +35,6 @@ public class CommunityService(
     private const string RoleDeletedEventName = "RoleDeleted";
     private const string RolePermissionUpdatedEventName = "RolePermissionUpdated";
     private const string MemberRoleChangedEventName = "MemberRoleChanged";
-    
-    private static readonly TimeSpan PermissionCacheDuration = TimeSpan.FromMinutes(5);
     
     private readonly ConcurrentDictionary<Guid, HubConnection> _hubConnections = [];
 
@@ -292,10 +287,8 @@ public class CommunityService(
     }
     
     public async Task<RolePermissions?> GetPermissionsAsync(Guid roleId) {
-        string cacheKey = GeneratePermissionCacheKey(roleId);
-        
-        if (memoryCache.TryGetValue<RolePermissions>(cacheKey, out var cached)) {
-            return cached!;
+        if (await communityCache.GetPermissionsAsync(roleId) is { } cached) {
+            return cached;
         }
         
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
@@ -307,7 +300,7 @@ public class CommunityService(
             return null;
         }
         
-        memoryCache.Set(cacheKey, permissions, PermissionCacheDuration);
+        await communityCache.StorePermissionsAsync(roleId, permissions);
 
         return permissions;
     }
@@ -325,10 +318,8 @@ public class CommunityService(
             return null;
         }
         
-        string cacheKey = GeneratePermissionCacheKey(roleId);
-        
-        if (memoryCache.TryGetValue<RolePermissions>(cacheKey, out var permissions)) {
-            return new(roleId, permissions!);
+        if (await communityCache.GetPermissionsAsync(roleId) is { } permissions) {
+            return new(roleId, permissions);
         }
         
         permissions = await CollectPermissions(dbContext, roleId);
@@ -337,7 +328,7 @@ public class CommunityService(
             return null;
         }
         
-        memoryCache.Set(cacheKey, permissions, PermissionCacheDuration);
+        await communityCache.StorePermissionsAsync(roleId, permissions);
 
         return new(roleId, permissions);
     }
@@ -358,10 +349,7 @@ public class CommunityService(
             return false;
         }
         
-        string cacheKey = GeneratePermissionCacheKey(roleId);
-        
-        memoryCache.Set(cacheKey, permissions, PermissionCacheDuration);
-        
+        await communityCache.StorePermissionsAsync(roleId, permissions);
         await hubContext.Clients.Group(communityId.ToString()).SendAsync(RolePermissionUpdatedEventName, new CommunityRolePermissionUpdatedEventArg(roleId));
 
         return true;
@@ -372,17 +360,6 @@ public class CommunityService(
             .Where(x => x.Id == roleId)
             .Select(x => new RolePermissions(x.ChannelPermissions, x.RolePermissions, x.AccessPermissions))
             .FirstOrDefaultAsync();
-    }
-
-    private static string GeneratePermissionCacheKey(Guid roleId) {
-        return string.Create("CommunityRoles.".Length + 32 + ".Permissions".Length, roleId, CreateCallback);
-
-        static void CreateCallback(Span<char> buffer, Guid state) {
-            "CommunityRoles.".CopyTo(buffer);
-            bool formatSuccessful = state.TryFormat(buffer.Slice("CommunityRoles.".Length, 32), out _, "N");
-            Debug.Assert(formatSuccessful);
-            ".Permissions".CopyTo(buffer[("CommunityRoles.".Length + 32)..]);
-        }
     }
 
     public async Task<bool> SetMembersRole(Guid communityId, IReadOnlyCollection<Guid> memberIds, Guid? roleId) {

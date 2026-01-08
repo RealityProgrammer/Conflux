@@ -129,6 +129,7 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IConversationService, ConversationService>();
 builder.Services.AddScoped<ISnackbarService, SnackbarService>();
 builder.Services.AddScoped<ModalService>();
+builder.Services.AddSingleton<ICommunityCacheService, CommunityCacheService>();
 builder.Services.AddScoped<ICommunityService, CommunityService>();
 
 // SignalR related services.

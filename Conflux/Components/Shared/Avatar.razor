@@ -1,5 +1,7 @@
 ﻿<div class="z-0 relative aspect-square rounded-full bg-black overflow-hidden flex-none @_cssClass" @ref="RootElement">
-    <img @ref="ImageElement" src="@ImageSrc" alt="@(string.IsNullOrEmpty(ImageSrc) ? null : ImageAlt)" class="relative inset-0 object-cover pointer-events-none">
+    @if (!string.IsNullOrEmpty(ImageSrc)) {
+        <img @ref="ImageElement" src="@ImageSrc" alt="@(string.IsNullOrEmpty(ImageSrc) ? null : ImageAlt)" class="relative inset-0 object-cover pointer-events-none">
+    }
     
     @if (ChildContent != null) {
         @ChildContent
