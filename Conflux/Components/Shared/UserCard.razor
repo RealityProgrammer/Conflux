@@ -1,0 +1,36 @@
+﻿@using Conflux.Helpers
+@using Conflux.Services
+
+@inject ModalService ModalService
+
+<div class="p-1 rounded-lg flex flex-row items-center @(OnClick.HasDelegate ? "bg-transparent hover:bg-white/15 active:bg-black/25 cursor-pointer" : string.Empty) @_cssClass" @onclick="@(EventUtils.AsNonRenderingEventHandler(HandleInvokeOnClick))">
+    <Avatar ImageSrc="@AvatarSrc" ImageAlt="@($"Avatar of {DisplayName}")" class="h-full mr-2"/>
+    
+    <p>@DisplayName</p>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public required string DisplayName { get; set; }
+    [Parameter] public string? AvatarSrc { get; set; }
+    [Parameter, EditorRequired] public required string UserId { get; set; }
+    [Parameter] public required Guid? MemberId { get; set; }
+
+    [Parameter] public EventCallback<UserCard> OnClick { get; set; }
+    
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+    private string? _cssClass;
+    
+    protected override void OnParametersSet() {
+        if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
+            _cssClass = Convert.ToString(obj);
+        }
+
+        AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "class").ToDictionary();
+    }
+
+    private async Task HandleInvokeOnClick() {
+        if (OnClick.HasDelegate) {
+            await OnClick.InvokeAsync(this);
+        }
+    }
+}

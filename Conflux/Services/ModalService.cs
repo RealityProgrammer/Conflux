@@ -31,7 +31,7 @@ public sealed class ModalService {
         _modals = [];
     }
     
-    public IModalInstance Open<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string? name = null, IDictionary<string, object>? parameters = null) where T : BaseModal {
+    public IModalInstance Open<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string? name = null, IDictionary<string, object?>? parameters = null) where T : BaseModal {
         Type type = typeof(T);
         ModalInstance instance = new(Guid.CreateVersion7(), name ?? type.FullName ?? type.Name, type, parameters!);
         _modals.Add(instance);

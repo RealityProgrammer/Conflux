@@ -1,6 +1,8 @@
 ﻿@using Conflux.Components.Shared
+@using Conflux.Components.Shared.Modals
 @using Conflux.Database
 @using Conflux.Database.Entities
+@using Conflux.Services
 @using Conflux.Services.Abstracts
 @using Microsoft.EntityFrameworkCore
 @using System.ComponentModel
@@ -8,16 +10,16 @@
 
 @inject IContentService ContentService
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
-@inject ILogger<CommunityMemberList> Logger
+@inject ModalService ModalService
 
 <div class="flex flex-col gap-1 @_cssClass" @attributes="AdditionalAttributes">
     <Virtualize @ref="_virtualize" OverscanCount="OverscanCount" ItemsProvider="MembersProvider">
         <ItemContent Context="item">
-            <div class="flex-none h-12 p-1 bg-transparent hover:bg-white/15 active:bg-black/25 cursor-pointer rounded-lg flex flex-row items-center select-none">
-                <Avatar ImageSrc="@(string.IsNullOrEmpty(item.AvatarPath) ? null : ContentService.GetAssetPath(item.AvatarPath))" ImageAlt="@($"Avatar of {item.DisplayName}")" class="h-full mr-2"/>
-    
-                <p>@item.DisplayName</p>
-            </div>
+            <UserCard DisplayName="@item.DisplayName" 
+                      AvatarSrc="@(string.IsNullOrEmpty(item.AvatarPath) ? null : ContentService.GetAssetPath(item.AvatarPath))"
+                      UserId="@item.UserId"
+                      MemberId="item.MemberId"
+                      OnClick="HandleOnCardClick"/>
         </ItemContent>
     </Virtualize>
 </div>
@@ -66,12 +68,18 @@
             .OrderByDescending(x => x.CreatedAt)
             .Skip(request.StartIndex)
             .Take(request.Count)
-            .Select(x => x.User)
-            .Select(u => new MemberDTO(u.Id, u.AvatarProfilePath, u.DisplayName))
+            .Select(u => new MemberDTO(u.UserId, u.Id, u.User.AvatarProfilePath, u.User.DisplayName))
             .ToListAsync();
 
         return new(results, totalCount);
     }
 
-    private readonly record struct MemberDTO(string Id, string? AvatarPath, string DisplayName);
+    private void HandleOnCardClick(UserCard userCard) {
+        ModalService.Open<UserProfileModal>(parameters: new Dictionary<string, object?> {
+            [nameof(UserProfileModal.UserId)] = userCard.UserId,
+            [nameof(UserProfileModal.MemberId)] = userCard.MemberId,
+        });
+    }
+
+    private readonly record struct MemberDTO(string UserId, Guid MemberId, string? AvatarPath, string DisplayName);
 }

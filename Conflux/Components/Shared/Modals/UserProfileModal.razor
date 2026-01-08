@@ -1,0 +1,129 @@
+﻿@using Conflux.Components.Shared.Icons
+@using Conflux.Database
+@using Conflux.Helpers
+@using Conflux.Services.Abstracts
+@using Microsoft.EntityFrameworkCore
+@inherits BaseModal
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IContentService ContentService
+
+<div class="flex flex-row justify-center items-center size-full text-white">
+    <Card class="absolute inset-0 rounded-none! md:inset-8 md:rounded-xl! p-0! m-0!">
+        <div class="flex flex-row justify-start absolute top-1 right-1 gap-1">
+            <button class="p-2 z-10 hover:bg-white/25 rounded-full cursor-pointer">
+                <ThreeDots class="size-5 fill-white"/>
+            </button>
+            
+            <button class="p-2 z-10 hover:bg-white/25 rounded-full cursor-pointer" @onclick="@(EventUtils.AsNonRenderingEventHandler(HandleClose))">
+                <Cross class="size-5 fill-white" Size="CrossSize.Large"/>
+            </button>
+        </div>
+
+        @switch (_state) {
+            case State.Loading:
+                <CardContent class="size-full flex justify-center items-center">
+                    <Spinner class="size-16 fill-white"/>
+                </CardContent>
+                break;
+
+            case State.Invalid:
+                <CardContent class="size-full flex justify-center items-center">
+                    <p class="text-gray-400 text-sm">Nobody here...</p>
+                </CardContent>
+                break;
+
+            case State.Success:
+                <CardContent class="size-full flex flex-col flex-wrap p-0! m-0!">
+                    <section>
+                        @* Banner & Avatar *@
+                        <div class="relative h-32">
+                            <div class="absolute inset-0 bg-cover bg-center bg-black rounded-t-none md:rounded-t-lg"></div>
+
+                            <div class="absolute -bottom-8 left-4">
+                                <div class="relative">
+                                    <Avatar class="size-20 border-4 border-gray-700"
+                                            ImageSrc="@(string.IsNullOrEmpty(_userInfo.AvatarPath) ? null : ContentService.GetAssetPath(_userInfo.AvatarPath))"
+                                            ImageAlt="@($"Avatar of {_userInfo.DisplayName}")"/>
+
+                                    @* TODO: Status indicator *@
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col px-2 pt-10">
+                            <div>
+                                <p class="text-2xl font-bold flex flex-row items-center">
+                                    @_userInfo.DisplayName
+
+                                    @if (!string.IsNullOrEmpty(_userInfo.RoleName)) {
+                                        <span class="ml-1 text-xs bg-gray-600 rounded-full px-1 py-0.5">@_userInfo.RoleName</span>
+                                    }
+                                </p>
+
+                                <p class="text-sm">@_userInfo.UserName</p>
+                            </div>
+
+                            @if (_userInfo.Pronouns is { } pronouns) {
+                                <p class="text-sm mt-2">
+                                    <span class="font-semibold">Pronouns:</span>
+
+                                    @pronouns
+                                </p>
+                            }
+
+                            <p class="text-sm mt-2">
+                                <span class="font-semibold inline-block">Joined Conflux since:</span> @_userInfo.UserCreatedAt.ToString("yyyy/MM/dd")
+                            </p>
+
+                            @if (_userInfo.MemberCreatedAt is { } communityJoinedSince) {
+                                <p class="text-sm mt-1">
+                                    <span class="font-semibold">Joined Community since:</span>
+
+                                    @communityJoinedSince.ToString("yyyy/MM/dd")
+                                </p>
+                            }
+                        </div>
+                    </section>
+                </CardContent>
+                break;
+        }
+    </Card>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public required string UserId { get; set; }
+    [Parameter] public Guid? MemberId { get; set; }
+
+    private State _state;
+    private UserDTO _userInfo;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+            _userInfo = await dbContext.CommunityMembers
+                .Where(x => x.Id == MemberId && x.UserId == UserId)
+                .Include(x => x.User)
+                .Include(x => x.Role)
+                .Select(x => new UserDTO(x.User.DisplayName, x.User.UserName!, null, x.User.AvatarProfilePath, x.User.Bio, x.User.Pronouns, DateOnly.FromDateTime(x.User.CreatedAt), DateOnly.FromDateTime(x.CreatedAt), x.RoleId == null ? null : x.Role!.Name))
+                .FirstOrDefaultAsync();
+
+            _state = string.IsNullOrEmpty(_userInfo.DisplayName) ? State.Invalid : State.Success;
+            StateHasChanged();
+        }
+    }
+
+    private void HandleClose() {
+        CloseModal();
+    }
+
+    private enum State {
+        Loading,
+        Invalid,
+        Success,
+    }
+
+    private readonly record struct UserDTO(string DisplayName, string UserName, string? BannerPath, string? AvatarPath, string? Bio, string? Pronouns, DateOnly UserCreatedAt, DateOnly? MemberCreatedAt, string? RoleName);
+}
