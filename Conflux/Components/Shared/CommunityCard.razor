@@ -1,18 +1,17 @@
 ﻿@using Conflux.Helpers
 
 <div class="p-1 rounded-lg flex flex-row items-center hover:bg-white/15 @(OnClick.HasDelegate ? "active:bg-black/25 cursor-pointer" : string.Empty) @_cssClass" @onclick="@(EventUtils.AsNonRenderingEventHandler(HandleInvokeOnClick))">
-    <Avatar ImageSrc="@AvatarSrc" ImageAlt="@($"Avatar of {DisplayName}")" class="h-full mr-2"/>
+    <Avatar ImageSrc="@AvatarSrc" ImageAlt="@($"Avatar of {Name}")" class="h-full mr-2"/>
     
-    <p>@DisplayName</p>
+    <p>@Name</p>
 </div>
 
 @code {
-    [Parameter, EditorRequired] public required string DisplayName { get; set; }
+    [Parameter, EditorRequired] public required string Name { get; set; }
     [Parameter] public string? AvatarSrc { get; set; }
-    [Parameter, EditorRequired] public required string UserId { get; set; }
-    [Parameter] public required Guid? MemberId { get; set; }
+    [Parameter, EditorRequired] public required Guid CommunityId { get; set; }
 
-    [Parameter] public EventCallback<UserCard> OnClick { get; set; }
+    [Parameter] public EventCallback<CommunityCard> OnClick { get; set; }
     
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
     private string? _cssClass;

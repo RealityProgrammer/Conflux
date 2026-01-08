@@ -3,8 +3,10 @@
 
 <header class="pb-3 px-5 pt-5 flex-none flex flex-row justify-between items-start @_cssClass" @attributes="AdditionalAttributes">
     <div class="flex flex-col">
-        <h1 class="text-2xl font-bold">@Title</h1>
-        
+        @if (!string.IsNullOrEmpty(Title)) {
+            <h1 class="text-2xl font-bold">@Title</h1>
+        }
+
         @if (!string.IsNullOrEmpty(Subtext)) {
             <p class="text-sm text-gray-400">@Subtext</p>
         }
@@ -18,7 +20,7 @@
 </header>
 
 @code {
-    [Parameter, EditorRequired] public required string Title { get; set; }
+    [Parameter] public string? Title { get; set; }
     [Parameter] public string? Subtext { get; set; }
     
     [Parameter] public EventCallback OnCloseRequested { get; set; }

@@ -1,44 +1,40 @@
 ﻿@using Conflux.Components.Shared.Icons
 @using Conflux.Database
-@using Conflux.Helpers
 @using Conflux.Services.Abstracts
 @using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
 @inherits BaseModal
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject IContentService ContentService
 
-<div class="flex flex-row justify-center items-center size-full text-white">
-    <Card class="absolute inset-0 rounded-none! md:inset-8 md:rounded-xl! p-0! m-0!">
-        <div class="flex flex-row justify-start absolute top-1 right-1 gap-1">
-            <button class="p-2 z-10 hover:bg-white/25 rounded-full cursor-pointer">
-                <ThreeDots class="size-5 fill-white"/>
+<div class="flex flex-row justify-center items-center size-full text-white p-0 md:p-8">
+    <Card class="absolute inset-0 md:static md:h-full md:w-4/5 lg:w-3/5 rounded-none! md:rounded-xl!">
+        <header class="py-1 px-3 flex-none flex flex-row justify-end items-start gap-1.5">
+            <button class="bg-transparent hover:bg-white/30 p-2 rounded-full cursor-pointer" @onclick="EventUtils.AsNonRenderingEventHandler(HandleClose)">
+                <Cross class="size-4 fill-white" Size="CrossSize.Large"></Cross>
             </button>
-            
-            <button class="p-2 z-10 hover:bg-white/25 rounded-full cursor-pointer" @onclick="@(EventUtils.AsNonRenderingEventHandler(HandleClose))">
-                <Cross class="size-5 fill-white" Size="CrossSize.Large"/>
-            </button>
-        </div>
-
+        </header>
+        
         @switch (_state) {
             case State.Loading:
-                <CardContent class="size-full flex justify-center items-center">
+                <CardContent class="h-full flex justify-center items-center">
                     <Spinner class="size-16 fill-white"/>
                 </CardContent>
                 break;
 
             case State.Invalid:
-                <CardContent class="size-full flex justify-center items-center">
+                <CardContent class="h-full flex justify-center items-center">
                     <p class="text-gray-400 text-sm">Nobody here...</p>
                 </CardContent>
                 break;
 
             case State.Success:
-                <CardContent class="size-full flex flex-col flex-wrap p-0! m-0!">
-                    <section>
+                <CardContent class="h-full flex flex-col md:flex-row gap-2 overflow-y-auto md:overflow-y-hidden">
+                    <section class="flex-0 md:flex-1 border border-gray-600 rounded-lg bg-gray-725 shadow-md">
                         @* Banner & Avatar *@
                         <div class="relative h-32">
-                            <div class="absolute inset-0 bg-cover bg-center bg-black rounded-t-none md:rounded-t-lg"></div>
+                            <div class="absolute inset-0 bg-cover bg-center bg-black rounded-t-lg"></div>
 
                             <div class="absolute -bottom-8 left-4">
                                 <div class="relative">
@@ -51,6 +47,7 @@
                             </div>
                         </div>
 
+                        @* Text informations *@
                         <div class="flex flex-col px-2 pt-10">
                             <div>
                                 <p class="text-2xl font-bold flex flex-row items-center">
@@ -84,6 +81,110 @@
                                 </p>
                             }
                         </div>
+
+                        @* Actions *@
+                        @if (UserId != _authUserId) {
+                            <div class="flex flex-row justify-around mt-2 bg-gray-650 mx-2 p-2 rounded-lg shadow-md">
+                                <div class="flex flex-col items-center">
+                                    <button class="flex-none rounded-full cursor-pointer hover:bg-white/25 active:bg-black/15 p-2 shadow-md border border-gray-600">
+                                        <Person Addition="PersonAddition.Add" class="size-6 fill-white"/>
+                                    </button>
+
+                                    <p class="text-xs mt-1">Add Friend</p>
+                                </div>
+
+                                <div class="flex flex-col items-center">
+                                    <button class="flex-none rounded-full cursor-pointer hover:bg-white/25 active:bg-black/15 p-2 shadow-md border border-gray-600">
+                                        <Person Addition="PersonAddition.Add" class="size-6 fill-white"/>
+                                    </button>
+
+                                    <p class="text-xs mt-1">Add Friend</p>
+                                </div>
+
+                                <div class="flex flex-col items-center">
+                                    <button class="flex-none rounded-full cursor-pointer hover:bg-white/25 active:bg-black/15 p-2 shadow-md border border-gray-600">
+                                        <Person Addition="PersonAddition.Add" class="size-6 fill-white"/>
+                                    </button>
+
+                                    <p class="text-xs mt-1">Add Friend</p>
+                                </div>
+
+                                <div class="flex flex-col items-center">
+                                    <button class="flex-none rounded-full cursor-pointer hover:bg-white/25 active:bg-black/15 p-2 shadow-md border border-gray-600">
+                                        <Person Addition="PersonAddition.Add" class="size-6 fill-white"/>
+                                    </button>
+
+                                    <p class="text-xs mt-1">Add Friend</p>
+                                </div>
+
+                                <div class="flex flex-col items-center">
+                                    <button class="flex-none rounded-full cursor-pointer hover:bg-white/25 active:bg-black/15 p-2 shadow-md border border-gray-600">
+                                        <Person Addition="PersonAddition.Add" class="size-6 fill-white"/>
+                                    </button>
+
+                                    <p class="text-xs mt-1">Add Friend</p>
+                                </div>
+                            </div>
+                        }
+                    </section>
+
+                    <section class="flex-0 md:flex-1 flex flex-col gap-2">
+                        <div class="flex flex-col md:flex-1 overflow-y-hidden border border-gray-600 rounded-lg shadow-md bg-gray-725 p-2">
+                            <h1 class="text-xl font-bold flex-none">Mutual</h1>
+                            
+                            <div class="h-64 md:h-0 md:flex-1">
+                                <TabContainer @bind-ActiveId:get="_mutualActiveTabId" @bind-ActiveId:set="@(value => SetMutualTabId(value))" class="flex-1 flex flex-col text-white size-full" ButtonContainerCssClass="flex-none border-b border-b-gray-600 pb-2 flex flex-row justify-around gap-1" ContentContainerCssClass="min-h-0 flex-1 mt-2 overflow-y-auto scrollbar-hide">
+                                    <Buttons>
+                                        <TabButton TabId="Friends" class="flex-1 x-3 py-1 text-white bg-transparent hover:bg-gray-400/40 active:bg-gray-700/40 rounded-lg cursor-pointer" ActiveCssClass="bg-gray-600/70! cursor-default!">Friends</TabButton>
+                                        <TabButton TabId="Communities" class="flex-1 px-3 py-1 text-white bg-transparent hover:bg-gray-400/40 active:bg-gray-700/40 rounded-lg cursor-pointer" ActiveCssClass="bg-gray-600/70! cursor-default!">Communities</TabButton>
+                                    </Buttons>
+                                
+                                    <Contents>
+                                        <TabContent TabId="Friends" RenderStrategy="TabRenderStrategy.Conditional" class="size-full">
+                                            @if (_mutualFriends == null) {
+                                                <div class="size-full flex justify-center items-center">
+                                                    <Spinner class="fill-white size-8"/>
+                                                </div>
+                                            } else {
+                                                <Virtualize Items="_mutualFriends">
+                                                    <ItemContent Context="item">
+                                                        <UserCard DisplayName="@item.DisplayName"
+                                                                  UserId="@item.Id"
+                                                                  AvatarSrc="@(string.IsNullOrEmpty(item.AvatarPath) ? null : ContentService.GetAssetPath(item.AvatarPath))"
+                                                                  class="h-10"/>
+                                                    </ItemContent>
+                                                </Virtualize>
+                                            }
+                                        </TabContent>
+                                
+                                        <TabContent TabId="Communities" RenderStrategy="TabRenderStrategy.Conditional" class="size-full">
+                                            @if (_mutualCommunities == null) {
+                                                <div class="size-full flex justify-center items-center">
+                                                    <Spinner class="fill-white size-8"/>
+                                                </div>
+                                            } else {
+                                                <Virtualize Items="_mutualCommunities">
+                                                    <ItemContent Context="item">
+                                                        <CommunityCard Name="@item.CommunityName"
+                                                                       CommunityId="@item.Id"
+                                                                       AvatarSrc="@(string.IsNullOrEmpty(item.AvatarPath) ? null : ContentService.GetAssetPath(item.AvatarPath))"
+                                                                       class="h-10"/>
+                                                    </ItemContent>
+                                                </Virtualize>
+                                            }
+                                        </TabContent>
+                                    </Contents>
+                                </TabContainer>
+                            </div>
+                        </div>
+                        
+                        <div class="flex flex-col md:flex-1 overflow-y-hidden border border-gray-600 rounded-lg shadow-md bg-gray-725 p-2">
+                            <h1 class="text-xl font-bold flex-none">Connections</h1>
+                            
+                            <div class="h-64 md:h-0 md:flex-1 flex flex-row justify-center items-center">
+                                <p class="text-sm text-gray-400">Coming soon...</p>
+                            </div>
+                        </div>
                     </section>
                 </CardContent>
                 break;
@@ -97,6 +198,13 @@
 
     private State _state;
     private UserDTO _userInfo;
+    
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+    private string _authUserId = null!;
+
+    private string _mutualActiveTabId = "Friends";
+    private ICollection<MutualFriendDTO>? _mutualFriends;
+    private ICollection<MutualCommunityDTO>? _mutualCommunities;
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
@@ -111,12 +219,91 @@
                 .FirstOrDefaultAsync();
 
             _state = string.IsNullOrEmpty(_userInfo.DisplayName) ? State.Invalid : State.Success;
+
+            var authState = await AuthenticationState;
+            _authUserId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            
+            _mutualFriends = await CollectMutualFriends();
+            
             StateHasChanged();
         }
     }
 
     private void HandleClose() {
         CloseModal();
+    }
+
+    private async Task SetMutualTabId(string value) {
+        _mutualActiveTabId = value;
+        
+        @switch (value) {
+            case "Friends":
+                _mutualFriends ??= await CollectMutualFriends();
+                break;
+                
+            case "Communities":
+                _mutualCommunities ??= await CollectMutualCommunities();
+                break;
+        }
+    }
+
+    private async Task<ICollection<MutualFriendDTO>> CollectMutualFriends() {
+        if (_authUserId == UserId) return [];
+        
+        await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        return await dbContext.FriendRequests
+            .Where(x => x.Status == FriendRequestStatus.Accepted && (x.SenderId == _authUserId || x.ReceiverId == _authUserId))
+            .Select(x => x.SenderId == _authUserId ? x.Receiver : x.Sender)
+            // TODO: Could we replace these with IntersectBy?
+            // I'm 30min away from going home from a 8-5 and i don't want to think more about this
+            .Join(
+                dbContext.FriendRequests
+                    .Where(x => x.Status == FriendRequestStatus.Accepted && (x.SenderId == UserId || x.ReceiverId == UserId))
+                    .Select(x => x.SenderId == UserId ? x.Receiver : x.Sender),
+                x => x.Id,
+                x => x.Id,
+                (user1Friend, user2Friend) => user1Friend
+            )
+            .Select(x => new MutualFriendDTO(x.Id, x.DisplayName, x.AvatarProfilePath))
+            .ToListAsync();
+    }
+    
+    private async Task<ICollection<MutualCommunityDTO>> CollectMutualCommunities() {
+        if (_authUserId == UserId) return [];
+        
+        await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        return await dbContext.CommunityMembers
+            .Where(x => x.UserId == _authUserId)
+            .Join(
+                dbContext.CommunityMembers
+                    .Where(x => x.UserId == UserId),
+                x => x.CommunityId,
+                x => x.CommunityId,
+                (member1, member2) => member1.Community
+            )
+            .Select(c => new MutualCommunityDTO(c.Id, c.Name, c.AvatarPath))
+            .ToListAsync();
+
+        // return await dbContext.FriendRequests
+        //     .Where(x => x.Status == FriendRequestStatus.Accepted && (x.SenderId == _authUserId || x.ReceiverId == _authUserId))
+        //     .Select(x => x.SenderId == _authUserId ? x.Receiver : x.Sender)
+        //     // TODO: Could we replace these with IntersectBy?
+        //     // I'm 30min away from going home from a 8-5 and i don't want to think more about this
+        //     .Join(
+        //         dbContext.FriendRequests
+        //             .Where(x => x.Status == FriendRequestStatus.Accepted && (x.SenderId == UserId || x.ReceiverId == UserId))
+        //             .Select(x => x.SenderId == UserId ? x.Receiver : x.Sender),
+        //         x => x.Id,
+        //         x => x.Id,
+        //         (user1Friend, user2Friend) => user1Friend
+        //     )
+        //     .DistinctBy(x => x.Id)
+        //     .Select(x => new MutualFriendDTO(x.Id, x.DisplayName, x.AvatarProfilePath))
+        //     .ToListAsync();
     }
 
     private enum State {
@@ -126,4 +313,7 @@
     }
 
     private readonly record struct UserDTO(string DisplayName, string UserName, string? BannerPath, string? AvatarPath, string? Bio, string? Pronouns, DateOnly UserCreatedAt, DateOnly? MemberCreatedAt, string? RoleName);
+
+    private readonly record struct MutualFriendDTO(string Id, string DisplayName, string? AvatarPath);
+    private readonly record struct MutualCommunityDTO(Guid Id, string CommunityName, string? AvatarPath);
 }
