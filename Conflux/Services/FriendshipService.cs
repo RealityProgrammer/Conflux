@@ -30,7 +30,7 @@ public sealed partial class FriendshipService : IFriendshipService {
         // Determine whether exists a friend request between 2 user ids, order doesn't matter.
         if (request != null) {
             switch (request.Status) {
-                case FriendRequestStatus.Canceled or FriendRequestStatus.Rejected:
+                case FriendRequestStatus.Canceled or FriendRequestStatus.Rejected or FriendRequestStatus.Unfriended:
                     // There was a friend request, but has been canceled or rejected. Populate it with new data.
 
                     int numUpdatedRows = await database.FriendRequests

@@ -151,7 +151,7 @@ namespace Conflux.Database.Migrations
 
                     b.HasIndex("ConversationId", "CreatedAt");
 
-                    b.ToTable("ChatMessages");
+                    b.ToTable("ChatMessages", (string)null);
                 });
 
             modelBuilder.Entity("Conflux.Database.Entities.Community", b =>
@@ -197,7 +197,7 @@ namespace Conflux.Database.Migrations
 
                     b.HasIndex("CreatorId");
 
-                    b.ToTable("Communities");
+                    b.ToTable("Communities", (string)null);
                 });
 
             modelBuilder.Entity("Conflux.Database.Entities.CommunityChannel", b =>
@@ -224,7 +224,7 @@ namespace Conflux.Database.Migrations
 
                     b.HasIndex("ChannelCategoryId");
 
-                    b.ToTable("CommunityChannels");
+                    b.ToTable("CommunityChannels", (string)null);
                 });
 
             modelBuilder.Entity("Conflux.Database.Entities.CommunityChannelCategory", b =>
@@ -248,7 +248,7 @@ namespace Conflux.Database.Migrations
 
                     b.HasIndex("CommunityId");
 
-                    b.ToTable("CommunityChannelCategories");
+                    b.ToTable("CommunityChannelCategories", (string)null);
                 });
 
             modelBuilder.Entity("Conflux.Database.Entities.CommunityMember", b =>
@@ -280,7 +280,7 @@ namespace Conflux.Database.Migrations
                     b.HasIndex("CommunityId", "UserId")
                         .IsUnique();
 
-                    b.ToTable("CommunityMembers");
+                    b.ToTable("CommunityMembers", (string)null);
                 });
 
             modelBuilder.Entity("Conflux.Database.Entities.CommunityRole", b =>
@@ -313,7 +313,7 @@ namespace Conflux.Database.Migrations
 
                     b.HasIndex("CommunityId");
 
-                    b.ToTable("CommunityRoles");
+                    b.ToTable("CommunityRoles", (string)null);
                 });
 
             modelBuilder.Entity("Conflux.Database.Entities.Conversation", b =>
@@ -342,7 +342,7 @@ namespace Conflux.Database.Migrations
                     b.HasIndex("FriendRequestId")
                         .IsUnique();
 
-                    b.ToTable("Conversations");
+                    b.ToTable("Conversations", (string)null);
                 });
 
             modelBuilder.Entity("Conflux.Database.Entities.FriendRequest", b =>
@@ -377,7 +377,7 @@ namespace Conflux.Database.Migrations
                     b.HasIndex("SenderId", "ReceiverId")
                         .IsUnique();
 
-                    b.ToTable("FriendRequests");
+                    b.ToTable("FriendRequests", (string)null);
                 });
 
             modelBuilder.Entity("Conflux.Database.Entities.MessageAttachment", b =>
@@ -406,7 +406,7 @@ namespace Conflux.Database.Migrations
 
                     b.HasIndex("MessageId");
 
-                    b.ToTable("MessageAttachments");
+                    b.ToTable("MessageAttachments", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
