@@ -1,12 +1,10 @@
-﻿using Microsoft.AspNetCore.Components;
+﻿namespace Conflux.Services.Abstracts;
 
-namespace Conflux.Services.Abstracts;
-
-public readonly record struct FriendRequestReceivedEventArgs(string SenderId, string ReceiverId);
-public readonly record struct FriendRequestCanceledEventArgs(string SenderId, string ReceiverId);
-public readonly record struct FriendRequestRejectedEventArgs(string SenderId, string ReceiverId);
-public readonly record struct FriendRequestAcceptedEventArgs(string SenderId, string ReceiverId);
-public readonly record struct UnfriendedEventArgs(string User1, string User2);
+public readonly record struct FriendRequestReceivedEventArgs(Guid RequestId, string SenderId, string ReceiverId);
+public readonly record struct FriendRequestCanceledEventArgs(Guid RequestId, string ReceiverId);
+public readonly record struct FriendRequestRejectedEventArgs(Guid RequestId, string SenderId);
+public readonly record struct FriendRequestAcceptedEventArgs(Guid RequestId, string SenderId);
+public readonly record struct UnfriendedEventArgs(Guid RequestId, string User1, string User2);
 
 public interface INotificationService : IAsyncDisposable {
     event Action<FriendRequestReceivedEventArgs>? OnFriendRequestReceived;

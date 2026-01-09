@@ -64,15 +64,6 @@ public sealed class NotificationService(
                 };
             })
             .WithAutomaticReconnect()
-            .ConfigureLogging(logging => {
-                if (environment.IsDevelopment()) {
-                    logging.AddConsole();
-                    
-                    logging.SetMinimumLevel(LogLevel.Information);
-                    logging.AddFilter("Microsoft.AspNetCore.SignalR", LogLevel.Debug);
-                    logging.AddFilter("Microsoft.AspNetCore.Http.Connections", LogLevel.Debug);
-                }
-            })
             .Build();
 
         _hubConnection.On<FriendRequestReceivedEventArgs>(FriendRequestReceivedMethodName, args => {
@@ -124,12 +115,10 @@ public sealed class NotificationService(
     
     public async Task NotifyFriendRequestAcceptedAsync(FriendRequestAcceptedEventArgs args) {
         await hubContext.Clients.User(args.SenderId).SendAsync(FriendRequestAcceptedMethodName, args);
-        await hubContext.Clients.User(args.ReceiverId).SendAsync(FriendRequestAcceptedMethodName, args);
     }
 
     public async Task NotifyUnfriendedAsync(UnfriendedEventArgs args) {
-        await hubContext.Clients.User(args.User1).SendAsync(UnfriendedMethodName, args);
-        await hubContext.Clients.User(args.User2).SendAsync(UnfriendedMethodName, args);
+        await hubContext.Clients.User(args.OtherUserId).SendAsync(UnfriendedMethodName, args);
     }
 
     public async ValueTask DisposeAsync() {

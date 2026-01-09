@@ -24,12 +24,15 @@ public sealed partial class FriendshipService : IFriendshipService {
         }
 
         await using var database = await _dbContextFactory.CreateDbContextAsync();
-        var request = await database.FriendRequests
-            .AsNoTracking().FirstOrDefaultAsync(r => (r.SenderId == senderId && r.ReceiverId == receiverId) || (r.SenderId == receiverId && r.ReceiverId == senderId));
+        var requestData = await database.FriendRequests
+            .AsNoTracking()
+            .Where(r => (r.SenderId == senderId && r.ReceiverId == receiverId) || (r.SenderId == receiverId && r.ReceiverId == senderId))
+            .Select(x => new { x.Id, x.Status, x.SenderId })
+            .FirstOrDefaultAsync();
 
         // Determine whether exists a friend request between 2 user ids, order doesn't matter.
-        if (request != null) {
-            switch (request.Status) {
+        if (requestData != null) {
+            switch (requestData.Status) {
                 case FriendRequestStatus.Canceled or FriendRequestStatus.Rejected or FriendRequestStatus.Unfriended:
                     // There was a friend request, but has been canceled or rejected. Populate it with new data.
 
@@ -50,14 +53,14 @@ public sealed partial class FriendshipService : IFriendshipService {
                             return IFriendshipService.SendingStatus.Failed;
 
                         case 1:
-                            await _notificationService.NotifyFriendRequestReceivedAsync(new(senderId, receiverId));
+                            await _notificationService.NotifyFriendRequestReceivedAsync(new(requestData.Id, senderId, receiverId));
                             return IFriendshipService.SendingStatus.Success;
 
                         default:
                             // I blame concurrency. Still returns Success for the time being.
                             LogUnexpectedNumberOfRowsUpdateWhenRetryFriendRequest(senderId, receiverId, numUpdatedRows);
 
-                            await _notificationService.NotifyFriendRequestReceivedAsync(new(senderId, receiverId));
+                            await _notificationService.NotifyFriendRequestReceivedAsync(new(requestData.Id, senderId, receiverId));
                             return IFriendshipService.SendingStatus.Success;
                     }
 
@@ -65,21 +68,23 @@ public sealed partial class FriendshipService : IFriendshipService {
                     return IFriendshipService.SendingStatus.Friended;
 
                 case FriendRequestStatus.Pending:
-                    return request.SenderId == senderId ? IFriendshipService.SendingStatus.OutcomingPending : IFriendshipService.SendingStatus.IncomingPending;
+                    return requestData.SenderId == senderId ? IFriendshipService.SendingStatus.OutcomingPending : IFriendshipService.SendingStatus.IncomingPending;
 
                 default:
                     throw new UnreachableException("Unknown FriendRequestStatus value.");
             }
         }
 
-        database.FriendRequests.Add(new() {
+        FriendRequest newRequest = new() {
             SenderId = senderId,
             ReceiverId = receiverId,
             Status = FriendRequestStatus.Pending,
-        });
+        };
+
+        database.FriendRequests.Add(newRequest);
 
         if (await database.SaveChangesAsync() > 0) {
-            await _notificationService.NotifyFriendRequestReceivedAsync(new(senderId, receiverId));
+            await _notificationService.NotifyFriendRequestReceivedAsync(new(newRequest.Id, senderId, receiverId));
 
             return IFriendshipService.SendingStatus.Success;
         }
@@ -87,12 +92,21 @@ public sealed partial class FriendshipService : IFriendshipService {
         return IFriendshipService.SendingStatus.Failed;
     }
 
-    public async Task<bool> CancelFriendRequestAsync(string senderId, string receiverId) {
+    public async Task<bool> CancelFriendRequestAsync(Guid friendRequestId) {
         await using var database = await _dbContextFactory.CreateDbContextAsync();
         database.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        var receiverId = await database.FriendRequests
+            .Where(r => r.Status == FriendRequestStatus.Pending && r.Id == friendRequestId)
+            .Select(r => r.ReceiverId)
+            .FirstOrDefaultAsync();
+
+        if (receiverId == null) {
+            return false;
+        }
         
         int numUpdatedRows = await database.FriendRequests
-            .Where(r => r.Status == FriendRequestStatus.Pending && r.SenderId == senderId && r.ReceiverId == receiverId)
+            .Where(r => r.Status == FriendRequestStatus.Pending && r.Id == friendRequestId)
             .ExecuteUpdateAsync(builder => {
                 builder
                     .SetProperty(r => r.Status, FriendRequestStatus.Canceled)
@@ -100,7 +114,7 @@ public sealed partial class FriendshipService : IFriendshipService {
             });
 
         if (numUpdatedRows > 0) {
-            await _notificationService.NotifyFriendRequestCanceledAsync(new(senderId, receiverId));
+            await _notificationService.NotifyFriendRequestCanceledAsync(new(friendRequestId, receiverId));
 
             return true;
         }
@@ -108,12 +122,21 @@ public sealed partial class FriendshipService : IFriendshipService {
         return false;
     }
     
-    public async Task<bool> RejectFriendRequestAsync(string senderId, string receiverId) {
+    public async Task<bool> RejectFriendRequestAsync(Guid friendRequestId) {
         await using var database = await _dbContextFactory.CreateDbContextAsync();
         database.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
         
+        var senderId = await database.FriendRequests
+            .Where(r => r.Status == FriendRequestStatus.Pending && r.Id == friendRequestId)
+            .Select(r => r.SenderId)
+            .FirstOrDefaultAsync();
+
+        if (senderId == null) {
+            return false;
+        }
+        
         int numUpdatedRows = await database.FriendRequests
-            .Where(r => r.Status == FriendRequestStatus.Pending && r.SenderId == senderId && r.ReceiverId == receiverId)
+            .Where(r => r.Status == FriendRequestStatus.Pending && r.Id == friendRequestId)
             .ExecuteUpdateAsync(builder => {
                 builder
                     .SetProperty(r => r.Status, FriendRequestStatus.Rejected)
@@ -121,7 +144,7 @@ public sealed partial class FriendshipService : IFriendshipService {
             });
 
         if (numUpdatedRows > 0) {
-            await _notificationService.NotifyFriendRequestRejectedAsync(new(senderId, receiverId));
+            await _notificationService.NotifyFriendRequestRejectedAsync(new(friendRequestId, senderId));
 
             return true;
         }
@@ -129,12 +152,21 @@ public sealed partial class FriendshipService : IFriendshipService {
         return false;
     }
     
-    public async Task<bool> AcceptFriendRequestAsync(string senderId, string receiverId) {
+    public async Task<bool> AcceptFriendRequestAsync(Guid friendRequestId) {
         await using var database = await _dbContextFactory.CreateDbContextAsync();
         database.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
         
+        var senderId = await database.FriendRequests
+            .Where(r => r.Status == FriendRequestStatus.Pending && r.Id == friendRequestId)
+            .Select(r => r.SenderId)
+            .FirstOrDefaultAsync();
+
+        if (senderId == null) {
+            return false;
+        }
+        
         int numUpdatedRows = await database.FriendRequests
-            .Where(r => r.Status == FriendRequestStatus.Pending && r.SenderId == senderId && r.ReceiverId == receiverId)
+            .Where(r => r.Status == FriendRequestStatus.Pending && r.Id == friendRequestId)
             .ExecuteUpdateAsync(builder => {
                 builder
                     .SetProperty(r => r.Status, FriendRequestStatus.Accepted)
@@ -142,7 +174,7 @@ public sealed partial class FriendshipService : IFriendshipService {
             });
 
         if (numUpdatedRows > 0) {
-            await _notificationService.NotifyFriendRequestAcceptedAsync(new(senderId, receiverId));
+            await _notificationService.NotifyFriendRequestAcceptedAsync(new(friendRequestId, senderId));
 
             return true;
         }
@@ -150,49 +182,30 @@ public sealed partial class FriendshipService : IFriendshipService {
         return false;
     }
 
-    public async Task<bool> UnfriendAsync(string user1, string user2) {
-        await using var database = await _dbContextFactory.CreateDbContextAsync();
-        database.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-        
-        int numUpdatedRows = await database.FriendRequests
-            .Where(r => r.Status == FriendRequestStatus.Accepted && ((r.SenderId == user1 && r.ReceiverId == user2) || (r.SenderId == user2 && r.ReceiverId == user1)))
-            .ExecuteUpdateAsync(builder => {
-                builder.SetProperty(r => r.Status, FriendRequestStatus.Unfriended);
-            });
-        
-        if (numUpdatedRows > 0) {
-            await _notificationService.NotifyUnfriendedAsync(new(user1, user2));
-
-            return true;
-        }
-
-        return false;
-    }
-    
     public async Task<bool> UnfriendAsync(Guid friendRequestId) {
         await using var database = await _dbContextFactory.CreateDbContextAsync();
         database.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+        
+        var userIds = await database.FriendRequests
+            .Where(r => r.Status == FriendRequestStatus.Accepted && r.Id == friendRequestId)
+            .Select(r => new { r.SenderId, r.ReceiverId })
+            .FirstOrDefaultAsync();
+
+        if (userIds == null) {
+            return false;
+        }
         
         int numUpdatedRows = await database.FriendRequests
             .Where(r => r.Status == FriendRequestStatus.Accepted && r.Id == friendRequestId)
             .ExecuteUpdateAsync(builder => {
                 builder.SetProperty(r => r.Status, FriendRequestStatus.Unfriended);
+                builder.SetProperty(r => r.ResponseAt, (DateTime?)null);
             });
         
         if (numUpdatedRows > 0) {
-            var users = await database.FriendRequests
-                .Where(x => x.Id == friendRequestId)
-                .Select(x => new {
-                    x.SenderId,
-                    x.ReceiverId
-                })
-                .FirstOrDefaultAsync();
+            await _notificationService.NotifyUnfriendedAsync(new(friendRequestId, userIds.SenderId, userIds.ReceiverId));
 
-            if (users != null) {
-                await _notificationService.NotifyUnfriendedAsync(new(users.SenderId, users.ReceiverId));
-
-                return true;
-            }
+            return true;
         }
 
         return false;
