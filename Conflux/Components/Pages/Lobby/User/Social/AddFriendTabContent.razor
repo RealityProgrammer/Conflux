@@ -207,7 +207,7 @@
             try {
                 string receiverId = item.Id;
 
-                var sendStatus = await FriendshipService.SendFriendRequest(_userId, receiverId);
+                var sendStatus = await FriendshipService.SendFriendRequestAsync(_userId, receiverId);
 
                 switch (sendStatus) {
                     case IFriendshipService.SendingStatus.Success:
@@ -245,7 +245,7 @@
             try {
                 string receiverId = item.Id;
 
-                if (!await FriendshipService.CancelFriendRequest(_userId, receiverId)) {
+                if (!await FriendshipService.CancelFriendRequestAsync(_userId, receiverId)) {
                     Logger.LogWarning("Failed to cancel friend request from user {f} to {r}.", _userId, receiverId);
                 }
                 
@@ -263,7 +263,7 @@
     private async Task HandleRejectFriendRequest(UserSearchResult item) {
         if (_processingFriendRequests.TryAdd(item.Id, FriendRequestProcessingAction.Rejecting)) {
             try {
-                if (!await FriendshipService.RejectFriendRequest(item.Id, _userId)) {
+                if (!await FriendshipService.RejectFriendRequestAsync(item.Id, _userId)) {
                     Logger.LogWarning("Failed to reject friend request from user {f} to {r}.", item.Id, _userId);
                 }
                 
@@ -281,7 +281,7 @@
     private async Task HandleAcceptFriendRequest(UserSearchResult item) {
         if (_processingFriendRequests.TryAdd(item.Id, FriendRequestProcessingAction.Accepting)) {
             try {
-                if (!await FriendshipService.AcceptFriendRequest(item.Id, _userId)) {
+                if (!await FriendshipService.AcceptFriendRequestAsync(item.Id, _userId)) {
                     Logger.LogWarning("Failed to accept friend request from user {f} to {r}.", item.Id, _userId);
                 }
                 

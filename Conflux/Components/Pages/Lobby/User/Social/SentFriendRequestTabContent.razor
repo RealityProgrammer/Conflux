@@ -133,7 +133,7 @@
     private async Task HandleCancelFriendRequest(FriendRequest request) {
         if (_cancellingRequests.TryAdd(request, 0)) {
             try {
-                await FriendshipService.CancelFriendRequest(request.SenderId, request.ReceiverId);
+                await FriendshipService.CancelFriendRequestAsync(request.SenderId, request.ReceiverId);
             } finally {
                 _cancellingRequests.TryRemove(request, out _);
 

@@ -1,5 +1,6 @@
 ﻿@using Conflux.Components.Shared
 @using Conflux.Components.Shared.Icons
+@using Conflux.Components.Shared.Modals
 @using Conflux.Database
 @using Conflux.Database.Entities
 @using Conflux.Helpers
@@ -17,8 +18,10 @@
 @inject UserManager<ApplicationUser> UserManager
 @inject INotificationService NotificationService
 @inject IConversationService ConversationService
+@inject IFriendshipService FriendshipService
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject ApplicationRedirectManager RedirectManager
+@inject ModalService ModalService
 
 <div class="flex-none px-3 outline-none border rounded-lg bg-gray-700/60 border-gray-600 focus-within:ring-2 focus-within:ring-indigo-600 transition duration-300 flex flex-row items-center">
     <Search class="size-4 fill-white flex-none mr-2"/>
@@ -38,10 +41,14 @@
                 </div>
             
                 <div class="flex-none flex-row gap-1 hidden group-hover:flex">
-                    <button class="p-2 rounded-full hover:bg-gray-400/50 cursor-pointer" @onclick="@(() => AccessFriendConversation(item.FriendRequestId))">
+                    <button class="p-2 rounded-full hover:bg-gray-400/50 cursor-pointer" @onclick="@(() => HandleAccessConversation(item.FriendRequestId))">
                         <SpeechBubble ArrowDirection="ChatArrowDirection.Right" Content="ChatContent.Text" class="size-6 fill-white"/>
                     </button>
                     
+                    <button class="p-2 rounded-full hover:bg-gray-400/50 cursor-pointer" @onclick="@(() => HandleUnfriend(item.FriendRequestId))">
+                        <Cross Size="CrossSize.Large" class="size-6 fill-red-500"/>
+                    </button>
+
                     <button class="p-2 rounded-full hover:bg-gray-400/50 cursor-pointer">
                         <ThreeDots class="size-6 fill-white"/>
                     </button>
@@ -68,18 +75,19 @@
     private Virtualize<FriendSearchResult> _virtualizeContainer = null!;
 
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
-    private string _userId = null!;
+    private string _authUserId = null!;
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
             _searchDebouncer = new(OnDebounceEnd, TimeSpan.FromMilliseconds(250));
 
             var authState = await AuthenticationState;
-            _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            _authUserId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
             
-            Debug.Assert(_userId != null);
+            Debug.Assert(_authUserId != null);
 
-            NotificationService.OnFriendRequestAccepted += OnFriendRequestAcceptedNotification;
+            NotificationService.OnFriendRequestAccepted += OnFriendAccepted;
+            NotificationService.OnUnfriended += OnUnfriended;
         }
     }
 
@@ -97,14 +105,14 @@
     private async ValueTask<ItemsProviderResult<FriendSearchResult>> LoadProvider(ItemsProviderRequest request) {
         await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
             IQueryable<FriendRequest> query = dbContext.FriendRequests
-                .Where(r => r.Status == FriendRequestStatus.Accepted && (r.SenderId == _userId || r.ReceiverId == _userId))
+                .Where(r => r.Status == FriendRequestStatus.Accepted && (r.SenderId == _authUserId || r.ReceiverId == _authUserId))
                 .Include(r => r.Sender).Include(r => r.Receiver);
 
             if (!string.IsNullOrEmpty(_normalizedNameSearch)) {
                 query = query
                     .Where(r => 
-                        r.ReceiverId == _userId && r.Sender.UserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(r.Sender.DisplayName, $"%{_normalizedNameSearch}%") ||
-                        r.SenderId == _userId && r.Receiver.UserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(r.Receiver.DisplayName, $"%{_normalizedNameSearch}%")
+                        r.ReceiverId == _authUserId && r.Sender.UserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(r.Sender.DisplayName, $"%{_normalizedNameSearch}%") ||
+                        r.SenderId == _authUserId && r.Receiver.UserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(r.Receiver.DisplayName, $"%{_normalizedNameSearch}%")
                     );
             }
             
@@ -118,7 +126,7 @@
                 .OrderByDescending(r => r.CreatedAt)
                 .Skip(request.StartIndex)
                 .Take(request.Count)
-                .Join(dbContext.Users, r => r.SenderId == _userId ? r.ReceiverId : r.SenderId, user => user.Id, (request, user) => new FriendSearchResult {
+                .Join(dbContext.Users, r => r.SenderId == _authUserId ? r.ReceiverId : r.SenderId, user => user.Id, (request, user) => new FriendSearchResult {
                     FriendRequestId = request.Id,
                     UserName = user.UserName!,
                     DisplayName = user.DisplayName,
@@ -130,7 +138,7 @@
         }
     }
 
-    private async Task AccessFriendConversation(Guid friendRequestId) {
+    private async Task HandleAccessConversation(Guid friendRequestId) {
         Conversation? conversation = await ConversationService.GetOrCreateDirectConversationAsync(friendRequestId);
         
         if (conversation == null) {
@@ -140,8 +148,31 @@
 
         RedirectManager.To($"/lobby/messages/{conversation.Id}").Execute();
     }
+
+    private static readonly RenderFragment _unfriendConfirmationBody =
+        @<p>Are you sure you want to unfriend?<br/>They would be sad...</p>;
+
+    private void HandleUnfriend(Guid friendRequestId) {
+        ModalService.Open<DeleteConfirmationModal>(parameters: new Dictionary<string, object?> {
+            [nameof(DeleteConfirmationModal.Title)] = "Confirm Unfriend?",
+            [nameof(DeleteConfirmationModal.Body)] = _unfriendConfirmationBody,
+            [nameof(DeleteConfirmationModal.OnConfirmDelete)] = EventCallback.Factory.Create(this, Unfriend),
+        });
+        return;
+
+        async Task Unfriend() {
+            await FriendshipService.UnfriendAsync(friendRequestId);
+        }
+    }
     
-    private void OnFriendRequestAcceptedNotification(FriendRequestAcceptedEventArgs eventArgs) {
+    private void OnFriendAccepted(FriendRequestAcceptedEventArgs args) {
+        InvokeAsync(async () => {
+            await _virtualizeContainer.RefreshDataAsync();
+            StateHasChanged();
+        });
+    }
+    
+    private void OnUnfriended(UnfriendedEventArgs args) {
         InvokeAsync(async () => {
             await _virtualizeContainer.RefreshDataAsync();
             StateHasChanged();
@@ -151,7 +182,8 @@
     public void Dispose() {
         _searchDebouncer?.Dispose();
         
-        NotificationService.OnFriendRequestAccepted -= OnFriendRequestAcceptedNotification;
+        NotificationService.OnFriendRequestAccepted -= OnFriendAccepted;
+        NotificationService.OnUnfriended -= OnUnfriended;
     }
 
     private sealed class FriendSearchResult {
