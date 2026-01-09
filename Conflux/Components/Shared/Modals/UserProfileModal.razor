@@ -94,37 +94,37 @@
                                     <p class="text-xs mt-1">Add Friend</p>
                                 </div>
 
-                                <div class="flex flex-col items-center">
-                                    <button class="flex-none rounded-full cursor-pointer hover:bg-white/25 active:bg-black/15 p-2 shadow-md border border-gray-600">
-                                        <Person Addition="PersonAddition.Add" class="size-6 fill-white"/>
-                                    </button>
-
-                                    <p class="text-xs mt-1">Add Friend</p>
-                                </div>
-
-                                <div class="flex flex-col items-center">
-                                    <button class="flex-none rounded-full cursor-pointer hover:bg-white/25 active:bg-black/15 p-2 shadow-md border border-gray-600">
-                                        <Person Addition="PersonAddition.Add" class="size-6 fill-white"/>
-                                    </button>
-
-                                    <p class="text-xs mt-1">Add Friend</p>
-                                </div>
-
-                                <div class="flex flex-col items-center">
-                                    <button class="flex-none rounded-full cursor-pointer hover:bg-white/25 active:bg-black/15 p-2 shadow-md border border-gray-600">
-                                        <Person Addition="PersonAddition.Add" class="size-6 fill-white"/>
-                                    </button>
-
-                                    <p class="text-xs mt-1">Add Friend</p>
-                                </div>
-
-                                <div class="flex flex-col items-center">
-                                    <button class="flex-none rounded-full cursor-pointer hover:bg-white/25 active:bg-black/15 p-2 shadow-md border border-gray-600">
-                                        <Person Addition="PersonAddition.Add" class="size-6 fill-white"/>
-                                    </button>
-
-                                    <p class="text-xs mt-1">Add Friend</p>
-                                </div>
+                                @* <div class="flex flex-col items-center"> *@
+                                @*     <button class="flex-none rounded-full cursor-pointer hover:bg-white/25 active:bg-black/15 p-2 shadow-md border border-gray-600"> *@
+                                @*         <Person Addition="PersonAddition.Add" class="size-6 fill-white"/> *@
+                                @*     </button> *@
+                                @* *@
+                                @*     <p class="text-xs mt-1">Add Friend</p> *@
+                                @* </div> *@
+                                @* *@
+                                @* <div class="flex flex-col items-center"> *@
+                                @*     <button class="flex-none rounded-full cursor-pointer hover:bg-white/25 active:bg-black/15 p-2 shadow-md border border-gray-600"> *@
+                                @*         <Person Addition="PersonAddition.Add" class="size-6 fill-white"/> *@
+                                @*     </button> *@
+                                @* *@
+                                @*     <p class="text-xs mt-1">Add Friend</p> *@
+                                @* </div> *@
+                                @* *@
+                                @* <div class="flex flex-col items-center"> *@
+                                @*     <button class="flex-none rounded-full cursor-pointer hover:bg-white/25 active:bg-black/15 p-2 shadow-md border border-gray-600"> *@
+                                @*         <Person Addition="PersonAddition.Add" class="size-6 fill-white"/> *@
+                                @*     </button> *@
+                                @* *@
+                                @*     <p class="text-xs mt-1">Add Friend</p> *@
+                                @* </div> *@
+                                @* *@
+                                @* <div class="flex flex-col items-center"> *@
+                                @*     <button class="flex-none rounded-full cursor-pointer hover:bg-white/25 active:bg-black/15 p-2 shadow-md border border-gray-600"> *@
+                                @*         <Person Addition="PersonAddition.Add" class="size-6 fill-white"/> *@
+                                @*     </button> *@
+                                @* *@
+                                @*     <p class="text-xs mt-1">Add Friend</p> *@
+                                @* </div> *@
                             </div>
                         }
                     </section>
@@ -290,23 +290,6 @@
             )
             .Select(c => new MutualCommunityDTO(c.Id, c.Name, c.AvatarPath))
             .ToListAsync();
-
-        // return await dbContext.FriendRequests
-        //     .Where(x => x.Status == FriendRequestStatus.Accepted && (x.SenderId == _authUserId || x.ReceiverId == _authUserId))
-        //     .Select(x => x.SenderId == _authUserId ? x.Receiver : x.Sender)
-        //     // TODO: Could we replace these with IntersectBy?
-        //     // I'm 30min away from going home from a 8-5 and i don't want to think more about this
-        //     .Join(
-        //         dbContext.FriendRequests
-        //             .Where(x => x.Status == FriendRequestStatus.Accepted && (x.SenderId == UserId || x.ReceiverId == UserId))
-        //             .Select(x => x.SenderId == UserId ? x.Receiver : x.Sender),
-        //         x => x.Id,
-        //         x => x.Id,
-        //         (user1Friend, user2Friend) => user1Friend
-        //     )
-        //     .DistinctBy(x => x.Id)
-        //     .Select(x => new MutualFriendDTO(x.Id, x.DisplayName, x.AvatarProfilePath))
-        //     .ToListAsync();
     }
 
     private enum State {
