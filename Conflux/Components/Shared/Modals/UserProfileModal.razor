@@ -1,5 +1,6 @@
 ﻿@using Conflux.Components.Shared.Icons
 @using Conflux.Database
+@using Conflux.Helpers
 @using Conflux.Services.Abstracts
 @using Microsoft.EntityFrameworkCore
 @using System.Security.Claims
@@ -12,7 +13,7 @@
     <Card class="absolute inset-0 md:static md:h-full md:w-4/5 lg:w-3/5 rounded-none! md:rounded-xl!">
         <header class="py-1 px-3 flex-none flex flex-row justify-end items-start gap-1.5">
             <button class="bg-transparent hover:bg-white/30 p-2 rounded-full cursor-pointer" @onclick="EventUtils.AsNonRenderingEventHandler(HandleClose)">
-                <Cross class="size-4 fill-white" Size="CrossSize.Large"></Cross>
+                <Cross class="size-4 fill-white" Size="CrossSize.Large"/>
             </button>
         </header>
         
