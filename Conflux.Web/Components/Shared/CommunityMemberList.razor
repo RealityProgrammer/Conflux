@@ -14,7 +14,8 @@
                       AvatarSrc="@(string.IsNullOrEmpty(item.AvatarPath) ? null : ContentService.GetAssetPath(item.AvatarPath))"
                       UserId="@item.UserId"
                       MemberId="item.MemberId"
-                      OnClick="HandleOnCardClick"/>
+                      OnClick="HandleOnCardClick"
+                      class="h-10"/>
         </ItemContent>
     </Virtualize>
 </div>
