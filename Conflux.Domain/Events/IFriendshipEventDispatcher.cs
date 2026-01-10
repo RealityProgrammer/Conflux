@@ -13,8 +13,8 @@ public interface IFriendshipEventDispatcher : IAsyncDisposable {
     event Action<FriendRequestAcceptedEventArgs>? OnFriendRequestAccepted;
     event Action<UnfriendedEventArgs>? OnUnfriended;
     
-    Task Connect(CancellationToken cancellationToken);
-    Task Disconnect(CancellationToken cancellationToken);
+    Task Connect();
+    Task Disconnect();
     
     Task NotifyFriendRequestReceivedAsync(FriendRequestReceivedEventArgs args);
     Task NotifyFriendRequestCanceledAsync(FriendRequestCanceledEventArgs args);

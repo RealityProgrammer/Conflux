@@ -26,7 +26,7 @@ public sealed class FriendshipEventDispatcher(
     public event Action<FriendRequestAcceptedEventArgs>? OnFriendRequestAccepted;
     public event Action<UnfriendedEventArgs>? OnUnfriended;
 
-    public async Task Connect(CancellationToken cancellationToken) {
+    public async Task Connect() {
         if (_hubConnection != null) return;
         
         _hubConnection = new HubConnectionBuilder()
@@ -84,10 +84,10 @@ public sealed class FriendshipEventDispatcher(
             OnUnfriended?.Invoke(args);
         });
         
-        await _hubConnection.StartAsync(cancellationToken);
+        await _hubConnection.StartAsync();
     }
 
-    public async Task Disconnect(CancellationToken cancellationToken) {
+    public async Task Disconnect() {
         if (_hubConnection != null) {
             await _hubConnection.DisposeAsync();
         }
@@ -121,6 +121,6 @@ public sealed class FriendshipEventDispatcher(
     }
 
     public async ValueTask DisposeAsync() {
-        await Disconnect(CancellationToken.None);
+        await Disconnect();
     }
 }

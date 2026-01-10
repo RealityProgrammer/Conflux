@@ -7,7 +7,7 @@
 
 @implements IAsyncDisposable
 
-@inject IFriendshipEventDispatcher NotificationService
+@inject IFriendshipEventDispatcher FriendshipEventDispatcher
 
 <RedirectToProfileSetup/>
 
@@ -19,10 +19,10 @@
 
 @code {
     protected override void OnInitialized() {
-        NotificationService.Connect(CancellationToken.None);
+        FriendshipEventDispatcher.Connect();
     }
 
     public async ValueTask DisposeAsync() {
-        await NotificationService.Disconnect(CancellationToken.None);
+        await FriendshipEventDispatcher.Disconnect();
     }
 }

@@ -13,7 +13,7 @@
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject IContentService ContentService
 @inject IFriendshipService FriendshipService
-@inject IFriendshipEventDispatcher NotificationService
+@inject IFriendshipEventDispatcher FriendshipEventDispatcher
 @inject IConversationService ConversationService
 @inject ApplicationRedirectManager RedirectManager
 
@@ -294,11 +294,11 @@
 
             _mutualFriends = await CollectMutualFriends();
 
-            NotificationService.OnFriendRequestReceived += OnFriendRequestReceived;
-            NotificationService.OnFriendRequestCanceled += OnFriendRequestCanceled;
-            NotificationService.OnFriendRequestRejected += OnFriendRequestRejected;
-            NotificationService.OnFriendRequestAccepted += OnFriendRequestAccepted;
-            NotificationService.OnUnfriended += OnUnfriended;
+            FriendshipEventDispatcher.OnFriendRequestReceived += OnFriendRequestReceived;
+            FriendshipEventDispatcher.OnFriendRequestCanceled += OnFriendRequestCanceled;
+            FriendshipEventDispatcher.OnFriendRequestRejected += OnFriendRequestRejected;
+            FriendshipEventDispatcher.OnFriendRequestAccepted += OnFriendRequestAccepted;
+            FriendshipEventDispatcher.OnUnfriended += OnUnfriended;
 
             StateHasChanged();
         }
@@ -497,11 +497,11 @@
     }
 
     public void Dispose() {
-        NotificationService.OnFriendRequestReceived -= OnFriendRequestReceived;
-        NotificationService.OnFriendRequestCanceled -= OnFriendRequestCanceled;
-        NotificationService.OnFriendRequestRejected -= OnFriendRequestRejected;
-        NotificationService.OnFriendRequestAccepted -= OnFriendRequestAccepted;
-        NotificationService.OnUnfriended -= OnUnfriended;
+        FriendshipEventDispatcher.OnFriendRequestReceived -= OnFriendRequestReceived;
+        FriendshipEventDispatcher.OnFriendRequestCanceled -= OnFriendRequestCanceled;
+        FriendshipEventDispatcher.OnFriendRequestRejected -= OnFriendRequestRejected;
+        FriendshipEventDispatcher.OnFriendRequestAccepted -= OnFriendRequestAccepted;
+        FriendshipEventDispatcher.OnUnfriended -= OnUnfriended;
     }
 
     private enum State {

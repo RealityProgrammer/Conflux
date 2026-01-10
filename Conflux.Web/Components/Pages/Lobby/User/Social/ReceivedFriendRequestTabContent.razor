@@ -14,7 +14,7 @@
 @inject ILogger<SentFriendRequestTabContent> Logger
 @inject UserManager<ApplicationUser> UserManager
 @inject IFriendshipService FriendshipService
-@inject IFriendshipEventDispatcher NotificationService
+@inject IFriendshipEventDispatcher FriendshipEventDispatcher
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 
 <div class="flex-none px-3 outline-none border rounded-lg bg-gray-700/60 border-gray-600 focus-within:ring-2 focus-within:ring-indigo-600 transition duration-300 flex flex-row items-center">
@@ -98,8 +98,8 @@
             
             Debug.Assert(_userId != null);
 
-            NotificationService.OnFriendRequestReceived += OnFriendRequestReceivedNotification;
-            NotificationService.OnFriendRequestCanceled += OnFriendRequestCanceledNotification;
+            FriendshipEventDispatcher.OnFriendRequestReceived += OnFriendRequestReceivedNotification;
+            FriendshipEventDispatcher.OnFriendRequestCanceled += OnFriendRequestCanceledNotification;
         }
     }
 
@@ -194,8 +194,8 @@
 
     public void Dispose() {
         _searchDebouncer?.Dispose();
-        NotificationService.OnFriendRequestReceived -= OnFriendRequestReceivedNotification;
-        NotificationService.OnFriendRequestCanceled -= OnFriendRequestCanceledNotification;
+        FriendshipEventDispatcher.OnFriendRequestReceived -= OnFriendRequestReceivedNotification;
+        FriendshipEventDispatcher.OnFriendRequestCanceled -= OnFriendRequestCanceledNotification;
     }
 
     private enum FriendRequestProcessingAction {

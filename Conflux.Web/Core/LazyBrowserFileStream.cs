@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Components.Forms;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Conflux.Services;
+namespace Conflux.Core;
 
 internal sealed class LazyBrowserFileStream(IBrowserFile file, int maxAllowedSize) 
     : Stream
