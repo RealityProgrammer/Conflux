@@ -116,38 +116,39 @@
     }
 
     private async ValueTask<ItemsProviderResult<FriendRequest>> LoadProvider(ItemsProviderRequest request) {
-        await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
-            IQueryable<FriendRequest> query = dbContext.FriendRequests
-                .Where(x => x.Status == FriendRequestStatus.Pending && x.ReceiverId == _userId)
-                .Include(r => r.Sender);
+        await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+        
+        IQueryable<FriendRequest> query = dbContext.FriendRequests
+            .Where(x => x.Status == FriendRequestStatus.Pending && x.ReceiverId == _userId)
+            .Include(r => r.Sender);
 
-            if (!string.IsNullOrEmpty(_normalizedNameSearch)) {
-                query = query
-                    .Where(r => 
-                        r.Sender.UserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(r.Sender.DisplayName, $"%{_normalizedNameSearch}%")
-                    );
-            }
-            
-            int totalCount = await query.CountAsync();
-
-            if (totalCount == 0) {
-                return new([], 0);
-            }
-
-            var requests = await query
-                .OrderByDescending(r => r.CreatedAt)
-                .Skip(request.StartIndex)
-                .Take(request.Count)
-                .ToListAsync();
-            
-            return new(requests, totalCount);
+        if (!string.IsNullOrEmpty(_normalizedNameSearch)) {
+            query = query
+                .Where(r => 
+                    r.Sender.UserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(r.Sender.DisplayName, $"%{_normalizedNameSearch}%")
+                );
         }
+        
+        int totalCount = await query.CountAsync();
+
+        if (totalCount == 0) {
+            return new([], 0);
+        }
+
+        var requests = await query
+            .OrderByDescending(r => r.CreatedAt)
+            .Skip(request.StartIndex)
+            .Take(request.Count)
+            .ToListAsync();
+        
+        return new(requests, totalCount);
     }
 
     private async Task HandleRejectFriendRequest(FriendRequest request) {
         if (_processingRequests.TryAdd(request, FriendRequestProcessingAction.Rejecting)) {
             try {
-                if (!await FriendshipService.RejectFriendRequestAsync(request.SenderId, request.ReceiverId)) {
+                if (!await FriendshipService.RejectFriendRequestAsync(request.Id)) {
                     Logger.LogWarning("Failed to reject friend request from user {from} to user {id}.", request.SenderId, request.ReceiverId);
                 }
             } finally {
@@ -164,7 +165,7 @@
     private async Task HandleAcceptFriendRequest(FriendRequest request) {
         if (_processingRequests.TryAdd(request, FriendRequestProcessingAction.Accepting)) {
             try {
-                if (!await FriendshipService.AcceptFriendRequestAsync(request.SenderId, request.ReceiverId)) {
+                if (!await FriendshipService.AcceptFriendRequestAsync(request.Id)) {
                     Logger.LogWarning("Failed to accept friend request from user {from} to user {id}.", request.SenderId, request.ReceiverId);
                 }
             } finally {

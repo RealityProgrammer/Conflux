@@ -34,10 +34,10 @@
                 <span class="hidden md:block">Blocked</span>
             </TabButton>
             
-            <TabButton TabId="add" class="inline-flex flex-row items-center px-3 py-1 text-white bg-transparent hover:bg-gray-400/40 active:bg-gray-700/40 rounded-lg cursor-pointer" ActiveCssClass="bg-gray-600/70! cursor-default!">
+            <TabButton TabId="search" class="inline-flex flex-row items-center px-3 py-1 text-white bg-transparent hover:bg-gray-400/40 active:bg-gray-700/40 rounded-lg cursor-pointer" ActiveCssClass="bg-gray-600/70! cursor-default!">
                 <Person Addition="PersonAddition.Add" class="size-6 fill-white md:mr-2"/>
                 
-                <span class="hidden md:block">Add</span>
+                <span class="hidden md:block">Search</span>
             </TabButton>
         </div>
     </Buttons>
@@ -59,8 +59,8 @@
             TODO
         </TabContent>
         
-        <TabContent TabId="add" class="h-full flex flex-col">
-            <AddFriendTabContent/>
+        <TabContent TabId="search" class="h-full flex flex-col">
+            <SearchUserTabContent/>
         </TabContent>
     </Contents>
 </TabContainer>

@@ -18,9 +18,9 @@ public sealed partial class FriendshipService : IFriendshipService {
         _logger = logger;
     }
 
-    public async Task<IFriendshipService.SendingStatus> SendFriendRequestAsync(string senderId, string receiverId) {
+    public async Task<IFriendshipService.SendingResult> SendFriendRequestAsync(string senderId, string receiverId) {
         if (senderId == receiverId) {
-            return IFriendshipService.SendingStatus.Failed;
+            return new(IFriendshipService.SendingStatus.Failed, null);
         }
 
         await using var database = await _dbContextFactory.CreateDbContextAsync();
@@ -50,25 +50,25 @@ public sealed partial class FriendshipService : IFriendshipService {
 
                     switch (numUpdatedRows) {
                         case 0:
-                            return IFriendshipService.SendingStatus.Failed;
+                            return new(IFriendshipService.SendingStatus.Failed, null);
 
                         case 1:
                             await _notificationService.NotifyFriendRequestReceivedAsync(new(requestData.Id, senderId, receiverId));
-                            return IFriendshipService.SendingStatus.Success;
+                            return new(IFriendshipService.SendingStatus.Success, requestData.Id);
 
                         default:
                             // I blame concurrency. Still returns Success for the time being.
                             LogUnexpectedNumberOfRowsUpdateWhenRetryFriendRequest(senderId, receiverId, numUpdatedRows);
 
                             await _notificationService.NotifyFriendRequestReceivedAsync(new(requestData.Id, senderId, receiverId));
-                            return IFriendshipService.SendingStatus.Success;
+                            return new(IFriendshipService.SendingStatus.Success, requestData.Id);
                     }
 
                 case FriendRequestStatus.Accepted:
-                    return IFriendshipService.SendingStatus.Friended;
+                    return new(IFriendshipService.SendingStatus.Friended, requestData.Id);
 
                 case FriendRequestStatus.Pending:
-                    return requestData.SenderId == senderId ? IFriendshipService.SendingStatus.OutcomingPending : IFriendshipService.SendingStatus.IncomingPending;
+                    return new(requestData.SenderId == senderId ? IFriendshipService.SendingStatus.OutcomingPending : IFriendshipService.SendingStatus.IncomingPending, requestData.Id);
 
                 default:
                     throw new UnreachableException("Unknown FriendRequestStatus value.");
@@ -86,10 +86,10 @@ public sealed partial class FriendshipService : IFriendshipService {
         if (await database.SaveChangesAsync() > 0) {
             await _notificationService.NotifyFriendRequestReceivedAsync(new(newRequest.Id, senderId, receiverId));
 
-            return IFriendshipService.SendingStatus.Success;
+            return new(IFriendshipService.SendingStatus.Success, newRequest.Id);
         }
 
-        return IFriendshipService.SendingStatus.Failed;
+        return new(IFriendshipService.SendingStatus.Failed, null);
     }
 
     public async Task<bool> CancelFriendRequestAsync(Guid friendRequestId) {

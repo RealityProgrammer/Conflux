@@ -102,38 +102,39 @@
     }
 
     private async ValueTask<ItemsProviderResult<FriendRequest>> LoadProvider(ItemsProviderRequest request) {
-        await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
-            IQueryable<FriendRequest> query = dbContext.FriendRequests
-                .Where(x => x.Status == FriendRequestStatus.Pending && x.SenderId == _userId)
-                .Include(r => r.Receiver);
+        await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+        
+        IQueryable<FriendRequest> query = dbContext.FriendRequests
+            .Where(x => x.Status == FriendRequestStatus.Pending && x.SenderId == _userId)
+            .Include(r => r.Receiver);
 
-            if (!string.IsNullOrEmpty(_normalizedNameSearch)) {
-                query = query
-                    .Where(r => 
-                        r.Receiver.UserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(r.Receiver.DisplayName, $"%{_normalizedNameSearch}%")
-                    );
-            }
-            
-            int totalCount = await query.CountAsync();
-
-            if (totalCount == 0) {
-                return new([], 0);
-            }
-
-            var requests = await query
-                .OrderByDescending(r => r.CreatedAt)
-                .Skip(request.StartIndex)
-                .Take(request.Count)
-                .ToListAsync();
-            
-            return new(requests, totalCount);
+        if (!string.IsNullOrEmpty(_normalizedNameSearch)) {
+            query = query
+                .Where(r => 
+                    r.Receiver.UserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(r.Receiver.DisplayName, $"%{_normalizedNameSearch}%")
+                );
         }
+        
+        int totalCount = await query.CountAsync();
+
+        if (totalCount == 0) {
+            return new([], 0);
+        }
+
+        var requests = await query
+            .OrderByDescending(r => r.CreatedAt)
+            .Skip(request.StartIndex)
+            .Take(request.Count)
+            .ToListAsync();
+        
+        return new(requests, totalCount);
     }
 
     private async Task HandleCancelFriendRequest(FriendRequest request) {
         if (_cancellingRequests.TryAdd(request, 0)) {
             try {
-                await FriendshipService.CancelFriendRequestAsync(request.SenderId, request.ReceiverId);
+                await FriendshipService.CancelFriendRequestAsync(request.Id);
             } finally {
                 _cancellingRequests.TryRemove(request, out _);
 

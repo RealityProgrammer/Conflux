@@ -1,13 +1,22 @@
 ﻿@using Conflux.Components.Shared.Icons
 @using Conflux.Database
+@using Conflux.Database.Entities
 @using Conflux.Helpers
+@using Conflux.Services
 @using Conflux.Services.Abstracts
 @using Microsoft.EntityFrameworkCore
 @using System.Security.Claims
+
 @inherits BaseModal
+
+@implements IDisposable
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject IContentService ContentService
+@inject IFriendshipService FriendshipService
+@inject INotificationService NotificationService
+@inject IConversationService ConversationService
+@inject ApplicationRedirectManager RedirectManager
 
 <div class="flex flex-row justify-center items-center size-full text-white p-0 md:p-8">
     <Card class="absolute inset-0 md:static md:h-full md:w-4/5 lg:w-3/5 rounded-none! md:rounded-xl!">
@@ -16,23 +25,23 @@
                 <Cross class="size-4 fill-white" Size="CrossSize.Large"/>
             </button>
         </header>
-        
+
         @switch (_state) {
             case State.Loading:
-                <CardContent class="h-full flex justify-center items-center my-0! pb-2">
+                <CardContent class="h-full flex justify-center items-center flex-1 my-0! pb-2">
                     <Spinner class="size-16 fill-white"/>
                 </CardContent>
                 break;
 
             case State.Invalid:
-                <CardContent class="h-full flex justify-center items-center my-0! pb-2">
+                <CardContent class="h-full flex justify-center items-center flex-1 my-0! pb-2">
                     <p class="text-gray-400 text-sm">Nobody here...</p>
                 </CardContent>
                 break;
 
             case State.Success:
-                <CardContent class="h-full flex flex-col md:flex-row gap-2 overflow-y-hidden md:overflow-y-hidden my-0! pb-2">
-                    <section class="flex-0 md:flex-1 border border-gray-600 rounded-lg bg-gray-725 shadow-md overflow-y-auto scrollbar-hide pb-2">
+                <CardContent class="h-full flex flex-col md:flex-row gap-2 flex-1 overflow-y-auto scrollbar-hide md:overflow-y-hidden my-0! pb-2">
+                    <section class="flex-none md:flex-1 border border-gray-600 rounded-lg bg-gray-725 shadow-md overflow-y-auto scrollbar-hide pb-2">
                         @* Banner & Avatar *@
                         <div class="relative h-32">
                             <div class="absolute inset-0 bg-cover bg-center bg-black rounded-t-lg"></div>
@@ -85,51 +94,75 @@
 
                         @* Actions *@
                         @if (UserId != _authUserId) {
-                            <div class="flex flex-row justify-around mt-2 bg-gray-650 mx-2 p-2 rounded-lg shadow-md">
-                                <div class="flex flex-col items-center">
-                                    <button class="flex-none rounded-full cursor-pointer hover:bg-white/25 active:bg-black/15 p-2 shadow-md border border-gray-600">
-                                        <Person Addition="PersonAddition.Add" class="size-6 fill-white"/>
-                                    </button>
+                            <div class="flex flex-row justify-around mt-2 bg-gray-650 mx-2 p-2 rounded-lg shadow-md flex-wrap">
+                                @switch (_userInfo.FriendRequestAction) {
+                                    case FriendRequestAction.Add:
+                                        <div class="flex flex-col items-center">
+                                            <ProcessingStateButton @bind-IsProcessing="_isProcessingFriendRequest" class="flex-none rounded-full cursor-pointer hover:bg-white/25 active:bg-black/15 p-2 shadow-md border border-gray-600" ProcessingCssClass="flex flex-row justify-center items-center" @onclick="HandleSendFriendRequest">
+                                                <ChildContent>
+                                                    <Person Addition="PersonAddition.Add" class="size-6 fill-white"/>
+                                                </ChildContent>
 
-                                    <p class="text-xs mt-1">Add Friend</p>
-                                </div>
+                                                <ProcessingContent>
+                                                    <Spinner class="size-6 fill-white"/>
+                                                </ProcessingContent>
+                                            </ProcessingStateButton>
 
-                                @* <div class="flex flex-col items-center"> *@
-                                @*     <button class="flex-none rounded-full cursor-pointer hover:bg-white/25 active:bg-black/15 p-2 shadow-md border border-gray-600"> *@
-                                @*         <Person Addition="PersonAddition.Add" class="size-6 fill-white"/> *@
-                                @*     </button> *@
-                                @* *@
-                                @*     <p class="text-xs mt-1">Add Friend</p> *@
-                                @* </div> *@
-                                @* *@
-                                @* <div class="flex flex-col items-center"> *@
-                                @*     <button class="flex-none rounded-full cursor-pointer hover:bg-white/25 active:bg-black/15 p-2 shadow-md border border-gray-600"> *@
-                                @*         <Person Addition="PersonAddition.Add" class="size-6 fill-white"/> *@
-                                @*     </button> *@
-                                @* *@
-                                @*     <p class="text-xs mt-1">Add Friend</p> *@
-                                @* </div> *@
-                                @* *@
-                                @* <div class="flex flex-col items-center"> *@
-                                @*     <button class="flex-none rounded-full cursor-pointer hover:bg-white/25 active:bg-black/15 p-2 shadow-md border border-gray-600"> *@
-                                @*         <Person Addition="PersonAddition.Add" class="size-6 fill-white"/> *@
-                                @*     </button> *@
-                                @* *@
-                                @*     <p class="text-xs mt-1">Add Friend</p> *@
-                                @* </div> *@
-                                @* *@
-                                @* <div class="flex flex-col items-center"> *@
-                                @*     <button class="flex-none rounded-full cursor-pointer hover:bg-white/25 active:bg-black/15 p-2 shadow-md border border-gray-600"> *@
-                                @*         <Person Addition="PersonAddition.Add" class="size-6 fill-white"/> *@
-                                @*     </button> *@
-                                @* *@
-                                @*     <p class="text-xs mt-1">Add Friend</p> *@
-                                @* </div> *@
+                                            <p class="text-xs mt-1">Add Friend</p>
+                                        </div>
+                                        break;
+
+                                    case FriendRequestAction.Cancel:
+                                        <div class="flex flex-col items-center">
+                                            <button class="flex-none rounded-full cursor-pointer hover:bg-white/25 active:bg-black/15 p-2 shadow-md border border-gray-600" @onclick="HandleCancelFriendRequest">
+                                                <Cross Size="CrossSize.Normal" class="size-6 fill-white"/>
+                                            </button>
+
+                                            <p class="text-xs mt-1">Cancel Request</p>
+                                        </div>
+                                        break;
+
+                                    case FriendRequestAction.RejectOrAccept:
+                                        <div class="flex flex-col items-center">
+                                            <button class="flex-none rounded-full cursor-pointer hover:bg-white/25 active:bg-black/15 p-2 shadow-md border border-gray-600" @onclick="HandleRejectFriendRequest">
+                                                <Cross Size="CrossSize.Normal" class="size-6 fill-white"/>
+                                            </button>
+
+                                            <p class="text-xs mt-1">Reject Request</p>
+                                        </div>
+
+                                        <div class="flex flex-col items-center">
+                                            <button class="flex-none rounded-full cursor-pointer hover:bg-white/25 active:bg-black/15 p-2 shadow-md border border-gray-600" @onclick="HandleAcceptFriendRequest">
+                                                <Person Addition="PersonAddition.Check" class="size-6 fill-white"/>
+                                            </button>
+
+                                            <p class="text-xs mt-1">Accept Request</p>
+                                        </div>
+                                        break;
+
+                                    case FriendRequestAction.Unfriend:
+                                        <div class="flex flex-col items-center">
+                                            <button class="flex-none rounded-full cursor-pointer hover:bg-white/25 active:bg-black/15 p-2 shadow-md border border-gray-600" @onclick="HandleUnfriend">
+                                                <Person Addition="PersonAddition.X" class="size-6 fill-white"/>
+                                            </button>
+
+                                            <p class="text-xs mt-1">Unfriend</p>
+                                        </div>
+                                        
+                                        <div class="flex flex-col items-center">
+                                            <button class="flex-none rounded-full cursor-pointer hover:bg-white/25 active:bg-black/15 p-2 shadow-md border border-gray-600" @onclick="HandleAccessConversation">
+                                                <SpeechBubble ArrowDirection="ChatArrowDirection.Right" Content="ChatContent.Text" class="size-6 fill-white"/>
+                                            </button>
+
+                                            <p class="text-xs mt-1">Message</p>
+                                        </div>
+                                        break;
+                                }
                             </div>
                         }
                     </section>
 
-                    <section class="flex-0 md:flex-1 flex flex-col gap-2">
+                    <section class="flex-none md:flex-1 flex flex-col gap-2">
                         @if (_authUserId != UserId) {
                             <div class="flex flex-col md:flex-1 overflow-y-hidden border border-gray-600 rounded-lg shadow-md bg-gray-725 p-2">
                                 <h1 class="text-xl font-bold flex-none">Mutual</h1>
@@ -201,7 +234,7 @@
 
     private State _state;
     private UserDTO _userInfo;
-    
+
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
     private string _authUserId = null!;
 
@@ -209,25 +242,65 @@
     private ICollection<MutualFriendDTO>? _mutualFriends;
     private ICollection<MutualCommunityDTO>? _mutualCommunities;
 
+    private bool _isProcessingFriendRequest;
+
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
             await using var dbContext = await DbContextFactory.CreateDbContextAsync();
             dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
+            var authState = await AuthenticationState;
+            _authUserId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+            // Trust me, I hate this code as much as you do...
             _userInfo = await dbContext.CommunityMembers
-                .Where(x => x.Id == MemberId && x.UserId == UserId)
-                .Include(x => x.User)
+                .Where(m => m.Id == MemberId && m.UserId == UserId)
+                .Include(m => m.User)
+                .ThenInclude(u => u.ReceivedFriendRequests.Where(x => x.SenderId == UserId))
+                .AsSplitQuery()
+                .Include(m => m.User)
+                .ThenInclude(u => u.SentFriendRequests.Where(x => x.ReceiverId == UserId))
+                .AsSplitQuery()
                 .Include(x => x.Role)
-                .Select(x => new UserDTO(x.User.DisplayName, x.User.UserName!, null, x.User.AvatarProfilePath, x.User.Bio, x.User.Pronouns, DateOnly.FromDateTime(x.User.CreatedAt), DateOnly.FromDateTime(x.CreatedAt), x.RoleId == null ? null : x.Role!.Name))
+                .AsSplitQuery()
+                .Select(x => new UserQueryStruct(x.User, x, x.Role, x.User.ReceivedFriendRequests.FirstOrDefault() ?? x.User.SentFriendRequests.FirstOrDefault()))
+                .Select(x =>
+                    new UserDTO(
+                        x.User.DisplayName,
+                        x.User.UserName!,
+                        null,
+                        x.User.AvatarProfilePath,
+                        x.User.Bio,
+                        x.User.Pronouns,
+                        DateOnly.FromDateTime(x.User.CreatedAt),
+                        x.Member == null ? null : DateOnly.FromDateTime(x.Member.CreatedAt),
+                        x.Role == null ?
+                            null :
+                            x.Role.Name,
+                        x.FriendRequest == null ?
+                            FriendRequestAction.Add :
+                            x.FriendRequest.Status == FriendRequestStatus.Accepted ?
+                                FriendRequestAction.Unfriend :
+                                x.FriendRequest.Status == FriendRequestStatus.Pending ?
+                                    x.FriendRequest.SenderId == _authUserId ?
+                                        FriendRequestAction.Cancel :
+                                        FriendRequestAction.RejectOrAccept
+                                : FriendRequestAction.Add,
+                        x.FriendRequest == null ? null : x.FriendRequest.Id
+                    )
+                )
                 .FirstOrDefaultAsync();
 
             _state = string.IsNullOrEmpty(_userInfo.DisplayName) ? State.Invalid : State.Success;
 
-            var authState = await AuthenticationState;
-            _authUserId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-            
             _mutualFriends = await CollectMutualFriends();
-            
+
+            NotificationService.OnFriendRequestReceived += OnFriendRequestReceived;
+            NotificationService.OnFriendRequestCanceled += OnFriendRequestCanceled;
+            NotificationService.OnFriendRequestRejected += OnFriendRequestRejected;
+            NotificationService.OnFriendRequestAccepted += OnFriendRequestAccepted;
+            NotificationService.OnUnfriended += OnUnfriended;
+
             StateHasChanged();
         }
     }
@@ -238,21 +311,120 @@
 
     private async Task SetMutualTabId(string value) {
         _mutualActiveTabId = value;
-        
+
         @switch (value) {
             case "Friends":
                 _mutualFriends ??= await CollectMutualFriends();
                 break;
-                
+
             case "Communities":
                 _mutualCommunities ??= await CollectMutualCommunities();
                 break;
         }
     }
 
+    private async Task HandleSendFriendRequest() {
+        _isProcessingFriendRequest = true;
+
+        try {
+            var result = await FriendshipService.SendFriendRequestAsync(_authUserId, UserId);
+            
+            switch (result.Status) {
+                case IFriendshipService.SendingStatus.Friended:
+                    _userInfo.FriendRequestAction = FriendRequestAction.Unfriend;
+                    _userInfo.FriendRequestId = result.RequestId;
+                    break;
+
+                case IFriendshipService.SendingStatus.Success or IFriendshipService.SendingStatus.OutcomingPending:
+                    _userInfo.FriendRequestAction = FriendRequestAction.Cancel;
+                    _userInfo.FriendRequestId = result.RequestId;
+                    break;
+
+                case IFriendshipService.SendingStatus.IncomingPending:
+                    _userInfo.FriendRequestAction = FriendRequestAction.RejectOrAccept;
+                    _userInfo.FriendRequestId = result.RequestId;
+                    break;
+            }
+        } finally {
+            _isProcessingFriendRequest = false;
+        }
+    }
+
+    private async Task HandleCancelFriendRequest() {
+        if (_userInfo.FriendRequestId is not { } requestId) {
+            return;
+        }
+        
+        _isProcessingFriendRequest = true;
+
+        try {
+            await FriendshipService.CancelFriendRequestAsync(requestId);
+            _userInfo.FriendRequestAction = FriendRequestAction.Add;
+        } finally {
+            _isProcessingFriendRequest = false;
+        }
+    }
+
+    private async Task HandleRejectFriendRequest() {
+        if (_userInfo.FriendRequestId is not { } requestId) {
+            return;
+        }
+        
+        _isProcessingFriendRequest = true;
+
+        try {
+            await FriendshipService.RejectFriendRequestAsync(requestId);
+            _userInfo.FriendRequestAction = FriendRequestAction.Add;
+        } finally {
+            _isProcessingFriendRequest = false;
+        }
+    }
+
+    private async Task HandleAcceptFriendRequest() {
+        if (_userInfo.FriendRequestId is not { } requestId) {
+            return;
+        }
+        
+        _isProcessingFriendRequest = true;
+
+        try {
+            await FriendshipService.AcceptFriendRequestAsync(requestId);
+            _userInfo.FriendRequestAction = FriendRequestAction.Unfriend;
+        } finally {
+            _isProcessingFriendRequest = false;
+        }
+    }
+
+    private async Task HandleUnfriend() {
+        if (_userInfo.FriendRequestId is not { } requestId) {
+            return;
+        }
+        
+        _isProcessingFriendRequest = true;
+
+        try {
+            bool result = await FriendshipService.UnfriendAsync(requestId);
+            _userInfo.FriendRequestAction = FriendRequestAction.Add;
+
+            GC.KeepAlive(result);
+        } finally {
+            _isProcessingFriendRequest = false;
+        }
+    }
+
+    private async Task HandleAccessConversation() {
+        if (_userInfo.FriendRequestId is not { } requestId || _userInfo.FriendRequestAction != FriendRequestAction.Unfriend) {
+            return;
+        }
+
+        var conversation = await ConversationService.GetOrCreateDirectConversationAsync(requestId);
+        RedirectManager.To($"/lobby/messages/{conversation.Id}").Execute();
+        CloseModal();
+    }
+
     private async Task<ICollection<MutualFriendDTO>> CollectMutualFriends() {
         if (_authUserId == UserId) return [];
-        
+
         await using var dbContext = await DbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
@@ -272,10 +444,10 @@
             .Select(x => new MutualFriendDTO(x.Id, x.DisplayName, x.AvatarProfilePath))
             .ToListAsync();
     }
-    
+
     private async Task<ICollection<MutualCommunityDTO>> CollectMutualCommunities() {
         if (_authUserId == UserId) return [];
-        
+
         await using var dbContext = await DbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
@@ -292,13 +464,65 @@
             .ToListAsync();
     }
 
+    private void OnFriendRequestReceived(FriendRequestReceivedEventArgs args) {
+        if (args.SenderId == UserId) {
+            _userInfo.FriendRequestAction = FriendRequestAction.RejectOrAccept;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void OnFriendRequestCanceled(FriendRequestCanceledEventArgs args) {
+        if (args.ReceiverId == _authUserId) {
+            _userInfo.FriendRequestAction = FriendRequestAction.Add;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void OnFriendRequestRejected(FriendRequestRejectedEventArgs args) {
+        if (args.SenderId == _authUserId) {
+            _userInfo.FriendRequestAction = FriendRequestAction.Add;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void OnFriendRequestAccepted(FriendRequestAcceptedEventArgs args) {
+        if (args.SenderId == _authUserId) {
+            _userInfo.FriendRequestAction = FriendRequestAction.Unfriend;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void OnUnfriended(UnfriendedEventArgs args) {
+        if (args.User1 == UserId || args.User2 == UserId) {
+            _userInfo.FriendRequestAction = FriendRequestAction.Add;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public void Dispose() {
+        NotificationService.OnFriendRequestReceived -= OnFriendRequestReceived;
+        NotificationService.OnFriendRequestCanceled -= OnFriendRequestCanceled;
+        NotificationService.OnFriendRequestRejected -= OnFriendRequestRejected;
+        NotificationService.OnFriendRequestAccepted -= OnFriendRequestAccepted;
+        NotificationService.OnUnfriended -= OnUnfriended;
+    }
+
     private enum State {
         Loading,
         Invalid,
         Success,
     }
 
-    private readonly record struct UserDTO(string DisplayName, string UserName, string? BannerPath, string? AvatarPath, string? Bio, string? Pronouns, DateOnly UserCreatedAt, DateOnly? MemberCreatedAt, string? RoleName);
+    private record struct UserQueryStruct(ApplicationUser User, CommunityMember? Member, CommunityRole? Role, FriendRequest? FriendRequest);
+
+    private enum FriendRequestAction {
+        Add,
+        Cancel,
+        RejectOrAccept,
+        Unfriend,
+    }
+
+    private record struct UserDTO(string DisplayName, string UserName, string? BannerPath, string? AvatarPath, string? Bio, string? Pronouns, DateOnly UserCreatedAt, DateOnly? MemberCreatedAt, string? RoleName, FriendRequestAction FriendRequestAction, Guid? FriendRequestId);
 
     private readonly record struct MutualFriendDTO(string Id, string DisplayName, string? AvatarPath);
     private readonly record struct MutualCommunityDTO(Guid Id, string CommunityName, string? AvatarPath);

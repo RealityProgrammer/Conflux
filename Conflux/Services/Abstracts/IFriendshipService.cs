@@ -1,12 +1,12 @@
 ﻿namespace Conflux.Services.Abstracts;
 
 public interface IFriendshipService {
-    Task<SendingStatus> SendFriendRequestAsync(string senderId, string receiverId);
+    Task<SendingResult> SendFriendRequestAsync(string senderId, string receiverId);
     Task<bool> CancelFriendRequestAsync(Guid friendRequestId);
     Task<bool> RejectFriendRequestAsync(Guid friendRequestId);
     Task<bool> AcceptFriendRequestAsync(Guid friendRequestId);
     Task<bool> UnfriendAsync(Guid friendRequestId);
-
+    
     public enum SendingStatus {
         Success,
         IncomingPending,
@@ -14,4 +14,6 @@ public interface IFriendshipService {
         Failed,
         Friended,
     }
+    
+    public readonly record struct SendingResult(SendingStatus Status, Guid? RequestId);
 }

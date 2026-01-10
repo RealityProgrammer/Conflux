@@ -118,7 +118,8 @@ public sealed class NotificationService(
     }
 
     public async Task NotifyUnfriendedAsync(UnfriendedEventArgs args) {
-        await hubContext.Clients.User(args.OtherUserId).SendAsync(UnfriendedMethodName, args);
+        await hubContext.Clients.User(args.User1).SendAsync(UnfriendedMethodName, args);
+        await hubContext.Clients.User(args.User2).SendAsync(UnfriendedMethodName, args);
     }
 
     public async ValueTask DisposeAsync() {

@@ -108,7 +108,7 @@ public sealed class ConversationService : IConversationService, IAsyncDisposable
         }
     }
 
-    public async Task<Conversation?> GetOrCreateDirectConversationAsync(Guid friendRequestId) {
+    public async Task<Conversation> GetOrCreateDirectConversationAsync(Guid friendRequestId) {
         await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
 
         Conversation? conversation = await dbContext.Conversations
