@@ -1,12 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using Conflux.Components;
 using Conflux.Domain;
+using Conflux.Domain.Abstracts;
 using Vite.AspNetCore;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Conflux.Domain.Entities;
-using Conflux.Infrastructure.Data;
 using Conflux.Services;
 using Conflux.Services.Abstracts;
 using Conflux.Services.Authorization;
@@ -88,7 +88,7 @@ builder.Services.AddSingleton<IAuthorizationHandler, UpdateCommunityMemberRoleAu
 // Add database services.
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options => {
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"), options => {
-        options.MigrationsAssembly(typeof(ApplicationDbContext).Assembly);
+        options.MigrationsAssembly("Conflux.Infrastructure");
     });
 });
 

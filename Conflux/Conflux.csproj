@@ -42,6 +42,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Conflux.Domain\Conflux.Domain.csproj" />
       <ProjectReference Include="..\Conflux.Infrastructure\Conflux.Infrastructure.csproj" />
     </ItemGroup>
 </Project>

@@ -1,10 +1,13 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Conflux.Domain;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Conflux.Infrastructure.Data;
 
-public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<ApplicationDbContext> {
+[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+public sealed class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<ApplicationDbContext> {
     public ApplicationDbContext CreateDbContext(string[] args) {
         // Get environment
         var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";

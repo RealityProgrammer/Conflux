@@ -1,10 +1,12 @@
-﻿using Conflux.Domain.Entities;
+﻿using Conflux.Domain.Abstracts;
+using Conflux.Domain.Entities;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ValueGeneration;
 using System.Runtime.CompilerServices;
+using ICreatedAtColumn = Conflux.Domain.Entities.ICreatedAtColumn;
 
-namespace Conflux.Infrastructure.Data;
+namespace Conflux.Domain;
 
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : IdentityDbContext<ApplicationUser>(options) {
     public DbSet<FriendRequest> FriendRequests { get; set; } = null!;
@@ -160,13 +162,5 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         }).Entity<CommunityChannel>(entity => {
             entity.HasKey(x => x.Id);
         });
-    }
-
-    public override void Dispose() {
-        base.Dispose();
-    }
-
-    public override ValueTask DisposeAsync() {
-        return base.DisposeAsync();
     }
 }
