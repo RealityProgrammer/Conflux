@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Conflux", "Conflux\Conflux.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Conflux.Domain", "Conflux.Domain\Conflux.Domain.csproj", "{802FD04C-98E4-4598-8330-B5A54B71324F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Conflux.Infrastructure", "Conflux.Infrastructure\Conflux.Infrastructure.csproj", "{B48BE131-9DF0-4C09-B0D8-E9B0A3DF49DC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{802FD04C-98E4-4598-8330-B5A54B71324F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{802FD04C-98E4-4598-8330-B5A54B71324F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{802FD04C-98E4-4598-8330-B5A54B71324F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B48BE131-9DF0-4C09-B0D8-E9B0A3DF49DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B48BE131-9DF0-4C09-B0D8-E9B0A3DF49DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B48BE131-9DF0-4C09-B0D8-E9B0A3DF49DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B48BE131-9DF0-4C09-B0D8-E9B0A3DF49DC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

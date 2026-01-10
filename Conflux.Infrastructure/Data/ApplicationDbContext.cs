@@ -1,11 +1,10 @@
 ﻿using Conflux.Domain.Entities;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ValueGeneration;
 using System.Runtime.CompilerServices;
 
-namespace Conflux.Domain;
+namespace Conflux.Infrastructure.Data;
 
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : IdentityDbContext<ApplicationUser>(options) {
     public DbSet<FriendRequest> FriendRequests { get; set; } = null!;
@@ -40,7 +39,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     protected override void OnModelCreating(ModelBuilder builder) {
         base.OnModelCreating(builder);
-
+        
         builder.Entity<ApplicationUser>(entity => {
             entity
                 .HasMany(user => user.SentFriendRequests)

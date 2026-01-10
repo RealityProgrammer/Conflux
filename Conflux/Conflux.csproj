@@ -29,6 +29,10 @@
       <PackageReference Include="Markdig" Version="0.44.0" />
       <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0" />
       <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.0" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.1">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
       <PackageReference Include="Vereyon.Web.HtmlSanitizer" Version="1.8.0" />
       <PackageReference Include="Vite.AspNetCore" Version="2.4.1" />
     </ItemGroup>
@@ -38,6 +42,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Conflux.Domain\Conflux.Domain.csproj" />
+      <ProjectReference Include="..\Conflux.Infrastructure\Conflux.Infrastructure.csproj" />
     </ItemGroup>
 </Project>
