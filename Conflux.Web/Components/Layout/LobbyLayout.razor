@@ -1,0 +1,28 @@
+﻿@using Conflux.Components.Guards
+@using Conflux.Components.Shared
+@using Conflux.Domain.Events
+
+@inherits LayoutComponentBase
+@layout MainLayout
+
+@implements IAsyncDisposable
+
+@inject IFriendshipEventDispatcher NotificationService
+
+<RedirectToProfileSetup/>
+
+<ExpandableLobbyLocationList/>
+
+<div class="h-dvh w-dvw">
+    @Body
+</div>
+
+@code {
+    protected override void OnInitialized() {
+        NotificationService.Connect(CancellationToken.None);
+    }
+
+    public async ValueTask DisposeAsync() {
+        await NotificationService.Disconnect(CancellationToken.None);
+    }
+}

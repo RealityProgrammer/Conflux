@@ -1,5 +1,4 @@
-﻿using Conflux.Domain.Abstracts;
-using Conflux.Domain.Entities;
+﻿using Conflux.Domain.Entities;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ValueGeneration;

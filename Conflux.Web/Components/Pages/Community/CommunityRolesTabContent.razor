@@ -1,0 +1,751 @@
+﻿@using Conflux.Application.Dto
+@using Conflux.Components.Pages.Settings
+@using Conflux.Components.Shared
+@using Conflux.Components.Shared.Icons
+@using Conflux.Components.Shared.Modals
+@using Conflux.Domain.Events
+@using Conflux.Services
+@using Conflux.Services.Abstracts
+@using Conflux.Services.Authorization
+@using Microsoft.EntityFrameworkCore
+@using System.ComponentModel.DataAnnotations
+
+@implements IDisposable
+
+@inject ICommunityService CommunityService
+@inject ICommunityEventDispatcher CommunityEventDispatcher
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IJSRuntime JavascriptRuntime
+@inject IContentService ContentService
+@inject IAuthorizationService AuthorizationService
+@inject ModalService ModalService
+
+<div class="flex flex-col h-full gap-1 overflow-y-auto">
+    <header class="flex-none ml-2">
+        <h1 class="text-xl font-bold">Community Roles</h1>
+        <p class="text-sm text-gray-400">See and change moderation permissions.</p>
+    </header>
+    
+    <section class="flex-1 h-full min-h-0 px-2" @ref="_unsavedChangesShakeTarget">
+        <div class="flex flex-col md:flex-row gap-1 md:items-center">
+            <label class="flex-none input-label md:flex-1">Role</label>
+            
+            <SelectionDropdown @bind-Value:get="_selectedRole" @bind-Value:set="SetSelectedRole" ContainerCssClass="md:flex-3" ButtonCssClass="h-10 w-full" PopoverCssClass="z-10 w-full lg:w-lg p-1">
+                <div class="flex flex-col gap-1 max-h-62 overflow-y-auto">
+                    @if (_roles == null) {
+                        <div class="flex justify-center">
+                            <Spinner class="size-6 fill-white"/>
+                        </div>
+                    } else {
+                        foreach (var role in _roles) {
+                            <SelectionOption class="select-none p-1.5 text-left bg-transparent hover:bg-white/15 active:bg-black/25 cursor-pointer rounded-md" Value="@role">@role.Name</SelectionOption>
+                        }
+                    }
+                </div>
+                
+                <AuthorizeView Policy="CreateCommunityRole" Resource="UserPermissions?.Permissions">
+                    <Authorized>
+                        <li class="flex flex-row items-center mt-1">
+                            <input @ref="_roleNameInputElement" type="text" @bind="_creatingRoleName" class="flex-1 input-field h-10 mr-1">
+
+                            @if (_roleNameInputElement.HasValue) {
+                                <Popover TargetReference="_roleNameInputElement.Value" IsShowing="@(!string.IsNullOrEmpty(_roleNameErrorMessage))" ArrowCssClass="bg-[#ff4b6a]" Placement="bottom" Offset="4">
+                                    <p class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md">@_roleNameErrorMessage</p>
+                                </Popover>
+                            }
+
+                            <ProcessingStateButton @bind-IsProcessing="_isCreatingRole" class="button-primary w-20 px-2" ProcessingCssClass="flex flex-row justify-center" @onclick="HandleCreateRole">
+                                <ChildContent>
+                                    Create
+                                </ChildContent>
+
+                                <ProcessingContent>
+                                    <Spinner class="size-6 fill-white"/>
+                                </ProcessingContent>
+                            </ProcessingStateButton>
+                        </li>
+                    </Authorized>
+                </AuthorizeView>
+            </SelectionDropdown>
+        </div>
+        
+        <EditForm EditContext="_editContext" Context="_" FormName="MainForm">
+            <DataAnnotationsValidator/>
+            
+            <Collapsible class="w-full mt-2 border-b border-b-gray-600 pb-1.5" @bind-IsExpanded="_expandPermissionCollapsible">
+                <HeaderContent>
+                    <span class="font-semibold">Permissions</span>
+                </HeaderContent>
+
+                <ChildContent>
+                    @{ bool shouldDisabled = !_allowsUpdateRolePermissions; }
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
+                        <section>
+                            <header class="border-b border-b-gray-600 pb-1">Access</header>
+
+                            <div class="mt-1.5 flex flex-col gap-1.5">
+                                <div class="flex flex-row items-center">
+                                    <label class="flex-1">Access Control Panel</label>
+
+                                    <PermissionToggle @bind-Value="Model.AccessControlPanel" class="flex-none" disabled="@shouldDisabled"/>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section>
+                            <header class="border-b border-b-gray-600 pb-1">Roles</header>
+
+                            <div class="mt-1.5 flex flex-col gap-1.5">
+                                <div class="flex flex-row items-center">
+                                    <label class="flex-1">Create Role</label>
+
+                                    <PermissionToggle @bind-Value="Model.CreateRole" class="flex-none" disabled="@shouldDisabled"/>
+                                </div>
+
+                                <div class="flex flex-row items-center">
+                                    <label class="flex-1">Delete Role</label>
+
+                                    <PermissionToggle @bind-Value="Model.DeleteRole" class="flex-none" disabled="@shouldDisabled"/>
+                                </div>
+                                
+                                <div class="flex flex-row items-center">
+                                    <label class="flex-1">Rename Role</label>
+
+                                    <PermissionToggle @bind-Value="Model.RenameRole" class="flex-none" disabled="@shouldDisabled"/>
+                                </div>
+
+                                <div class="flex flex-row items-center">
+                                    <label class="flex-1">Modify Role Permission</label>
+
+                                    <PermissionToggle @bind-Value="Model.ModifyRolePermissions" class="flex-none" disabled="@shouldDisabled"/>
+                                </div>
+
+                                <div class="flex flex-row items-center">
+                                    <label class="flex-1">Modify Member Role</label>
+
+                                    <PermissionToggle @bind-Value="Model.ModifyMemberRole" class="flex-none" disabled="@shouldDisabled"/>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section>
+                            <header class="border-b border-b-gray-600 pb-1">Channels</header>
+
+                            <div class="mt-1.5 flex flex-col gap-1.5">
+                                <div class="flex flex-row items-center">
+                                    <label class="flex-1">Create Channel Category</label>
+
+                                    <PermissionToggle @bind-Value="Model.CreateChannelCategory" class="flex-none" disabled="@shouldDisabled"/>
+                                </div>
+
+                                <div class="flex flex-row items-center">
+                                    <label class="flex-1">Delete Channel Category</label>
+
+                                    <PermissionToggle @bind-Value="Model.DeleteChannelCategory" class="flex-none" disabled="@shouldDisabled"/>
+                                </div>
+
+                                <div class="flex flex-row items-center">
+                                    <label class="flex-1">Create Channel</label>
+
+                                    <PermissionToggle @bind-Value="Model.CreateChannel" class="flex-none" disabled="@shouldDisabled"/>
+                                </div>
+
+                                <div class="flex flex-row items-center">
+                                    <label class="flex-1">Delete Channel</label>
+
+                                    <PermissionToggle @bind-Value="Model.DeleteChannel" class="flex-none" disabled="@shouldDisabled"/>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </ChildContent>
+            </Collapsible>
+
+            <Collapsible class="w-full mt-2 border-b border-b-gray-600 pb-1.5" @bind-IsExpanded="_expandPeopleCollapsible">
+                <HeaderContent>
+                    <span class="font-semibold">People</span>
+                </HeaderContent>
+
+                <ChildContent>
+                    <div class="mt-2 flex flex-col md:flex-row gap-2">
+                        <section class="flex-1">
+                            <p>Members with Role:</p>
+
+                            <div class="mt-1 border border-gray-600 bg-gray-725 shadow-md rounded-lg h-128 p-1 overflow-y-auto scrollbar-hide flex flex-col">
+                                <Virtualize ItemsProvider="RoleMembersProvider" @ref="_roleMembersVirtualizeReference">
+                                    <ItemContent Context="item">
+                                        @{
+                                            bool isBeingRemoved = Model.RemoveRoles.Contains(item.MemberId);
+                                            string backgroundCssClass = isBeingRemoved ? "bg-red-500/45 hover:bg-[#BA4659]" : "bg-transparent hover:bg-white/8";
+
+                                        }
+
+                                        <div class="p-1 flex flex-row items-center rounded-md @backgroundCssClass">
+                                            <Avatar ImageSrc="@(string.IsNullOrEmpty(item.Avatar) ? null : ContentService.GetAssetPath(item.Avatar))" ImageAlt="@($"Avatar of {item.DisplayName}")" class="size-9 mr-1"/>
+
+                                            <p class="flex-1">@item.DisplayName</p>
+
+                                            <AuthorizeView Policy="UpdateCommunityMemberRole" Resource="UserPermissions?.Permissions">
+                                                <Authorized>
+                                                    @if (isBeingRemoved) {
+                                                        <button type="button" class="p-1.5 bg-transparent hover:bg-white/15 rounded-full cursor-pointer" @onclick="@(e => UndoMemberRoleRemove(item.MemberId))">
+                                                            <Cross class="flex-none size-4 fill-white" Size="CrossSize.Large"/>
+                                                        </button>
+                                                    } else {
+                                                        <button type="button" class="p-1.5 bg-transparent hover:bg-white/15 rounded-full cursor-pointer" @onclick="@(e => ApplyMemberRoleRemove(item.MemberId))">
+                                                            <Cross class="flex-none size-4 fill-white" Size="CrossSize.Large"/>
+                                                        </button>
+                                                    }
+                                                </Authorized>
+                                            </AuthorizeView>
+                                        </div>
+                                    </ItemContent>
+
+                                    <EmptyContent>
+                                        <div class="flex flex-row justify-center items-center h-full">
+                                            <p class="text-gray-400 text-sm">No one is worthy enough...</p>
+                                        </div>
+                                    </EmptyContent>
+                                </Virtualize>
+                            </div>
+                        </section>
+
+                        <AuthorizeView Policy="UpdateCommunityMemberRole" Resource="UserPermissions?.Permissions">
+                            <Authorized>
+                                <section class="flex-1">
+                                    <p>Appending members:</p>
+
+                                    <div class="mt-1 border border-gray-600 bg-gray-725 shadow-md rounded-lg h-128 p-1 pt-0 flex flex-col">
+                                        <header class="flex-none flex flex-row items-center mt-1">
+                                            <SearchField @bind-Value="_roleMembersSearchString" class="mr-1"/>
+
+                                            <button type="button" class="button-primary flex-none" @onclick="HandleOpenAddMemberDialog">
+                                                Add Member
+                                            </button>
+                                        </header>
+
+                                        <div class="mt-1 overflow-y-auto scrollbar-hide">
+                                            <Virtualize ItemsProvider="AddingMembersItemProvider" @ref="_addingMembersVirtualizeReference">
+                                                <ItemContent Context="item">
+                                                    <div class="p-1 flex flex-row items-center rounded-md">
+                                                        <Avatar ImageSrc="@(string.IsNullOrEmpty(item.Avatar) ? null : ContentService.GetAssetPath(item.Avatar))" ImageAlt="@($"Avatar of {item.DisplayName}")" class="size-9 mr-1"/>
+
+                                                        <p class="flex-1">@item.DisplayName</p>
+
+                                                        <button type="button" class="p-1.5 bg-transparent hover:bg-white/15 rounded-full cursor-pointer" @onclick="@(e => RemoveFromAppendingCollection(item.MemberId))">
+                                                            <Cross class="flex-none size-4 fill-white" Size="CrossSize.Large"/>
+                                                        </button>
+                                                    </div>
+                                                </ItemContent>
+                                            </Virtualize>
+                                        </div>
+                                    </div>
+                                </section>
+                            </Authorized>
+                        </AuthorizeView>
+                    </div>
+                </ChildContent>
+            </Collapsible>
+
+            <Collapsible class="w-full mt-2 border-b border-b-gray-600 pb-1.5" @bind-IsExpanded="_expandActionCollapsible">
+                <HeaderContent>
+                    <span class="font-semibold">Actions</span>
+                </HeaderContent>
+
+                <ChildContent>
+                    <div class="mt-2 flex flex-col md:flex-row gap-1 md:items-center">
+                        <label class="flex-none input-label md:flex-1">Role Name</label>
+
+                        <AuthorizeView Policy="RenameCommunityRole" Resource="UserPermissions?.Permissions">
+                            <Authorized>
+                                @if (_selectedRole.Name == "Owners") {
+                                    <input type="text" class="h-10 md:flex-3 input-field" readonly disabled value="Owners"/>
+                                } else {
+                                    <InputText @ref="_roleRenameInputElement" @bind-Value="Model.RoleName" class="h-10 md:flex-3 input-field"/>
+
+                                    @if (_roleRenameInputElement is { Element: not null }) {
+                                        <Popover TargetReference="_roleRenameInputElement.Element.Value" IsShowing="!_editContext.IsValid(_roleNameField)" ArrowCssClass="bg-[#ff4b6a]" Placement="top" Offset="8">
+                                            <ValidationMessage For="() => Model.RoleName" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"/>
+                                        </Popover>
+                                    }
+                                }
+                            </Authorized>
+                        
+                            <NotAuthorized>
+                                <input type="text" class="h-10 md:flex-3 input-field" readonly disabled value="@Model.RoleName"/>
+                            </NotAuthorized>
+                        </AuthorizeView>
+                    </div>
+
+                    @if (_selectedRole.Name != "Owners") {
+                        <AuthorizeView Policy="DeleteCommunityRole" Resource="UserPermissions?.Permissions">
+                            <Authorized>
+                                <section class="mt-1 border border-red-500 p-2 rounded-lg">
+                                    <div class="flex flex-col md:flex-row items-center">
+                                        <div class="flex-4 mr-1">
+                                            <p>Delete Role</p>
+                                            <p class="text-sm text-gray-400">It will be gone forever, and ever...</p>
+                                        </div>
+
+                                        <button type="button" class="button-danger flex-1" @onclick="OpenDeleteRoleDialog">
+                                            Delete
+                                        </button>
+                                    </div>
+                                </section>
+                            </Authorized>
+                        </AuthorizeView>
+                    }
+                </ChildContent>
+            </Collapsible>
+        </EditForm>
+    </section>
+</div>
+
+<UnsavedChangesPopup IsShowing="_editContext.IsModified()" OnCancelRequest="HandleCancelEdit" OnSaveRequest="HandleSaveEdit"/>
+
+@code {
+    [Parameter] public Guid CommunityId { get; set; }
+    
+    [CascadingParameter] private MemberRolePermissions? UserPermissions { get; set; }
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+
+    // Role Selection Dropdown.
+    private List<RoleDTO>? _roles;
+    private bool _isCreatingRole;
+    private RoleDTO _selectedRole;
+
+    // Forms
+    [SupplyParameterFromForm(Name = "MainForm")] private InputModel Model { get; set; } = null!;
+    private EditContext _editContext = null!;
+    private RolePermissions _originalPermissions = null!;
+    private FieldIdentifier _removeRolesField, _addRolesField, _roleNameField;
+
+    private InputText? _roleRenameInputElement;
+    
+    private string _roleMembersSearchString = string.Empty;
+    private string _creatingRoleName = string.Empty;
+    
+    private Virtualize<MemberDTO>? _addingMembersVirtualizeReference;
+    
+    private ElementReference? _roleNameInputElement, _unsavedChangesShakeTarget;
+    private Virtualize<MemberDTO>? _roleMembersVirtualizeReference;
+    private string? _roleNameErrorMessage;
+
+    // Collapsible
+    private bool _expandPermissionCollapsible, _expandPeopleCollapsible, _expandActionCollapsible;
+    
+    // Authorization properties
+    private bool _allowsUpdateRolePermissions;
+
+    protected override void OnInitialized() {
+        Model ??= new() {
+            ChannelPermissions = CommunityRole.ChannelPermissionFlags.All,
+            RolePermissions = CommunityRole.RolePermissionFlags.All,
+            AccessPermissions = CommunityRole.AccessPermissionFlags.All,
+        };
+        _editContext = new(Model);
+
+        _removeRolesField = FieldIdentifier.Create(() => Model.RemoveRoles);
+        _addRolesField = FieldIdentifier.Create(() => Model.AddRoles);
+        _roleNameField = FieldIdentifier.Create(() => Model.RoleName);
+    }
+
+    protected override async Task OnParametersSetAsync() {
+        if (UserPermissions?.Permissions is { } permissions) {
+            Model.ChannelPermissions = permissions.Channel;
+            Model.RolePermissions = permissions.Role;
+            Model.AccessPermissions = permissions.Access;
+        }
+        
+        var authState = await AuthenticationState;
+        _allowsUpdateRolePermissions = (await AuthorizationService.AuthorizeAsync(authState.User, UserPermissions?.Permissions, new UpdateCommunityRolePermissionsRequirement())).Succeeded;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+
+            _roles = await dbContext.CommunityRoles
+                .Where(x => x.CommunityId == CommunityId)
+                .OrderBy(x => x.CreatedAt)
+                .Select(x => new RoleDTO(x.Id, x.Name))
+                .ToListAsync();
+
+            _selectedRole = await dbContext.CommunityRoles
+                .Where(x => x.CommunityId == CommunityId && x.Name == "Owners")
+                .Select(x => new RoleDTO(x.Id, x.Name))
+                .FirstAsync();
+
+            _originalPermissions = (await CommunityService.GetPermissionsAsync(_selectedRole.Id))!;
+
+            Model.RoleName = "Owners";
+            
+            CommunityEventDispatcher.OnRoleCreated += OnRoleCreated;
+            CommunityEventDispatcher.OnMemberRoleChanged += OnMemberRoleChanged;
+            CommunityEventDispatcher.OnRoleRenamed += OnRoleRenamed;
+            CommunityEventDispatcher.OnRoleDeleted += OnRoleDeleted;
+
+            ModalService.OnModalChanged += OnAddMemberPanelClosed;
+            
+            StateHasChanged();
+        }
+    }
+
+    private async Task SetSelectedRole(RoleDTO role) {
+        if (_editContext.IsModified()) {
+            await JavascriptRuntime.InvokeVoidAsync("window.animateShake", _unsavedChangesShakeTarget, 250, 2, 2);
+        } else {
+            _selectedRole = role;
+
+            var permissions = await CommunityService.GetPermissionsAsync(_selectedRole.Id);
+
+            if (permissions != null) {
+                Model.ChannelPermissions = permissions.Channel;
+                Model.RolePermissions = permissions.Role;
+                Model.AccessPermissions = permissions.Access;
+
+                _originalPermissions = permissions;
+            }
+
+            Model.RoleName = _selectedRole.Name;
+
+            if (_roleMembersVirtualizeReference != null) {
+                await _roleMembersVirtualizeReference.RefreshDataAsync();
+            }
+        }
+    }
+
+    private async Task HandleCancelEdit() {
+        Model.ChannelPermissions = _originalPermissions.Channel;
+        Model.RolePermissions = _originalPermissions.Role;
+        Model.AccessPermissions = _originalPermissions.Access;
+        Model.RemoveRoles.Clear();
+        Model.AddRoles.Clear();
+        Model.RoleName = _selectedRole.Name;
+
+        if (_roleMembersVirtualizeReference != null) {
+            await _roleMembersVirtualizeReference.RefreshDataAsync();
+        }
+        
+        if (_addingMembersVirtualizeReference != null) {
+            await _addingMembersVirtualizeReference.RefreshDataAsync();
+        }
+        
+        _editContext.MarkAsUnmodified();
+    }
+
+    private async Task HandleSaveEdit() {
+        if (!_editContext.Validate()) {
+            return;
+        }
+        
+        await CommunityService.UpdatePermissionsAsync(CommunityId, _selectedRole.Id, new(Model.ChannelPermissions, Model.RolePermissions, Model.AccessPermissions));
+
+        if (_editContext.IsModified(_removeRolesField)) {
+            await CommunityService.SetMembersRole(CommunityId, Model.RemoveRoles, null);
+            Model.RemoveRoles.Clear();
+
+            if (_roleMembersVirtualizeReference != null) {
+                await _roleMembersVirtualizeReference.RefreshDataAsync();
+            }
+        }
+
+        if (_editContext.IsModified(_addRolesField)) {
+            await CommunityService.SetMembersRole(CommunityId, Model.AddRoles, _selectedRole.Id);
+            Model.AddRoles.Clear();
+        
+            if (_addingMembersVirtualizeReference != null) {
+                await _addingMembersVirtualizeReference.RefreshDataAsync();
+            }
+        }
+
+        if (_editContext.IsModified(_roleNameField)) {
+            await CommunityService.RenameRole(CommunityId, _selectedRole.Id, Model.RoleName);
+        }
+        
+        _editContext.MarkAsUnmodified();
+    }
+
+    private async Task HandleCreateRole() {
+        _isCreatingRole = true;
+
+        try {
+            _creatingRoleName = _creatingRoleName.Trim();
+
+            if (string.IsNullOrEmpty(_creatingRoleName)) {
+                _roleNameErrorMessage = "Enter Role Name";
+                return;
+            }
+
+            if (_creatingRoleName.Length > 32) {
+                _roleNameErrorMessage = "Role name cannot exceed 32 characters.";
+                return;
+            }
+
+            var status = await CommunityService.CreateRoleAsync(CommunityId, _creatingRoleName);
+
+            switch (status) {
+                case ICommunityService.CreateRoleStatus.Failure:
+                    _roleNameErrorMessage = "Failed to create Role.";
+                    break;
+                    
+                case ICommunityService.CreateRoleStatus.NameExists:
+                    _roleNameErrorMessage = "This role name already exists.";
+                    break;
+                    
+                case ICommunityService.CreateRoleStatus.ReservedName:
+                    _roleNameErrorMessage = "This role name is reserved.";
+                    break;
+                    
+                case ICommunityService.CreateRoleStatus.Success:
+                    _creatingRoleName = string.Empty;
+                    break;
+            }
+        } finally {
+            _isCreatingRole = false;
+        }
+    }
+
+    private void OnRoleCreated(CommunityRoleCreatedEventArgs args) {
+        var role = args.Role;
+        
+        _roles?.Add(new(role.Id, role.Name));
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async ValueTask<ItemsProviderResult<MemberDTO>> RoleMembersProvider(ItemsProviderRequest request) {
+        await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        var query = dbContext.CommunityMembers
+            .Where(x => x.CommunityId == CommunityId && x.RoleId == _selectedRole.Id);
+
+        int count = await query.CountAsync();
+
+        if (count == 0) {
+            return new([], 0);
+        }
+
+        var members = await query
+            .Select(x => new MemberDTO {
+                Avatar = x.User.AvatarProfilePath,
+                DisplayName = x.User.DisplayName,
+                MemberId = x.Id,
+            })
+            .OrderBy(x => x.DisplayName)
+            .Skip(request.StartIndex)
+            .Take(request.Count)
+            .ToListAsync();
+
+        return new(members, count);
+    }
+
+    private async ValueTask<ItemsProviderResult<MemberDTO>> AddingMembersItemProvider(ItemsProviderRequest request) {
+        await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+        
+        var query = dbContext.CommunityMembers
+            .Where(x => Model.AddRoles.Contains(x.Id) && x.CommunityId == CommunityId);
+
+        int count = await query.CountAsync();
+
+        if (count == 0) {
+            return new([], 0);
+        }
+
+        var members = await query
+            .Select(x => new MemberDTO {
+                Avatar = x.User.AvatarProfilePath,
+                DisplayName = x.User.DisplayName,
+                MemberId = x.Id,
+            })
+            .OrderBy(x => x.DisplayName)
+            .Skip(request.StartIndex)
+            .Take(request.Count)
+            .ToListAsync();
+
+        return new(members, count);
+    }
+
+    private void HandleOpenAddMemberDialog() {
+        ModalService.Open<RoleAddMemberPanel>(name: "Community.ControlPanel.Roles.AddMember", parameters: new Dictionary<string, object?> {
+            [nameof(RoleAddMemberPanel.CommunityId)] = CommunityId,
+            [nameof(RoleAddMemberPanel.AddedMembers)] = Model.AddRoles,
+        });
+    }
+
+    private static readonly RenderFragment _roleDeleteBodyFragment =
+        @<p>
+            Are you sure you want to delete this role?<br/>
+            This action cannot be undone!
+        </p>;
+
+    private void OpenDeleteRoleDialog() {
+        ModalService.Open<DeleteConfirmationModal>(parameters: new Dictionary<string, object?> {
+            [nameof(DeleteConfirmationModal.Title)] = "Delete Role",
+            [nameof(DeleteConfirmationModal.Subtitle)] = "Committing massive job loss...",
+            [nameof(DeleteConfirmationModal.Body)] = _roleDeleteBodyFragment,
+            [nameof(DeleteConfirmationModal.OnConfirmDelete)] = EventCallback.Factory.Create(this, async () => {
+                await CommunityService.DeleteRole(CommunityId, _selectedRole.Id);
+            }),
+        });
+    }
+
+    private void OnAddMemberPanelClosed(ModalChangedEventArgs args) {
+        if (args is { Type: ModalChangedEventType.Closed, Instance.Name: "Community.ControlPanel.Roles.AddMember", ReturnValue: HashSet<Guid> { Count: > 0 } members }) {
+            Model.AddRoles = members;
+            _editContext.NotifyFieldChanged(_addRolesField);
+            
+            InvokeAsync(async () => {
+                if (_addingMembersVirtualizeReference != null) {
+                    await _addingMembersVirtualizeReference.RefreshDataAsync();
+                }
+            });
+        }
+    }
+
+    private void ApplyMemberRoleRemove(Guid memberId) {
+        Model.RemoveRoles.Add(memberId);
+        _editContext.NotifyFieldChanged(_removeRolesField);
+    }
+
+    private void UndoMemberRoleRemove(Guid memberId) {
+        Model.RemoveRoles.Remove(memberId);
+
+        if (Model.RemoveRoles.Count == 0) {
+            _editContext.MarkAsUnmodified(_removeRolesField);
+        }
+    }
+
+    private async Task RemoveFromAppendingCollection(Guid memberId) {
+        if (Model.AddRoles.Remove(memberId)) {
+            if (_addingMembersVirtualizeReference != null) {
+                await _addingMembersVirtualizeReference.RefreshDataAsync();
+            }
+        }
+    }
+
+    private void OnMemberRoleChanged(MemberRoleChangedEventArgs args) {
+        InvokeAsync(async () => {
+            var authState = await AuthenticationState;
+            _allowsUpdateRolePermissions = (await AuthorizationService.AuthorizeAsync(authState.User, UserPermissions?.Permissions, new UpdateCommunityRolePermissionsRequirement())).Succeeded;
+
+            if (args.RoleId == _selectedRole.Id && _roleMembersVirtualizeReference != null) {
+                await _roleMembersVirtualizeReference.RefreshDataAsync();
+                StateHasChanged();
+            }
+        });
+    }
+
+    private void OnRoleRenamed(CommunityRoleRenamedEventArgs args) {
+        if (_roles == null) return;
+        
+        InvokeAsync(() => {
+            for (int i = 0; i < _roles.Count; i++) {
+                if (_roles[i].Id == args.RoleId) {
+                    _roles[i] = _roles[i] with {
+                        Name = args.Name,
+                    };
+                }
+            }
+            
+            StateHasChanged();
+        });
+    }
+
+    private void OnRoleDeleted(CommunityRoleDeletedEventArgs args) {
+        if (_roles == null) return;
+            
+        InvokeAsync(async () => {
+            int index = -1;
+            
+            for (int i = 0; i < _roles.Count; i++) {
+                if (_roles[i].Id == args.RoleId) {
+                    _roles.RemoveAt(i);
+                    index = i;
+                    break;
+                }
+            }
+
+            await SetSelectedRole(_roles[int.Clamp(index, 0, _roles.Count - 1)]);
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose() {
+        ModalService.OnModalChanged -= OnAddMemberPanelClosed;
+        
+        CommunityEventDispatcher.OnRoleCreated -= OnRoleCreated;
+        CommunityEventDispatcher.OnMemberRoleChanged -= OnMemberRoleChanged;
+        CommunityEventDispatcher.OnRoleRenamed -= OnRoleRenamed;
+        CommunityEventDispatcher.OnRoleDeleted -= OnRoleDeleted;
+    }
+
+    private readonly record struct RoleDTO(Guid Id, string Name) {
+        public override string ToString() => Name;
+    }
+
+    private record struct MemberDTO(Guid MemberId, string DisplayName, string? Avatar);
+
+    private sealed class InputModel {
+        public CommunityRole.RolePermissionFlags RolePermissions { get; set; }
+        public CommunityRole.ChannelPermissionFlags ChannelPermissions { get; set; }
+        public CommunityRole.AccessPermissionFlags AccessPermissions { get; set; }
+        
+        public bool CreateRole {
+            get => RolePermissions.HasFlag(CommunityRole.RolePermissionFlags.CreateRole);
+            set => RolePermissions = value ? RolePermissions | CommunityRole.RolePermissionFlags.CreateRole : RolePermissions & ~CommunityRole.RolePermissionFlags.CreateRole;
+        }
+
+        public bool DeleteRole {
+            get => RolePermissions.HasFlag(CommunityRole.RolePermissionFlags.DeleteRole);
+            set => RolePermissions = value ? RolePermissions | CommunityRole.RolePermissionFlags.DeleteRole : RolePermissions & ~CommunityRole.RolePermissionFlags.DeleteRole;
+        }
+        
+        public bool RenameRole {
+            get => RolePermissions.HasFlag(CommunityRole.RolePermissionFlags.RenameRole);
+            set => RolePermissions = value ? RolePermissions | CommunityRole.RolePermissionFlags.RenameRole : RolePermissions & ~CommunityRole.RolePermissionFlags.RenameRole;
+        }
+
+        public bool ModifyRolePermissions {
+            get => RolePermissions.HasFlag(CommunityRole.RolePermissionFlags.ModifyRolePermissions);
+            set => RolePermissions = value ? RolePermissions | CommunityRole.RolePermissionFlags.ModifyRolePermissions : RolePermissions & ~CommunityRole.RolePermissionFlags.ModifyRolePermissions;
+        }
+
+        public bool ModifyMemberRole {
+            get => RolePermissions.HasFlag(CommunityRole.RolePermissionFlags.ModifyMemberRole);
+            set => RolePermissions = value ? RolePermissions | CommunityRole.RolePermissionFlags.ModifyMemberRole : RolePermissions & ~CommunityRole.RolePermissionFlags.ModifyMemberRole;
+        }
+        
+        public bool CreateChannelCategory {
+            get => ChannelPermissions.HasFlag(CommunityRole.ChannelPermissionFlags.CreateChannelCategory);
+            set => ChannelPermissions = value ? ChannelPermissions | CommunityRole.ChannelPermissionFlags.CreateChannelCategory : ChannelPermissions & ~CommunityRole.ChannelPermissionFlags.CreateChannelCategory;
+        }
+
+        public bool DeleteChannelCategory {
+            get => ChannelPermissions.HasFlag(CommunityRole.ChannelPermissionFlags.DeleteChannelCategory);
+            set => ChannelPermissions = value ? ChannelPermissions | CommunityRole.ChannelPermissionFlags.DeleteChannelCategory : ChannelPermissions & ~CommunityRole.ChannelPermissionFlags.DeleteChannelCategory;
+        }
+        
+        public bool CreateChannel {
+            get => ChannelPermissions.HasFlag(CommunityRole.ChannelPermissionFlags.CreateChannel);
+            set => ChannelPermissions = value ? ChannelPermissions | CommunityRole.ChannelPermissionFlags.CreateChannel : ChannelPermissions & ~CommunityRole.ChannelPermissionFlags.CreateChannel;
+        }
+        
+        public bool DeleteChannel {
+            get => ChannelPermissions.HasFlag(CommunityRole.ChannelPermissionFlags.DeleteChannel);
+            set => ChannelPermissions = value ? ChannelPermissions | CommunityRole.ChannelPermissionFlags.DeleteChannel : ChannelPermissions & ~CommunityRole.ChannelPermissionFlags.DeleteChannel;
+        }
+        
+        public bool AccessControlPanel {
+            get => AccessPermissions.HasFlag(CommunityRole.AccessPermissionFlags.AccessControlPanel);
+            set => AccessPermissions = value ? AccessPermissions | CommunityRole.AccessPermissionFlags.AccessControlPanel : AccessPermissions & ~CommunityRole.AccessPermissionFlags.AccessControlPanel;
+        }
+
+        public HashSet<Guid> RemoveRoles { get; set; } = [];
+        public HashSet<Guid> AddRoles { get; set; } = [];
+
+        [StringLength(32, ErrorMessage = "Role Name cannot be longer than 32 characters.")]
+        [Required(ErrorMessage = "Role Name is required.")] 
+        public string RoleName { get; set; } = string.Empty;
+    }
+}

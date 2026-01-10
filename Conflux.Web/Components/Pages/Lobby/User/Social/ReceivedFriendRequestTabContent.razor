@@ -1,0 +1,206 @@
+﻿@using Conflux.Components.Shared
+@using Conflux.Components.Shared.Icons
+@using Conflux.Domain.Events
+@using Conflux.Helpers
+@using Conflux.Services.Abstracts
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@using System.Collections.Concurrent
+@using System.Diagnostics
+@using System.Security.Claims
+
+@implements IDisposable
+
+@inject ILogger<SentFriendRequestTabContent> Logger
+@inject UserManager<ApplicationUser> UserManager
+@inject IFriendshipService FriendshipService
+@inject IFriendshipEventDispatcher NotificationService
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+
+<div class="flex-none px-3 outline-none border rounded-lg bg-gray-700/60 border-gray-600 focus-within:ring-2 focus-within:ring-indigo-600 transition duration-300 flex flex-row items-center">
+    <Search class="size-4 fill-white flex-none mr-2"/>
+
+    <input type="text" class="flex-1 outline-none border-none w-full h-11 focus:outline-none" @bind="_nameSearch" @bind:after="HandleSearchDebouncing" maxlength="32">
+</div>
+
+<div class="flex-1 overflow-auto mt-2 border border-gray-600 rounded-lg">
+    <Virtualize @ref="_virtualizeContainer" ItemsProvider="LoadProvider" OverscanCount="3">
+        <ChildContent Context="item">
+            <div @key="item.Id" class="h-16 px-4 py-1 border-b border-b-gray-600 flex flex-row items-center hover:bg-gray-600/40 group">
+                <Avatar ImageSrc="@item.Sender.AvatarProfilePath" ImageAlt="Avatar" class="flex-none h-12 mr-2"/>
+                
+                <div class="flex-1 flex flex-col">
+                    <p class="font-semibold">@item.Sender.DisplayName</p>
+                    <p class="text-sm">@item.Sender.UserName</p>
+                </div>
+                
+                <div class="flex-none flex-row gap-1 hidden group-hover:flex items-center">
+                    @{
+                        var action = _processingRequests.GetValueOrDefault(item);
+                    }
+                    
+                    <ProcessingStateButton IsProcessing="@(action == FriendRequestProcessingAction.Accepting)" class="p-2 rounded-full group" NormalCssClass="@(action == FriendRequestProcessingAction.None ? "hover:bg-gray-400/50 cursor-pointer" : string.Empty)" disabled="@(action == FriendRequestProcessingAction.Rejecting)" @onclick="@(() => HandleAcceptFriendRequest(item))">
+                        <ChildContent>
+                            <Check Variation="CheckVariation.Normal2" class="size-6 fill-white group-disabled:fill-gray-400"/>
+                        </ChildContent>
+                        
+                        <ProcessingContent>
+                            <Spinner class="size-6 fill-white group-disabled:fill-gray-400"/>
+                        </ProcessingContent>
+                    </ProcessingStateButton>
+                    
+                    <ProcessingStateButton IsProcessing="@(action == FriendRequestProcessingAction.Rejecting)" class="p-2 rounded-full group" NormalCssClass="@(action == FriendRequestProcessingAction.None ? "hover:bg-gray-400/50 cursor-pointer" : string.Empty)" disabled="@(action == FriendRequestProcessingAction.Accepting)" @onclick="@(() => HandleRejectFriendRequest(item))">
+                        <ChildContent>
+                            <Cross Size="CrossSize.Normal" class="size-6 fill-white group-disabled:fill-gray-400"/>
+                        </ChildContent>
+                        
+                        <ProcessingContent>
+                            <Spinner class="size-6 fill-white group-disabled:fill-gray-400"/>
+                        </ProcessingContent>
+                    </ProcessingStateButton>
+                    
+                    <button class="p-2 rounded-full hover:bg-gray-400/50 cursor-pointer group" disabled="@(action != FriendRequestProcessingAction.None)">
+                        <ThreeDots class="size-6 fill-white group-disabled:fill-gray-400"/>
+                    </button>
+                </div>
+            </div>
+        </ChildContent>
+        
+        <EmptyContent>
+            <div class="flex flex-row justify-center items-center h-full">
+                <p class="text-gray-400">Social awkward eh?</p>
+            </div>
+        </EmptyContent>
+    </Virtualize>
+</div>
+
+@code {
+    private string _nameSearch = string.Empty;
+    private string _normalizedNameSearch = string.Empty;
+
+    // TODO: First search always have to wait before result display, can we skip that and only wait on
+    // later searches?
+    private Debouncer _searchDebouncer = null!;
+
+    private Virtualize<FriendRequest> _virtualizeContainer = null!;
+
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+    private string _userId = null!;
+
+    private readonly ConcurrentDictionary<FriendRequest, FriendRequestProcessingAction> _processingRequests = [];
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            _searchDebouncer = new(OnDebounceEnd, TimeSpan.FromMilliseconds(250));
+
+            var authState = await AuthenticationState;
+            _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            
+            Debug.Assert(_userId != null);
+
+            NotificationService.OnFriendRequestReceived += OnFriendRequestReceivedNotification;
+            NotificationService.OnFriendRequestCanceled += OnFriendRequestCanceledNotification;
+        }
+    }
+
+    private async Task HandleSearchDebouncing() {
+        await _searchDebouncer.Start();
+    }
+
+    private async Task OnDebounceEnd(CancellationToken token) {
+        _normalizedNameSearch = UserManager.NormalizeName(_nameSearch.Trim());
+        
+        await _virtualizeContainer.RefreshDataAsync();
+        StateHasChanged();
+    }
+
+    private async ValueTask<ItemsProviderResult<FriendRequest>> LoadProvider(ItemsProviderRequest request) {
+        await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+        
+        IQueryable<FriendRequest> query = dbContext.FriendRequests
+            .Where(x => x.Status == FriendRequestStatus.Pending && x.ReceiverId == _userId)
+            .Include(r => r.Sender);
+
+        if (!string.IsNullOrEmpty(_normalizedNameSearch)) {
+            query = query
+                .Where(r => 
+                    r.Sender.UserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(r.Sender.DisplayName, $"%{_normalizedNameSearch}%")
+                );
+        }
+        
+        int totalCount = await query.CountAsync();
+
+        if (totalCount == 0) {
+            return new([], 0);
+        }
+
+        var requests = await query
+            .OrderByDescending(r => r.CreatedAt)
+            .Skip(request.StartIndex)
+            .Take(request.Count)
+            .ToListAsync();
+        
+        return new(requests, totalCount);
+    }
+
+    private async Task HandleRejectFriendRequest(FriendRequest request) {
+        if (_processingRequests.TryAdd(request, FriendRequestProcessingAction.Rejecting)) {
+            try {
+                if (!await FriendshipService.RejectFriendRequestAsync(request.Id)) {
+                    Logger.LogWarning("Failed to reject friend request from user {from} to user {id}.", request.SenderId, request.ReceiverId);
+                }
+            } finally {
+                _processingRequests.TryRemove(request, out _);
+
+                if (_processingRequests.IsEmpty) {
+                    await _virtualizeContainer.RefreshDataAsync();
+                    StateHasChanged();
+                }
+            }
+        }
+    }
+    
+    private async Task HandleAcceptFriendRequest(FriendRequest request) {
+        if (_processingRequests.TryAdd(request, FriendRequestProcessingAction.Accepting)) {
+            try {
+                if (!await FriendshipService.AcceptFriendRequestAsync(request.Id)) {
+                    Logger.LogWarning("Failed to accept friend request from user {from} to user {id}.", request.SenderId, request.ReceiverId);
+                }
+            } finally {
+                _processingRequests.TryRemove(request, out _);
+
+                if (_processingRequests.IsEmpty) {
+                    await _virtualizeContainer.RefreshDataAsync();
+                    StateHasChanged();
+                }
+            }
+        }
+    }
+    
+    private void OnFriendRequestReceivedNotification(FriendRequestReceivedEventArgs eventArgs) {
+        InvokeAsync(async () => {
+            await _virtualizeContainer.RefreshDataAsync();
+            StateHasChanged();
+        });
+    }
+
+    private void OnFriendRequestCanceledNotification(FriendRequestCanceledEventArgs eventArgs) {
+        InvokeAsync(async () => {
+            await _virtualizeContainer.RefreshDataAsync();
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose() {
+        _searchDebouncer?.Dispose();
+        NotificationService.OnFriendRequestReceived -= OnFriendRequestReceivedNotification;
+        NotificationService.OnFriendRequestCanceled -= OnFriendRequestCanceledNotification;
+    }
+
+    private enum FriendRequestProcessingAction {
+        None,
+        Accepting,
+        Rejecting,
+    }
+}

@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Conflux", "Conflux\Conflux.csproj", "{1B49ECF2-4BEA-4BC3-AC49-2C00950DC1A5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Conflux.Web", "Conflux.Web\Conflux.Web.csproj", "{1B49ECF2-4BEA-4BC3-AC49-2C00950DC1A5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Conflux.Domain", "Conflux.Domain\Conflux.Domain.csproj", "{802FD04C-98E4-4598-8330-B5A54B71324F}"
 EndProject

@@ -1,0 +1,268 @@
+﻿using Conflux.Application.Abstracts;
+using Conflux.Domain;
+using Conflux.Domain.Entities;
+using Conflux.Domain.Events;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Net;
+
+namespace Conflux.Application.Implementations;
+
+public sealed class ConversationService(
+    IDbContextFactory<ApplicationDbContext> dbContextFactory,
+    IContentService contentService,
+    IConversationEventDispatcher eventDispatcher,
+    ILogger<ConversationService> logger
+) : IConversationService {
+    public async Task<Conversation> GetOrCreateDirectConversationAsync(Guid friendRequestId) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+
+        Conversation? conversation = await dbContext.Conversations
+            .Where(c => c.Type == ConversationType.DirectMessage && c.FriendRequestId == friendRequestId)
+            .FirstOrDefaultAsync();
+
+        if (conversation != null) {
+            return conversation;
+        }
+
+        conversation = new() {
+            Type = ConversationType.DirectMessage,
+            FriendRequestId = friendRequestId,
+        };
+
+        dbContext.Conversations.Add(conversation);
+            
+        await dbContext.SaveChangesAsync();
+
+        return conversation;
+    }
+
+    public async Task<IConversationService.SendStatus> SendMessageAsync(Guid conversationId, string senderId, string? body, Guid? replyMessageId, IReadOnlyCollection<IConversationService.UploadingAttachment> attachments, CancellationToken cancellationToken = default) {
+        // TODO: Rewrite this, this is goddamn ugly.
+        
+        await using (var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken)) {
+            await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+            
+            // Upload the attachments.
+            var attachmentPaths = new List<(string Name, MessageAttachmentType Type, string Path)>(attachments.Count);
+
+            try {
+                foreach (var attachment in attachments) {
+                    var path = await contentService.UploadMessageAttachmentAsync(attachment.Stream, attachment.Type, cancellationToken);
+                    
+                    attachmentPaths.Add(new(attachment.Name, attachment.Type, path));
+                }
+            } catch (Exception e) {
+                logger.LogError(e, "Failed to upload message attachment.");
+
+                for (int i = 0; i < attachmentPaths.Count; i++) {
+                    await contentService.DeleteMessageAttachmentAsync(attachmentPaths[i].Path);
+                }
+                
+                return IConversationService.SendStatus.AttachmentFailure;
+            }
+
+            IConversationService.SendStatus returnStatus = IConversationService.SendStatus.Success;
+
+            try {
+                // Register the message to database.
+                ChatMessage message = new() {
+                    ConversationId = conversationId,
+                    SenderId = senderId,
+                    Body = body,
+                    ReplyMessageId = replyMessageId,
+                };
+
+                dbContext.ChatMessages.Add(message);
+
+                if (await dbContext.SaveChangesAsync(cancellationToken) > 0) {
+                    // Message uploaded successfully, now register the attachments to the database.
+
+                    dbContext.MessageAttachments.AddRange(attachmentPaths.Select(tuple => new MessageAttachment {
+                        MessageId = message.Id,
+                        Name = tuple.Name,
+                        PhysicalPath = tuple.Path,
+                        Type = tuple.Type,
+                    }));
+
+                    if (await dbContext.SaveChangesAsync(cancellationToken) == attachmentPaths.Count) {
+                        await transaction.CommitAsync(cancellationToken);
+
+                        returnStatus = IConversationService.SendStatus.Success;
+
+                        await eventDispatcher.Dispatch(new MessageReceivedEventArgs(message, conversationId, senderId));
+
+                        return returnStatus;
+                    }
+
+                    returnStatus = IConversationService.SendStatus.AttachmentFailure;
+                } else {
+                    returnStatus = IConversationService.SendStatus.MessageFailure;
+                }
+            } catch (OperationCanceledException) {
+                returnStatus = IConversationService.SendStatus.Canceled;
+            } catch (Exception e) {
+                returnStatus = IConversationService.SendStatus.Failure;
+                
+                logger.LogError(e, "Failed to send message.");
+            } finally {
+                if (returnStatus != IConversationService.SendStatus.Success) {
+                    await transaction.RollbackAsync(cancellationToken);
+                    
+                    foreach (var attachmentPath in attachmentPaths) {
+                        await contentService.DeleteMessageAttachmentAsync(attachmentPath.Path);
+                    }
+                }
+            }
+
+            return returnStatus;
+        }
+    }
+
+    public async Task<bool> DeleteMessageAsync(Guid messageId, string senderId) {
+        await using (var dbContext = await dbContextFactory.CreateDbContextAsync()) {
+            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+            // Get the conversation ID and check exists at the same time.
+            Guid conversationId = await dbContext.ChatMessages
+                .Where(m => m.Id == messageId && m.SenderId == senderId && m.DeletedAt == null)
+                .Select(m => m.ConversationId)
+                .FirstOrDefaultAsync();
+
+            if (conversationId == Guid.Empty) return false;
+
+            DateTime utcNow = DateTime.UtcNow;
+            
+            int rowsAffected = await dbContext.ChatMessages
+                .Where(m => m.Id == messageId && m.SenderId == senderId && m.DeletedAt == null)
+                .ExecuteUpdateAsync(builder => {
+                    builder.SetProperty(m => m.DeletedAt, utcNow);
+                });
+
+            if (rowsAffected > 0) {
+                await eventDispatcher.Dispatch(new MessageDeletedEventArgs(messageId, conversationId));
+
+                return true;
+            }
+            
+            return false;
+        }
+    }
+
+    public async Task<bool> EditMessageAsync(Guid messageId, string body) {
+        await using (var dbContext = await dbContextFactory.CreateDbContextAsync()) {
+            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+            // Get the conversation ID and check exists at the same time.
+            Guid conversationId = await dbContext.ChatMessages
+                .Where(m => m.Id == messageId && m.DeletedAt == null)
+                .Select(m => m.ConversationId)
+                .FirstOrDefaultAsync();
+
+            if (conversationId == Guid.Empty) return false;
+
+            DateTime utcNow = DateTime.UtcNow;
+            
+            int rowsAffected = await dbContext.ChatMessages
+                .Where(m => m.Id == messageId && m.DeletedAt == null)
+                .ExecuteUpdateAsync(builder => {
+                    builder.SetProperty(m => m.Body, body);
+                    builder.SetProperty(m => m.LastModifiedAt, utcNow);
+                });
+
+            if (rowsAffected > 0) {
+                await eventDispatcher.Dispatch(new MessageEditedEventArgs(messageId, conversationId, body));
+
+                return true;
+            }
+            
+            return false;
+        }
+    }
+    
+    public async Task<bool> EditMessageAsync(Guid messageId, string senderId, string? body) {
+        await using (var dbContext = await dbContextFactory.CreateDbContextAsync()) {
+            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+            // Get the conversation ID and check exists at the same time.
+            Guid conversationId = await dbContext.ChatMessages
+                .Where(m => m.Id == messageId && m.SenderId == senderId && m.DeletedAt == null && m.Body != body)
+                .Select(m => m.ConversationId)
+                .FirstOrDefaultAsync();
+
+            if (conversationId == Guid.Empty) return false;
+
+            DateTime utcNow = DateTime.UtcNow;
+            
+            int rowsAffected = await dbContext.ChatMessages
+                .Where(m => m.Id == messageId && m.SenderId == senderId && m.DeletedAt == null)
+                .ExecuteUpdateAsync(builder => {
+                    builder.SetProperty(m => m.Body, body);
+                    builder.SetProperty(m => m.LastModifiedAt, utcNow);
+                });
+
+            if (rowsAffected > 0) {
+                await eventDispatcher.Dispatch(new MessageEditedEventArgs(messageId, conversationId, body));
+
+                return true;
+            }
+            
+            return false;
+        }
+    }
+
+    public async Task<IConversationService.RenderingMessages> LoadMessagesBeforeTimestampAsync(Guid conversationId, DateTime beforeTimestamp, int take) {
+        await using (var dbContext = await dbContextFactory.CreateDbContextAsync()) {
+            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+            
+            List<IConversationService.RenderingMessageDTO> messages = await dbContext.ChatMessages
+                .Where(m => m.ConversationId == conversationId && m.DeletedAt == null)
+                .OrderByDescending(m => m.CreatedAt)
+                .Where(m => m.CreatedAt < beforeTimestamp)
+                .Take(take)
+                .Include(m => m.Sender)
+                .Include(m => m.ReplyMessage)
+                .Select(m => new IConversationService.RenderingMessageDTO(m.Id, m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt, m.LastModifiedAt != null, m.ReplyMessage != null ? m.ReplyMessageId : null, m.Attachments.Select(a => new IConversationService.MessageAttachmentDTO(a.Name, a.Type, a.PhysicalPath)).ToArray()))
+                .Reverse()
+                .ToListAsync();
+
+            List<Guid> replyMessageIds = messages.Where(m => m.ReplyMessageId.HasValue).Select(m => m.ReplyMessageId!.Value).ToList();
+
+            List<IConversationService.RenderingReplyMessageDTO> replyMessages = await dbContext.ChatMessages
+                .Where(m => replyMessageIds.Contains(m.Id) && m.DeletedAt == null)
+                .Include(m => m.Sender)
+                .Select(m => new IConversationService.RenderingReplyMessageDTO(m.Id, m.Sender.DisplayName, m.Body))
+                .ToListAsync();
+            
+            return new(messages, replyMessages);
+        }
+    }
+    
+    public async Task<IConversationService.RenderingMessages> LoadMessagesAfterTimestampAsync(Guid conversationId, DateTime beforeTimestamp, int take) {
+        await using (var dbContext = await dbContextFactory.CreateDbContextAsync()) {
+            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+            
+            List<IConversationService.RenderingMessageDTO> messages = await dbContext.ChatMessages
+                .Where(m => m.ConversationId == conversationId && m.DeletedAt == null)
+                .OrderBy(m => m.CreatedAt)
+                .Where(m => m.CreatedAt > beforeTimestamp)
+                .Take(take)
+                .Include(m => m.Sender)
+                .Select(m => new IConversationService.RenderingMessageDTO(m.Id, m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt, m.LastModifiedAt != null, m.ReplyMessage != null ? m.DeletedAt != null ? m.ReplyMessageId : Guid.Empty : null, m.Attachments.Select(a => new IConversationService.MessageAttachmentDTO(a.Name, a.Type, a.PhysicalPath)).ToArray()))
+                .ToListAsync();
+
+            List<Guid> replyMessageIds = messages.Where(m => m.ReplyMessageId.HasValue).Select(m => m.ReplyMessageId!.Value).ToList();
+
+            List<IConversationService.RenderingReplyMessageDTO> replyMessages = await dbContext.ChatMessages
+                .Where(m => replyMessageIds.Contains(m.Id) && m.DeletedAt == null)
+                .Include(m => m.Sender)
+                .Select(m => new IConversationService.RenderingReplyMessageDTO(m.Id, m.Sender.DisplayName, m.Body))
+                .ToListAsync();
+            
+            return new(messages, replyMessages);
+        }
+    }
+}

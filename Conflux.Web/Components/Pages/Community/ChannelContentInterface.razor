@@ -1,0 +1,145 @@
+﻿@using Conflux.Application.Dto
+@using Conflux.Components.Shared
+@using Conflux.Components.Shared.Icons
+@using Microsoft.EntityFrameworkCore
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+
+<div class="flex flex-col size-full overflow-hidden">
+    <header class="flex-none basis-10 px-2 border-b border-b-gray-600 bg-gray-725 flex flex-row items-center gap-2">
+        @switch (_state) {
+            case State.InitialLoading:
+                <p class="animate-pulse">Loading...</p>
+                break;
+
+            case State.InvalidChannel:
+                <p>But nobody came...</p>
+                break;
+
+            case State.SequentialLoading or State.Success:
+            {
+                ChannelInformationDTO channelInfo = _channelInfo!.Value;
+
+                switch (channelInfo.Type) {
+                    case CommunityChannelType.Text:
+                        <SpeechBubble ArrowDirection="ChatArrowDirection.Left" Content="ChatContent.Text"
+                                      class="size-5 fill-white flex-none"/>
+                        break;
+
+                    case CommunityChannelType.Audio:
+                        <Volume Variation="VolumeVariations.Up" Filled="false" class="size-5 fill-white flex-none"/>
+                        break;
+                }
+
+                <p class="flex-none">@channelInfo.ChannelName</p>
+                break;
+            }
+        }
+    </header>
+    
+    <section class="flex-1 overflow-hidden">
+        @switch (_state) {
+            case State.InitialLoading or State.SequentialLoading:
+                <div class="size-full flex justify-center items-center">
+                    <Spinner class="size-8 fill-white"/>
+                </div>
+                break;
+                
+            case State.InvalidChannel:
+                <div class="size-full flex justify-center items-center">
+                    <p class="text-gray-400 text-sm">You shouldn't be here...</p>
+                </div>
+                break;
+                
+            case State.Success:
+                <div class="flex flex-row h-full">
+                    <MessagingArea class="flex-1" ConversationId="_channelInfo!.Value.ConversationId" LoadCount="ApplicationConstants.MessageLoadCount"/>
+
+                    <aside class="flex-none basis-80 hidden md:flex bg-gray-750 border-l border-l-gray-600 px-1 pt-1 flex-col gap-1 overflow-y-hidden">
+                        <SelectionDropdown @bind-Value="_selectedRole" ContainerCssClass="w-full" ButtonCssClass="w-full h-9" PopoverCssClass="w-full flex-none">
+                            <ValueDisplayContent Context="Value">
+                                @if (Value.RoleId == Guid.Empty) {
+                                    <p>None</p>
+                                } else {
+                                    <p>@Value.RoleName</p>
+                                }
+                            </ValueDisplayContent>
+
+                            <ChildContent>
+                                <SelectionOption Value="@(new RoleDTO(string.Empty, Guid.Empty))" class="select-none px-1.5 py-1 text-left bg-transparent hover:bg-white/15 active:bg-black/25 cursor-pointer rounded-md">None</SelectionOption>
+
+                                @foreach (var role in _communityRoles) {
+                                    <SelectionOption Value="role" class="select-none px-1.5 py-1 text-left bg-transparent hover:bg-white/15 active:bg-black/25 cursor-pointer rounded-md">@role.RoleName</SelectionOption>
+                                }
+                            </ChildContent>
+                        </SelectionDropdown>
+
+                        <CommunityMemberList RoleId="@(_selectedRole.RoleId == Guid.Empty ? null : _selectedRole.RoleId)" class="flex-1 overflow-y-auto scrollbar-hide pb-1"/>
+                    </aside>
+                </div>
+                break;
+        }
+    </section>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public required Guid CommunityId { get; set; }
+    [Parameter, EditorRequired] public required Guid ChannelId { get; set; }
+
+    private Guid _previousCommunityId, _previousChannelId;
+
+    [CascadingParameter] private RolePermissions? UserPermissions { get; set; }
+
+    private State _state;
+    private ChannelInformationDTO? _channelInfo;
+
+    private RoleDTO _selectedRole;
+    private List<RoleDTO> _communityRoles = [];
+    
+    protected override void OnInitialized() {
+        _state = State.InitialLoading;
+    }
+
+    protected override void OnParametersSet() {
+        if (_state is not State.InitialLoading and not State.SequentialLoading && (_previousCommunityId != CommunityId || _previousChannelId != ChannelId)) {
+            _state = State.SequentialLoading;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (_state is State.InitialLoading or State.SequentialLoading) {
+            await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+            
+            _channelInfo = await dbContext.CommunityChannels
+                .Where(x => x.Id == ChannelId && x.ChannelCategory.CommunityId == CommunityId)
+                .Select(x => new ChannelInformationDTO(x.Name, x.Type, x.Conversation.Id))
+                .Cast<ChannelInformationDTO?>()
+                .FirstOrDefaultAsync();
+
+            _communityRoles = await dbContext.CommunityRoles
+                .Where(x => x.CommunityId == CommunityId)
+                .Select(x => new RoleDTO(x.Name, x.Id))
+                .ToListAsync();
+
+            _state = _channelInfo.HasValue ? State.Success : State.InvalidChannel;
+            
+            StateHasChanged();
+
+            _previousCommunityId = CommunityId;
+            _previousChannelId = ChannelId;
+        }
+    }
+
+    private enum State {
+        InitialLoading,
+        SequentialLoading,
+        InvalidChannel,
+        Success,
+    }
+
+    private readonly record struct ChannelInformationDTO(string ChannelName, CommunityChannelType Type, Guid ConversationId);
+
+    private readonly record struct RoleDTO(string RoleName, Guid RoleId);
+
+}
