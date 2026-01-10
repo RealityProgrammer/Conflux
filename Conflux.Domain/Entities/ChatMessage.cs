@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Conflux.Database.Entities;
+namespace Conflux.Domain.Entities;
 
 public class ChatMessage : ICreatedAtColumn {
     // TODO: Media (Image, Audio, File, etc...), Replying, Mentioning.

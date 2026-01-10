@@ -1,11 +1,11 @@
-﻿using Conflux.Database.Entities;
+﻿using Conflux.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ValueGeneration;
 using System.Runtime.CompilerServices;
 
-namespace Conflux.Database;
+namespace Conflux.Domain;
 
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : IdentityDbContext<ApplicationUser>(options) {
     public DbSet<FriendRequest> FriendRequests { get; set; } = null!;
@@ -61,12 +61,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.HasKey(request => request.Id);
             
             entity.HasIndex(request => new { request.SenderId, request.ReceiverId }).IsUnique();
-
-            // entity.HasOne(request => request.Conversation)
-            //     .WithOne(conversation => conversation.FriendRequest)
-            //     .HasForeignKey<Conversation>(request => request.FriendRequestId)
-            //     .OnDelete(DeleteBehavior.Cascade)
-            //     .IsRequired();
         });
 
         builder.Entity<Conversation>(entity => {
@@ -166,12 +160,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .OnDelete(DeleteBehavior.Cascade);
         }).Entity<CommunityChannel>(entity => {
             entity.HasKey(x => x.Id);
-            
-            // entity.HasOne(request => request.Conversation)
-            //     .WithOne(conversation => conversation.CommunityChannel)
-            //     .HasForeignKey<Conversation>(conversation => conversation.CommunityChannelId)
-            //     .OnDelete(DeleteBehavior.Cascade)
-            //     .IsRequired();
         });
     }
 

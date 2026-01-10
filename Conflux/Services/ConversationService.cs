@@ -1,5 +1,5 @@
-﻿using Conflux.Database;
-using Conflux.Database.Entities;
+﻿using Conflux.Domain;
+using Conflux.Domain.Entities;
 using Conflux.Services.Abstracts;
 using Conflux.Services.Hubs;
 using Microsoft.AspNetCore.Components;

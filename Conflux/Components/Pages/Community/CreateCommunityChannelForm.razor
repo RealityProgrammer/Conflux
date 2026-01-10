@@ -1,6 +1,5 @@
 ﻿@using Conflux.Components.Shared
 @using Conflux.Components.Shared.Icons
-@using Conflux.Database.Entities
 @using System.ComponentModel.DataAnnotations
 
 <EditForm EditContext="_channelCreationEditContext" OnValidSubmit="HandleSubmitChannelCreation">
@@ -68,7 +67,10 @@
     }
     
     public sealed class InputModel {
-        [Required(ErrorMessage = "Name is required."), StringLength(32, ErrorMessage = "Name cannot be longer than 32 characters.")] public string Name { get; set; }
+        [Required(ErrorMessage = "Name is required.")]
+        [StringLength(32, ErrorMessage = "Name cannot be longer than 32 characters.")]
+        public string Name { get; set; } = null!;
+        
         public CommunityChannelType Type { get; set; }
     }
 }

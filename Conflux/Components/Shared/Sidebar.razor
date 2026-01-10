@@ -46,7 +46,7 @@
                 await _module.DisposeAsync();
                 _module = null;
             }
-        } catch (JSDisconnectedException e) {
+        } catch (JSDisconnectedException) {
         }
     }
 }

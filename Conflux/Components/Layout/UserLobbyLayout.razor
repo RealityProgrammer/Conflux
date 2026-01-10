@@ -1,8 +1,5 @@
 ﻿@using Conflux.Components.Shared
 @using Conflux.Components.Shared.Icons
-@using Conflux.Database
-@using Conflux.Database.Entities
-@using Conflux.Services
 @using Conflux.Services.Abstracts
 @using Microsoft.AspNetCore.Components.Sections
 @using Microsoft.EntityFrameworkCore
@@ -14,7 +11,6 @@
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject IContentService ContentService
-@inject ILogger<UserLobbyLayout> Logger
 
 <SectionContent SectionName="lobby-sidebar">
     <div class="flex flex-col gap-2 p-2">
@@ -81,19 +77,15 @@
                 .OrderBy(x => x.CreatedAt)
                 .Skip(request.StartIndex)
                 .Take(request.Count)
-                .Join(dbContext.Users, conversation => conversation.FriendRequest!.SenderId == _userId ? conversation.FriendRequest.ReceiverId : conversation.FriendRequest.SenderId, user => user.Id, (conversation, user) => new ConversationElement {
-                    ConversationId = conversation.Id,
-                    FriendDisplayName = user.DisplayName,
-                    FriendAvatarSrc = user.AvatarProfilePath,
-                })
+                .Join(
+                    dbContext.Users, 
+                    conversation => conversation.FriendRequest!.SenderId == _userId ? conversation.FriendRequest.ReceiverId : conversation.FriendRequest.SenderId, user => user.Id, (conversation, user) => new ConversationElement {
+                        ConversationId = conversation.Id,
+                        FriendDisplayName = user.DisplayName,
+                        FriendAvatarSrc = user.AvatarProfilePath,
+                    }
+                )
                 .ToListAsync();
-                // .SelectMany(c => c.Members)
-                // .Where(m => m.UserId != _userId)
-                // .Select(m => new ConversationElement {
-                //     ConversationId = m.ConversationId,
-                //     FriendDisplayName = m.User.DisplayName,
-                //     FriendAvatarSrc = m.User.AvatarProfilePath,
-                // }).ToListAsync();
 
             return new(elements, totalCount);
         }

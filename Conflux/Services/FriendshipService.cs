@@ -1,7 +1,6 @@
-﻿using Conflux.Database;
-using Conflux.Database.Entities;
+﻿using Conflux.Domain;
+using Conflux.Domain.Entities;
 using Conflux.Services.Abstracts;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 

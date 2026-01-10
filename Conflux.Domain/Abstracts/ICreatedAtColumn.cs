@@ -1,4 +1,4 @@
-﻿namespace Conflux.Database.Entities;
+﻿namespace Conflux.Domain.Abstracts;
 
 public interface ICreatedAtColumn {
     DateTime CreatedAt { get; set; }

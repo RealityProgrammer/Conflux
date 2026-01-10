@@ -2,9 +2,6 @@
 @using Conflux.Components.Shared.Icons
 @using Conflux.Components.Shared.Modals
 @using Conflux.Core
-@using Conflux.Database
-@using Conflux.Database.Entities
-@using Conflux.Helpers
 @using Conflux.Services
 @using Conflux.Services.Abstracts
 @using Microsoft.EntityFrameworkCore
@@ -234,14 +231,14 @@
         var authState = await AuthenticationState;
         
         if ((await AuthorizationService.AuthorizeAsync(authState.User, UserPermissions?.Permissions, "CreateCommunityChannel")).Succeeded) {
-            ModalService.Open<CreateCommunityChannelModal>(parameters: new Dictionary<string, object> {
+            ModalService.Open<CreateCommunityChannelModal>(parameters: new Dictionary<string, object?> {
                 [nameof(CreateCommunityChannelModal.ReceiverChannelCategoryId)] = categoryId,
             });
         }
     }
 
     private void OpenInvitationUrlModal() {
-        ModalService.Open<CommunityInvitationUrlModal>(parameters: new Dictionary<string, object> {
+        ModalService.Open<CommunityInvitationUrlModal>(parameters: new Dictionary<string, object?> {
             [nameof(CommunityInvitationUrlModal.InvitationUrl)] = _invitationUrl!,
         });
     }
@@ -250,7 +247,7 @@
         var authState = await AuthenticationState;
         
         if ((await AuthorizationService.AuthorizeAsync(authState.User, UserPermissions?.Permissions, "AccessCommunityControlPanel")).Succeeded) {
-            ModalService.Open<CommunityControlPanelModal>(parameters: new Dictionary<string, object> {
+            ModalService.Open<CommunityControlPanelModal>(parameters: new Dictionary<string, object?> {
                 [nameof(CommunityControlPanelModal.CommunityId)] = CommunityId,
                 [nameof(CommunityControlPanelModal.MemberRolePermissions)] = UserPermissions!,
             });

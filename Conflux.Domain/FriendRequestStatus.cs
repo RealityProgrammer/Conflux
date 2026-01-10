@@ -1,4 +1,4 @@
-﻿namespace Conflux.Database;
+﻿namespace Conflux.Domain;
 
 public enum FriendRequestStatus {
     Pending,

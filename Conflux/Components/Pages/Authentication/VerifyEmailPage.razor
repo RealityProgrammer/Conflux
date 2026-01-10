@@ -1,13 +1,10 @@
 @page "/auth/verify-email"
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
-@using Conflux.Database
-@using Conflux.Database.Entities
 @using Conflux.Services
 @using System.Diagnostics
 @using System.Text
 
-@inject NavigationManager NavigationManager
 @inject ApplicationRedirectManager RedirectManager
 @inject IJSRuntime JavascriptRuntime
 @inject UserManager<ApplicationUser> UserManager

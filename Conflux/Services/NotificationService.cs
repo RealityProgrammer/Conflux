@@ -8,7 +8,6 @@ using System.Net;
 namespace Conflux.Services;
 
 public sealed class NotificationService(
-    IWebHostEnvironment environment,
     IHubContext<NotificationHub> hubContext,
     NavigationManager navigationManager,
     IHttpContextAccessor httpContextAccessor

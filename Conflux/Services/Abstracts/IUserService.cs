@@ -1,4 +1,4 @@
-﻿using Conflux.Database.Entities;
+﻿using Conflux.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
 

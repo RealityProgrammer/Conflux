@@ -1,5 +1,5 @@
 ﻿@using Conflux.Components.Shared.Icons
-@using Conflux.Database
+
 @using Conflux.Services
 @using Microsoft.EntityFrameworkCore
 @using System.ComponentModel.DataAnnotations
@@ -37,7 +37,7 @@
         <CardFooter class="border-t-0 flex flex-row justify-end gap-3">
             <button class="button-danger w-24" @onclick="CloseModal">Cancel</button>
             
-            <ProcessingStateButton bind-IsProcessing="_isProcessingStatus" class="button-primary w-24" ProcessingCssClass="flex flex-row justify-center items-center" @onclick="UpdateStatus">
+            <ProcessingStateButton @bind-IsProcessing="_isProcessingStatus" class="button-primary w-24" ProcessingCssClass="flex flex-row justify-center items-center" @onclick="UpdateStatus">
                 <ChildContent>
                     Apply
                 </ChildContent>

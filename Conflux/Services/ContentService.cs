@@ -1,4 +1,4 @@
-﻿using Conflux.Database.Entities;
+﻿using Conflux.Domain.Entities;
 using Conflux.Services.Abstracts;
 
 namespace Conflux.Services;

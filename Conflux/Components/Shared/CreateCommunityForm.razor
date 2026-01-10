@@ -4,7 +4,6 @@
 @implements IAsyncDisposable
 
 @inject IJSRuntime JavascriptRuntime
-@inject ILogger<CreateCommunityForm> Logger
 
 <EditForm EditContext="_editContext" method="post" FormName="Profile" class="mt-2 overflow-auto flex-auto px-8">
     <AntiforgeryToken/>
@@ -38,7 +37,7 @@
         </div>
         
         <div class="relative min-w-0">
-            <label class="font-semibold">Server's Name</label>
+            <label class="font-semibold">Name</label>
 
             <InputText @bind-Value="Model!.Name" class="mt-2 input-field h-11 w-full" maxlength="32"/>
             
@@ -48,7 +47,7 @@
     
     <ProcessingStateButton @bind-IsProcessing="_isCreatingServer" type="submit" class="mt-2 border border-gray-600 bg-black/5 hover:bg-black/2 active:bg-black/8 w-full p-3 rounded-lg shadow-lg cursor-pointer" ProcessingCssClass="flex justify-center items-center" @onclick="HandleCreateServer">
         <ChildContent>
-            Create the server
+            Create the community
         </ChildContent>
         
         <ProcessingContent>
@@ -142,6 +141,10 @@
 
     public sealed class InputModel {
         public IBrowserFile? Avatar { get; set; }
-        [Required, MinLength(8), MaxLength(64)] public string Name { get; set; }
+        
+        [Required(ErrorMessage = "Community Name is required.")]
+        [MinLength(8, ErrorMessage = "Community Name must be at least {1} characters.")]
+        [MaxLength(64, ErrorMessage = "Community Name can only have maximum length of {1} characters.")]
+        public string Name { get; set; } = null!;
     }
 }

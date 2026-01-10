@@ -1,7 +1,6 @@
-﻿using Conflux.Database;
-using Conflux.Database.Entities;
+﻿using Conflux.Domain;
+using Conflux.Domain.Entities;
 using Conflux.Services.Abstracts;
-using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
@@ -11,7 +10,6 @@ namespace Conflux.Services;
 public class UserService(
     UserManager<ApplicationUser> userManager,
     SignInManager<ApplicationUser> signInManager,
-    RoleManager<IdentityRole> roleManager,
     IDbContextFactory<ApplicationDbContext> DbContextFactory
 ) : IUserService {
     public Task<ApplicationUser?> GetUserAsync(ClaimsPrincipal claimsPrincipal) {

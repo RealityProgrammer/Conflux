@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Conflux.Database.Entities;
+namespace Conflux.Domain.Entities;
 
 public enum MessageAttachmentType {
     Image,

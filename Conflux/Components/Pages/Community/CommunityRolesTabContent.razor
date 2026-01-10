@@ -3,16 +3,11 @@
 @using Conflux.Components.Shared.Icons
 @using Conflux.Components.Shared.Modals
 @using Conflux.Core
-@using Conflux.Database
-@using Conflux.Database.Entities
 @using Conflux.Services
 @using Conflux.Services.Abstracts
 @using Conflux.Services.Authorization
-@using Microsoft.AspNetCore.Authentication
 @using Microsoft.EntityFrameworkCore
-@using System.Collections.Concurrent
 @using System.ComponentModel.DataAnnotations
-@using System.Diagnostics
 
 @implements IDisposable
 
@@ -570,7 +565,7 @@
     }
 
     private void HandleOpenAddMemberDialog() {
-        ModalService.Open<RoleAddMemberPanel>(name: "Community.ControlPanel.Roles.AddMember", parameters: new Dictionary<string, object> {
+        ModalService.Open<RoleAddMemberPanel>(name: "Community.ControlPanel.Roles.AddMember", parameters: new Dictionary<string, object?> {
             [nameof(RoleAddMemberPanel.CommunityId)] = CommunityId,
             [nameof(RoleAddMemberPanel.AddedMembers)] = Model.AddRoles,
         });
@@ -583,7 +578,7 @@
         </p>;
 
     private void OpenDeleteRoleDialog() {
-        ModalService.Open<DeleteConfirmationModal>(parameters: new Dictionary<string, object> {
+        ModalService.Open<DeleteConfirmationModal>(parameters: new Dictionary<string, object?> {
             [nameof(DeleteConfirmationModal.Title)] = "Delete Role",
             [nameof(DeleteConfirmationModal.Subtitle)] = "Committing massive job loss...",
             [nameof(DeleteConfirmationModal.Body)] = _roleDeleteBodyFragment,

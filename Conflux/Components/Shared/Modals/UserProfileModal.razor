@@ -1,6 +1,4 @@
 ﻿@using Conflux.Components.Shared.Icons
-@using Conflux.Database
-@using Conflux.Database.Entities
 @using Conflux.Helpers
 @using Conflux.Services
 @using Conflux.Services.Abstracts
@@ -403,10 +401,8 @@
         _isProcessingFriendRequest = true;
 
         try {
-            bool result = await FriendshipService.UnfriendAsync(requestId);
+            await FriendshipService.UnfriendAsync(requestId);
             _userInfo.FriendRequestAction = FriendRequestAction.Add;
-
-            GC.KeepAlive(result);
         } finally {
             _isProcessingFriendRequest = false;
         }

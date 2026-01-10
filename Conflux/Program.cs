@@ -1,11 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Conflux.Components;
-using Conflux.Database;
+using Conflux.Domain;
 using Vite.AspNetCore;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Conflux.Database.Entities;
+using Conflux.Domain.Entities;
 using Conflux.Services;
 using Conflux.Services.Abstracts;
 using Conflux.Services.Authorization;
@@ -259,37 +259,4 @@ async Task CreateFakeUsers(UserManager<ApplicationUser> userManager) {
             }, "Password1!");
         }
     }
-
-    // var fakeUser = new Faker<ApplicationUser>()
-    //     .RuleFor(u => u.Id, f => {
-    //         UInt128 id = (UInt128)(f.IndexFaker + 1);
-    //
-    //         Span<byte> buffer = stackalloc byte[16];
-    //         BitConverter.TryWriteBytes(buffer, id);
-    //
-    //         return new Guid(buffer).ToString();
-    //     })
-    //     .RuleFor(u => u.UserName, f => f.Internet.UserName())
-    //     .RuleFor(u => u.DisplayName, (f, u) => u.UserName)
-    //     .RuleFor(u => u.Pronouns, f => f.PickRandom("he/him", "she/her", "they/them"))
-    //     .RuleFor(u => u.Bio, f => {
-    //         var lorem = f.Lorem.Paragraph();
-    //         return lorem[..int.Min(255, lorem.Length)];
-    //     })
-    //     .RuleFor(u => u.Email, f => f.Internet.Email())
-    //     .RuleFor(u => u.CreatedAt, f => f.Date.Between(DateTime.UtcNow.AddYears(-5), DateTime.UtcNow))
-    //     .RuleFor(u => u.StatusText, f => {
-    //         string str = string.Join(' ', f.Lorem.Words(16));
-    //         return str[..int.Min(128, str.Length)];
-    //     })
-    //     .RuleFor(u => u.IsProfileSetup, f => true)
-    //     .RuleFor(u => u.EmailConfirmed, f => true);
-    //
-    // var users = fakeUser.Generate(64);
-    //
-    // for (int i = 0; i < users.Count; i++) {
-    //     if (await userManager.FindByIdAsync(users[i].Id) != null) continue;
-    //     
-    //     await userManager.CreateAsync(users[i], "Password1!");
-    // }
 }

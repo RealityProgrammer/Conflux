@@ -1,4 +1,4 @@
-﻿namespace Conflux.Database.Entities;
+﻿namespace Conflux.Domain.Entities;
 
 public enum ConversationType {
     DirectMessage,
