@@ -251,44 +251,82 @@
             var authState = await AuthenticationState;
             _authUserId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
-            // Trust me, I hate this code as much as you do...
-            _userInfo = await dbContext.CommunityMembers
-                .Where(m => m.Id == MemberId && m.UserId == UserId)
-                .Include(m => m.User)
-                .ThenInclude(u => u.ReceivedFriendRequests.Where(x => x.SenderId == UserId))
-                .AsSplitQuery()
-                .Include(m => m.User)
-                .ThenInclude(u => u.SentFriendRequests.Where(x => x.ReceiverId == UserId))
-                .AsSplitQuery()
-                .Include(x => x.Role)
-                .AsSplitQuery()
-                .Select(x => new UserQueryStruct(x.User, x, x.Role, x.User.ReceivedFriendRequests.FirstOrDefault() ?? x.User.SentFriendRequests.FirstOrDefault()))
-                .Select(x =>
-                    new UserDTO(
-                        x.User.DisplayName,
-                        x.User.UserName!,
-                        null,
-                        x.User.AvatarProfilePath,
-                        x.User.Bio,
-                        x.User.Pronouns,
-                        DateOnly.FromDateTime(x.User.CreatedAt),
-                        x.Member == null ? null : DateOnly.FromDateTime(x.Member.CreatedAt),
-                        x.Role == null ?
-                            null :
-                            x.Role.Name,
-                        x.FriendRequest == null ?
-                            FriendRequestAction.Add :
-                            x.FriendRequest.Status == FriendRequestStatus.Accepted ?
-                                FriendRequestAction.Unfriend :
-                                x.FriendRequest.Status == FriendRequestStatus.Pending ?
-                                    x.FriendRequest.SenderId == _authUserId ?
-                                        FriendRequestAction.Cancel :
-                                        FriendRequestAction.RejectOrAccept
-                                : FriendRequestAction.Add,
-                        x.FriendRequest == null ? null : x.FriendRequest.Id
-                    )
-                )
-                .FirstOrDefaultAsync();
+            _userInfo = await dbContext.Users
+                .Where(u => u.Id == UserId)
+                .Select(u => new UserDTO(u.DisplayName, u.UserName!, null, u.AvatarProfilePath, u.Bio, u.Pronouns, DateOnly.FromDateTime(u.CreatedAt), null, null, FriendRequestAction.Add, null))
+                .FirstAsync();
+
+            var friendRequestData = await dbContext.FriendRequests
+                .Where(r => (r.SenderId == _authUserId && r.ReceiverId == UserId) || (r.SenderId == UserId && r.ReceiverId == _authUserId))
+                .Select(r => new {
+                    Action = r.Status == FriendRequestStatus.Accepted ?
+                        FriendRequestAction.Unfriend :
+                        r.Status == FriendRequestStatus.Pending ?
+                            r.SenderId == _authUserId ?
+                                FriendRequestAction.Cancel :
+                                FriendRequestAction.RejectOrAccept
+                        : FriendRequestAction.Add,
+                    r.Id,
+                }).FirstOrDefaultAsync();
+
+            if (friendRequestData != null) {
+                _userInfo.FriendRequestAction = friendRequestData.Action;
+                _userInfo.FriendRequestId = friendRequestData.Id;
+            }
+
+            if (MemberId != null) {
+                var memberData = await dbContext.CommunityMembers
+                    .Where(m => m.Id == MemberId)
+                    .Include(m => m.Role)
+                    .Select(m => new {
+                        RoleName = m.Role == null ? null : m.Role.Name,
+                        CreatedAt = DateOnly.FromDateTime(m.CreatedAt)
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (memberData != null) {
+                    _userInfo.RoleName = memberData.RoleName;
+                    _userInfo.MemberCreatedAt = memberData.CreatedAt;
+                }
+            }
+            
+            // _userInfo = await dbContext.CommunityMembers
+            //     .Where(m => m.Id == MemberId && m.UserId == UserId)
+            //     .Include(m => m.User)
+            //     .ThenInclude(u => u.ReceivedFriendRequests.Where(x => x.SenderId == UserId))
+            //     .AsSplitQuery()
+            //     .Include(m => m.User)
+            //     .ThenInclude(u => u.SentFriendRequests.Where(x => x.ReceiverId == UserId))
+            //     .AsSplitQuery()
+            //     .Include(x => x.Role)
+            //     .AsSplitQuery()
+            //     .Select(x => new UserQueryStruct(x.User, x, x.Role, x.User.ReceivedFriendRequests.FirstOrDefault() ?? x.User.SentFriendRequests.FirstOrDefault()))
+            //     .Select(x =>
+            //         new UserDTO(
+            //             x.User.DisplayName,
+            //             x.User.UserName!,
+            //             null,
+            //             x.User.AvatarProfilePath,
+            //             x.User.Bio,
+            //             x.User.Pronouns,
+            //             DateOnly.FromDateTime(x.User.CreatedAt),
+            //             x.Member == null ? null : DateOnly.FromDateTime(x.Member.CreatedAt),
+            //             x.Role == null ?
+            //                 null :
+            //                 x.Role.Name,
+            //             x.FriendRequest == null ?
+            //                 FriendRequestAction.Add :
+            //                 x.FriendRequest.Status == FriendRequestStatus.Accepted ?
+            //                     FriendRequestAction.Unfriend :
+            //                     x.FriendRequest.Status == FriendRequestStatus.Pending ?
+            //                         x.FriendRequest.SenderId == _authUserId ?
+            //                             FriendRequestAction.Cancel :
+            //                             FriendRequestAction.RejectOrAccept
+            //                     : FriendRequestAction.Add,
+            //             x.FriendRequest == null ? null : x.FriendRequest.Id
+            //         )
+            //     )
+            //     .FirstOrDefaultAsync();
 
             _state = string.IsNullOrEmpty(_userInfo.DisplayName) ? State.Invalid : State.Success;
 
