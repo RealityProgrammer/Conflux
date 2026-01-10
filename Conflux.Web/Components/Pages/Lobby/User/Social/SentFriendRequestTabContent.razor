@@ -15,6 +15,7 @@
 @inject IFriendshipService FriendshipService
 @inject IFriendshipEventDispatcher FriendshipEventDispatcher
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IContentService ContentService
 
 <div class="flex-none px-3 outline-none border rounded-lg bg-gray-700/60 border-gray-600 focus-within:ring-2 focus-within:ring-indigo-600 transition duration-300 flex flex-row items-center">
     <Search class="size-4 fill-white flex-none mr-2"/>
@@ -26,7 +27,7 @@
     <Virtualize @ref="_virtualizeContainer" ItemsProvider="LoadProvider" OverscanCount="3">
         <ChildContent Context="item">
             <div @key="item.Id" class="h-16 px-4 py-1 border-b border-b-gray-600 flex flex-row items-center hover:bg-gray-600/40 group">
-                <Avatar ImageSrc="@item.Receiver.AvatarProfilePath" ImageAlt="Avatar" class="flex-none h-12 mr-2"/>
+                <Avatar ImageSrc="@(string.IsNullOrEmpty(item.Receiver.AvatarProfilePath) ? null : ContentService.GetAssetPath(item.Receiver.AvatarProfilePath))" ImageAlt="Avatar" class="flex-none h-12 mr-2"/>
                 
                 <div class="flex-1 flex flex-col">
                     <p class="font-semibold">@item.Receiver.DisplayName</p>
