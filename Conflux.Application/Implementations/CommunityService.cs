@@ -73,7 +73,7 @@ public class CommunityService(
         dbContext.CommunityChannelCategories.Add(category);
 
         if (await dbContext.SaveChangesAsync() > 0) {
-            await eventDispatcher.Dispatch(new ChannelCategoryCreatedEventArgs(category));
+            await eventDispatcher.Dispatch(new ChannelCategoryCreatedEventArgs(communityId, category.Id, name));
         }
     }
 
@@ -108,7 +108,7 @@ public class CommunityService(
         await dbContext.SaveChangesAsync();
         await transaction.CommitAsync();
         
-        await eventDispatcher.Dispatch(new ChannelCreatedEventArgs(channel));
+        await eventDispatcher.Dispatch(new ChannelCreatedEventArgs(communityId, channelCategoryId, channel.Id, name, type));
     }
 
     public async Task<ICommunityService.CreateRoleStatus> CreateRoleAsync(Guid communityId, string roleName) {
@@ -130,7 +130,7 @@ public class CommunityService(
         dbContext.CommunityRoles.Add(role);
 
         if (await dbContext.SaveChangesAsync() > 0) {
-            await eventDispatcher.Dispatch(new CommunityRoleCreatedEventArgs(role));
+            await eventDispatcher.Dispatch(new CommunityRoleCreatedEventArgs(communityId, role.Id, roleName));
             
             return ICommunityService.CreateRoleStatus.Success;
         }
@@ -159,7 +159,7 @@ public class CommunityService(
         dbContext.CommunityMembers.Add(member);
 
         if (await dbContext.SaveChangesAsync() > 0) {
-            await eventDispatcher.Dispatch(new CommunityMemberJoinedEventArgs(member));
+            await eventDispatcher.Dispatch(new CommunityMemberJoinedEventArgs(communityId, userId));
             
             return true;
         }

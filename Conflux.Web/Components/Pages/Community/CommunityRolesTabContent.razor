@@ -508,9 +508,7 @@
     }
 
     private void OnRoleCreated(CommunityRoleCreatedEventArgs args) {
-        var role = args.Role;
-        
-        _roles?.Add(new(role.Id, role.Name));
+        _roles?.Add(new(args.RoleId, args.RoleName));
         InvokeAsync(StateHasChanged);
     }
 
@@ -643,7 +641,7 @@
             for (int i = 0; i < _roles.Count; i++) {
                 if (_roles[i].Id == args.RoleId) {
                     _roles[i] = _roles[i] with {
-                        Name = args.Name,
+                        Name = args.NewName,
                     };
                 }
             }
@@ -654,21 +652,18 @@
 
     private void OnRoleDeleted(CommunityRoleDeletedEventArgs args) {
         if (_roles == null) return;
-            
-        InvokeAsync(async () => {
-            int index = -1;
-            
-            for (int i = 0; i < _roles.Count; i++) {
-                if (_roles[i].Id == args.RoleId) {
-                    _roles.RemoveAt(i);
-                    index = i;
-                    break;
-                }
-            }
+        
+        for (int i = 0; i < _roles.Count; i++) {
+            if (_roles[i].Id == args.RoleId) {
+                _roles.RemoveAt(i);
 
-            await SetSelectedRole(_roles[int.Clamp(index, 0, _roles.Count - 1)]);
-            StateHasChanged();
-        });
+                InvokeAsync(async () => {
+                    await SetSelectedRole(_roles[int.Clamp(i, 0, _roles.Count - 1)]);
+                    StateHasChanged();
+                });
+                break;
+            }
+        }
     }
 
     public void Dispose() {

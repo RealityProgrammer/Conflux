@@ -2,7 +2,7 @@
 
 namespace Conflux.Domain.Events;
 
-public readonly record struct MessageReceivedEventArgs(ChatMessage Message, Guid ConversationId, string SenderId);
+public readonly record struct MessageReceivedEventArgs(Guid MessageId, Guid ConversationId, string SenderId);
 public readonly record struct MessageDeletedEventArgs(Guid MessageId, Guid ConversationId);
 public readonly record struct MessageEditedEventArgs(Guid MessageId, Guid ConversationId, string? Body);
 

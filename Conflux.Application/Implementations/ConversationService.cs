@@ -93,7 +93,7 @@ public sealed class ConversationService(
 
                         returnStatus = IConversationService.SendStatus.Success;
 
-                        await eventDispatcher.Dispatch(new MessageReceivedEventArgs(message, conversationId, senderId));
+                        await eventDispatcher.Dispatch(new MessageReceivedEventArgs(message.Id, conversationId, senderId));
 
                         return returnStatus;
                     }

@@ -256,26 +256,20 @@
     }
 
     private void OnChannelCategoryCreated(ChannelCategoryCreatedEventArgs args) {
-        InvokeAsync(async () => {
-            await using var dbContext = await DbContextFactory.CreateDbContextAsync();
-            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-
-            var channelCategory = await dbContext.CommunityChannelCategories
-                .Where(x => x.Id == args.Category.Id)
-                .FirstOrDefaultAsync();
-
-            if (channelCategory != null) {
-                _community!.ChannelCategories.Add(channelCategory);
-                StateHasChanged();
-            }
+        _community!.ChannelCategories.Add(new() {
+            CommunityId = args.CommunityId,
+            Id = args.CategoryId,
+            Name = args.CategoryName,
         });
+        
+        InvokeAsync(StateHasChanged);
     }
     
     private void OnChannelCreated(ChannelCreatedEventArgs args) {
         int index = -1;
 
         for (int i = 0; i < _community!.ChannelCategories.Count; i++) {
-            if (_community.ChannelCategories[i].Id == args.Channel.ChannelCategoryId) {
+            if (_community.ChannelCategories[i].Id == args.CategoryId) {
                 index = i;
                 break;
             }
@@ -284,19 +278,15 @@
         if (index == -1) {
             return;
         }
-
-        InvokeAsync(async () => {
-            await using var dbContext = await DbContextFactory.CreateDbContextAsync();
-
-            var channel = await dbContext.CommunityChannels
-                .Where(x => x.Id == args.Channel.Id)
-                .FirstOrDefaultAsync();
-
-            if (channel != null) {
-                _community.ChannelCategories[index].Channels.Add(channel);
-                StateHasChanged();
-            }
+        
+        _community.ChannelCategories[index].Channels.Add(new() {
+            Id = args.ChannelId,
+            ChannelCategoryId = args.CategoryId,
+            Name = args.ChannelName,
+            Type = args.ChannelType,
         });
+
+        InvokeAsync(StateHasChanged);
     }
 
     public void Dispose() {

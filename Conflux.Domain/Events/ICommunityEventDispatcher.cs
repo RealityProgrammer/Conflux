@@ -2,11 +2,11 @@
 
 namespace Conflux.Domain.Events;
 
-public readonly record struct ChannelCategoryCreatedEventArgs(CommunityChannelCategory Category);
-public readonly record struct ChannelCreatedEventArgs(CommunityChannel Channel);
-public readonly record struct CommunityMemberJoinedEventArgs(CommunityMember Member);
-public readonly record struct CommunityRoleCreatedEventArgs(CommunityRole Role);
-public readonly record struct CommunityRoleRenamedEventArgs(Guid CommunityId, Guid RoleId, string Name);
+public readonly record struct ChannelCategoryCreatedEventArgs(Guid CommunityId, Guid CategoryId, string CategoryName);
+public readonly record struct ChannelCreatedEventArgs(Guid CommunityId, Guid CategoryId, Guid ChannelId, string ChannelName, CommunityChannelType ChannelType);
+public readonly record struct CommunityMemberJoinedEventArgs(Guid CommunityId, string UserId);
+public readonly record struct CommunityRoleCreatedEventArgs(Guid CommunityId, Guid RoleId, string RoleName);
+public readonly record struct CommunityRoleRenamedEventArgs(Guid CommunityId, Guid RoleId, string NewName);
 public readonly record struct CommunityRoleDeletedEventArgs(Guid CommunityId, Guid RoleId);
 public readonly record struct CommunityRolePermissionUpdatedEventArg(Guid CommunityId, Guid RoleId);
 public readonly record struct MemberRoleChangedEventArgs(Guid CommunityId, Guid? RoleId);

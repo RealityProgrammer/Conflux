@@ -430,46 +430,49 @@
             InvokeAsync(async () => {
                 _jumpToBottom = await _module!.InvokeAsync<bool>("shouldMaintainScrollBottom", _scrollContainer);
 
-                // ChatMessage message = args.Message;
-
-                await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
-                    var senderData = await dbContext.Users.Where(u => u.Id == args.SenderId).Select(u => new {
+                await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+                var senderData = await dbContext.Users
+                    .Where(u => u.Id == args.SenderId)
+                    .Select(u => new {
                         u.Id,
                         u.DisplayName,
                         u.AvatarProfilePath,
-                    }).FirstAsync();
+                    })
+                    .FirstAsync();
 
-                    IConversationService.RenderingReplyMessageDTO? replyMessage = null;
+                IConversationService.RenderingReplyMessageDTO? replyMessage = null;
 
-                    var messageData = new {
-                        args.Message.ReplyMessageId,
-                        args.Message.Body,
-                        args.Message.CreatedAt,
-                        Attachments = args.Message.Attachments.Select(a => new IConversationService.MessageAttachmentDTO(a.Name, a.Type, a.PhysicalPath)).ToArray(),
-                    };
+                var messageData = await dbContext.ChatMessages
+                    .Where(m => m.Id == args.MessageId)
+                    .Select(m => new {
+                        m.ReplyMessageId,
+                        m.Body,
+                        m.CreatedAt,
+                        Attachments = m.Attachments.Select(a => new IConversationService.MessageAttachmentDTO(a.Name, a.Type, a.PhysicalPath)).ToArray()
+                    })
+                    .FirstAsync();
 
-                    if (messageData.ReplyMessageId.HasValue && !_replyMessages.ContainsKey(messageData.ReplyMessageId.Value)) {
-                        replyMessage = await dbContext.ChatMessages
-                            .Where(m => m.Id == messageData.ReplyMessageId.Value && m.DeletedAt == null)
-                            .Include(m => m.Sender)
-                            .Select(m => new IConversationService.RenderingReplyMessageDTO(m.Id, m.Sender.DisplayName, m.Body))
-                            .FirstOrDefaultAsync();
-                    }
-
-                    await _messageSemaphore!.WaitAsync();
-
-                    try {
-                        _visibleMessages.Add(new(args.Message.Id, senderData.Id, senderData.DisplayName, senderData.AvatarProfilePath, messageData.Body, messageData.CreatedAt, false, messageData.ReplyMessageId, messageData.Attachments));
-
-                        if (replyMessage != null) {
-                            _replyMessages.TryAdd(replyMessage.MessageId, replyMessage);
-                        }
-                    } finally {
-                        _messageSemaphore.Release();
-                    }
-
-                    StateHasChanged();
+                if (messageData.ReplyMessageId.HasValue && !_replyMessages.ContainsKey(messageData.ReplyMessageId.Value)) {
+                    replyMessage = await dbContext.ChatMessages
+                        .Where(m => m.Id == messageData.ReplyMessageId.Value && m.DeletedAt == null)
+                        .Include(m => m.Sender)
+                        .Select(m => new IConversationService.RenderingReplyMessageDTO(m.Id, m.Sender.DisplayName, m.Body))
+                        .FirstOrDefaultAsync();
                 }
+
+                await _messageSemaphore!.WaitAsync();
+
+                try {
+                    _visibleMessages.Add(new(args.MessageId, senderData.Id, senderData.DisplayName, senderData.AvatarProfilePath, messageData.Body, messageData.CreatedAt, false, messageData.ReplyMessageId, messageData.Attachments));
+
+                    if (replyMessage != null) {
+                        _replyMessages.TryAdd(replyMessage.MessageId, replyMessage);
+                    }
+                } finally {
+                    _messageSemaphore.Release();
+                }
+
+                StateHasChanged();
             });
         }
     }

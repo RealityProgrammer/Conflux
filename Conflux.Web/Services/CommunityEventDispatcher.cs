@@ -122,19 +122,19 @@ public sealed class CommunityEventDispatcher(
     }
 
     public async Task Dispatch(ChannelCategoryCreatedEventArgs args) {
-        await hubContext.Clients.Group(args.Category.CommunityId.ToString()).SendAsync(ChannelCategoryCreatedEventName, args);
+        await hubContext.Clients.Group(args.CommunityId.ToString()).SendAsync(ChannelCategoryCreatedEventName, args);
     }
 
     public async Task Dispatch(ChannelCreatedEventArgs args) {
-        await hubContext.Clients.Group(args.Channel.ChannelCategory.CommunityId.ToString()).SendAsync(ChannelCreatedEventName, args);
+        await hubContext.Clients.Group(args.CommunityId.ToString()).SendAsync(ChannelCreatedEventName, args);
     }
 
     public async Task Dispatch(CommunityMemberJoinedEventArgs args) {
-        await hubContext.Clients.Group(args.Member.CommunityId.ToString()).SendAsync(MemberJoinedEventName, args);
+        await hubContext.Clients.Group(args.CommunityId.ToString()).SendAsync(MemberJoinedEventName, args);
     }
 
     public async Task Dispatch(CommunityRoleCreatedEventArgs args) {
-        await hubContext.Clients.Group(args.Role.CommunityId.ToString()).SendAsync(RoleCreatedEventName, args);
+        await hubContext.Clients.Group(args.CommunityId.ToString()).SendAsync(RoleCreatedEventName, args);
     }
 
     public async Task Dispatch(CommunityRoleRenamedEventArgs args) {
