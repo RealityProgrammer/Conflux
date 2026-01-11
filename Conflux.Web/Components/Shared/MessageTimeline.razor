@@ -1,6 +1,7 @@
 ﻿@using Conflux.Components.Shared.Icons
 @using Conflux.Components.Shared.Modals
 @using Conflux.Domain.Events
+@using Conflux.Helpers
 @using Conflux.Services
 @using Conflux.Services.Abstracts
 @using Microsoft.EntityFrameworkCore
@@ -53,13 +54,19 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="m16.49 12 3.75 3.75m0 0-3.75 3.75m3.75-3.75H3.74V0" />
                         </svg>
                     }
+                    
+                    @{
+                        string senderId = message.SenderId;
+                        EventCallback invokesOpenUserModal = EventCallback.Factory.Create(this, EventUtils.AsNonRenderingEventHandler(() => OpenUserProfileModal(senderId)));
+                    }
     
                     <Avatar ImageSrc="@(string.IsNullOrEmpty(message.SenderAvatar) ? null : ContentService.GetAssetPath(message.SenderAvatar))"
                             ImageAlt="Sender's Avatar"
-                            class="flex-none size-10 mr-2 mt-1"/>
+                            class="flex-none size-10 mr-2 mt-1 cursor-pointer pointer-events-auto"
+                            @onclick="invokesOpenUserModal"/>
     
                     <div class="flex-1 flex flex-col">
-                        <p>@message.SenderDisplayName</p>
+                        <p class="select-none hover:underline cursor-pointer" @onclick="invokesOpenUserModal">@message.SenderDisplayName</p>
     
                         @{
                             // Render the content of consecutive messages.
@@ -411,7 +418,26 @@
         _editingMessageId = Guid.Empty;
         _editMessageBody = string.Empty;
     }
-    
+
+    private async Task OpenUserProfileModal(string userId) {
+        await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        var memberId = await dbContext.Conversations
+            .Where(c => c.Id == ConversationId)
+            .Include(c => c.CommunityChannel!)
+            .ThenInclude(c => c.ChannelCategory)
+            .ThenInclude(c => c.Community)
+            .Select(c => c.CommunityChannel!.ChannelCategory.Community.Members.FirstOrDefault(x => x.UserId == userId))
+            .Select(m => m!.Id)
+            .FirstOrDefaultAsync();
+        
+        ModalService.Open<UserProfileModal>(parameters: new Dictionary<string, object?> {
+            [nameof(UserProfileModal.UserId)] = userId,
+            [nameof(UserProfileModal.MemberId)] = memberId,
+        });
+    }
+
     private static readonly RenderFragment _deleteConfirmationBody = @<p>Are you sure you want to delete this message?<br/>This action cannot be reverted.</p>;
     
     private void RequestMessageDelete(Guid id) {
@@ -431,6 +457,8 @@
                 _jumpToBottom = await _module!.InvokeAsync<bool>("shouldMaintainScrollBottom", _scrollContainer);
 
                 await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+                dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+                
                 var senderData = await dbContext.Users
                     .Where(u => u.Id == args.SenderId)
                     .Select(u => new {
