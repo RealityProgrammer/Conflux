@@ -4,8 +4,8 @@
 @inherits LayoutComponentBase
 @layout LobbyLayout
 
-<section class="size-full overflow-hidden flex flex-row">
-    <Sidebar class="@("border-r border-r-gray-600 bg-gray-750 overflow-hidden text-white flex flex-col w-80")">
+<section class="relative size-full overflow-hidden flex flex-row">
+    <Sidebar Direction="SidebarDirection.RightToLeft" class="@("border-r border-r-gray-600 bg-gray-750 overflow-hidden text-white flex flex-col w-80")">
         <section class="flex-1 overflow-y-auto scrollbar-hide">
             <SectionOutlet SectionName="lobby-sidebar"/>
         </section>

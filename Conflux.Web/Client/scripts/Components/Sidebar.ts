@@ -4,6 +4,8 @@ import {Interactable} from "@interactjs/core/Interactable";
 
 const MAX_OVERLAY_OPACITY = 60;
 
+type SidebarDirection = "ltr" | "rtl";
+
 const checkSurpassBreakpoint = () => {
     return window.innerWidth >= 1024; // lg breakpoint
 };
@@ -11,22 +13,26 @@ const checkSurpassBreakpoint = () => {
 class Sidebar {
     private readonly sidebarElement: HTMLElement;
     private readonly overlayElement: HTMLElement;
+    public direction: SidebarDirection;
+    
     private isOpen: boolean;
     private dragging: boolean;
-    private translate: number;
+    private dragPercentage: number;
     private deltaX: number;
     private surpassedBreakpoint: boolean;
     private interactable: Interactable;
     
-    constructor(sidebarElement: HTMLElement, overlayElement: HTMLElement) {
+    constructor(sidebarElement: HTMLElement, overlayElement: HTMLElement, direction: SidebarDirection) {
         this.sidebarElement = sidebarElement;
         this.overlayElement = overlayElement;
+        this.direction = direction;
         
         this.isOpen = this.dragging = false;
-        this.translate = -100;
+        this.dragPercentage = 0;
         this.deltaX = 0;
         
         this.surpassedBreakpoint = checkSurpassBreakpoint();
+        this.handleResponsiveness();
         
         this.overlayElement.addEventListener("click", this.close);
         window.addEventListener("resize", this.onWindowResize);
@@ -55,10 +61,10 @@ class Sidebar {
         if (this.surpassedBreakpoint) {
             this.sidebarElement.style.transform = '';
             this.isOpen = false;
-            this.translate = 0;
+            this.dragPercentage = 0;
             this.overlayElement.classList.add('hidden');
         } else {
-            this.sidebarElement.style.transform = this.isOpen ? 'translateX(0)' : 'translateX(-100%)';
+            this.sidebarElement.style.transform = this.isOpen ? 'translateX(0)' : `translateX(${this.direction == 'ltr' ? '-100%' : '100%'})`;
         }
     }
 
@@ -68,7 +74,7 @@ class Sidebar {
 
     open = () => {
         this.isOpen = true;
-        this.translate = 0;
+        this.dragPercentage = 100;
 
         animate(this.sidebarElement, {
             x: '0%',
@@ -87,15 +93,12 @@ class Sidebar {
 
     close = () => {
         this.isOpen = false;
-        this.translate = -100;
+        this.dragPercentage = 0;
 
         animate(this.sidebarElement, {
-            x: '-100%',
+            x: this.direction == 'ltr' ? '-100%' : '100%',
             duration: 150,
             ease: 'linear',
-            onComplete: () => {
-                this.sidebarElement.classList.add('-translate-x-full');
-            },
         });
 
         animate(this.overlayElement, {
@@ -108,30 +111,40 @@ class Sidebar {
     };
     
     onBeginDrag = (e: any) => {
-        if (this.surpassedBreakpoint || e.x0 > 100 || this.isOpen) return;
-
+        if (this.surpassedBreakpoint || this.isOpen) return;
+        if (this.direction == 'ltr' && e.x0 > 100) return;
+        if (this.direction == 'rtl' && e.rect.width - e.x0 > 100) return;
+        
         this.dragging = true;
         this.deltaX = 0;
 
-        this.sidebarElement.style.transform = this.isOpen ? 'translateX(0)' : 'translateX(-100%)';
-        this.sidebarElement.classList.remove('-translate-x-full');
         this.overlayElement.classList.remove('hidden');
     }
     
     onDragging = (e: any) => {
         if (!this.dragging || this.surpassedBreakpoint) return;
+        
+        const clamp = (value: number, min: number, max: number) => {
+            return Math.min(Math.max(value, min), max);
+        }
 
         const width = this.getSidebarWidth();
 
         this.deltaX += e.dx;
+        
+        if (this.direction == 'ltr') {
+            this.dragPercentage =
+                clamp(this.deltaX / width, 0, 1);
 
-        this.translate = this.isOpen ?
-            Math.max(-100, Math.min(0, (this.deltaX / width) * 100)) :
-            Math.max(-100, Math.min(0, -100 + (this.deltaX / width) * 100));
-        this.sidebarElement.style.transform = `translateX(${this.translate}%)`;
+            this.sidebarElement.style.transform = `translateX(${-100 + this.dragPercentage * 100}%)`;
+        } else {
+            this.dragPercentage =
+                clamp(-this.deltaX / width, 0, 1);
+            
+            this.sidebarElement.style.transform = `translateX(${100 - this.dragPercentage * 100}%)`;
+        }
 
-        // Remap translate from -100 to 0 into opacity 0 to MAX_OVERLAY_OPACITY.
-        const opacity = (this.translate + 100) * MAX_OVERLAY_OPACITY / 100;
+        const opacity = this.dragPercentage * MAX_OVERLAY_OPACITY;
         this.overlayElement.style.opacity = `${opacity}%`;
         this.overlayElement.classList.toggle('hidden', opacity <= 0);
     }
@@ -141,7 +154,7 @@ class Sidebar {
 
         this.dragging = false;
 
-        this.translate > -50 ? this.open() : this.close();
+        this.dragPercentage >= 0.5 ? this.open() : this.close();
     }
 
     onWindowResize = () => {
@@ -160,10 +173,10 @@ class Sidebar {
     }
 }
 
-export function initializeSidebar(sidebarElement: HTMLElement, overlayElement: HTMLElement): Sidebar {
+export function initializeSidebar(sidebarElement: HTMLElement, overlayElement: HTMLElement, direction: SidebarDirection): Sidebar {
     document.body.classList.add('dragging-container')
     
-    return new Sidebar(sidebarElement, overlayElement);
+    return new Sidebar(sidebarElement, overlayElement, direction);
 }
 
 export function disposeSidebar(sidebar: Sidebar): void {
