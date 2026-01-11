@@ -3,6 +3,8 @@
 @inject IJSRuntime JavascriptRuntime
 @inject ILogger<Sidebar> Logger
 
+<div class="fixed top-0 bottom-0 w-[100px] lg:hidden bg-transparent touch-none select-none @(Direction == SidebarDirection.RightToLeft ? "right-0" : "left-0")" @ref="EdgeDetector"></div>
+
 <div @ref="OverlayElement" class="cursor-default absolute inset-0 bg-black hidden lg:hidden z-100" style="opacity: 0"></div>
 
 <aside @ref="RootElement" class="h-full absolute top-0 z-101 lg:static lg:translate-x-0 @(Direction == SidebarDirection.RightToLeft ? "right-0" : "left-0") @_cssClass" @attributes="AdditionalAttributes" style="@(Direction == SidebarDirection.RightToLeft ? "transform: translateX(100%);" : "transform: translateX(-100%);")">
@@ -21,6 +23,7 @@
 
     public ElementReference RootElement { get; set; }
     public ElementReference OverlayElement { get; set; }
+    public ElementReference EdgeDetector { get; set; }
 
     private IJSObjectReference? _module, _disposeState;
     
@@ -35,7 +38,7 @@
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
             _module = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import", "./js/Components/Sidebar.js");
-            _disposeState = await _module.InvokeAsync<IJSObjectReference>("initializeSidebar", RootElement, OverlayElement, Direction == SidebarDirection.RightToLeft ? "rtl" : "ltr");
+            _disposeState = await _module.InvokeAsync<IJSObjectReference>("initializeSidebar", RootElement, OverlayElement, EdgeDetector, Direction == SidebarDirection.RightToLeft ? "rtl" : "ltr");
         }
     }
 

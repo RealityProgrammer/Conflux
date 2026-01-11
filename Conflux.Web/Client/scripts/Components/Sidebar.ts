@@ -22,7 +22,7 @@ class Sidebar {
     private surpassedBreakpoint: boolean;
     private interactable: Interactable;
     
-    constructor(sidebarElement: HTMLElement, overlayElement: HTMLElement, direction: SidebarDirection) {
+    constructor(sidebarElement: HTMLElement, overlayElement: HTMLElement, edgeDetector: HTMLElement, direction: SidebarDirection) {
         this.sidebarElement = sidebarElement;
         this.overlayElement = overlayElement;
         this.direction = direction;
@@ -37,7 +37,7 @@ class Sidebar {
         this.overlayElement.addEventListener("click", this.close);
         window.addEventListener("resize", this.onWindowResize);
 
-        this.interactable = interact(document.body)
+        this.interactable = interact(edgeDetector)
             .styleCursor(false)
             .draggable({
                 inertia: false,
@@ -54,6 +54,7 @@ class Sidebar {
                     move: this.onDragging,
                     end: this.onEndDrag,
                 },
+                maxPerElement: 2,
             });
     }
     
@@ -110,10 +111,8 @@ class Sidebar {
         this.overlayElement.classList.add('hidden');
     };
     
-    onBeginDrag = (e: any) => {
+    onBeginDrag = (_e: any) => {
         if (this.surpassedBreakpoint || this.isOpen) return;
-        if (this.direction == 'ltr' && e.x0 > 100) return;
-        if (this.direction == 'rtl' && e.rect.width - e.x0 > 100) return;
         
         this.dragging = true;
         this.deltaX = 0;
@@ -173,10 +172,10 @@ class Sidebar {
     }
 }
 
-export function initializeSidebar(sidebarElement: HTMLElement, overlayElement: HTMLElement, direction: SidebarDirection): Sidebar {
+export function initializeSidebar(sidebarElement: HTMLElement, overlayElement: HTMLElement, edgeDetector: HTMLElement, direction: SidebarDirection): Sidebar {
     document.body.classList.add('dragging-container')
     
-    return new Sidebar(sidebarElement, overlayElement, direction);
+    return new Sidebar(sidebarElement, overlayElement, edgeDetector, direction);
 }
 
 export function disposeSidebar(sidebar: Sidebar): void {
