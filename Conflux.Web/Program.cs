@@ -121,7 +121,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IFriendshipService, FriendshipService>();
 builder.Services.AddScoped<IFriendshipEventDispatcher, FriendshipEventDispatcher>();
 builder.Services.AddViteServices();
-builder.Services.AddScoped<MarkdownPipeline>(services => {
+builder.Services.AddSingleton<MarkdownPipeline>(services => {
     var pipeline = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
         .Build();
