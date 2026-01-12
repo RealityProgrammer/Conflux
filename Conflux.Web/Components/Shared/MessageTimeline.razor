@@ -178,29 +178,43 @@
                      ArrowCssClass="bg-gray-750 border-r border-r-gray-600 border-t border-t-gray-600"
                      Placement="left" Offset="8"
                      CloseWhenClickOutside="true"
-                     class="w-60 bg-gray-750 text-white flex flex-col gap-0.5 p-1 rounded-lg shadow-md border border-gray-600">
+                     class="w-60 bg-gray-750 text-white flex flex-col gap-1 p-1 rounded-lg shadow-md border border-gray-600">
                 @{ Debug.Assert(_extraActionTargetMessage != null); }
                 
-                <button class="px-2! py-1! button-nav-menu" @onclick="HandleMessageReplyViaExtra">
-                    <TurnArrow class="size-5 fill-none stroke-white"/> Reply Message
+                <button class="p-2! button-nav-menu" @onclick="HandleMessageReplyViaExtra">
+                    <TurnArrow class="size-5 fill-none stroke-white"/>
+                    
+                    <span class="text-sm">Reply Message</span>
                 </button>
                 
                 @if (_extraActionTargetMessage.SenderId == UserId) {
-                    <hr class="border-t border-t-gray-600 px-2 my-1"/>
+                    <hr class="border-t border-t-gray-600 px-2"/>
                     
-                    <button class="px-2! py-1! button-nav-menu" @onclick="HandleMessageEditViaExtra">
-                        <Pencil class="size-5 fill-white"/> Edit Message
+                    <button class="p-2! button-nav-menu" @onclick="HandleMessageEditViaExtra">
+                        <Pencil class="size-5 fill-white"/>
+                        
+                        <span class="text-sm">Edit Message</span>
                     </button>
                     
-                    <button class="px-2! py-1! button-nav-menu text-red-500" @onclick="HandleMessageDeleteViaExtra">
-                        <Trashcan class="size-5 fill-red-500"/> Delete Message
+                    <button class="p-2! button-nav-menu text-red-500" @onclick="HandleMessageDeleteViaExtra">
+                        <Trashcan class="size-5 fill-red-500"/> 
+                        
+                        <span class="text-sm">Delete Message</span>
                     </button>
                 }
                 
-                <hr class="border-t border-t-gray-600 mx-2 my-1"/>
+                <hr class="border-t border-t-gray-600 mx-2"/>
                 
-                <button class="px-2! py-1! button-nav-menu" @onclick="HandleCopyMessage">
-                    <Copy class="size-5 fill-white"/> Copy Message
+                <button class="p-2! button-nav-menu" @onclick="HandleCopyMessage">
+                    <Copy class="size-5 fill-white"/>
+                    
+                    <span class="text-sm">Copy Message</span>
+                </button>
+                
+                <button class="p-2! button-nav-menu group" disabled>
+                    <Volume Variation="VolumeVariations.Up" class="size-5 fill-white group-disabled:fill-gray-400"/>
+                    
+                    <span class="text-sm">Speak Message</span>
                 </button>
             </Popover>
             break;
