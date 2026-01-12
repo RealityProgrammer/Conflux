@@ -42,6 +42,24 @@ function updateTooltipPosition(targetElement: Element, tooltipElement: HTMLEleme
                 bottom: '',
                 [staticSide]: '-4px',
             });
+            
+            // switch (position.placement.split('-')[0]) {
+            //     case 'top':
+            //         arrowElement.style.transform = 'translateY(-50%)';
+            //         break;
+            //        
+            //     case 'bottom':
+            //         arrowElement.style.transform = 'translateY(50%)';
+            //         break;
+            //        
+            //     case 'left':
+            //         arrowElement.style.transform = 'translateX(-50%)';
+            //         break;
+            //        
+            //     case 'right':
+            //         arrowElement.style.transform = 'translateX(50%)';
+            //         break;
+            // }
         }
     });
 }
