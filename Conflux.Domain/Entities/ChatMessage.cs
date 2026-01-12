@@ -21,4 +21,6 @@ public class ChatMessage : ICreatedAtColumn {
     public ApplicationUser Sender { get; set; } = null!;
     public ChatMessage? ReplyMessage { get; set; }
     public ICollection<MessageAttachment> Attachments { get; set; } = null!;
+
+    public ICollection<MessageReport> Reports { get; set; } = null!;
 }

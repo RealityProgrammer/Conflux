@@ -17,6 +17,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<CommunityChannel> CommunityChannels { get; set; } = null!;
     public DbSet<CommunityChannelCategory> CommunityChannelCategories { get; set; } = null!;
     public DbSet<CommunityRole> CommunityRoles { get; set; } = null!;
+    public DbSet<MessageReport> MessageReports { get; set; } = null!;
     
     public override int SaveChanges() {
         InsertTimestamps();
@@ -160,6 +161,16 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .OnDelete(DeleteBehavior.Cascade);
         }).Entity<CommunityChannel>(entity => {
             entity.HasKey(x => x.Id);
+        });
+
+        builder.Entity<MessageReport>(entity => {
+            entity.HasKey(x => x.Id);
+
+            entity.HasOne(report => report.Message)
+                .WithMany(message => message.Reports)
+                .HasForeignKey(report => report.MessageId)
+                .HasPrincipalKey(message => message.Id)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
