@@ -138,25 +138,7 @@
 
                                     <div class="min-w-0 p-0.5 flex flex-row flex-wrap gap-1">
                                         @foreach (IConversationService.MessageAttachmentDTO attachment in message.Attachments) {
-                                            switch (attachment.Type) {
-                                                case MessageAttachmentType.Image:
-                                                    <img src="@ContentService.GetAssetPath(attachment.Path)" alt="" class="max-w-3xl max-h-80 h-full rounded-lg aspect-auto">
-                                                    break;
-                                                        
-                                                case MessageAttachmentType.Audio:
-                                                    <audio controls class="w-full rounded-lg">
-                                                        <source src="@ContentService.GetAssetPath(attachment.Path)">
-                                                    </audio>
-                                                    break;
-                                                        
-                                                case MessageAttachmentType.Video:
-                                                    <video controls class="max-w-3xl max-h-80 h-full aspect-auto">
-                                                        <source src="@ContentService.GetAssetPath(attachment.Path)">
-                                                    </video>
-                                                    break;
-                                                        
-                                                default: break;
-                                            }
+                                            <MessageAttachment Type="attachment.Type" ResourcePath="@ContentService.GetAssetPath(attachment.Path)"/>
                                         }
                                     </div>
                                 </div>
@@ -176,7 +158,8 @@
                      @bind-IsShowing:get="_showExtraActionPopover"
                      @bind-IsShowing:set="SetIsShowingExtraActionPopover"
                      ArrowCssClass="bg-gray-750 border-r border-r-gray-600 border-t border-t-gray-600"
-                     Placement="left" Offset="8"
+                     Placement="left"
+                     Offset="8"
                      CloseWhenClickOutside="true"
                      class="w-60 bg-gray-750 text-white flex flex-col gap-1 p-1 rounded-lg shadow-md border border-gray-600">
                 @{ Debug.Assert(_extraActionTargetMessage != null); }
@@ -215,6 +198,12 @@
                     <Volume Variation="VolumeVariations.Up" class="size-5 fill-white group-disabled:fill-gray-400"/>
                     
                     <span class="text-sm">Speak Message</span>
+                </button>
+                
+                <button class="p-2! button-nav-menu" @onclick="HandleReportMessage">
+                    <Flag class="size-5 fill-red-400"/>
+                    
+                    <span class="text-sm text-red-400">Report Message</span>
                 </button>
             </Popover>
             break;
@@ -565,6 +554,18 @@
         }
 
         await JavascriptRuntime.InvokeVoidAsync("window.copyToClipboard", _extraActionTargetMessage.Body);
+        _showExtraActionPopover = false;
+    }
+
+    private async Task HandleReportMessage() {
+        if (!_showExtraActionPopover || _extraActionTargetMessage == null) {
+            return;
+        }
+
+        ModalService.Open<ReportMessageModal>(parameters: new Dictionary<string, object?> {
+            [nameof(ReportMessageModal.MessageId)] = _extraActionTargetMessage.MessageId,
+        });
+
         _showExtraActionPopover = false;
     }
     

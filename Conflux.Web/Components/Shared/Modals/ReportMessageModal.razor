@@ -1,0 +1,91 @@
+﻿@using Conflux.Components.Shared.Icons
+@using Conflux.Helpers
+@using Microsoft.EntityFrameworkCore
+
+@inherits BaseModal
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IContentService ContentService
+
+<div class="flex flex-row justify-center items-center size-full text-white">
+    <Card class="sm:w-2/3 md:w-1/2 lg:w-1/3">
+        <CardHeader Title="Report Message" OnCloseRequested="EventUtils.AsNonRenderingEventHandler(HandleCloseModal)" class="border-b border-b-gray-600"/>
+
+        <CardContent class="scrollbar-hide">
+            @switch (_status) {
+                case Status.Loading:
+                    <div class="flex flex-row justify-center items-center">
+                        <Spinner class="size-16 fill-white"/>
+                    </div>
+                    break;
+                    
+                case Status.Failure:
+                    <div class="flex flex-row justify-center items-center">
+                        <p class="text-sm text-gray-400">Failed to load message.</p>
+                    </div>
+                    break;
+                    
+                case Status.Success:
+                    <p>Are you sure you want to report this message?</p>
+                    
+                    <div class="mt-2 p-3 flex flex-row border border-gray-500 rounded-lg">
+                        <Avatar ImageSrc="@(string.IsNullOrEmpty(_messageDisplay.SenderAvatar) ? null : ContentService.GetAssetPath(_messageDisplay.SenderAvatar))"
+                                ImageAlt="Sender's Avatar"
+                                class="flex-none size-10 mr-2 mt-1"/>
+        
+                        <div class="flex-1 flex flex-col">
+                            <p>@_messageDisplay.SenderDisplayName</p>
+                            
+                            <p class="whitespace-pre-wrap wrap-anywhere">
+                                @_messageDisplay.Body
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <p class="mt-2">What type of violation do you want to report for?</p>
+                    break;
+            }
+        </CardContent>
+        
+        @if (_status == Status.Success) {
+            <CardFooter>
+                <p>Send Report</p>
+            </CardFooter>
+        }
+    </Card>
+</div>
+
+@code {
+    [Parameter] public Guid MessageId { get; set; }
+
+    private Status _status;
+    private MessageDisplayDTO _messageDisplay;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+            _messageDisplay = await dbContext.ChatMessages
+                .Where(m => m.Id == MessageId)
+                .Include(m => m.Sender)
+                .Select(m => new MessageDisplayDTO(m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body))
+                .FirstOrDefaultAsync();
+
+            _status = string.IsNullOrEmpty(_messageDisplay.SenderDisplayName) ? Status.Failure : Status.Success;
+            StateHasChanged();
+        }
+    }
+
+    private void HandleCloseModal() {
+        CloseModal();
+    }
+
+    private readonly record struct MessageDisplayDTO(string SenderDisplayName, string? SenderAvatar, string? Body);
+
+    private enum Status {
+        Loading,
+        Failure,
+        Success,
+    }
+}
