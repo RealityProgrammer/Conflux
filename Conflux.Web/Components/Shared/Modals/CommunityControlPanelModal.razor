@@ -20,9 +20,9 @@
 @code {
     // Copy from CommunityPage until we figure out a better way to managing parameters and rerender.
     [Parameter, EditorRequired] public Guid CommunityId { get; set; }
-    [Parameter, EditorRequired] public MemberRolePermissions? MemberRolePermissions { get; set; }
+    [Parameter, EditorRequired] public RolePermissionsWithId? MemberRolePermissions { get; set; }
     
-    private MemberRolePermissions? _memberRole;
+    private RolePermissionsWithId? _memberRole;
 
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
 
@@ -53,7 +53,7 @@
 
     private void OnRoleDeleted(CommunityRoleDeletedEventArgs args) {
         if (args.RoleId == _memberRole?.RoleId) {
-            _memberRole = MemberRolePermissions.Default;
+            _memberRole = RolePermissionsWithId.Default;
             InvokeAsync(StateHasChanged);
         }
     }

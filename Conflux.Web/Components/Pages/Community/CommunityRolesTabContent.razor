@@ -307,7 +307,7 @@
 @code {
     [Parameter] public Guid CommunityId { get; set; }
     
-    [CascadingParameter] private MemberRolePermissions? UserPermissions { get; set; }
+    [CascadingParameter] private RolePermissionsWithId? UserPermissions { get; set; }
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
 
     // Role Selection Dropdown.

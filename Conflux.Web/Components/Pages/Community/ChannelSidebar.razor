@@ -162,7 +162,7 @@
     private Community? _community;
     private string? _invitationUrl;
 
-    [CascadingParameter] private MemberRolePermissions? UserPermissions { get; set; }
+    [CascadingParameter] private RolePermissionsWithId? UserPermissions { get; set; }
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
 
     protected override void OnParametersSet() {

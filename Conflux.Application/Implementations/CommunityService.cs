@@ -186,7 +186,7 @@ public class CommunityService(
         return permissions;
     }
 
-    public async Task<MemberRolePermissions?> GetUserRolePermissionsAsync(string userId, Guid communityId) {
+    public async Task<RolePermissionsWithId?> GetUserRolePermissionsAsync(string userId, Guid communityId) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
         

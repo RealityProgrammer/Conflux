@@ -572,7 +572,7 @@
     private void OnMessageReceived(MessageReceivedEventArgs args) {
         // Only insert if we're at the bottom.
         if (_endBottom && args.ConversationId == ConversationId) {
-            InvokeAsync(async () => {
+            InvokeAsync((Func<Task>)(async () => {
                 _jumpToBottom = await _module!.InvokeAsync<bool>("shouldMaintainScrollBottom", _scrollContainer);
 
                 await using var dbContext = await DbContextFactory.CreateDbContextAsync();
@@ -620,7 +620,7 @@
                 }
 
                 StateHasChanged();
-            });
+            }));
         }
     }
 

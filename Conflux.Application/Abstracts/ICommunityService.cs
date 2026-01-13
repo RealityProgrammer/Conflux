@@ -20,7 +20,7 @@ public interface ICommunityService {
     Task<RolePermissions?> GetPermissionsAsync(Guid roleId);
     Task<bool> UpdatePermissionsAsync(Guid communityId, Guid roleId, RolePermissions permissions);
 
-     Task<MemberRolePermissions?> GetUserRolePermissionsAsync(string userId, Guid communityId);
+     Task<RolePermissionsWithId?> GetUserRolePermissionsAsync(string userId, Guid communityId);
 
     Task<bool> SetMembersRole(Guid communityId, IReadOnlyCollection<Guid> memberIds, Guid? roleId);
 
