@@ -1,0 +1,141 @@
+﻿@using Conflux.Application.Dto
+@using Conflux.Components.Shared
+@using Conflux.Components.Shared.Icons
+@using Microsoft.EntityFrameworkCore
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IReportService ReportService
+
+<div class="flex flex-col h-full gap-1 overflow-y-auto">
+    <header class="flex-none ml-2">
+        <h1 class="text-xl font-bold">Reports</h1>
+        <p class="text-sm text-gray-400">The naughty list</p>
+    </header>
+    
+    <section class="flex-1 h-full min-h-0 px-2">
+        <Collapsible class="w-full mt-2 border-b border-b-gray-600 pb-1.5" @bind-IsExpanded:get="_statisticCollapsible" @bind-IsExpanded:set="SetStatisticsCollapsible">
+            <HeaderContent>
+                <span class="font-semibold">Statistics</span>
+            </HeaderContent>
+            
+            <ChildContent>
+                @if (_countStatistics == null) {
+                    <div class="flex flex-row justify-center items-center">
+                        <Spinner class="size-8 fill-white"/>
+                    </div>
+                } else {
+                    var countStatistic = _countStatistics.Value;
+                    
+                    <section class="mt-2 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
+                        <div class="border border-gray-600 shadow-md rounded-lg p-2">
+                            <p>Total report count:</p>
+
+                            <div class="mt-3 flex justify-end">
+                                <p class="text-3xl">@countStatistic.Total</p>
+                            </div>
+                        </div>
+
+                        <div class="border border-gray-600 shadow-md rounded-lg p-2">
+                            <div class="flex flex-row gap-2 items-center">
+                                <p class="flex-none">
+                                    Report count
+                                </p>
+
+                                <SelectionDropdown @bind-Value="_countTimeTarget" ContainerCssClass="flex-1" ButtonCssClass="w-full h-9" PopoverCssClass="w-full">
+                                    <ValueDisplayContent>
+                                        @switch (_countTimeTarget) {
+                                            case ReportCountTimeTarget.Today:
+                                                <p>Today</p>
+                                                break;
+                                                
+                                            case ReportCountTimeTarget.ThisMonth:
+                                                <p>This Month</p>
+                                                break;
+                                                
+                                            case ReportCountTimeTarget.ThisYear:
+                                                <p>This Year</p>
+                                                break;
+                                        }
+                                    </ValueDisplayContent>
+                                    
+                                    <ChildContent>
+                                        <SelectionOption class="px-1.5 py-1 text-left button-nav-menu" Value="@ReportCountTimeTarget.Today">Today</SelectionOption>
+                                        <SelectionOption class="px-1.5 py-1 text-left button-nav-menu" Value="@ReportCountTimeTarget.ThisMonth">This Month</SelectionOption>
+                                        <SelectionOption class="px-1.5 py-1 text-left button-nav-menu" Value="@ReportCountTimeTarget.ThisYear">This Year</SelectionOption>
+                                    </ChildContent>
+                                </SelectionDropdown>
+                            </div>
+
+                            <div class="mt-1 flex justify-end">
+                                @switch (_countTimeTarget) {
+                                    case ReportCountTimeTarget.Today:
+                                        <p class="text-3xl">@countStatistic.Today</p>
+                                        break;
+                                                
+                                    case ReportCountTimeTarget.ThisMonth:
+                                        <p class="text-3xl">@countStatistic.ThisMonth</p>
+                                        break;
+                                                
+                                    case ReportCountTimeTarget.ThisYear:
+                                        <p class="text-3xl">@countStatistic.ThisYear</p>
+                                        break;
+                                }
+                            </div>
+                        </div>
+
+                        <div class="border border-gray-600 shadow-md rounded-lg p-2">
+                            <p>Resolved Percentage:</p>
+
+                            <div class="mt-3 flex justify-end">
+                                <p class="text-3xl">@(((float)countStatistic.Resolved / countStatistic.Total).ToString("P2"))</p>
+                            </div>
+                        </div>
+                    </section>
+                }
+                
+            </ChildContent>
+        </Collapsible>
+        
+        <Collapsible class="w-full mt-2 border-b border-b-gray-600 pb-1.5" @bind-IsExpanded="_reportsCollapsible">
+            <HeaderContent>
+                <span class="font-semibold">Reports</span>
+            </HeaderContent>
+            
+            <ChildContent>
+                <div class="block lg:flex lg:flex-row lg:gap-2 mt-2">
+                    <div class="lg:flex-1 h-128 border border-gray-600 rounded-md">
+                        
+                    </div>
+                    
+                    <div class="mt-2 lg:mt-0 lg:flex-3 h-128 border border-gray-600 rounded-md">
+                        
+                    </div>
+                </div>
+            </ChildContent>
+        </Collapsible>
+    </section>
+</div>
+
+@code {
+    [Parameter] public Guid CommunityId { get; set; }
+
+    private ReportCountStatistics? _countStatistics;
+    private ReportCountTimeTarget _countTimeTarget;
+
+    private bool _statisticCollapsible;
+    private bool _reportsCollapsible;
+
+    private async Task SetStatisticsCollapsible(bool value) {
+        if (value && _countStatistics == null) {
+            _countStatistics = await ReportService.GetReportCountStatisticsAsync(CommunityId);
+        }
+
+        _statisticCollapsible = value;
+    }
+
+    private enum ReportCountTimeTarget {
+        Today,
+        ThisMonth,
+        ThisYear,
+    }
+}

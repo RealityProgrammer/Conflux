@@ -8,7 +8,7 @@
             }
         </span>
         
-        @{ string chevronCssClass = $"flex-none fill-white size-3 transition-transform duration-250 ease-in-out {(_openDropdown ? "rotate-0" : "rotate-180")}"; }
+        @{ string chevronCssClass = $"flex-none fill-white size-3 transition-transform duration-250 ease-in-out ml-2 {(_openDropdown ? "rotate-0" : "rotate-180")}"; }
         <Chevron class="@chevronCssClass" Direction="ChevronDirection.Down" Mode="ChevronMode.Normal"></Chevron>
     </button>
 
