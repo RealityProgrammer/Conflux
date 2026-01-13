@@ -1,65 +1,165 @@
 ﻿@using Conflux.Components.Shared.Icons
 @using Conflux.Helpers
 @using Microsoft.EntityFrameworkCore
+@using System.ComponentModel.DataAnnotations
+@using System.Numerics
 
 @inherits BaseModal
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject IContentService ContentService
+@inject IReportService ReportService
 
-<div class="flex flex-row justify-center items-center size-full text-white">
-    <Card class="sm:w-2/3 md:w-1/2 lg:w-1/3">
-        <CardHeader Title="Report Message" OnCloseRequested="EventUtils.AsNonRenderingEventHandler(HandleCloseModal)" class="border-b border-b-gray-600"/>
-
-        <CardContent class="scrollbar-hide">
-            @switch (_status) {
-                case Status.Loading:
-                    <div class="flex flex-row justify-center items-center">
-                        <Spinner class="size-16 fill-white"/>
-                    </div>
-                    break;
-                    
-                case Status.Failure:
-                    <div class="flex flex-row justify-center items-center">
-                        <p class="text-sm text-gray-400">Failed to load message.</p>
-                    </div>
-                    break;
-                    
-                case Status.Success:
-                    <p>Are you sure you want to report this message?</p>
-                    
-                    <div class="mt-2 p-3 flex flex-row border border-gray-500 rounded-lg">
-                        <Avatar ImageSrc="@(string.IsNullOrEmpty(_messageDisplay.SenderAvatar) ? null : ContentService.GetAssetPath(_messageDisplay.SenderAvatar))"
-                                ImageAlt="Sender's Avatar"
-                                class="flex-none size-10 mr-2 mt-1"/>
-        
-                        <div class="flex-1 flex flex-col">
-                            <p>@_messageDisplay.SenderDisplayName</p>
-                            
-                            <p class="whitespace-pre-wrap wrap-anywhere">
-                                @_messageDisplay.Body
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <p class="mt-2">What type of violation do you want to report for?</p>
-                    break;
+<EditForm EditContext="_editContext" FormName="ReportMessage" class="size-full" OnSubmit="SubmitReport">
+    <DataAnnotationsValidator/>
+    
+    <div class="flex flex-row justify-center items-center size-full text-white py-3">
+        <Card class="sm:w-2/3 md:w-1/2 lg:w-1/3 overflow-y-auto max-h-full">
+            @{
+                Action closeEvent = EventUtils.AsNonRenderingEventHandler(CloseModal);
             }
-        </CardContent>
-        
-        @if (_status == Status.Success) {
-            <CardFooter>
-                <p>Send Report</p>
-            </CardFooter>
-        }
-    </Card>
-</div>
+
+            <CardHeader Title="Report Message" OnCloseRequested="closeEvent" class="border-b border-b-gray-600"/>
+
+            <CardContent class="scrollbar-hide">
+                @switch (_status) {
+                    case Status.Loading:
+                        <div class="flex flex-row justify-center items-center">
+                            <Spinner class="size-16 fill-white"/>
+                        </div>
+                        break;
+
+                    case Status.Failure:
+                        <div class="flex flex-row justify-center items-center">
+                            <p class="text-sm text-gray-400">Failed to load message.</p>
+                        </div>
+                        break;
+
+                    case Status.Success:
+                        <p>Are you sure you want to report this message?</p>
+
+                        <div class="mt-2 p-3 flex flex-row border border-gray-500 rounded-lg">
+                            <Avatar ImageSrc="@(string.IsNullOrEmpty(_messageDisplay.SenderAvatar) ? null : ContentService.GetAssetPath(_messageDisplay.SenderAvatar))"
+                                    ImageAlt="Sender's Avatar"
+                                    class="flex-none size-10 mr-2 mt-1"/>
+
+                            <div class="flex-1 flex flex-col">
+                                <p>@_messageDisplay.SenderDisplayName</p>
+
+                                @if (!string.IsNullOrEmpty(_messageDisplay.Body)) {
+                                    <p class="whitespace-pre-wrap wrap-anywhere">
+                                        @_messageDisplay.Body
+                                    </p>
+                                }
+                            </div>
+                        </div>
+
+                        <section class="mt-2">
+                            <label class="input-label">Type of violation:</label>
+
+                            <div @ref="_reasonsContainer" class="mt-1 mb-2 flex flex-col gap-1 overflow-y-auto p-1 border border-gray-500 rounded-md bg-gray-700">
+                                <label class="flex-none flex flex-row items-center p-2 bg-transparent hover:bg-white/15 rounded-lg group transition-transform duration-250 ease-in-out active:scale-95">
+                                    <InputCheckbox @bind-Value="Model!.IsSpam" class="flex-none mr-4 size-6 hidden"/>
+
+                                    <p class="font-semibold flex-1">Spam</p>
+
+                                    <Check class="flex-none size-5 fill-white invisible group-has-checked:visible" Variation="CheckVariation.Large"/>
+                                </label>
+
+                                <label class="flex-none flex flex-row items-center p-2 bg-transparent hover:bg-white/15 rounded-lg group transition-transform duration-250 ease-in-out active:scale-95">
+                                    <InputCheckbox @bind-Value="Model!.IsHarassment" class="flex-none mr-4 size-6 hidden"/>
+
+                                    <p class="font-semibold flex-1">Harassment</p>
+
+                                    <Check class="flex-none size-5 fill-white invisible group-has-checked:visible" Variation="CheckVariation.Large"/>
+                                </label>
+
+                                <label class="flex-none flex flex-row items-center p-2 bg-transparent hover:bg-white/15 rounded-lg group transition-transform duration-250 ease-in-out active:scale-95">
+                                    <InputCheckbox @bind-Value="Model!.IsMisinformation" class="flex-none mr-4 size-6 hidden"/>
+
+                                    <p class="font-semibold flex-1">Misinformation</p>
+
+                                    <Check class="flex-none size-5 fill-white invisible group-has-checked:visible" Variation="CheckVariation.Large"/>
+                                </label>
+
+                                <label class="flex-none flex flex-row items-center p-2 bg-transparent hover:bg-white/15 rounded-lg group transition-transform duration-250 ease-in-out active:scale-95">
+                                    <InputCheckbox @bind-Value="Model!.IsViolence" class="flex-none mr-4 size-6 hidden"/>
+
+                                    <p class="font-semibold flex-1">Violence</p>
+
+                                    <Check class="flex-none size-5 fill-white invisible group-has-checked:visible" Variation="CheckVariation.Large"/>
+                                </label>
+
+                                <label class="flex-none flex flex-row items-center p-2 bg-transparent hover:bg-white/15 rounded-lg group transition-transform duration-250 ease-in-out active:scale-95">
+                                    <InputCheckbox @bind-Value="Model!.IsExposingInformation" class="flex-none mr-4 size-6 hidden"/>
+
+                                    <p class="font-semibold flex-1">Exposing Private Information</p>
+
+                                    <Check class="flex-none size-5 fill-white invisible group-has-checked:visible" Variation="CheckVariation.Large"/>
+                                </label>
+
+                                <label class="flex-none flex flex-row items-center p-2 bg-transparent hover:bg-white/15 rounded-lg group transition-transform duration-250 ease-in-out active:scale-95">
+                                    <InputCheckbox @bind-Value="Model!.IsOther" class="flex-none mr-4 size-6 hidden"/>
+
+                                    <p class="font-semibold flex-1">Other</p>
+
+                                    <Check class="flex-none size-5 fill-white invisible group-has-checked:visible" Variation="CheckVariation.Large"/>
+                                </label>
+                            </div>
+                            
+                            <Popover TargetReference="_reasonsContainer" IsShowing="@(!_editContext.IsValid(() => Model!.ReasonBitfield))" ArrowCssClass="bg-[#ff4b6a]" Placement="top" Offset="8">
+                                <ValidationMessage For="() => Model!.ReasonBitfield" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"/>
+                            </Popover>
+
+                            <label class="input-label">Extra Message:</label>
+                            <InputTextArea @ref="_extraMessageTextArea" @bind-Value="Model!.ExtraMessage" class="input-field h-33 px-2 py-1 w-full mt-1 resize-none" maxlength="255"/>
+
+                            @if (_extraMessageTextArea is { Element: { } targetElement }) {
+                                <Popover TargetReference="targetElement" IsShowing="@(!_editContext.IsValid(() => Model!.ExtraMessage!))" ArrowCssClass="bg-[#ff4b6a]" Placement="top" Offset="8">
+                                    <ValidationMessage For="() => Model!.ExtraMessage" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"/>
+                                </Popover>
+                            }
+                        </section>
+                        break;
+                }
+            </CardContent>
+
+            @if (_status == Status.Success) {
+                <CardFooter class="flex flex-row gap-2 justify-end border-t border-t-gray-600 pt-4">
+                    <button type="button" @onclick="closeEvent" class="button-danger w-24">Cancel</button>
+
+                    <ProcessingStateButton @bind-IsProcessing="_isProcessingSubmit" class="button-primary w-24" ProcessingCssClass="flex flex-row justify-center" type="submit">
+                        <ChildContent>
+                            Report
+                        </ChildContent>
+
+                        <ProcessingContent>
+                            <Spinner class="size-6 fill-white"/>
+                        </ProcessingContent>
+                    </ProcessingStateButton>
+                </CardFooter>
+            }
+        </Card>
+    </div>
+</EditForm>
 
 @code {
     [Parameter] public Guid MessageId { get; set; }
 
     private Status _status;
     private MessageDisplayDTO _messageDisplay;
+    
+    [SupplyParameterFromForm(FormName = "ReportMessage")] private InputModel? Model { get; set; }
+    private EditContext _editContext = null!;
+
+    private ElementReference _reasonsContainer;
+    private InputTextArea? _extraMessageTextArea;
+    private bool _isProcessingSubmit;
+
+    protected override void OnInitialized() {
+        Model ??= new();
+        _editContext = new(Model);
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
@@ -77,8 +177,65 @@
         }
     }
 
-    private void HandleCloseModal() {
-        CloseModal();
+    private static readonly RenderFragment _reportSuccessBody =
+        @<p>Your report has been recorded.<br/>Don't worry, we won't let the reported person who report them.</p>;
+
+    private static readonly RenderFragment _reportFailureBody =
+        @<p>An error has been occured while we're processing your report.<br/>Please try again later.</p>;
+
+    private async Task SubmitReport() {
+        if (!_editContext.Validate()) {
+            return;
+        }
+
+        _isProcessingSubmit = true;
+
+        try {
+            ReportReasons[] reasons = new ReportReasons[BitOperations.PopCount((uint)Model!.ReasonBitfield)];
+            int index = 0;
+            
+            if (Model.IsSpam) {
+                reasons[index++] = ReportReasons.Spam;
+            }
+            
+            if (Model.IsHarassment) {
+                reasons[index++] = ReportReasons.Harassment;
+            }
+            
+            if (Model.IsMisinformation) {
+                reasons[index++] = ReportReasons.Misinformation;
+            }
+            
+            if (Model.IsViolence) {
+                reasons[index++] = ReportReasons.Violence;
+            }
+            
+            if (Model.IsExposingInformation) {
+                reasons[index++] = ReportReasons.ExposingInformation;
+            }
+            
+            if (Model.IsOther) {
+                reasons[index] = ReportReasons.Other;
+            }
+
+            bool success = await ReportService.ReportMessageAsync(MessageId, Model.ExtraMessage, reasons);
+
+            if (success) {
+                ModalService.Open<OperationSuccessModal>(parameters: new Dictionary<string, object?> {
+                    [nameof(OperationSuccessModal.Title)] = "Report Successfully",
+                    [nameof(OperationSuccessModal.Body)] = _reportSuccessBody,
+                });
+
+                CloseModal();
+            } else {
+                ModalService.Open<OperationFailureModal>(parameters: new Dictionary<string, object?> {
+                    [nameof(OperationSuccessModal.Title)] = "Report Successfully",
+                    [nameof(OperationSuccessModal.Body)] = _reportSuccessBody,
+                });
+            }
+        } finally {
+            _isProcessingSubmit = false;
+        }
     }
 
     private readonly record struct MessageDisplayDTO(string SenderDisplayName, string? SenderAvatar, string? Body);
@@ -87,5 +244,41 @@
         Loading,
         Failure,
         Success,
+    }
+
+    // TODO:
+    // Rewrite this code, I just got back from a 8-5 and it is 8:40pm I really not want to
+    // waste any more time figuring out how to handle multiple checkbox selection in Blazor.
+    private sealed class InputModel {
+        [Range(1, int.MaxValue, ErrorMessage = "Please select report reasons.")]
+        public int ReasonBitfield { get; set; }
+
+        public bool IsSpam {
+            get => (ReasonBitfield & 0b1) == 0b1;
+            set => ReasonBitfield = value ? ReasonBitfield | 0b1 : ReasonBitfield & ~0b1;
+        }
+        public bool IsHarassment {
+            get => (ReasonBitfield & 0b10) == 0b10;
+            set => ReasonBitfield = value ? ReasonBitfield | 0b10 : ReasonBitfield & ~0b10;
+        }
+        public bool IsMisinformation {
+            get => (ReasonBitfield & 0b100) == 0b100;
+            set => ReasonBitfield = value ? ReasonBitfield | 0b100 : ReasonBitfield & ~0b100;
+        }
+        public bool IsViolence {
+            get => (ReasonBitfield & 0b1000) == 0b1000;
+            set => ReasonBitfield = value ? ReasonBitfield | 0b1000 : ReasonBitfield & ~0b1000;
+        }
+        public bool IsExposingInformation {
+            get => (ReasonBitfield & 0b10000) == 0b10000;
+            set => ReasonBitfield = value ? ReasonBitfield | 0b10000 : ReasonBitfield & ~0b10000;
+        }
+        public bool IsOther {
+            get => (ReasonBitfield & 0b100000) == 0b100000;
+            set => ReasonBitfield = value ? ReasonBitfield | 0b100000 : ReasonBitfield & ~0b100000;
+        }
+        
+        [MaxLength(10, ErrorMessage = "Extra message can only have maximum length of {1} characters.")]
+        public string? ExtraMessage { get; set; }
     }
 }

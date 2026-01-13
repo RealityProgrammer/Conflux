@@ -2,7 +2,7 @@
 
 <div class="flex flex-row justify-center items-center size-full text-white">
     <Card>
-        <CardHeader Title="Avatar Adjustment" OnCloseRequested="CloseModal"/>
+        <CardHeader Title="Avatar Adjustment" OnCloseRequested="@((Action<object?>)CloseModal)"/>
 
         <CardContent class="flex flex-row justify-center items-center">
             <PreviewableImageInput File="File" FileChanged="FileChanged" FileExpression="FileExpression"

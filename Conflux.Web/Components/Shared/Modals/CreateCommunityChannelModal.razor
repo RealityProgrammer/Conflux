@@ -7,7 +7,7 @@
 
 <div class="flex flex-row justify-center items-center size-full text-white">
     <Card>
-        <CardHeader Title="Create Communicate Channel" Subtext="Building another room for your house" OnCloseRequested="CloseModal"/>
+        <CardHeader Title="Create Communicate Channel" Subtext="Building another room for your house" OnCloseRequested="@((Action<object?>)CloseModal)"/>
         
         <CardContent class="flex flex-col pb-1">
             <CreateCommunityChannelForm OnCreateRequest="HandleChannelCreate"/>

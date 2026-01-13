@@ -2,14 +2,14 @@
 
 <div class="flex flex-row justify-center items-center size-full text-white">
     <Card>
-        <CardHeader Title="@Title" Subtext="@Subtitle" OnCloseRequested="CloseModal"/>
+        <CardHeader Title="@Title" Subtext="@Subtitle" OnCloseRequested="@((Action<object?>)CloseModal)"/>
 
         <CardContent class="pb-3">
             @Body
         </CardContent>
         
         <CardFooter class="flex flex-row justify-end gap-2">
-            <button type="button" class="button-primary w-24" @onclick="CloseModal">Ok</button>
+            <button type="button" class="button-primary w-24" @onclick="@((Action<object?>)CloseModal)">Ok</button>
         </CardFooter>
     </Card>
 </div>

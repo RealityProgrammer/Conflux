@@ -137,6 +137,7 @@ builder.Services.AddScoped<ModalService>();
 builder.Services.AddSingleton<ICommunityCacheService, CommunityCacheService>();
 builder.Services.AddScoped<ICommunityService, CommunityService>();
 builder.Services.AddScoped<ICommunityEventDispatcher, CommunityEventDispatcher>();
+builder.Services.AddScoped<IReportService, ReportService>();
 
 // SignalR related services.
 builder.Services.AddSignalR(options => {

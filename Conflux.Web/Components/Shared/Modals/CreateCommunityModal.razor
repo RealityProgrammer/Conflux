@@ -10,7 +10,7 @@
     @switch (_state) {
         case State.TemplateSelection:
             <Card class="z-10 overflow-hidden">
-                <CardHeader Title="Create Your Own Paradise" Subtext="A community will need a place to stay. Make your own paradise and start chatting." OnCloseRequested="CloseModal"/>
+                <CardHeader Title="Create Your Own Paradise" Subtext="A community will need a place to stay. Make your own paradise and start chatting." OnCloseRequested="@((Action<object?>)CloseModal)"/>
 
                 <CardContent class="pb-3">
                     <button class="border border-gray-600 bg-black/5 hover:bg-black/2 active:bg-black/8 w-full p-3 rounded-lg shadow-lg cursor-pointer" @onclick="() => _state = State.InputInfo">
@@ -22,7 +22,7 @@
             
         case State.InputInfo:
             <Card class="z-10 overflow-hidden">
-                <CardHeader Title="Input Information" Subtext="Give your new home a name, a face and a new life." OnCloseRequested="CloseModal"/>
+                <CardHeader Title="Input Information" Subtext="Give your new home a name, a face and a new life." OnCloseRequested="@((Action<object?>)CloseModal)"/>
 
                 <CardContent class="pb-3">
                     <CreateCommunityForm OnRequestCreateServer="HandleCreateServer"/>

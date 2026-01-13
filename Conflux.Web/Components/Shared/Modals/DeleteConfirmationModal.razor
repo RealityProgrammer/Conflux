@@ -1,16 +1,17 @@
 ﻿@using Conflux.Components.Shared.Icons
+
 @inherits BaseModal
 
 <div class="flex flex-row justify-center items-center size-full text-white">
     <Card>
-        <CardHeader Title="@Title" Subtext="@Subtitle" OnCloseRequested="CloseModal"/>
+        <CardHeader Title="@Title" Subtext="@Subtitle" OnCloseRequested="@((Action<object?>)CloseModal)"/>
 
         <CardContent class="pb-3">
             @Body
         </CardContent>
         
         <CardFooter class="flex flex-row justify-end gap-2">
-            <button type="button" class="button-primary w-24" @onclick="CloseModal">Cancel</button>
+            <button type="button" class="button-primary w-24" @onclick="@((Action<object?>)CloseModal)">Cancel</button>
             
             <ProcessingStateButton IsProcessing="_isProcessingDelete" type="button" class="button-danger w-24" ProcessingCssClass="flex flex-row justify-center items-center" @onclick="HandleConfirmDelete">
                 <ChildContent>

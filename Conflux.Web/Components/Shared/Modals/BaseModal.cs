@@ -8,8 +8,12 @@ public abstract class BaseModal : ComponentBase, IModalComponent {
 
     [CascadingParameter] private IModalInstance Instance { get; set; } = null!;
     
-    public void CloseModal(object? returnValue = null) {
+    public void CloseModal(object? returnValue) {
         ModalService.Close(Instance.Id, returnValue);
+    }
+
+    public void CloseModal() {
+        ModalService.Close(Instance.Id);
     }
 
     void IModalComponent.StateHasChanged() {

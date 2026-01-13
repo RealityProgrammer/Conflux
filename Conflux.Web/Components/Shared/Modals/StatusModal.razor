@@ -12,7 +12,7 @@
 
 <EditForm EditContext="_statusEditContext" FormName="Status" method="post" class="flex flex-row justify-center items-center size-full text-white">
     <Card>
-        <CardHeader Title="Status" Subtext="Thinking about what to think..." OnCloseRequested="CloseModal"/>
+        <CardHeader Title="Status" Subtext="Thinking about what to think..." OnCloseRequested="@((Action<object?>)CloseModal)"/>
                 
         <CardContent class="pb-3">
             <DataAnnotationsValidator/>
@@ -35,7 +35,7 @@
         </CardContent>
                 
         <CardFooter class="border-t-0 flex flex-row justify-end gap-3">
-            <button class="button-danger w-24" @onclick="CloseModal">Cancel</button>
+            <button class="button-danger w-24" @onclick="@((Action<object?>)CloseModal)">Cancel</button>
             
             <ProcessingStateButton @bind-IsProcessing="_isProcessingStatus" class="button-primary w-24" ProcessingCssClass="flex flex-row justify-center items-center" @onclick="UpdateStatus">
                 <ChildContent>

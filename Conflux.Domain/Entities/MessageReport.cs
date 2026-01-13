@@ -10,7 +10,7 @@ public class MessageReport : ICreatedAtColumn {
 
     [Required] public ReportReasons[] Reasons { get; set; } = null!;
     
-    [MaxLength(255)] public string? OtherMessage { get; set; }
+    [MaxLength(255)] public string? ExtraMessage { get; set; }
     
     public ReportStatus Status { get; set; }
     public DateTime CreatedAt { get; set; }
