@@ -5,6 +5,7 @@
 @using Conflux.Services
 @using Conflux.Services.Abstracts
 @using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
 @using System.Diagnostics
 
 @inject IJSRuntime JavascriptRuntime
@@ -200,11 +201,13 @@
                     <span class="text-sm">Speak Message</span>
                 </button>
                 
-                <button class="p-2! button-nav-menu" @onclick="HandleReportMessage">
-                    <Flag class="size-5 fill-red-400"/>
-                    
-                    <span class="text-sm text-red-400">Report Message</span>
-                </button>
+                @if (_extraActionTargetMessage!.SenderId != _authUserId) {
+                    <button class="p-2! button-nav-menu" @onclick="HandleReportMessage">
+                        <Flag class="size-5 fill-red-400"/>
+
+                        <span class="text-sm text-red-400">Report Message</span>
+                    </button>
+                }
             </Popover>
             break;
     }
@@ -225,6 +228,9 @@
     private Guid _communityId;
     
     [CascadingParameter(Name = "UserMemberId")] public Guid MemberId { get; set; }
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+
+    private string _authUserId = null!;
 
     // Controls.
     private InitializationStatus _initStatus = InitializationStatus.Loading;
@@ -298,6 +304,9 @@
             ConversationEventDispatcher.OnMessageReceived += OnMessageReceived;
             ConversationEventDispatcher.OnMessageDeleted += OnMessageDeleted;
             ConversationEventDispatcher.OnMessageEdited += OnMessageEdited;
+
+            var authState = await AuthenticationState;
+            _authUserId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
         } else {
             if (_module != null) {
                 if (_jumpToBottom) {
