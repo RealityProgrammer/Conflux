@@ -182,7 +182,7 @@
                                         }
 
                                         <div class="p-1 flex flex-row items-center rounded-md @backgroundCssClass">
-                                            <Avatar ImageSrc="@(string.IsNullOrEmpty(item.Avatar) ? null : ContentService.GetAssetPath(item.Avatar))" ImageAlt="@($"Avatar of {item.DisplayName}")" class="size-9 mr-1"/>
+                                            <Avatar ImageSrc="@(string.IsNullOrEmpty(item.AvatarPath) ? null : ContentService.GetAssetPath(item.AvatarPath))" ImageAlt="@($"Avatar of {item.DisplayName}")" class="size-9 mr-1"/>
 
                                             <p class="flex-1">@item.DisplayName</p>
 
@@ -229,7 +229,7 @@
                                             <Virtualize ItemsProvider="AddingMembersItemProvider" @ref="_addingMembersVirtualizeReference">
                                                 <ItemContent Context="item">
                                                     <div class="p-1 flex flex-row items-center rounded-md">
-                                                        <Avatar ImageSrc="@(string.IsNullOrEmpty(item.Avatar) ? null : ContentService.GetAssetPath(item.Avatar))" ImageAlt="@($"Avatar of {item.DisplayName}")" class="size-9 mr-1"/>
+                                                        <Avatar ImageSrc="@(string.IsNullOrEmpty(item.AvatarPath) ? null : ContentService.GetAssetPath(item.AvatarPath))" ImageAlt="@($"Avatar of {item.DisplayName}")" class="size-9 mr-1"/>
 
                                                         <p class="flex-1">@item.DisplayName</p>
 
@@ -326,10 +326,10 @@
     private string _roleMembersSearchString = string.Empty;
     private string _creatingRoleName = string.Empty;
     
-    private Virtualize<MemberDTO>? _addingMembersVirtualizeReference;
+    private Virtualize<MemberDisplayDTO>? _addingMembersVirtualizeReference;
     
     private ElementReference? _roleNameInputElement, _unsavedChangesShakeTarget;
-    private Virtualize<MemberDTO>? _roleMembersVirtualizeReference;
+    private Virtualize<MemberDisplayDTO>? _roleMembersVirtualizeReference;
     private string? _roleNameErrorMessage;
 
     // Collapsible
@@ -512,7 +512,7 @@
         InvokeAsync(StateHasChanged);
     }
 
-    private async ValueTask<ItemsProviderResult<MemberDTO>> RoleMembersProvider(ItemsProviderRequest request) {
+    private async ValueTask<ItemsProviderResult<MemberDisplayDTO>> RoleMembersProvider(ItemsProviderRequest request) {
         await using var dbContext = await DbContextFactory.CreateDbContextAsync();
 
         var query = dbContext.CommunityMembers
@@ -525,11 +525,7 @@
         }
 
         var members = await query
-            .Select(x => new MemberDTO {
-                Avatar = x.User.AvatarProfilePath,
-                DisplayName = x.User.DisplayName,
-                MemberId = x.Id,
-            })
+            .Select(m => new MemberDisplayDTO(m.Id, m.UserId, m.User.DisplayName, m.User.AvatarProfilePath))
             .OrderBy(x => x.DisplayName)
             .Skip(request.StartIndex)
             .Take(request.Count)
@@ -538,7 +534,7 @@
         return new(members, count);
     }
 
-    private async ValueTask<ItemsProviderResult<MemberDTO>> AddingMembersItemProvider(ItemsProviderRequest request) {
+    private async ValueTask<ItemsProviderResult<MemberDisplayDTO>> AddingMembersItemProvider(ItemsProviderRequest request) {
         await using var dbContext = await DbContextFactory.CreateDbContextAsync();
         
         var query = dbContext.CommunityMembers
@@ -551,11 +547,7 @@
         }
 
         var members = await query
-            .Select(x => new MemberDTO {
-                Avatar = x.User.AvatarProfilePath,
-                DisplayName = x.User.DisplayName,
-                MemberId = x.Id,
-            })
+            .Select(m => new MemberDisplayDTO(m.Id, m.UserId, m.User.DisplayName, m.User.AvatarProfilePath))
             .OrderBy(x => x.DisplayName)
             .Skip(request.StartIndex)
             .Take(request.Count)
@@ -678,8 +670,6 @@
     private readonly record struct RoleDTO(Guid Id, string Name) {
         public override string ToString() => Name;
     }
-
-    private record struct MemberDTO(Guid MemberId, string DisplayName, string? Avatar);
 
     private sealed class InputModel {
         public CommunityRole.RolePermissionFlags RolePermissions { get; set; }

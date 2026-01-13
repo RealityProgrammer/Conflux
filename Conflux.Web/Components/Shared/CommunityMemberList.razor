@@ -1,6 +1,6 @@
-﻿@using Conflux.Components.Shared.Modals
+﻿@using Conflux.Application.Dto
+@using Conflux.Components.Shared.Modals
 @using Conflux.Services
-@using Conflux.Services.Abstracts
 @using Microsoft.EntityFrameworkCore
 
 @inject IContentService ContentService
@@ -29,7 +29,7 @@
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
     private string? _cssClass;
 
-    private Virtualize<MemberDTO> _virtualize = null!;
+    private Virtualize<MemberDisplayDTO> _virtualize = null!;
     
     protected override void OnParametersSet() {
         if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
@@ -48,7 +48,7 @@
         _previousRoleId = RoleId;
     }
 
-    private async ValueTask<ItemsProviderResult<MemberDTO>> MembersProvider(ItemsProviderRequest request) {
+    private async ValueTask<ItemsProviderResult<MemberDisplayDTO>> MembersProvider(ItemsProviderRequest request) {
         await using var dbContext = await DbContextFactory.CreateDbContextAsync();
 
         IQueryable<CommunityMember> query = dbContext.CommunityMembers
@@ -64,7 +64,7 @@
             .OrderByDescending(x => x.CreatedAt)
             .Skip(request.StartIndex)
             .Take(request.Count)
-            .Select(u => new MemberDTO(u.UserId, u.Id, u.User.AvatarProfilePath, u.User.DisplayName))
+            .Select(m => new MemberDisplayDTO(m.Id, m.UserId, m.User.DisplayName, m.User.AvatarProfilePath))
             .ToListAsync();
 
         return new(results, totalCount);
@@ -76,6 +76,4 @@
             [nameof(UserProfileModal.MemberId)] = userCard.MemberId,
         });
     }
-
-    private readonly record struct MemberDTO(string UserId, Guid MemberId, string? AvatarPath, string DisplayName);
 }

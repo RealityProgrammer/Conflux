@@ -1,4 +1,5 @@
-﻿@using Conflux.Components.Shared.Icons
+﻿@using Conflux.Application.Dto
+@using Conflux.Components.Shared.Icons
 
 @using Conflux.Services.Abstracts
 @using Microsoft.EntityFrameworkCore
@@ -19,7 +20,7 @@
                     <Virtualize @ref="_virtualize" ItemsProvider="MemberSearchProvider">
                         <ItemContent Context="item">
                             <label class="p-1.5 flex flex-row items-center bg-transparent hover:bg-white/8 rounded-md active:scale-95 transition-transform duration-200 ease-in-out pointer-events-auto group">
-                                <Avatar ImageSrc="@(string.IsNullOrEmpty(item.Avatar) ? null : ContentService.GetAssetPath(item.Avatar))" ImageAlt="@($"Avatar of {item.DisplayName}")" class="size-9 mr-1"/>
+                                <Avatar ImageSrc="@(string.IsNullOrEmpty(item.AvatarPath) ? null : ContentService.GetAssetPath(item.AvatarPath))" ImageAlt="@($"Avatar of {item.DisplayName}")" class="size-9 mr-1"/>
 
                                 <p class="flex-1">@item.DisplayName</p>
 
@@ -53,7 +54,7 @@
     private string _nameSearch = string.Empty;
     [SupplyParameterFromForm] private InputModel? Model { get; set; }
 
-    private Virtualize<MemberDTO> _virtualize = null!;
+    private Virtualize<MemberDisplayDTO> _virtualize = null!;
 
     protected override void OnInitialized() {
         Model ??= new();
@@ -69,7 +70,7 @@
         await _virtualize.RefreshDataAsync();
     }
 
-    private async ValueTask<ItemsProviderResult<MemberDTO>> MemberSearchProvider(ItemsProviderRequest request) {
+    private async ValueTask<ItemsProviderResult<MemberDisplayDTO>> MemberSearchProvider(ItemsProviderRequest request) {
         await using var dbContext = await DbContextFactory.CreateDbContextAsync();
         
         var query = dbContext.CommunityMembers
@@ -88,11 +89,7 @@
         }
 
         var members = await query
-            .Select(x => new MemberDTO {
-                Avatar = x.User.AvatarProfilePath,
-                DisplayName = x.User.DisplayName,
-                MemberId = x.Id,
-            })
+            .Select(x => new MemberDisplayDTO(x.Id, x.UserId, x.User.DisplayName, x.User.AvatarProfilePath))
             .OrderBy(x => x.DisplayName)
             .Skip(request.StartIndex)
             .Take(request.Count)
@@ -120,6 +117,4 @@
             }
         }
     }
-    
-    private record struct MemberDTO(Guid MemberId, string DisplayName, string? Avatar);
 }
