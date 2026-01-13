@@ -54,6 +54,15 @@ public class ReportService(
         return statistics;
     }
 
+    public async Task<(int Count, List<MemberDisplayDTO> Page)> PaginateReportedMembersAsync(Guid communityId, int startIndex, int count) {
+        throw new NotImplementedException();
+
+        // return await QueryMessageReportsFromCommunity(dbContext, communityId)
+        //     .Select(r => r.Message.SenderId)
+        //     .Distinct()
+        //     .ToListAsync();
+    }
+
     private static IQueryable<MessageReport> QueryMessageReportsFromCommunity(ApplicationDbContext context, Guid communityId) {
         return context.MessageReports.Include(r => r.Message)
             .ThenInclude(m => m.Conversation)

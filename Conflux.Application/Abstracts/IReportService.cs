@@ -7,4 +7,6 @@ public interface IReportService {
     Task<bool> ReportMessageAsync(Guid messageId, string? extraMessage, ReportReasons[] reasons);
 
     Task<ReportCountStatistics?> GetReportCountStatisticsAsync(Guid communityId);
+
+    Task<(int Count, List<MemberDisplayDTO> Page)> PaginateReportedMembersAsync(Guid communityId, int startIndex, int count);
 }
