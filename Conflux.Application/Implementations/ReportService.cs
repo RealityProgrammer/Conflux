@@ -9,7 +9,7 @@ namespace Conflux.Application.Implementations;
 public class ReportService(
     IDbContextFactory<ApplicationDbContext> dbContextFactory
 ) : IReportService {
-    public async Task<bool> ReportMessageAsync(Guid messageId, string? extraMessage, ReportReasons[] reasons) {
+    public async Task<bool> ReportMessageAsync(Guid messageId, string? extraMessage, ReportReasons[] reasons, string reporterId) {
         if (reasons.Length == 0) {
             return false;
         }
@@ -21,6 +21,7 @@ public class ReportService(
             ExtraMessage = extraMessage,
             Status = ReportStatus.InProgress,
             Reasons = reasons,
+            ReporterId = reporterId,
         });
 
         if (await dbContext.SaveChangesAsync() > 0) {
@@ -56,11 +57,6 @@ public class ReportService(
 
     public async Task<(int Count, List<MemberDisplayDTO> Page)> PaginateReportedMembersAsync(Guid communityId, int startIndex, int count) {
         throw new NotImplementedException();
-
-        // return await QueryMessageReportsFromCommunity(dbContext, communityId)
-        //     .Select(r => r.Message.SenderId)
-        //     .Distinct()
-        //     .ToListAsync();
     }
 
     private static IQueryable<MessageReport> QueryMessageReportsFromCommunity(ApplicationDbContext context, Guid communityId) {

@@ -14,39 +14,41 @@
 @implements IAsyncDisposable
 
 <CascadingValue Value="_memberRole" IsFixed="false">
-    <SectionContent SectionName="lobby-sidebar">
-        <ChannelSidebar CommunityId="CommunityId"/>
-    </SectionContent>
+    <CascadingValue Value="_memberId" Name="UserMemberId">
+        <SectionContent SectionName="lobby-sidebar">
+            <ChannelSidebar CommunityId="CommunityId"/>
+        </SectionContent>
 
-    @switch (Channel) {
-        case "welcome" or null:
-            <div class="flex justify-center items-center h-full">
-                <p class="text-sm text-gray-400">Customizable WELCOME page is currently being constructed.</p>
-            </div>
-            break;
+        @switch (Channel) {
+            case "welcome" or null:
+                <div class="flex justify-center items-center h-full">
+                    <p class="text-sm text-gray-400">Customizable WELCOME page is currently being constructed.</p>
+                </div>
+                break;
 
-        case "events":
-            <div class="flex justify-center items-center h-full">
-                <p class="text-sm text-gray-400">Customizable EVENTS page is currently being constructed.</p>
-            </div>
-            break;
+            case "events":
+                <div class="flex justify-center items-center h-full">
+                    <p class="text-sm text-gray-400">Customizable EVENTS page is currently being constructed.</p>
+                </div>
+                break;
 
-        case "rules":
-            <div class="flex justify-center items-center h-full">
-                <p class="text-sm text-gray-400">Customizable RULES page is currently being constructed.</p>
-            </div>
-            break;
+            case "rules":
+                <div class="flex justify-center items-center h-full">
+                    <p class="text-sm text-gray-400">Customizable RULES page is currently being constructed.</p>
+                </div>
+                break;
 
-        case var _ when Guid.TryParse(Channel, out var channelId):
-            <ChannelContentInterface CommunityId="CommunityId" ChannelId="channelId"/>
-            break;
+            case var _ when Guid.TryParse(Channel, out var channelId):
+                <ChannelContentInterface CommunityId="CommunityId" ChannelId="channelId"/>
+                break;
 
-        default:
-            <div class="flex justify-center items-center h-full">
-                <p class="text-sm text-gray-400">Hmmm how did you get here?</p>
-            </div>
-            break;
-    }
+            default:
+                <div class="flex justify-center items-center h-full">
+                    <p class="text-sm text-gray-400">Hmmm how did you get here?</p>
+                </div>
+                break;
+        }
+    </CascadingValue>
 </CascadingValue>
 
 @code {
@@ -56,6 +58,7 @@
     [Parameter] public string? Channel { get; set; }
 
     private RolePermissionsWithId? _memberRole;
+    private Guid _memberId;
 
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
 
@@ -68,9 +71,14 @@
             CommunityEventDispatcher.OnRoleDeleted += OnRoleDeleted;
             CommunityEventDispatcher.OnRolePermissionUpdated += OnRolePermissionUpdated;
             
-            _previousCommunityId = CommunityId;
+            var authState = await AuthenticationState;
+            var userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+            _memberId = await CommunityService.GetMemberId(CommunityId, userId);
+            _memberRole = await CommunityService.GetUserRolePermissionsAsync(userId, CommunityId);
+            StateHasChanged();
             
-            await ReloadMemberRole();
+            _previousCommunityId = CommunityId;
         }
     }
 

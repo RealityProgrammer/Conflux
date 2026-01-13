@@ -2,6 +2,7 @@
 @using Conflux.Helpers
 @using Microsoft.EntityFrameworkCore
 @using System.ComponentModel.DataAnnotations
+@using System.Security.Claims
 @using System.Numerics
 
 @inherits BaseModal
@@ -144,7 +145,11 @@
 </EditForm>
 
 @code {
+    [Parameter] public Guid CommunityId { get; set; }
     [Parameter] public Guid MessageId { get; set; }
+    [Parameter] public Guid ReporterId { get; set; }
+
+    [CascadingParameter] public Task<AuthenticationState> AuthenticationState { get; set; } = null!;
 
     private Status _status;
     private MessageDisplayDTO _messageDisplay;
@@ -218,7 +223,9 @@
                 reasons[index] = ReportReasons.Other;
             }
 
-            bool success = await ReportService.ReportMessageAsync(MessageId, Model.ExtraMessage, reasons);
+            var authState = await AuthenticationState;
+
+            bool success = await ReportService.ReportMessageAsync(MessageId, Model.ExtraMessage, reasons, authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
             if (success) {
                 ModalService.Open<OperationSuccessModal>(parameters: new Dictionary<string, object?> {

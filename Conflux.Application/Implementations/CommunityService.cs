@@ -304,4 +304,14 @@ public class CommunityService(
 
         return false;
     }
+
+    public async Task<Guid> GetMemberId(Guid communityId, string userId) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        return await dbContext.CommunityMembers
+            .Where(x => x.CommunityId == communityId && x.UserId == userId)
+            .Select(x => x.Id)
+            .FirstOrDefaultAsync();
+    }
 }

@@ -171,6 +171,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey(report => report.MessageId)
                 .HasPrincipalKey(message => message.Id)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(report => report.Reporter)
+                .WithMany()
+                .HasForeignKey(report => report.ReporterId)
+                .HasPrincipalKey(user => user.Id)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

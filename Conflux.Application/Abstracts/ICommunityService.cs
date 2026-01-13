@@ -27,6 +27,8 @@ public interface ICommunityService {
     Task<bool> RenameRole(Guid communityId, Guid roleId, string name);
 
     Task<bool> DeleteRole(Guid communityId, Guid roleId);
+    
+    Task<Guid> GetMemberId(Guid communityId, string userId);
 
     public enum CreateRoleStatus {
         Success,

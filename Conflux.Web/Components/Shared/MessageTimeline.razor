@@ -222,6 +222,10 @@
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
     private string? _cssClass;
 
+    private Guid _communityId;
+    
+    [CascadingParameter(Name = "UserMemberId")] public Guid MemberId { get; set; }
+
     // Controls.
     private InitializationStatus _initStatus = InitializationStatus.Loading;
     
@@ -564,6 +568,8 @@
 
         ModalService.Open<ReportMessageModal>(parameters: new Dictionary<string, object?> {
             [nameof(ReportMessageModal.MessageId)] = _extraActionTargetMessage.MessageId,
+            [nameof(ReportMessageModal.CommunityId)] = _communityId,
+            [nameof(ReportMessageModal.ReporterId)] = MemberId,
         });
 
         _showExtraActionPopover = false;
