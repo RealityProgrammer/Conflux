@@ -577,7 +577,6 @@
 
         ModalService.Open<ReportMessageModal>(parameters: new Dictionary<string, object?> {
             [nameof(ReportMessageModal.MessageId)] = _extraActionTargetMessage.MessageId,
-            [nameof(ReportMessageModal.CommunityId)] = _communityId,
             [nameof(ReportMessageModal.ReporterId)] = MemberId,
         });
 
