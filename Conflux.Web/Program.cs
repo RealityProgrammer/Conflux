@@ -141,7 +141,7 @@ builder.Services.AddScoped<IReportService, ReportService>();
 
 // SignalR related services.
 builder.Services.AddSignalR(options => {
-    options.EnableDetailedErrors = true;
+    options.EnableDetailedErrors = !builder.Environment.IsProduction();
 });
 builder.Services.AddResponseCompression(option => {
     option.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat([ "application/octet-stream" ]);
