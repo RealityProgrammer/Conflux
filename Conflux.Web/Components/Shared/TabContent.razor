@@ -1,4 +1,4 @@
-﻿@if (RenderStrategy == TabRenderStrategy.Visibility) {
+﻿@if (RenderStrategy == RenderStrategy.Visibility) {
     string cssClass = $"{(Parent.ActiveId == TabId ? "block" : "hidden")} {_cssClass}";
     
     <section class="@cssClass" @attributes="AdditionalAttributes">
@@ -15,7 +15,7 @@
 @code {
     [Parameter, EditorRequired] public required string TabId { get; set; }
     [Parameter, EditorRequired] public required RenderFragment ChildContent { get; set; }
-    [Parameter] public TabRenderStrategy RenderStrategy { get; set; }
+    [Parameter] public RenderStrategy RenderStrategy { get; set; }
     
     [CascadingParameter] private TabContainer Parent { get; set; } = null!;
     

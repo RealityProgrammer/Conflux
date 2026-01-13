@@ -96,7 +96,7 @@
             </ChildContent>
         </Collapsible>
         
-        <Collapsible class="w-full mt-2 border-b border-b-gray-600 pb-1.5" @bind-IsExpanded="_reportsCollapsible">
+        <Collapsible class="w-full mt-2 border-b border-b-gray-600 pb-1.5" @bind-IsExpanded:get="_reportsCollapsible" @bind-IsExpanded:set="SetReportCollapsible">
             <HeaderContent>
                 <span class="font-semibold">Reports</span>
             </HeaderContent>
@@ -124,13 +124,19 @@
 
     private bool _statisticCollapsible;
     private bool _reportsCollapsible;
-
+    
     private async Task SetStatisticsCollapsible(bool value) {
         if (value && _countStatistics == null) {
             _countStatistics = await ReportService.GetReportCountStatisticsAsync(CommunityId);
         }
 
         _statisticCollapsible = value;
+    }
+
+    private async Task SetReportCollapsible(bool value) {
+        var result = await ReportService.PaginateReportedMembersAsync(CommunityId, 0, 100);
+        
+        _reportsCollapsible = value;
     }
 
     private enum ReportCountTimeTarget {

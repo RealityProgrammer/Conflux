@@ -49,7 +49,7 @@
                 <ProfilePreview Model="Model" User="_user" AvatarPreviewUrl="@_avatarPreviewUrl"/>
             </TabContent>
 
-            <TabContent TabId="edit" RenderStrategy="TabRenderStrategy.Visibility">
+            <TabContent TabId="edit" RenderStrategy="RenderStrategy.Visibility">
                 <ProfileEdit Model="Model" User="_user" @bind-AvatarPreviewUrl="_avatarPreviewUrl"/>
             </TabContent>
         </Contents>

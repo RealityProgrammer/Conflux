@@ -1,6 +1,6 @@
 ﻿@using Conflux.Components.Shared.Icons
 
-<button type="button" class="text-left flex flex-row items-center cursor-pointer @_cssClass" @onclick="ToggleExpander">
+<button type="button" class="text-left flex flex-row items-center cursor-pointer @_cssClass" @onclick="ToggleExpander" @attributes="AdditionalAttributes">
     <span class="flex-1">
         @if (HeaderContent != null) {
             @HeaderContent
@@ -10,10 +10,6 @@
     @{ string chevronCssClass = $"flex-none fill-white size-3 transition-transform duration-250 ease-in-out {(_isExpanded ? "rotate-0" : "rotate-180")}"; }
     <Chevron class="@chevronCssClass" Direction="ChevronDirection.Down" Mode="ChevronMode.Normal"></Chevron>
 </button>
-
-@if (_isExpanded) {
-    @ChildContent
-}
 
 @code {
     [Parameter] public bool IsExpanded { get; set; }

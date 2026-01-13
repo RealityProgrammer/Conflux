@@ -1,6 +1,6 @@
 ﻿namespace Conflux.Components.Shared;
 
-public enum TabRenderStrategy {
+public enum RenderStrategy {
     Conditional,
     Visibility,
 }

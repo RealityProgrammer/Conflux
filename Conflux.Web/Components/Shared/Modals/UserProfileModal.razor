@@ -174,7 +174,7 @@
                                         </Buttons>
 
                                         <Contents>
-                                            <TabContent TabId="Friends" RenderStrategy="TabRenderStrategy.Conditional" class="size-full">
+                                            <TabContent TabId="Friends" RenderStrategy="RenderStrategy.Conditional" class="size-full">
                                                 @if (_mutualFriends == null) {
                                                     <div class="size-full flex justify-center items-center">
                                                         <Spinner class="fill-white size-8"/>
@@ -191,7 +191,7 @@
                                                 }
                                             </TabContent>
 
-                                            <TabContent TabId="Communities" RenderStrategy="TabRenderStrategy.Conditional" class="size-full">
+                                            <TabContent TabId="Communities" RenderStrategy="RenderStrategy.Conditional" class="size-full">
                                                 @if (_mutualCommunities == null) {
                                                     <div class="size-full flex justify-center items-center">
                                                         <Spinner class="fill-white size-8"/>

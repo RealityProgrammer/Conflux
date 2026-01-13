@@ -56,7 +56,29 @@ public class ReportService(
     }
 
     public async Task<(int Count, List<MemberDisplayDTO> Page)> PaginateReportedMembersAsync(Guid communityId, int startIndex, int count) {
-        throw new NotImplementedException();
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        var reportedUsers = QueryMessageReportsFromCommunity(dbContext, communityId)
+            .Select(r => r.Message.SenderId)
+            .Distinct();
+        
+        int reportedUsersCount = await reportedUsers.CountAsync();
+
+        if (reportedUsersCount == 0) {
+            return (0, []);
+        }
+
+        var members = await dbContext.CommunityMembers
+            .Where(member => reportedUsers.Contains(member.UserId))
+            .Include(member => member.User)
+            .OrderBy(member => member.User.DisplayName)
+            .Skip(startIndex)
+            .Take(count)
+            .Select(member => new MemberDisplayDTO(member.Id, member.User.Id, member.User.DisplayName, member.User.AvatarProfilePath))
+            .ToListAsync();
+
+        return (reportedUsersCount, members);
     }
 
     private static IQueryable<MessageReport> QueryMessageReportsFromCommunity(ApplicationDbContext context, Guid communityId) {
