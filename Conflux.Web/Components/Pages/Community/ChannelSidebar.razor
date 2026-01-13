@@ -278,13 +278,31 @@
         if (index == -1) {
             return;
         }
-        
-        _community.ChannelCategories[index].Channels.Add(new() {
+
+        var createdChannel = new CommunityChannel() {
             Id = args.ChannelId,
             ChannelCategoryId = args.CategoryId,
             Name = args.ChannelName,
             Type = args.ChannelType,
-        });
+        };
+
+        var channelCategory = _community.ChannelCategories[index];
+
+        switch (channelCategory.Channels) {
+            case null:
+                channelCategory.Channels = new List<CommunityChannel> {
+                    createdChannel,
+                };
+                break;
+
+            case List<CommunityChannel> channels:
+                channels.Add(createdChannel);
+                break;
+
+            default:
+                channelCategory.Channels = channelCategory.Channels.Append(createdChannel).ToList();
+                break;
+        }
 
         InvokeAsync(StateHasChanged);
     }
