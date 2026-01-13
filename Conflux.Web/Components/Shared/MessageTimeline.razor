@@ -557,7 +557,7 @@
         _showExtraActionPopover = false;
     }
 
-    private async Task HandleReportMessage() {
+    private void HandleReportMessage() {
         if (!_showExtraActionPopover || _extraActionTargetMessage == null) {
             return;
         }
@@ -568,7 +568,7 @@
 
         _showExtraActionPopover = false;
     }
-    
+
     private void OnMessageReceived(MessageReceivedEventArgs args) {
         // Only insert if we're at the bottom.
         if (_endBottom && args.ConversationId == ConversationId) {
