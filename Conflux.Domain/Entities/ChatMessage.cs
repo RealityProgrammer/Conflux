@@ -17,10 +17,11 @@ public class ChatMessage : ICreatedAtColumn {
     public DateTime? LastModifiedAt { get; set; }
     public DateTime? DeletedAt { get; set; }
 
+    public List<MessageAttachment> Attachments { get; set; } = null!;
+
     public Conversation Conversation { get; set; } = null!;
     public ApplicationUser Sender { get; set; } = null!;
     public ChatMessage? ReplyMessage { get; set; }
-    public ICollection<MessageAttachment> Attachments { get; set; } = null!;
 
     public ICollection<MessageReport> Reports { get; set; } = null!;
 }

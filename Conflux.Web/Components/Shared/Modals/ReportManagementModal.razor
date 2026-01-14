@@ -1,12 +1,193 @@
 ﻿@using Conflux.Helpers
+
 @inherits BaseModal
+
+@inject IReportService ReportService
 
 <div class="flex flex-row justify-center items-center size-full text-white">
     <Card class="absolute inset-0 rounded-none! lg:inset-6 lg:rounded-xl!">
-        <CardHeader Title="Report Management" OnCloseRequested="EventUtils.AsNonRenderingEventHandler(CloseModal)" class="border-b border-b-gray-600"/>
+        <CardHeader Title="Report Management" OnCloseRequested="EventUtils.AsNonRenderingEventHandler(CloseModal)" class="border-b border-b-gray-600" />
     
-        <CardContent>
+        <CardContent class="p-0">
             <p>Goes hard...</p>
+            @* <div class="flex flex-col h-full"> *@
+            @*     @if (_isLoading) { *@
+            @*         <div class="flex-1 flex items-center justify-center p-8"> *@
+            @*             <div class="text-center"> *@
+            @*                 <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-2"></div> *@
+            @*                 <p class="text-gray-400">Loading reports...</p> *@
+            @*             </div> *@
+            @*         </div> *@
+            @*     } else if (_reportedMessages == null || !_reportedMessages.Any()) { *@
+            @*         <div class="flex-1 flex items-center justify-center p-8"> *@
+            @*             <div class="text-center"> *@
+            @*                 <svg class="mx-auto h-12 w-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"> *@
+            @*                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /> *@
+            @*                 </svg> *@
+            @*                 <h3 class="mt-2 text-sm font-medium text-gray-300">No reports found</h3> *@
+            @*                 <p class="mt-1 text-sm text-gray-500">This member has no reported messages.</p> *@
+            @*             </div> *@
+            @*         </div> *@
+            @*     } else { *@
+            @*         <div class="flex flex-col lg:flex-row h-full"> *@
+            @*             <div class="lg:w-1/3 border-r border-gray-700 flex flex-col"> *@
+            @*                 <div class="p-4 border-b border-gray-700 bg-gray-800/50"> *@
+            @*                     <div class="flex items-center justify-between mb-2"> *@
+            @*                         <h3 class="font-medium">Report Statistics</h3> *@
+            @*                         <span class="text-xs px-2 py-1 rounded-full bg-gray-700"> *@
+            @*                             @_reportedMessages.Count total *@
+            @*                         </span> *@
+            @*                     </div> *@
+            @*                     <div class="grid grid-cols-2 gap-2 text-sm"> *@
+            @*                         <div class="bg-gray-900/50 p-2 rounded"> *@
+            @*                             <div class="text-gray-400 text-xs">Total Reports</div> *@
+            @*                             <div class="font-semibold">@_memberStats.TotalReportCount</div> *@
+            @*                         </div> *@
+            @*                         <div class="bg-gray-900/50 p-2 rounded"> *@
+            @*                             <div class="text-gray-400 text-xs">Resolved</div> *@
+            @*                             <div class="font-semibold text-green-400">@_memberStats.ResolvedReportCount</div> *@
+            @*                         </div> *@
+            @*                     </div> *@
+            @*                 </div> *@
+            @* *@
+            @*                 <div class="flex-1 overflow-y-auto"> *@
+            @*                     <div class="divide-y divide-gray-700"> *@
+            @*                         @foreach (var message in _reportedMessages) { *@
+            @*                             <button @onclick="() => SelectMessage(message)" *@
+            @*                                     class="w-full text-left p-4 hover:bg-gray-800/50 transition-colors @(_selectedMessage?.Message.Id == message.Message.Id ? "bg-gray-800" : "")"> *@
+            @*                                 <div class="flex items-start justify-between"> *@
+            @*                                     <div class="flex-1 min-w-0"> *@
+            @*                                         <p class="text-sm font-medium truncate">@GetShortenedMessage(message.Message.Body)</p> *@
+            @*                                         <div class="flex items-center gap-2 mt-1"> *@
+            @*                                             <span class="text-xs text-gray-400"> *@
+            @*                                                 @message.Message.CreatedAt.ToString("MMM d, yyyy") *@
+            @*                                             </span> *@
+            @*                                             <span class="text-xs px-1.5 py-0.5 rounded @GetReportStatusBadgeClass(message.Reports.FirstOrDefault()?.Status)"> *@
+            @*                                                 @message.Reports.FirstOrDefault()?.Status.ToString() *@
+            @*                                             </span> *@
+            @*                                         </div> *@
+            @*                                     </div> *@
+            @*                                     <div class="ml-2"> *@
+            @*                                         <span class="text-xs px-2 py-1 rounded-full bg-red-900/30 text-red-300"> *@
+            @*                                             @message.Reports.Count *@
+            @*                                         </span> *@
+            @*                                     </div> *@
+            @*                                 </div> *@
+            @*                             </button> *@
+            @*                         } *@
+            @*                     </div> *@
+            @*                 </div> *@
+            @*             </div> *@
+            @* *@
+            @*             <div class="lg:w-2/3 flex flex-col"> *@
+            @*                 @if (_selectedMessage != null) { *@
+            @*                     <div class="p-4 border-b border-gray-700 flex items-center justify-between"> *@
+            @*                         <div> *@
+            @*                             <h3 class="font-medium">Message Details</h3> *@
+            @*                             <p class="text-sm text-gray-400"> *@
+            @*                                 Reported @_selectedMessage.Reports.Count time(s) *@
+            @*                             </p> *@
+            @*                         </div> *@
+            @*                         <div class="flex items-center gap-2"> *@
+            @*                             <button @onclick="ResolveAllReports" *@
+            @*                                     class="px-3 py-1.5 text-sm bg-green-600 hover:bg-green-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" *@
+            @*                                     disabled="@(_selectedMessage.Reports.All(r => r.Status == ReportStatus.Resolved))"> *@
+            @*                                 Resolve All *@
+            @*                             </button> *@
+            @*                             <button @onclick="DismissAllReports" *@
+            @*                                     class="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 rounded transition-colors"> *@
+            @*                                 Dismiss All *@
+            @*                             </button> *@
+            @*                         </div> *@
+            @*                     </div> *@
+            @* *@
+            @*                     <div class="p-4 border-b border-gray-700"> *@
+            @*                         <div class="flex items-start gap-3"> *@
+            @*                             <div class="shrink-0"> *@
+            @*                                 <div class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center"> *@
+            @*                                     <span class="text-sm">@GetUserInitial(_selectedMessage.Message.Sender?.DisplayName)</span> *@
+            @*                                 </div> *@
+            @*                             </div> *@
+            @*                             <div class="flex-1"> *@
+            @*                                 <div class="flex items-center gap-2 mb-1"> *@
+            @*                                     <span class="font-medium">@_selectedMessage.Message.Sender?.DisplayName</span> *@
+            @*                                     <span class="text-xs text-gray-400"> *@
+            @*                                         @_selectedMessage.Message.CreatedAt.ToString("MMM d, yyyy h:mm tt") *@
+            @*                                     </span> *@
+            @*                                 </div> *@
+            @*                                 <p class="text-gray-300 whitespace-pre-wrap">@_selectedMessage.Message.Body</p> *@
+            @*                             </div> *@
+            @*                         </div> *@
+            @*                     </div> *@
+            @* *@
+            @*                     <div class="flex-1 overflow-y-auto"> *@
+            @*                         <div class="p-4"> *@
+            @*                             <h4 class="font-medium mb-4">Reports (@_selectedMessage.Reports.Count)</h4> *@
+            @*                             <div class="space-y-4"> *@
+            @*                                 @foreach (var report in _selectedMessage.Reports) { *@
+            @*                                     <div class="bg-gray-800/50 rounded-lg p-4"> *@
+            @*                                         <div class="flex items-start justify-between mb-2"> *@
+            @*                                             <div> *@
+            @*                                                 <div class="flex items-center gap-2"> *@
+            @*                                                     <span class="font-medium text-sm">@report.Reporter?.DisplayName</span> *@
+            @*                                                     <span class="text-xs text-gray-400"> *@
+            @*                                                         @report.CreatedAt.ToString("MMM d, yyyy") *@
+            @*                                                     </span> *@
+            @*                                                 </div> *@
+            @*                                                 <div class="flex flex-wrap gap-1 mt-1"> *@
+            @*                                                     @foreach (var reason in report.Reasons) { *@
+            @*                                                         <span class="text-xs px-2 py-1 rounded-full bg-gray-700"> *@
+            @*                                                             @reason.ToString() *@
+            @*                                                         </span> *@
+            @*                                                     } *@
+            @*                                                 </div> *@
+            @*                                             </div> *@
+            @*                                             <div> *@
+            @*                                                 <span class="text-xs px-2 py-1 rounded @GetReportStatusBadgeClass(report.Status)"> *@
+            @*                                                     @report.Status.ToString() *@
+            @*                                                 </span> *@
+            @*                                             </div> *@
+            @*                                         </div> *@
+            @*                                          *@
+            @*                                         @if (!string.IsNullOrEmpty(report.ExtraMessage)) { *@
+            @*                                             <div class="mt-2 p-3 bg-gray-900/50 rounded"> *@
+            @*                                                 <p class="text-sm text-gray-300">@report.ExtraMessage</p> *@
+            @*                                             </div> *@
+            @*                                         } *@
+            @* *@
+            @*                                         <div class="flex items-center gap-2 mt-3 pt-3 border-t border-gray-700"> *@
+            @*                                             @if (report.Status == ReportStatus.InProgress) { *@
+            @*                                                 <button @onclick="() => ResolveReport(report)" *@
+            @*                                                         class="px-3 py-1 text-xs bg-green-600 hover:bg-green-700 rounded transition-colors"> *@
+            @*                                                     Mark as Resolved *@
+            @*                                                 </button> *@
+            @*                                                 <button @onclick="() => DismissReport(report)" *@
+            @*                                                         class="px-3 py-1 text-xs bg-gray-600 hover:bg-gray-700 rounded transition-colors"> *@
+            @*                                                     Dismiss *@
+            @*                                                 </button> *@
+            @*                                             } else { *@
+            @*                                                 <span class="text-xs text-green-400">✓ Resolved</span> *@
+            @*                                             } *@
+            @*                                         </div> *@
+            @*                                     </div> *@
+            @*                                 } *@
+            @*                             </div> *@
+            @*                         </div> *@
+            @*                     </div> *@
+            @*                 } else { *@
+            @*                     <div class="flex-1 flex items-center justify-center"> *@
+            @*                         <div class="text-center text-gray-500"> *@
+            @*                             <svg class="mx-auto h-12 w-12 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"> *@
+            @*                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /> *@
+            @*                             </svg> *@
+            @*                             <p>Select a message to view details</p> *@
+            @*                         </div> *@
+            @*                     </div> *@
+            @*                 } *@
+            @*             </div> *@
+            @*         </div> *@
+            @*     } *@
+            @* </div> *@
         </CardContent>
     </Card>
 </div>
@@ -14,4 +195,124 @@
 @code {
     [Parameter, EditorRequired] public required Guid CommunityId { get; set; }
     [Parameter, EditorRequired] public required Guid MemberId { get; set; }
+
+@*     private bool _isLoading = true; *@
+@*     private MemberReportStatistics _memberStats; *@
+@*     private List<ReportedMessageViewModel>? _reportedMessages; *@
+@*     private ReportedMessageViewModel? _selectedMessage; *@
+@*     private string? _errorMessage; *@
+@* *@
+@*     protected override async Task OnInitializedAsync() { *@
+@*         await LoadData(); *@
+@*     } *@
+@* *@
+@*     private async Task LoadData() { *@
+@*         _isLoading = true; *@
+@*         _errorMessage = null; *@
+@*         StateHasChanged(); *@
+@* *@
+@*         try { *@
+@*             // Load statistics *@
+@*             _memberStats = await ReportService.GetMemberReportStatisticsAsync(CommunityId, MemberId) *@
+@*                           ?? new MemberReportStatistics(0, 0); *@
+@* *@
+@*             // Load reported messages *@
+@*             _reportedMessages = await ReportService.GetReportedMessagesByMemberAsync(CommunityId, MemberId); *@
+@*              *@
+@*             // Select first message if available *@
+@*             if (_reportedMessages?.Any() == true) { *@
+@*                 _selectedMessage = _reportedMessages.First(); *@
+@*             } *@
+@*         } catch (Exception ex) { *@
+@*             _errorMessage = $"Failed to load reports: {ex.Message}"; *@
+@*         } finally { *@
+@*             _isLoading = false; *@
+@*             StateHasChanged(); *@
+@*         } *@
+@*     } *@
+@* *@
+@*     private void SelectMessage(ReportedMessageViewModel message) { *@
+@*         _selectedMessage = message; *@
+@*     } *@
+@* *@
+@*     private async Task ResolveReport(MessageReport report) { *@
+@*         // if (await ReportService.UpdateReportStatusAsync(report.Id, ReportStatus.Resolved)) { *@
+@*         //     report.Status = ReportStatus.Resolved; *@
+@*         //     await RefreshStatistics(); *@
+@*         //     StateHasChanged(); *@
+@*         // } *@
+@*     } *@
+@* *@
+@*     private async Task DismissReport(MessageReport report) { *@
+@*         // if (await ReportService.DeleteReportAsync(report.Id)) { *@
+@*         //     await LoadData(); // Reload all data *@
+@*         // } *@
+@*     } *@
+@* *@
+@*     private async Task ResolveAllReports() { *@
+@*         if (_selectedMessage == null) return; *@
+@* *@
+@*         foreach (var report in _selectedMessage.Reports.Where(r => r.Status == ReportStatus.InProgress)) { *@
+@*             await ResolveReport(report); *@
+@*         } *@
+@*     } *@
+@* *@
+@*     private async Task DismissAllReports() { *@
+@*         if (_selectedMessage == null) return; *@
+@* *@
+@*         // if (await ReportService.DeleteReportsForMessageAsync(selectedMessage.Message.Id)) { *@
+@*         //     await LoadData(); // Reload all data *@
+@*         // } *@
+@*     } *@
+@* *@
+@*     private async Task RefreshStatistics() { *@
+@*         var newStats = await ReportService.GetMemberReportStatisticsAsync(CommunityId, MemberId); *@
+@* *@
+@*         if (newStats.HasValue) { *@
+@*             _memberStats = newStats.Value; *@
+@*         } *@
+@*     } *@
+@* *@
+@*     private string GetShortenedMessage(string? message) { *@
+@*         if (string.IsNullOrEmpty(message)) return "No content"; *@
+@*         return message.Length > 50 ? message.Substring(0, 50) + "..." : message; *@
+@*     } *@
+@* *@
+@*     private string GetUserInitial(string? displayName) { *@
+@*         if (string.IsNullOrEmpty(displayName)) return "?"; *@
+@*         return displayName.Substring(0, 1).ToUpper(); *@
+@*     } *@
+@* *@
+@*     private string GetReportStatusBadgeClass(ReportStatus? status) { *@
+@*         return status switch { *@
+@*             ReportStatus.Resolved => "bg-green-900/30 text-green-300", *@
+@*             ReportStatus.InProgress => "bg-yellow-900/30 text-yellow-300", *@
+@*             _ => "bg-gray-700 text-gray-300" *@
+@*         }; *@
+@*     } *@
+@* *@
+@*     // ViewModel for the reported messages *@
+@*     public class ReportedMessageViewModel { *@
+@*         public ChatMessage Message { get; set; } = null!; *@
+@*         public List<MessageReport> Reports { get; set; } = new(); *@
+@*     } *@
+@* *@
+@*     // Service method placeholder - you'll need to implement this *@
+@*     private async Task<List<ReportedMessageViewModel>> GetReportedMessagesByMemberAsync(Guid communityId, Guid memberId) { *@
+@*         // var messages = await dbContext.ChatMessages *@
+@*         //     .Include(m => m.Sender) *@
+@*         //     .Include(m => m.Reports) *@
+@*         //         .ThenInclude(r => r.Reporter) *@
+@*         //     .Where(m => m.SenderId == userId && *@
+@*         //                m.Conversation.CommunityChannel.ChannelCategory.CommunityId == communityId && *@
+@*         //                m.Reports.Any()) *@
+@*         //     .Select(m => new ReportedMessageViewModel *@
+@*         //     { *@
+@*         //         Message = m, *@
+@*         //         Reports = m.Reports.ToList() *@
+@*         //     }) *@
+@*         //     .ToListAsync(); *@
+@*         // *@
+@*         // return new List<ReportedMessageViewModel>(); *@
+@*     } *@
 }

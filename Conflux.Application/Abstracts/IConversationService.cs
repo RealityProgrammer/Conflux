@@ -13,8 +13,7 @@ public interface IConversationService {
     Task<RenderingMessages> LoadMessagesBeforeTimestampAsync(Guid conversationId, DateTime beforeTimestamp, int take);
     Task<RenderingMessages> LoadMessagesAfterTimestampAsync(Guid conversationId, DateTime afterTimestamp, int take);
 
-    public readonly record struct MessageAttachmentDTO(string Name, MessageAttachmentType Type, string Path);
-    public record RenderingMessageDTO(Guid MessageId, string SenderId, string SenderDisplayName, string? SenderAvatar, string? Body, DateTime CreatedAt, bool IsEdited, Guid? ReplyMessageId, MessageAttachmentDTO[] Attachments);
+    public record RenderingMessageDTO(Guid MessageId, string SenderId, string SenderDisplayName, string? SenderAvatar, string? Body, DateTime CreatedAt, bool IsEdited, Guid? ReplyMessageId, List<MessageAttachment> Attachments);
     public record RenderingReplyMessageDTO(Guid MessageId, string SenderDisplayName, string? Body);
     public readonly record struct RenderingMessages(IList<RenderingMessageDTO> VisibleMessages, IList<RenderingReplyMessageDTO> RepliedMessages);
     public readonly record struct UploadingAttachment(string Name, MessageAttachmentType Type, Stream Stream);

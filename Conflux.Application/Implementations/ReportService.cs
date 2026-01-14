@@ -16,12 +16,24 @@ public class ReportService(
         
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
 
+        var messageData = await dbContext.ChatMessages
+            .Where(m => m.Id == messageId)
+            .Select(m => new { m.SenderId, m.Body, m.Attachments })
+            .FirstOrDefaultAsync();
+
+        if (messageData == null) {
+            return false;
+        }
+        
         dbContext.Add(new MessageReport {
             MessageId = messageId,
             ExtraMessage = extraMessage,
             Status = ReportStatus.InProgress,
             Reasons = reasons,
             ReporterId = reporterId,
+            MessageSenderId = messageData.SenderId,
+            OriginalMessageBody = messageData.Body,
+            OriginalMessageAttachments = messageData.Attachments,
         });
 
         if (await dbContext.SaveChangesAsync() > 0) {

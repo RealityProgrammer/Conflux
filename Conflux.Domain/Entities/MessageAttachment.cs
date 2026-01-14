@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace Conflux.Domain.Entities;
+﻿namespace Conflux.Domain.Entities;
 
 public enum MessageAttachmentType {
     Image,
@@ -9,15 +7,7 @@ public enum MessageAttachmentType {
 }
 
 public class MessageAttachment {
-    public Guid Id { get; set; }
-    public Guid MessageId { get; set; }
-
-    [MaxLength(64)] public string Name { get; set; } = null!;
-    [MaxLength(96)] public string PhysicalPath { get; set; } = null!;
-    
+    public string Name { get; set; } = null!;
+    public string PhysicalPath { get; set; } = null!;
     public MessageAttachmentType Type { get; set; }
-
-    public ChatMessage Message { get; set; } = null!;
-    
-    // TODO: Make attachment removable.
 }

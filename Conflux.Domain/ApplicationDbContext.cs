@@ -11,7 +11,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<FriendRequest> FriendRequests { get; set; } = null!;
     public DbSet<Conversation> Conversations { get; set; } = null!;
     public DbSet<ChatMessage> ChatMessages { get; set; } = null!;
-    public DbSet<MessageAttachment> MessageAttachments { get; set; } = null!;
     public DbSet<Community> Communities { get; set; } = null!;
     public DbSet<CommunityMember> CommunityMembers { get; set; } = null!;
     public DbSet<CommunityChannel> CommunityChannels { get; set; } = null!;
@@ -97,12 +96,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey(message => message.ReplyMessageId)
                 .OnDelete(DeleteBehavior.SetNull);
 
-            entity.HasMany(message => message.Attachments)
-                .WithOne(attachment => attachment.Message)
-                .HasForeignKey(attachment => attachment.MessageId)
-                .IsRequired();
-        }).Entity<MessageAttachment>(entity => {
-            entity.HasKey(message => message.Id);
+            entity.ComplexCollection(m => m.Attachments, action => action.ToJson());
         });
 
         builder.Entity<Community>(entity => {
@@ -166,8 +160,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         builder.Entity<MessageReport>(entity => {
             entity.HasKey(x => x.Id);
 
+            entity.HasOne(report => report.MessageSender)
+                .WithMany()
+                .HasForeignKey(report => report.MessageSenderId)
+                .HasPrincipalKey(user => user.Id)
+                .OnDelete(DeleteBehavior.Cascade);
+
             entity.HasOne(report => report.Message)
-                .WithMany(message => message.Reports)
+                .WithMany()
                 .HasForeignKey(report => report.MessageId)
                 .HasPrincipalKey(message => message.Id)
                 .OnDelete(DeleteBehavior.Cascade);
@@ -177,6 +177,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey(report => report.ReporterId)
                 .HasPrincipalKey(user => user.Id)
                 .OnDelete(DeleteBehavior.Cascade);
+            
+            entity.ComplexCollection(x => x.OriginalMessageAttachments, action => action.ToJson());
         });
     }
 }
