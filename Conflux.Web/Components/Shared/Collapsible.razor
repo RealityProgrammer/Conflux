@@ -11,6 +11,10 @@
     <Chevron class="@chevronCssClass" Direction="ChevronDirection.Down" Mode="ChevronMode.Normal"></Chevron>
 </button>
 
+@if (IsExpanded) {
+    @ChildContent
+}
+
 @code {
     [Parameter] public bool IsExpanded { get; set; }
     [Parameter] public EventCallback<bool> IsExpandedChanged { get; set; }

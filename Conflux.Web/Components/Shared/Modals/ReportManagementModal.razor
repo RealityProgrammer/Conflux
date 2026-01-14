@@ -1,0 +1,17 @@
+﻿@using Conflux.Helpers
+@inherits BaseModal
+
+<div class="flex flex-row justify-center items-center size-full text-white">
+    <Card class="absolute inset-0 rounded-none! lg:inset-6 lg:rounded-xl!">
+        <CardHeader Title="Report Management" OnCloseRequested="EventUtils.AsNonRenderingEventHandler(CloseModal)" class="border-b border-b-gray-600"/>
+    
+        <CardContent>
+            <p>Goes hard...</p>
+        </CardContent>
+    </Card>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public required Guid CommunityId { get; set; }
+    [Parameter, EditorRequired] public required Guid MemberId { get; set; }
+}

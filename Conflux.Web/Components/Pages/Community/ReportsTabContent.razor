@@ -1,10 +1,13 @@
 ﻿@using Conflux.Application.Dto
 @using Conflux.Components.Shared
 @using Conflux.Components.Shared.Icons
-@using Microsoft.EntityFrameworkCore
+@using Conflux.Components.Shared.Modals
+@using Conflux.Helpers
+@using Conflux.Services
 
-@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject IReportService ReportService
+@inject IContentService ContentService
+@inject ModalService ModalService
 
 <div class="flex flex-col h-full gap-1 overflow-y-auto">
     <header class="flex-none ml-2">
@@ -103,12 +106,73 @@
             
             <ChildContent>
                 <div class="block lg:flex lg:flex-row lg:gap-2 mt-2">
-                    <div class="lg:flex-1 h-128 border border-gray-600 rounded-md">
-                        
+                    <div class="lg:flex-1 h-128 border border-gray-600 rounded-md overflow-y-auto p-1 scrollbar-hide overscroll-y-contain">
+                        <Virtualize ItemsProvider="GetReportedMembers">
+                            <ItemContent Context="item">
+                                <UserCard AvatarSrc="@(string.IsNullOrEmpty(item.AvatarPath) ? null : ContentService.GetAssetPath(item.AvatarPath))"
+                                          DisplayName="@item.DisplayName"
+                                          UserId="@item.UserId"
+                                          MemberId="@item.MemberId"
+                                          class="h-10"
+                                          OnClick="HandleReportedMemberSelection"/>
+                            </ItemContent>
+                        </Virtualize>
                     </div>
                     
-                    <div class="mt-2 lg:mt-0 lg:flex-3 h-128 border border-gray-600 rounded-md">
-                        
+                    <div class="mt-2 lg:mt-0 lg:flex-3 h-128 border border-gray-600 rounded-md overflow-y-auto p-2 scrollbar-hide overscroll-y-contain">
+                        @if (_selectedMemberInfo == null) {
+                            <div class="size-full flex flex-row justify-center items-center">
+                                <p class="text-sm text-gray-400">Select a User to view their history.</p>
+                            </div>
+                        } else {
+                            if (_selectedMemberStatistics == null) {
+                                <div class="size-full flex flex-row justify-center items-center">
+                                    <p class="text-sm text-gray-400">Failed to fetch member report history.</p>
+                                </div>
+                            } else {
+                                var memberStats = _selectedMemberStatistics.Value;
+
+                                <h1 class="text-2xl font-bold">Report Information</h1>
+                                
+                                <section class="mt-2">
+                                    <h2 class="text-xl font-semibold">Member Information</h2>
+                                    
+                                    <div class="mt-2 grid grid-cols-2 md:grid-cols-3 gap-2">
+                                        <Card class="border border-gray-600 shadow-md">
+                                            <CardContent class="flex flex-row justify-between items-center px-2!">
+                                                <p>Report Count</p>
+                                                
+                                                <p>@memberStats.TotalReportCount</p>
+                                            </CardContent>
+                                        </Card>
+                                        
+                                        <Card class="border border-gray-600 shadow-md">
+                                            <CardContent class="flex flex-row justify-between items-center px-2!">
+                                                <p>Resolved Count</p>
+                                                
+                                                <p>@memberStats.ResolvedReportCount</p>
+                                            </CardContent>
+                                        </Card>
+                                            
+                                        <Card class="border border-gray-600 shadow-md">
+                                            <CardContent class="flex flex-row justify-between items-center px-2!">
+                                                <p>Resolved Percentage</p>
+                                                    
+                                                <p>@((memberStats.ResolvedReportCount / memberStats.TotalReportCount).ToString("P2"))</p>
+                                            </CardContent>
+                                        </Card>
+                                    </div>
+                                </section>
+                                
+                                <section class="mt-2">
+                                    <h2 class="text-xl font-semibold">Reported Messages</h2>
+                                    
+                                    <div class="mt-2 flex flex-row justify-center items-center">
+                                        <button class="button-primary" @onclick="EventUtils.AsNonRenderingEventHandler(OpenReportManagementModal)">Open Report Management</button>
+                                    </div>
+                                </section>
+                            }
+                        }
                     </div>
                 </div>
             </ChildContent>
@@ -124,6 +188,9 @@
 
     private bool _statisticCollapsible;
     private bool _reportsCollapsible;
+
+    private SelectedMemberInfo? _selectedMemberInfo;
+    private MemberReportStatistics? _selectedMemberStatistics;
     
     private async Task SetStatisticsCollapsible(bool value) {
         if (value && _countStatistics == null) {
@@ -133,10 +200,30 @@
         _statisticCollapsible = value;
     }
 
-    private async Task SetReportCollapsible(bool value) {
-        var result = await ReportService.PaginateReportedMembersAsync(CommunityId, 0, 100);
-        
+    private void SetReportCollapsible(bool value) {
         _reportsCollapsible = value;
+    }
+
+    private async ValueTask<ItemsProviderResult<MemberDisplayDTO>> GetReportedMembers(ItemsProviderRequest request) {
+        var result = await ReportService.PaginateReportedMembersAsync(CommunityId, request.StartIndex, request.Count);
+
+        return new(result.Page, result.Count);
+    }
+
+    private async Task HandleReportedMemberSelection(UserCard card) {
+        _selectedMemberInfo = new(card.MemberId!.Value, card.UserId);
+        _selectedMemberStatistics = await ReportService.GetMemberReportStatisticsAsync(CommunityId, card.MemberId!.Value);
+    }
+
+    private void OpenReportManagementModal() {
+        if (_selectedMemberInfo is not { } memberInfo) {
+            return;
+        }
+        
+        ModalService.Open<ReportManagementModal>(parameters: new Dictionary<string, object?> {
+            [nameof(ReportManagementModal.CommunityId)] = CommunityId,
+            [nameof(ReportManagementModal.MemberId)] = memberInfo.MemberId,
+        });
     }
 
     private enum ReportCountTimeTarget {
@@ -144,4 +231,6 @@
         ThisMonth,
         ThisYear,
     }
+
+    private readonly record struct SelectedMemberInfo(Guid MemberId, string UserId);
 }

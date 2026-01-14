@@ -81,6 +81,31 @@ public class ReportService(
         return (reportedUsersCount, members);
     }
 
+    public async Task<MemberReportStatistics?> GetMemberReportStatisticsAsync(Guid communityId, Guid memberId) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        var userId = await dbContext.CommunityMembers
+            .Where(member => member.Id == memberId && member.CommunityId == communityId)
+            .Select(member => member.UserId)
+            .FirstOrDefaultAsync();
+
+        if (string.IsNullOrEmpty(userId)) {
+            return null;
+        }
+
+        var stats = await dbContext.MessageReports
+            .Where(r => r.Message.SenderId == userId && r.Message.Conversation.CommunityChannel!.ChannelCategory.CommunityId == communityId)
+            .GroupBy(r => 1)
+            .Select(g => new MemberReportStatistics(
+                TotalReportCount: g.Count(),
+                ResolvedReportCount: g.Count(r => r.Status == ReportStatus.Resolved)
+            ))
+            .FirstOrDefaultAsync();
+
+        return stats;
+    }
+
     private static IQueryable<MessageReport> QueryMessageReportsFromCommunity(ApplicationDbContext context, Guid communityId) {
         return context.MessageReports.Include(r => r.Message)
             .ThenInclude(m => m.Conversation)
