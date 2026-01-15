@@ -21,6 +21,11 @@ public class MessageReport : ICreatedAtColumn {
 
     [Required, MaxLength(36)] public string ReporterId { get; set; } = null!;
     public ApplicationUser Reporter { get; set; } = null!;
+
+    public Guid? ResolverId { get; set; }
+    public CommunityMember? Resolver { get; set; }
+    
+    public DateTime? ResolvedAt { get; set; }
     
     public ReportStatus Status { get; set; }
     public DateTime CreatedAt { get; set; }

@@ -1,6 +1,7 @@
 ﻿@using Conflux.Application.Dto
 @using Conflux.Components.Shared.Icons
 @using Conflux.Helpers
+@using Conflux.Services
 
 @inherits BaseModal
 
@@ -8,6 +9,7 @@
 @inject IConversationService ConversationService
 @inject ICommunityService CommunityService
 @inject IContentService ContentService
+@inject ModalService ModalService
 
 <div class="flex flex-row justify-center items-center size-full text-white">
     <Card class="absolute inset-0 rounded-none! lg:inset-6 lg:rounded-xl!">
@@ -58,7 +60,7 @@
                         <section class="flex-1 border border-gray-600 rounded-md mt-1 p-2 overflow-y-auto scrollbar-hide">
                             @if (_selectedMessageId != null || _selectedReportId != null) {
                                 if (_selectedMessageId != null) {
-                                    <p>Current message state:</p>
+                                    <p class="text-xl">Current message state:</p>
                                     
                                     @if (_selectedMessageDisplay == null) {
                                         <div class="h-32 flex flex-row justify-center items-center">
@@ -69,7 +71,7 @@
                                         
                                         <p class="mt-1">Statistic:</p>
                                         
-                                        <section class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-2 gap-2">
+                                        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mt-2 gap-2">
                                             <div class="flex flex-row justify-between items-center p-2 rounded-md border border-gray-600">
                                                 <p class="flex-1">Report Count</p>
                                                 <p class="flex-none">@_messageStatistics.ReportCount</p>
@@ -121,7 +123,7 @@
                                 }
 
                                 if (_selectedReportId != null) {
-                                    <p class="mt-2">Report State:</p>
+                                    <p class="mt-2 text-xl">Report State:</p>
                                     
                                     @if (_selectedReportDisplay == null) {
                                         <div class="h-32 flex flex-row justify-center items-center">
@@ -147,7 +149,8 @@
                                                           MemberId="@_reporterDisplay.MemberId"
                                                           AvatarSrc="@(string.IsNullOrEmpty(_reporterDisplay.AvatarPath) ? null : ContentService.GetAssetPath(_reporterDisplay.AvatarPath))"
                                                           DisplayName="@_reporterDisplay.DisplayName"
-                                                          class="h-10 flex-2"/>
+                                                          class="h-10 flex-2"
+                                                          OnClick="EventUtils.AsNonRenderingEventHandler(OpenReporterProfileModal)"/>
                                             </div>
                                             
                                             <div class="flex-none flex flex-row items-center">
@@ -168,25 +171,31 @@
                                                 <p class="flex-1">Status:</p>
                                                 
                                                 <div class="flex-2">
-                                                    @switch (reportDisplay.Status) {
-                                                        case ReportStatus.Resolved:
-                                                            <p class="text-green-400 inline-block">Resolved</p>
-                                                            <Check class="size-5 fill-white ml-2 inline-block" Variation="CheckVariation.Large"/>
-                                                            break;
-                                                            
-                                                        case ReportStatus.InProgress:
-                                                            <p class="text-yellow-300 inline-block">In Progress</p>
-                                                            <Spinner class="size-5 fill-white ml-2 inline-block"/>
-                                                            break;
+                                                    @if (reportDisplay.Status == ReportStatus.InProgress) {
+                                                        <p class="text-yellow-300 inline-block">In Progress</p>
+                                                        <Spinner class="size-5 fill-white ml-2 inline-block"/>
+                                                    } else {
+                                                        <p class="text-green-400 inline-block">Resolved</p>
+                                                        <Check class="size-5 fill-white ml-2 inline-block" Variation="CheckVariation.Large"/>
                                                     }
                                                 </div>
                                             </div>
                                         </div>
+                                        
+                                        <p class="mt-2 text-xl">Actions:</p>
+                                    
+                                        @if (reportDisplay is { ResolverId: { } resolverId, ResolvedAt: { } resolvedAt }) {
+                                            <p class="text-center">Report has been resolved at @resolvedAt.ToString("yyyy-MM-dd HH:mm:ss") by:</p>
+                                            
+                                            <p>@resolverId</p>
+                                        }
+                                        
+                                        <div class="grid grid-cols-2 gap-2 mt-2">
+                                            <button class="button-primary">Dismiss Report</button>
+                                            <button class="button-warning">Warn User</button>
+                                            <button class="button-danger col-span-2">Ban User</button>
+                                        </div>
                                     }
-                                    
-                                    <p class="mt-2">Actions:</p>
-                                    
-                                    <div class=""></div>
                                 }
                             } else {
                                 <div class="size-full flex flex-row justify-center items-center">
@@ -247,5 +256,16 @@
         _selectedReportId = reportId;
         _selectedReportDisplay = (await ReportService.GetReportDisplayAsync(reportId))!.Value;
         _reporterDisplay = (await CommunityService.GetMemberDisplayAsync(CommunityId, _selectedReportDisplay.Value.ReporterId))!.Value;
+    }
+
+    private void OpenReporterProfileModal() {
+        if (string.IsNullOrEmpty(_reporterDisplay.UserId)) {
+            return;
+        }
+        
+        ModalService.Open<UserProfileModal>(parameters: new Dictionary<string, object?> {
+            [nameof(UserProfileModal.UserId)] = _reporterDisplay.UserId,
+            [nameof(UserProfileModal.MemberId)] = _reporterDisplay.MemberId,
+        });
     }
 }

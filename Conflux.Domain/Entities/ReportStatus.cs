@@ -2,5 +2,7 @@
 
 public enum ReportStatus {
     InProgress,
-    Resolved,
+    Dismissed,
+    Warned,
+    Banned,
 }

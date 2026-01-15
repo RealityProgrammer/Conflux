@@ -60,7 +60,7 @@ public class ReportService(
                 Today: g.Count(x => x.CreatedAt >= today),
                 ThisMonth: g.Count(x => x.CreatedAt >= startOfMonth),
                 ThisYear: g.Count(x => x.CreatedAt >= startOfYear),
-                Resolved: g.Count(x => x.Status == ReportStatus.Resolved)
+                Resolved: g.Count(x => x.Status != ReportStatus.InProgress)
             ))
             .FirstOrDefaultAsync();
 
@@ -111,7 +111,7 @@ public class ReportService(
             .GroupBy(r => 1)
             .Select(g => new MemberReportStatistics(
                 TotalReportCount: g.Count(),
-                ResolvedReportCount: g.Count(r => r.Status == ReportStatus.Resolved)
+                ResolvedReportCount: g.Count(r => r.Status != ReportStatus.InProgress)
             ))
             .FirstOrDefaultAsync();
 
@@ -206,7 +206,7 @@ public class ReportService(
             .Where(r => r.Id == reportId)
             .Include(r => r.MessageSender)
             .Include(r => r.Reporter)
-            .Select(r => new ReportDisplayDTO(r.MessageSender.DisplayName, r.MessageSender.AvatarProfilePath, r.OriginalMessageBody, r.OriginalMessageAttachments, r.ReporterId, r.CreatedAt, r.Reasons, r.ExtraMessage, r.Status))
+            .Select(r => new ReportDisplayDTO(r.MessageSender.DisplayName, r.MessageSender.AvatarProfilePath, r.OriginalMessageBody, r.OriginalMessageAttachments, r.ReporterId, r.CreatedAt, r.Reasons, r.ExtraMessage, r.Status, r.ResolverId, r.ResolvedAt))
             .Cast<ReportDisplayDTO?>()
             .FirstOrDefaultAsync();
     }

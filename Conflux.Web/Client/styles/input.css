@@ -188,6 +188,10 @@
     .button-primary-2 {
         @apply rounded-lg text-white border border-gray-600 bg-black/5 hover:bg-black/2 active:bg-black/8 w-full p-3 shadow-lg cursor-pointer;
     }
+
+    .button-warning {
+        @apply rounded-lg text-white bg-yellow-500 hover:bg-yellow-400 active:bg-yellow-600 w-full p-3 shadow-lg cursor-pointer;
+    }
     
     .button-danger {
         @apply rounded-lg bg-red-500 py-2 px-5 cursor-pointer hover:bg-red-400 active:bg-red-600 text-white disabled:bg-red-300 disabled:cursor-not-allowed disabled:hover:bg-red-300;

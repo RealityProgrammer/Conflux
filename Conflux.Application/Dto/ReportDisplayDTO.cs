@@ -11,5 +11,7 @@ public record struct ReportDisplayDTO(
     DateTime CreatedAt, 
     ReportReasons[] Reasons,
     string? ExtraMessage,
-    ReportStatus Status
+    ReportStatus Status,
+    Guid? ResolverId,
+    DateTime? ResolvedAt
 );
