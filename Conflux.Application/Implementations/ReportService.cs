@@ -206,7 +206,7 @@ public class ReportService(
             .Where(r => r.Id == reportId)
             .Include(r => r.MessageSender)
             .Include(r => r.Reporter)
-            .Select(r => new ReportDisplayDTO(r.MessageSender.DisplayName, r.MessageSender.AvatarProfilePath, r.OriginalMessageBody, r.OriginalMessageAttachments, r.ReporterId, r.CreatedAt, r.Reasons))
+            .Select(r => new ReportDisplayDTO(r.MessageSender.DisplayName, r.MessageSender.AvatarProfilePath, r.OriginalMessageBody, r.OriginalMessageAttachments, r.ReporterId, r.CreatedAt, r.Reasons, r.ExtraMessage, r.Status))
             .Cast<ReportDisplayDTO?>()
             .FirstOrDefaultAsync();
     }

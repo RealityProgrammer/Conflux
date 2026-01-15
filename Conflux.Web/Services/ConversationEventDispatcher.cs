@@ -22,7 +22,8 @@ public sealed class ConversationEventDispatcher(
     public event Action<MessageDeletedEventArgs>? OnMessageDeleted;
     public event Action<MessageEditedEventArgs>? OnMessageEdited;
     
-    private readonly ConcurrentDictionary<Guid, HubConnection> _hubConnections = [];
+    private readonly Dictionary<Guid, HubConnection> _hubConnections = [];
+    private readonly SemaphoreSlim _connectionLock = new(1, 1);
     
     private HubConnection CreateHubConnection(Guid conversationId) {
         return new HubConnectionBuilder()
@@ -62,32 +63,34 @@ public sealed class ConversationEventDispatcher(
     }
 
     public async Task Connect(Guid conversationId) {
-        // TODO: Revise this code due to possible race-condition.
-        if (_hubConnections.ContainsKey(conversationId)) return;
-        
-        var connection = CreateHubConnection(conversationId);
+        await _connectionLock.WaitAsync();
 
-        connection.On<MessageReceivedEventArgs>(MessageReceivedEventName, args => {
-            OnMessageReceived?.Invoke(args);
-        });
+        try {
+            if (_hubConnections.ContainsKey(conversationId)) return;
 
-        connection.On<MessageDeletedEventArgs>(MessageDeletedEventName, args => {
-            OnMessageDeleted?.Invoke(args);
-        });
+            var connection = CreateHubConnection(conversationId);
 
-        connection.On<MessageEditedEventArgs>(MessageEditedEventName, args => {
-            OnMessageEdited?.Invoke(args);
-        });
-        
-        await connection.StartAsync();
-        
-        bool add = _hubConnections.TryAdd(conversationId, connection);
-        Debug.Assert(add, $"Failed to register hub connection for conversation {conversationId}. Possible race-condition?");
+            connection.On<MessageReceivedEventArgs>(MessageReceivedEventName, args => { OnMessageReceived?.Invoke(args); });
+            connection.On<MessageDeletedEventArgs>(MessageDeletedEventName, args => { OnMessageDeleted?.Invoke(args); });
+            connection.On<MessageEditedEventArgs>(MessageEditedEventName, args => { OnMessageEdited?.Invoke(args); });
+
+            await connection.StartAsync();
+
+            _hubConnections.Add(conversationId, connection);
+        } finally {
+            _connectionLock.Release();
+        }
     }
 
     public async Task Disconnect(Guid conversationId) {
-        if (_hubConnections.TryRemove(conversationId, out var connection)) {
-            await connection.DisposeAsync();
+        await _connectionLock.WaitAsync();
+
+        try {
+            if (_hubConnections.Remove(conversationId, out var connection)) {
+                await connection.DisposeAsync();
+            }
+        } finally {
+            _connectionLock.Release();
         }
     }
 
@@ -107,5 +110,7 @@ public sealed class ConversationEventDispatcher(
         foreach ((_, HubConnection connection) in _hubConnections) {
             await connection.DisposeAsync();
         }
+
+        _connectionLock.Dispose();
     }
 }

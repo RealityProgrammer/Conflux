@@ -121,7 +121,7 @@
                                 }
 
                                 if (_selectedReportId != null) {
-                                    <p class="mt-2">Original report state:</p>
+                                    <p class="mt-2">Report State:</p>
                                     
                                     @if (_selectedReportDisplay == null) {
                                         <div class="h-32 flex flex-row justify-center items-center">
@@ -133,11 +133,11 @@
                                         <MessageDisplay Display="@(new MessageDisplayDTO(reportDisplay.SenderDisplayName, reportDisplay.SenderAvatar, reportDisplay.OriginalBody, reportDisplay.OriginalAttachments))"
                                                         class="mt-1 p-2 border border-gray-600 rounded-md max-h-32 overflow-y-auto"/>
                                         
-                                        <div class="flex flex-col gap-2 mt-2">
+                                        <div class="flex flex-col gap-1 mt-2">
                                             <div class="flex-none flex flex-row items-center">
                                                 <p class="flex-1">Report at:</p>
                                                 
-                                                <p class="flex-2">@_selectedReportDisplay.Value.CreatedAt.ToString("yyyy/MM/dd HH:mm:ss")</p>
+                                                <p class="flex-2">@reportDisplay.CreatedAt.ToString("yyyy/MM/dd HH:mm:ss")</p>
                                             </div>
                                             
                                             <div class="flex-none flex flex-row items-center">
@@ -153,10 +153,40 @@
                                             <div class="flex-none flex flex-row items-center">
                                                 <p class="flex-1">Reasons:</p>
                                                 
-                                                <p class="flex-2">@string.Join(", ", _selectedReportDisplay.Value.Reasons)</p>
+                                                <p class="flex-2">@string.Join(", ", reportDisplay.Reasons)</p>
+                                            </div>
+                                            
+                                            @if (!string.IsNullOrEmpty(reportDisplay.ExtraMessage)) {
+                                                <div class="flex-none flex flex-row items-center">
+                                                    <p class="flex-1">Extra Message:</p>
+
+                                                    <p class="flex-2 border border-gray-600 p-2 wrap-break-word rounded-md">@reportDisplay.ExtraMessage</p>
+                                                </div>
+                                            }
+                                            
+                                            <div class="flex-none flex flex-row items-center">
+                                                <p class="flex-1">Status:</p>
+                                                
+                                                <div class="flex-2">
+                                                    @switch (reportDisplay.Status) {
+                                                        case ReportStatus.Resolved:
+                                                            <p class="text-green-400 inline-block">Resolved</p>
+                                                            <Check class="size-5 fill-white ml-2 inline-block" Variation="CheckVariation.Large"/>
+                                                            break;
+                                                            
+                                                        case ReportStatus.InProgress:
+                                                            <p class="text-yellow-300 inline-block">In Progress</p>
+                                                            <Spinner class="size-5 fill-white ml-2 inline-block"/>
+                                                            break;
+                                                    }
+                                                </div>
                                             </div>
                                         </div>
                                     }
+                                    
+                                    <p class="mt-2">Actions:</p>
+                                    
+                                    <div class=""></div>
                                 }
                             } else {
                                 <div class="size-full flex flex-row justify-center items-center">

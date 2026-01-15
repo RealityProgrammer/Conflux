@@ -9,5 +9,7 @@ public record struct ReportDisplayDTO(
     List<MessageAttachment> OriginalAttachments, 
     string ReporterId, 
     DateTime CreatedAt, 
-    ReportReasons[] Reasons
+    ReportReasons[] Reasons,
+    string? ExtraMessage,
+    ReportStatus Status
 );
