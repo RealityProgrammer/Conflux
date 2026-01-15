@@ -7,7 +7,7 @@
 
 <div @ref="OverlayElement" class="cursor-default absolute inset-0 bg-black hidden lg:hidden z-100" style="opacity: 0"></div>
 
-<aside @ref="RootElement" class="h-full absolute top-0 z-101 lg:static lg:translate-x-0 @(Direction == SidebarDirection.RightToLeft ? "right-0" : "left-0") @_cssClass" @attributes="AdditionalAttributes" style="@(Direction == SidebarDirection.RightToLeft ? "transform: translateX(100%);" : "transform: translateX(-100%);")">
+<aside @ref="RootElement" class="h-full absolute top-0 z-101 lg:static @(Direction == SidebarDirection.RightToLeft ? "right-0" : "left-0") @_cssClass" @attributes="AdditionalAttributes" style="@(Direction == SidebarDirection.RightToLeft ? "transform: translateX(100%);" : "transform: translateX(-100%);")">
     @if (ChildContent != null) {
         @ChildContent
     }
