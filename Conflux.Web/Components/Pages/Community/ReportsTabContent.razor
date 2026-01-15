@@ -106,7 +106,7 @@
             
             <ChildContent>
                 <div class="block lg:flex lg:flex-row lg:gap-2 mt-2">
-                    <div class="lg:flex-1 h-128 border border-gray-600 rounded-md overflow-y-auto p-1 scrollbar-hide overscroll-y-contain">
+                    <section class="lg:flex-1 h-128 border border-gray-600 rounded-md overflow-y-auto p-1 scrollbar-hide overscroll-y-contain">
                         <Virtualize ItemsProvider="GetReportedMembers">
                             <ItemContent Context="item">
                                 <UserCard AvatarSrc="@(string.IsNullOrEmpty(item.AvatarPath) ? null : ContentService.GetAssetPath(item.AvatarPath))"
@@ -117,9 +117,9 @@
                                           OnClick="HandleReportedMemberSelection"/>
                             </ItemContent>
                         </Virtualize>
-                    </div>
+                    </section>
                     
-                    <div class="mt-2 lg:mt-0 lg:flex-3 h-128 border border-gray-600 rounded-md overflow-y-auto p-2 scrollbar-hide overscroll-y-contain">
+                    <section class="mt-2 lg:mt-0 lg:flex-3 h-128 border border-gray-600 rounded-md overflow-y-auto p-2 scrollbar-hide overscroll-y-contain">
                         @if (_selectedMemberInfo == null) {
                             <div class="size-full flex flex-row justify-center items-center">
                                 <p class="text-sm text-gray-400">Select a User to view their history.</p>
@@ -173,7 +173,7 @@
                                 </section>
                             }
                         }
-                    </div>
+                    </section>
                 </div>
             </ChildContent>
         </Collapsible>

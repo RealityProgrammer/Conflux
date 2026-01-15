@@ -1,4 +1,5 @@
-﻿@using Conflux.Components.Shared.Icons
+﻿@using Conflux.Application.Dto
+@using Conflux.Components.Shared.Icons
 @using Conflux.Helpers
 @using Microsoft.EntityFrameworkCore
 @using System.ComponentModel.DataAnnotations
@@ -7,7 +8,7 @@
 
 @inherits BaseModal
 
-@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IConversationService ConversationService
 @inject IContentService ContentService
 @inject IReportService ReportService
 
@@ -39,21 +40,7 @@
                     case Status.Success:
                         <p>Are you sure you want to report this message?</p>
 
-                        <div class="mt-2 p-3 flex flex-row border border-gray-500 rounded-lg">
-                            <Avatar ImageSrc="@(string.IsNullOrEmpty(_messageDisplay.SenderAvatar) ? null : ContentService.GetAssetPath(_messageDisplay.SenderAvatar))"
-                                    ImageAlt="Sender's Avatar"
-                                    class="flex-none size-10 mr-2 mt-1"/>
-
-                            <div class="flex-1 flex flex-col">
-                                <p>@_messageDisplay.SenderDisplayName</p>
-
-                                @if (!string.IsNullOrEmpty(_messageDisplay.Body)) {
-                                    <p class="whitespace-pre-wrap wrap-anywhere">
-                                        @_messageDisplay.Body
-                                    </p>
-                                }
-                            </div>
-                        </div>
+                        <MessageDisplay Display="_messageDisplay" class="mt-2 p-3 border border-gray-500 rounded-md"/>
 
                         <section class="mt-2">
                             <label class="input-label">Type of violation:</label>
@@ -167,14 +154,7 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
-            await using var dbContext = await DbContextFactory.CreateDbContextAsync();
-            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-
-            _messageDisplay = await dbContext.ChatMessages
-                .Where(m => m.Id == MessageId)
-                .Include(m => m.Sender)
-                .Select(m => new MessageDisplayDTO(m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body))
-                .FirstOrDefaultAsync();
+            _messageDisplay = (await ConversationService.GetMessageDisplayAsync(MessageId))!.Value;
 
             _status = string.IsNullOrEmpty(_messageDisplay.SenderDisplayName) ? Status.Failure : Status.Success;
             StateHasChanged();
@@ -243,8 +223,6 @@
             _isProcessingSubmit = false;
         }
     }
-
-    private readonly record struct MessageDisplayDTO(string SenderDisplayName, string? SenderAvatar, string? Body);
 
     private enum Status {
         Loading,

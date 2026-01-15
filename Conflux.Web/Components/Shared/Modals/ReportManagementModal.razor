@@ -1,193 +1,173 @@
-﻿@using Conflux.Helpers
+﻿@using Conflux.Application.Dto
+@using Conflux.Components.Shared.Icons
+@using Conflux.Helpers
 
 @inherits BaseModal
 
 @inject IReportService ReportService
+@inject IConversationService ConversationService
+@inject ICommunityService CommunityService
+@inject IContentService ContentService
 
 <div class="flex flex-row justify-center items-center size-full text-white">
     <Card class="absolute inset-0 rounded-none! lg:inset-6 lg:rounded-xl!">
         <CardHeader Title="Report Management" OnCloseRequested="EventUtils.AsNonRenderingEventHandler(CloseModal)" class="border-b border-b-gray-600" />
     
         <CardContent class="p-0">
-            <p>Goes hard...</p>
-            @* <div class="flex flex-col h-full"> *@
-            @*     @if (_isLoading) { *@
-            @*         <div class="flex-1 flex items-center justify-center p-8"> *@
-            @*             <div class="text-center"> *@
-            @*                 <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-2"></div> *@
-            @*                 <p class="text-gray-400">Loading reports...</p> *@
-            @*             </div> *@
-            @*         </div> *@
-            @*     } else if (_reportedMessages == null || !_reportedMessages.Any()) { *@
-            @*         <div class="flex-1 flex items-center justify-center p-8"> *@
-            @*             <div class="text-center"> *@
-            @*                 <svg class="mx-auto h-12 w-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"> *@
-            @*                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /> *@
-            @*                 </svg> *@
-            @*                 <h3 class="mt-2 text-sm font-medium text-gray-300">No reports found</h3> *@
-            @*                 <p class="mt-1 text-sm text-gray-500">This member has no reported messages.</p> *@
-            @*             </div> *@
-            @*         </div> *@
-            @*     } else { *@
-            @*         <div class="flex flex-col lg:flex-row h-full"> *@
-            @*             <div class="lg:w-1/3 border-r border-gray-700 flex flex-col"> *@
-            @*                 <div class="p-4 border-b border-gray-700 bg-gray-800/50"> *@
-            @*                     <div class="flex items-center justify-between mb-2"> *@
-            @*                         <h3 class="font-medium">Report Statistics</h3> *@
-            @*                         <span class="text-xs px-2 py-1 rounded-full bg-gray-700"> *@
-            @*                             @_reportedMessages.Count total *@
-            @*                         </span> *@
-            @*                     </div> *@
-            @*                     <div class="grid grid-cols-2 gap-2 text-sm"> *@
-            @*                         <div class="bg-gray-900/50 p-2 rounded"> *@
-            @*                             <div class="text-gray-400 text-xs">Total Reports</div> *@
-            @*                             <div class="font-semibold">@_memberStats.TotalReportCount</div> *@
-            @*                         </div> *@
-            @*                         <div class="bg-gray-900/50 p-2 rounded"> *@
-            @*                             <div class="text-gray-400 text-xs">Resolved</div> *@
-            @*                             <div class="font-semibold text-green-400">@_memberStats.ResolvedReportCount</div> *@
-            @*                         </div> *@
-            @*                     </div> *@
-            @*                 </div> *@
-            @* *@
-            @*                 <div class="flex-1 overflow-y-auto"> *@
-            @*                     <div class="divide-y divide-gray-700"> *@
-            @*                         @foreach (var message in _reportedMessages) { *@
-            @*                             <button @onclick="() => SelectMessage(message)" *@
-            @*                                     class="w-full text-left p-4 hover:bg-gray-800/50 transition-colors @(_selectedMessage?.Message.Id == message.Message.Id ? "bg-gray-800" : "")"> *@
-            @*                                 <div class="flex items-start justify-between"> *@
-            @*                                     <div class="flex-1 min-w-0"> *@
-            @*                                         <p class="text-sm font-medium truncate">@GetShortenedMessage(message.Message.Body)</p> *@
-            @*                                         <div class="flex items-center gap-2 mt-1"> *@
-            @*                                             <span class="text-xs text-gray-400"> *@
-            @*                                                 @message.Message.CreatedAt.ToString("MMM d, yyyy") *@
-            @*                                             </span> *@
-            @*                                             <span class="text-xs px-1.5 py-0.5 rounded @GetReportStatusBadgeClass(message.Reports.FirstOrDefault()?.Status)"> *@
-            @*                                                 @message.Reports.FirstOrDefault()?.Status.ToString() *@
-            @*                                             </span> *@
-            @*                                         </div> *@
-            @*                                     </div> *@
-            @*                                     <div class="ml-2"> *@
-            @*                                         <span class="text-xs px-2 py-1 rounded-full bg-red-900/30 text-red-300"> *@
-            @*                                             @message.Reports.Count *@
-            @*                                         </span> *@
-            @*                                     </div> *@
-            @*                                 </div> *@
-            @*                             </button> *@
-            @*                         } *@
-            @*                     </div> *@
-            @*                 </div> *@
-            @*             </div> *@
-            @* *@
-            @*             <div class="lg:w-2/3 flex flex-col"> *@
-            @*                 @if (_selectedMessage != null) { *@
-            @*                     <div class="p-4 border-b border-gray-700 flex items-center justify-between"> *@
-            @*                         <div> *@
-            @*                             <h3 class="font-medium">Message Details</h3> *@
-            @*                             <p class="text-sm text-gray-400"> *@
-            @*                                 Reported @_selectedMessage.Reports.Count time(s) *@
-            @*                             </p> *@
-            @*                         </div> *@
-            @*                         <div class="flex items-center gap-2"> *@
-            @*                             <button @onclick="ResolveAllReports" *@
-            @*                                     class="px-3 py-1.5 text-sm bg-green-600 hover:bg-green-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" *@
-            @*                                     disabled="@(_selectedMessage.Reports.All(r => r.Status == ReportStatus.Resolved))"> *@
-            @*                                 Resolve All *@
-            @*                             </button> *@
-            @*                             <button @onclick="DismissAllReports" *@
-            @*                                     class="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 rounded transition-colors"> *@
-            @*                                 Dismiss All *@
-            @*                             </button> *@
-            @*                         </div> *@
-            @*                     </div> *@
-            @* *@
-            @*                     <div class="p-4 border-b border-gray-700"> *@
-            @*                         <div class="flex items-start gap-3"> *@
-            @*                             <div class="shrink-0"> *@
-            @*                                 <div class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center"> *@
-            @*                                     <span class="text-sm">@GetUserInitial(_selectedMessage.Message.Sender?.DisplayName)</span> *@
-            @*                                 </div> *@
-            @*                             </div> *@
-            @*                             <div class="flex-1"> *@
-            @*                                 <div class="flex items-center gap-2 mb-1"> *@
-            @*                                     <span class="font-medium">@_selectedMessage.Message.Sender?.DisplayName</span> *@
-            @*                                     <span class="text-xs text-gray-400"> *@
-            @*                                         @_selectedMessage.Message.CreatedAt.ToString("MMM d, yyyy h:mm tt") *@
-            @*                                     </span> *@
-            @*                                 </div> *@
-            @*                                 <p class="text-gray-300 whitespace-pre-wrap">@_selectedMessage.Message.Body</p> *@
-            @*                             </div> *@
-            @*                         </div> *@
-            @*                     </div> *@
-            @* *@
-            @*                     <div class="flex-1 overflow-y-auto"> *@
-            @*                         <div class="p-4"> *@
-            @*                             <h4 class="font-medium mb-4">Reports (@_selectedMessage.Reports.Count)</h4> *@
-            @*                             <div class="space-y-4"> *@
-            @*                                 @foreach (var report in _selectedMessage.Reports) { *@
-            @*                                     <div class="bg-gray-800/50 rounded-lg p-4"> *@
-            @*                                         <div class="flex items-start justify-between mb-2"> *@
-            @*                                             <div> *@
-            @*                                                 <div class="flex items-center gap-2"> *@
-            @*                                                     <span class="font-medium text-sm">@report.Reporter?.DisplayName</span> *@
-            @*                                                     <span class="text-xs text-gray-400"> *@
-            @*                                                         @report.CreatedAt.ToString("MMM d, yyyy") *@
-            @*                                                     </span> *@
-            @*                                                 </div> *@
-            @*                                                 <div class="flex flex-wrap gap-1 mt-1"> *@
-            @*                                                     @foreach (var reason in report.Reasons) { *@
-            @*                                                         <span class="text-xs px-2 py-1 rounded-full bg-gray-700"> *@
-            @*                                                             @reason.ToString() *@
-            @*                                                         </span> *@
-            @*                                                     } *@
-            @*                                                 </div> *@
-            @*                                             </div> *@
-            @*                                             <div> *@
-            @*                                                 <span class="text-xs px-2 py-1 rounded @GetReportStatusBadgeClass(report.Status)"> *@
-            @*                                                     @report.Status.ToString() *@
-            @*                                                 </span> *@
-            @*                                             </div> *@
-            @*                                         </div> *@
-            @*                                          *@
-            @*                                         @if (!string.IsNullOrEmpty(report.ExtraMessage)) { *@
-            @*                                             <div class="mt-2 p-3 bg-gray-900/50 rounded"> *@
-            @*                                                 <p class="text-sm text-gray-300">@report.ExtraMessage</p> *@
-            @*                                             </div> *@
-            @*                                         } *@
-            @* *@
-            @*                                         <div class="flex items-center gap-2 mt-3 pt-3 border-t border-gray-700"> *@
-            @*                                             @if (report.Status == ReportStatus.InProgress) { *@
-            @*                                                 <button @onclick="() => ResolveReport(report)" *@
-            @*                                                         class="px-3 py-1 text-xs bg-green-600 hover:bg-green-700 rounded transition-colors"> *@
-            @*                                                     Mark as Resolved *@
-            @*                                                 </button> *@
-            @*                                                 <button @onclick="() => DismissReport(report)" *@
-            @*                                                         class="px-3 py-1 text-xs bg-gray-600 hover:bg-gray-700 rounded transition-colors"> *@
-            @*                                                     Dismiss *@
-            @*                                                 </button> *@
-            @*                                             } else { *@
-            @*                                                 <span class="text-xs text-green-400">✓ Resolved</span> *@
-            @*                                             } *@
-            @*                                         </div> *@
-            @*                                     </div> *@
-            @*                                 } *@
-            @*                             </div> *@
-            @*                         </div> *@
-            @*                     </div> *@
-            @*                 } else { *@
-            @*                     <div class="flex-1 flex items-center justify-center"> *@
-            @*                         <div class="text-center text-gray-500"> *@
-            @*                             <svg class="mx-auto h-12 w-12 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"> *@
-            @*                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /> *@
-            @*                             </svg> *@
-            @*                             <p>Select a message to view details</p> *@
-            @*                         </div> *@
-            @*                     </div> *@
-            @*                 } *@
-            @*             </div> *@
-            @*         </div> *@
-            @*     } *@
-            @* </div> *@
+            @if (_isLoading) {
+                <div class="size-full flex flex-row justify-center items-center">
+                    <Spinner class="size-12 fill-white"/>
+                </div>
+            } else {
+                <div class="flex flex-col lg:flex-row gap-2 lg:h-full">
+                    <div class="flex flex-col gap-2 h-128 lg:h-full lg:flex-1">
+                        <section class="flex-1 flex flex-col overflow-y-hidden">
+                            <header class="flex-none">Messages</header>
+                            
+                            <section class="flex-1 border border-gray-600 rounded-md mt-1 p-1 overflow-y-auto scrollbar-hide h-full">
+                                @foreach (var message in _reportedMessages!) {
+                                    <button class="p-2 button-nav-menu" @onclick="() => SelectMessage(message.MessageId)">
+                                        <p class="text-center w-full text-sm">@message.MessageId</p>
+                                    </button>
+                                }
+                            </section>
+                        </section>
+
+                        <section class="flex-1 flex flex-col overflow-y-hidden">
+                            <header class="flex-none">Reports</header>
+                            
+                            <section class="flex-1 border border-gray-600 rounded-md mt-1 p-1 overflow-y-auto scrollbar-hide h-full">
+                                @if (_messageReports == null) {
+                                    <div class="size-full flex flex-row justify-center items-center">
+                                        <p class="text-sm text-gray-400">Select a message to see reports.</p>
+                                    </div>
+                                } else {
+                                    @foreach (var report in _messageReports) {
+                                        <button class="p-2 button-nav-menu" @onclick="() => SelectReport(report.Id)">
+                                            <span class="text-center w-full text-sm">@report.Id</span>
+                                        </button>
+                                    }
+                                }
+                            </section>
+                        </section>
+                    </div>
+                    
+                    <section class="h-128 lg:h-full lg:flex-3 flex flex-col overflow-y-hidden">
+                        <header class="flex-none">Details</header>
+                        
+                        <section class="flex-1 border border-gray-600 rounded-md mt-1 p-2 overflow-y-auto scrollbar-hide">
+                            @if (_selectedMessageId != null || _selectedReportId != null) {
+                                if (_selectedMessageId != null) {
+                                    <p>Current message state:</p>
+                                    
+                                    @if (_selectedMessageDisplay == null) {
+                                        <div class="h-32 flex flex-row justify-center items-center">
+                                            <Spinner class="size-8 fill-white"/>
+                                        </div>
+                                    } else {
+                                        <MessageDisplay Display="_selectedMessageDisplay.Value" class="mt-1 p-2 border border-gray-600 rounded-md max-h-32 overflow-y-auto"/>
+                                        
+                                        <p class="mt-1">Statistic:</p>
+                                        
+                                        <section class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-2 gap-2">
+                                            <div class="flex flex-row justify-between items-center p-2 rounded-md border border-gray-600">
+                                                <p class="flex-1">Report Count</p>
+                                                <p class="flex-none">@_messageStatistics.ReportCount</p>
+                                            </div>
+                                            
+                                            @if (_messageStatistics.ReasonCounts.TryGetValue(ReportReasons.Spam, out var reasonCount)) {
+                                                <div class="flex flex-row justify-between items-center p-2 rounded-md border border-gray-600">
+                                                    <p class="flex-1">Spam</p>
+                                                    <p class="flex-none">@reasonCount (@(((float)reasonCount / _messageStatistics.ReportCount).ToString("P2")))</p>
+                                                </div>
+                                            }
+                                            
+                                            @if (_messageStatistics.ReasonCounts.TryGetValue(ReportReasons.Harassment, out reasonCount)) {
+                                                <div class="flex flex-row justify-between items-center p-2 rounded-md border border-gray-600">
+                                                    <p class="flex-1">Harassment</p>
+                                                    <p class="flex-none">@reasonCount (@(((float)reasonCount / _messageStatistics.ReportCount).ToString("P2")))</p>
+                                                </div>
+                                            }
+                                            
+                                            @if (_messageStatistics.ReasonCounts.TryGetValue(ReportReasons.Misinformation, out reasonCount)) {
+                                                <div class="flex flex-row justify-between items-center p-2 rounded-md border border-gray-600">
+                                                    <p class="flex-1">Misinformation</p>
+                                                    <p class="flex-none">@reasonCount (@(((float)reasonCount / _messageStatistics.ReportCount).ToString("P2")))</p>
+                                                </div>
+                                            }
+                                            
+                                            @if (_messageStatistics.ReasonCounts.TryGetValue(ReportReasons.Violence, out reasonCount)) {
+                                                <div class="flex flex-row justify-between items-center p-2 rounded-md border border-gray-600">
+                                                    <p class="flex-1">Violence</p>
+                                                    <p class="flex-none">@reasonCount (@(((float)reasonCount / _messageStatistics.ReportCount).ToString("P2")))</p>
+                                                </div>
+                                            }
+                                            
+                                            @if (_messageStatistics.ReasonCounts.TryGetValue(ReportReasons.ExposingInformation, out reasonCount)) {
+                                                <div class="flex flex-row justify-between items-center p-2 rounded-md border border-gray-600">
+                                                    <p class="flex-1">Exposing Private Information</p>
+                                                    <p class="flex-none">@reasonCount (@(((float)reasonCount / _messageStatistics.ReportCount).ToString("P2")))</p>
+                                                </div>
+                                            }
+                                            
+                                            @if (_messageStatistics.ReasonCounts.TryGetValue(ReportReasons.Other, out reasonCount)) {
+                                                <div class="flex flex-row justify-between items-center p-2 rounded-md border border-gray-600">
+                                                    <p class="flex-1">Others</p>
+                                                    <p class="flex-none">@reasonCount (@(((float)reasonCount / _messageStatistics.ReportCount).ToString("P2")))</p>
+                                                </div>
+                                            }
+                                        </section>
+                                    }
+                                }
+
+                                if (_selectedReportId != null) {
+                                    <p class="mt-2">Original report state:</p>
+                                    
+                                    @if (_selectedReportDisplay == null) {
+                                        <div class="h-32 flex flex-row justify-center items-center">
+                                            <Spinner class="size-8 fill-white"/>
+                                        </div>
+                                    } else {
+                                        var reportDisplay = _selectedReportDisplay.Value;
+                                        
+                                        <MessageDisplay Display="@(new MessageDisplayDTO(reportDisplay.SenderDisplayName, reportDisplay.SenderAvatar, reportDisplay.OriginalBody, reportDisplay.OriginalAttachments))"
+                                                        class="mt-1 p-2 border border-gray-600 rounded-md max-h-32 overflow-y-auto"/>
+                                        
+                                        <div class="flex flex-col gap-2 mt-2">
+                                            <div class="flex-none flex flex-row items-center">
+                                                <p class="flex-1">Report at:</p>
+                                                
+                                                <p class="flex-2">@_selectedReportDisplay.Value.CreatedAt.ToString("yyyy/MM/dd HH:mm:ss")</p>
+                                            </div>
+                                            
+                                            <div class="flex-none flex flex-row items-center">
+                                                <p class="flex-1">Reporter:</p>
+
+                                                <UserCard UserId="@_reporterDisplay.UserId"
+                                                          MemberId="@_reporterDisplay.MemberId"
+                                                          AvatarSrc="@(string.IsNullOrEmpty(_reporterDisplay.AvatarPath) ? null : ContentService.GetAssetPath(_reporterDisplay.AvatarPath))"
+                                                          DisplayName="@_reporterDisplay.DisplayName"
+                                                          class="h-10 flex-2"/>
+                                            </div>
+                                            
+                                            <div class="flex-none flex flex-row items-center">
+                                                <p class="flex-1">Reasons:</p>
+                                                
+                                                <p class="flex-2">@string.Join(", ", _selectedReportDisplay.Value.Reasons)</p>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                            } else {
+                                <div class="size-full flex flex-row justify-center items-center">
+                                    <p class="text-sm text-gray-400">Select something to see details.</p>
+                                </div>
+                            }
+                        </section>
+                    </section>
+                </div>
+            }
+
         </CardContent>
     </Card>
 </div>
@@ -196,123 +176,46 @@
     [Parameter, EditorRequired] public required Guid CommunityId { get; set; }
     [Parameter, EditorRequired] public required Guid MemberId { get; set; }
 
-@*     private bool _isLoading = true; *@
-@*     private MemberReportStatistics _memberStats; *@
-@*     private List<ReportedMessageViewModel>? _reportedMessages; *@
-@*     private ReportedMessageViewModel? _selectedMessage; *@
-@*     private string? _errorMessage; *@
-@* *@
-@*     protected override async Task OnInitializedAsync() { *@
-@*         await LoadData(); *@
-@*     } *@
-@* *@
-@*     private async Task LoadData() { *@
-@*         _isLoading = true; *@
-@*         _errorMessage = null; *@
-@*         StateHasChanged(); *@
-@* *@
-@*         try { *@
-@*             // Load statistics *@
-@*             _memberStats = await ReportService.GetMemberReportStatisticsAsync(CommunityId, MemberId) *@
-@*                           ?? new MemberReportStatistics(0, 0); *@
-@* *@
-@*             // Load reported messages *@
-@*             _reportedMessages = await ReportService.GetReportedMessagesByMemberAsync(CommunityId, MemberId); *@
-@*              *@
-@*             // Select first message if available *@
-@*             if (_reportedMessages?.Any() == true) { *@
-@*                 _selectedMessage = _reportedMessages.First(); *@
-@*             } *@
-@*         } catch (Exception ex) { *@
-@*             _errorMessage = $"Failed to load reports: {ex.Message}"; *@
-@*         } finally { *@
-@*             _isLoading = false; *@
-@*             StateHasChanged(); *@
-@*         } *@
-@*     } *@
-@* *@
-@*     private void SelectMessage(ReportedMessageViewModel message) { *@
-@*         _selectedMessage = message; *@
-@*     } *@
-@* *@
-@*     private async Task ResolveReport(MessageReport report) { *@
-@*         // if (await ReportService.UpdateReportStatusAsync(report.Id, ReportStatus.Resolved)) { *@
-@*         //     report.Status = ReportStatus.Resolved; *@
-@*         //     await RefreshStatistics(); *@
-@*         //     StateHasChanged(); *@
-@*         // } *@
-@*     } *@
-@* *@
-@*     private async Task DismissReport(MessageReport report) { *@
-@*         // if (await ReportService.DeleteReportAsync(report.Id)) { *@
-@*         //     await LoadData(); // Reload all data *@
-@*         // } *@
-@*     } *@
-@* *@
-@*     private async Task ResolveAllReports() { *@
-@*         if (_selectedMessage == null) return; *@
-@* *@
-@*         foreach (var report in _selectedMessage.Reports.Where(r => r.Status == ReportStatus.InProgress)) { *@
-@*             await ResolveReport(report); *@
-@*         } *@
-@*     } *@
-@* *@
-@*     private async Task DismissAllReports() { *@
-@*         if (_selectedMessage == null) return; *@
-@* *@
-@*         // if (await ReportService.DeleteReportsForMessageAsync(selectedMessage.Message.Id)) { *@
-@*         //     await LoadData(); // Reload all data *@
-@*         // } *@
-@*     } *@
-@* *@
-@*     private async Task RefreshStatistics() { *@
-@*         var newStats = await ReportService.GetMemberReportStatisticsAsync(CommunityId, MemberId); *@
-@* *@
-@*         if (newStats.HasValue) { *@
-@*             _memberStats = newStats.Value; *@
-@*         } *@
-@*     } *@
-@* *@
-@*     private string GetShortenedMessage(string? message) { *@
-@*         if (string.IsNullOrEmpty(message)) return "No content"; *@
-@*         return message.Length > 50 ? message.Substring(0, 50) + "..." : message; *@
-@*     } *@
-@* *@
-@*     private string GetUserInitial(string? displayName) { *@
-@*         if (string.IsNullOrEmpty(displayName)) return "?"; *@
-@*         return displayName.Substring(0, 1).ToUpper(); *@
-@*     } *@
-@* *@
-@*     private string GetReportStatusBadgeClass(ReportStatus? status) { *@
-@*         return status switch { *@
-@*             ReportStatus.Resolved => "bg-green-900/30 text-green-300", *@
-@*             ReportStatus.InProgress => "bg-yellow-900/30 text-yellow-300", *@
-@*             _ => "bg-gray-700 text-gray-300" *@
-@*         }; *@
-@*     } *@
-@* *@
-@*     // ViewModel for the reported messages *@
-@*     public class ReportedMessageViewModel { *@
-@*         public ChatMessage Message { get; set; } = null!; *@
-@*         public List<MessageReport> Reports { get; set; } = new(); *@
-@*     } *@
-@* *@
-@*     // Service method placeholder - you'll need to implement this *@
-@*     private async Task<List<ReportedMessageViewModel>> GetReportedMessagesByMemberAsync(Guid communityId, Guid memberId) { *@
-@*         // var messages = await dbContext.ChatMessages *@
-@*         //     .Include(m => m.Sender) *@
-@*         //     .Include(m => m.Reports) *@
-@*         //         .ThenInclude(r => r.Reporter) *@
-@*         //     .Where(m => m.SenderId == userId && *@
-@*         //                m.Conversation.CommunityChannel.ChannelCategory.CommunityId == communityId && *@
-@*         //                m.Reports.Any()) *@
-@*         //     .Select(m => new ReportedMessageViewModel *@
-@*         //     { *@
-@*         //         Message = m, *@
-@*         //         Reports = m.Reports.ToList() *@
-@*         //     }) *@
-@*         //     .ToListAsync(); *@
-@*         // *@
-@*         // return new List<ReportedMessageViewModel>(); *@
-@*     } *@
+    private bool _isLoading = true;
+    private List<ReportedMessageDTO>? _reportedMessages;
+    private MemberReportStatistics _memberStats;
+
+    private List<MessageReport>? _messageReports;
+
+    private Guid? _selectedMessageId;
+    private Guid? _selectedReportId;
+
+    private MessageDisplayDTO? _selectedMessageDisplay;
+    private ReportDisplayDTO? _selectedReportDisplay;
+    private MemberDisplayDTO _reporterDisplay;
+    private MessageReportStatistics _messageStatistics;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            _reportedMessages = await ReportService.GetMemberReportedMessagesAsync(CommunityId, MemberId);
+            _memberStats = (await ReportService.GetMemberReportStatisticsAsync(CommunityId, MemberId))!.Value;
+            
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SelectMessage(Guid messageId) {
+        _selectedMessageId = messageId;
+        _selectedReportId = null;
+
+        _messageReports = await ReportService.GetMessageReportsAsync(messageId);
+        _selectedMessageDisplay = (await ConversationService.GetMessageDisplayAsync(messageId))!.Value;
+        _messageStatistics = (await ReportService.GetMessageReportStatisticsAsync(messageId))!.Value;
+    }
+
+    private async Task SelectReport(Guid reportId) {
+        if (_selectedMessageId == null) {
+            return;
+        }
+        
+        _selectedReportId = reportId;
+        _selectedReportDisplay = (await ReportService.GetReportDisplayAsync(reportId))!.Value;
+        _reporterDisplay = (await CommunityService.GetMemberDisplayAsync(CommunityId, _selectedReportDisplay.Value.ReporterId))!.Value;
+    }
 }

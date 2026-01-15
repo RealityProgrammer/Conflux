@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Conflux.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialMigration : Migration
+    public partial class InitialMigrations : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -357,7 +357,8 @@ namespace Conflux.Infrastructure.Migrations
                     ReplyMessageId = table.Column<Guid>(type: "uuid", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     LastModifiedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    Attachments = table.Column<string>(type: "jsonb", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -383,20 +384,43 @@ namespace Conflux.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "MessageAttachments",
+                name: "MessageReports",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     MessageId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
-                    PhysicalPath = table.Column<string>(type: "character varying(96)", maxLength: 96, nullable: false),
-                    Type = table.Column<int>(type: "integer", nullable: false)
+                    MessageSenderId = table.Column<string>(type: "character varying(36)", maxLength: 36, nullable: false),
+                    OriginalMessageBody = table.Column<string>(type: "character varying(1024)", maxLength: 1024, nullable: true),
+                    Reasons = table.Column<int[]>(type: "integer[]", nullable: false),
+                    ExtraMessage = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    ReporterId = table.Column<string>(type: "character varying(36)", maxLength: 36, nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ChatMessageId = table.Column<Guid>(type: "uuid", nullable: true),
+                    OriginalMessageAttachments = table.Column<string>(type: "jsonb", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_MessageAttachments", x => x.Id);
+                    table.PrimaryKey("PK_MessageReports", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_MessageAttachments_ChatMessages_MessageId",
+                        name: "FK_MessageReports_AspNetUsers_MessageSenderId",
+                        column: x => x.MessageSenderId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_MessageReports_AspNetUsers_ReporterId",
+                        column: x => x.ReporterId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_MessageReports_ChatMessages_ChatMessageId",
+                        column: x => x.ChatMessageId,
+                        principalTable: "ChatMessages",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_MessageReports_ChatMessages_MessageId",
                         column: x => x.MessageId,
                         principalTable: "ChatMessages",
                         principalColumn: "Id",
@@ -520,9 +544,24 @@ namespace Conflux.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_MessageAttachments_MessageId",
-                table: "MessageAttachments",
+                name: "IX_MessageReports_ChatMessageId",
+                table: "MessageReports",
+                column: "ChatMessageId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MessageReports_MessageId",
+                table: "MessageReports",
                 column: "MessageId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MessageReports_MessageSenderId",
+                table: "MessageReports",
+                column: "MessageSenderId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MessageReports_ReporterId",
+                table: "MessageReports",
+                column: "ReporterId");
         }
 
         /// <inheritdoc />
@@ -547,7 +586,7 @@ namespace Conflux.Infrastructure.Migrations
                 name: "CommunityMembers");
 
             migrationBuilder.DropTable(
-                name: "MessageAttachments");
+                name: "MessageReports");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");

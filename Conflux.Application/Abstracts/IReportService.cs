@@ -9,6 +9,14 @@ public interface IReportService {
     Task<ReportCountStatistics?> GetReportCountStatisticsAsync(Guid communityId);
     
     Task<MemberReportStatistics?> GetMemberReportStatisticsAsync(Guid communityId, Guid memberId);
+    
+    Task<List<ReportedMessageDTO>> GetMemberReportedMessagesAsync(Guid communityId, Guid memberId);
 
+    Task<List<MessageReport>> GetMessageReportsAsync(Guid messageId);
+    
+    Task<MessageReportStatistics?> GetMessageReportStatisticsAsync(Guid messageId);
+    
+    Task<ReportDisplayDTO?> GetReportDisplayAsync(Guid reportId);
+    
     Task<(int Count, List<MemberDisplayDTO> Page)> PaginateReportedMembersAsync(Guid communityId, int startIndex, int count);
 }

@@ -1,4 +1,5 @@
 ﻿using Conflux.Application.Abstracts;
+using Conflux.Application.Dto;
 using Conflux.Domain;
 using Conflux.Domain.Entities;
 using Conflux.Domain.Events;
@@ -204,6 +205,18 @@ public sealed class ConversationService(
             
             return false;
         }
+    }
+
+    public async Task<MessageDisplayDTO?> GetMessageDisplayAsync(Guid messageId) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+        
+        return await dbContext.ChatMessages
+            .Where(m => m.Id == messageId)
+            .Include(m => m.Sender)
+            .Select(m => new MessageDisplayDTO(m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.Attachments))
+            .Cast<MessageDisplayDTO?>()
+            .FirstOrDefaultAsync();
     }
 
     public async Task<IConversationService.RenderingMessages> LoadMessagesBeforeTimestampAsync(Guid conversationId, DateTime beforeTimestamp, int take) {

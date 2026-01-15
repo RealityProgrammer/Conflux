@@ -29,6 +29,9 @@ public interface ICommunityService {
     Task<bool> DeleteRole(Guid communityId, Guid roleId);
     
     Task<Guid> GetMemberId(Guid communityId, string userId);
+    
+    Task<MemberDisplayDTO?> GetMemberDisplayAsync(Guid memberId);
+    Task<MemberDisplayDTO?> GetMemberDisplayAsync(Guid communityId, string userId);
 
     public enum CreateRoleStatus {
         Success,

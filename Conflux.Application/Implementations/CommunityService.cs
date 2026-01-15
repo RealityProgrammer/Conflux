@@ -314,4 +314,28 @@ public class CommunityService(
             .Select(x => x.Id)
             .FirstOrDefaultAsync();
     }
+
+    public async Task<MemberDisplayDTO?> GetMemberDisplayAsync(Guid memberId) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        return await dbContext.CommunityMembers
+            .Where(x => x.Id == memberId)
+            .Include(x => x.User)
+            .Select(x => new MemberDisplayDTO(x.Id, x.UserId, x.User.DisplayName, x.User.AvatarProfilePath))
+            .Cast<MemberDisplayDTO?>()
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<MemberDisplayDTO?> GetMemberDisplayAsync(Guid communityId, string userId) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        return await dbContext.CommunityMembers
+            .Where(x => x.CommunityId == communityId && x.UserId == userId)
+            .Include(x => x.User)
+            .Select(x => new MemberDisplayDTO(x.Id, x.UserId, x.User.DisplayName, x.User.AvatarProfilePath))
+            .Cast<MemberDisplayDTO?>()
+            .FirstOrDefaultAsync();
+    }
 }

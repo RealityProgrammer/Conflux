@@ -11,6 +11,7 @@ public class MessageReport : ICreatedAtColumn {
     [MaxLength(36)] public string MessageSenderId { get; set; } = null!;
     public ApplicationUser MessageSender { get; set; } = null!;
     
+    // TODO: Reduce redundancy when report same message multiple time
     [MaxLength(1024)] public string? OriginalMessageBody { get; set; }
     public List<MessageAttachment> OriginalMessageAttachments { get; set; } = null!;
     

@@ -1,4 +1,5 @@
-﻿using Conflux.Domain.Entities;
+﻿using Conflux.Application.Dto;
+using Conflux.Domain.Entities;
 
 namespace Conflux.Application.Abstracts;
 
@@ -9,7 +10,9 @@ public interface IConversationService {
     Task<bool> DeleteMessageAsync(Guid messageId, string senderId);
     Task<bool> EditMessageAsync(Guid messageId, string body);
     Task<bool> EditMessageAsync(Guid messageId, string senderId, string? body);
-
+    
+    Task<MessageDisplayDTO?> GetMessageDisplayAsync(Guid messageId);
+    
     Task<RenderingMessages> LoadMessagesBeforeTimestampAsync(Guid conversationId, DateTime beforeTimestamp, int take);
     Task<RenderingMessages> LoadMessagesAfterTimestampAsync(Guid conversationId, DateTime afterTimestamp, int take);
 

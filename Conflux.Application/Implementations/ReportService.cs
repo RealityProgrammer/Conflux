@@ -118,12 +118,104 @@ public class ReportService(
         return stats;
     }
 
+    public async Task<List<ReportedMessageDTO>> GetMemberReportedMessagesAsync(Guid communityId, Guid memberId) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        var userId = await dbContext.CommunityMembers
+            .Where(member => member.Id == memberId && member.CommunityId == communityId)
+            .Select(member => member.UserId)
+            .FirstOrDefaultAsync();
+
+        if (string.IsNullOrEmpty(userId)) {
+            return [];
+        }
+        
+        // This cannot be compiled by EntityFramework for some reason...
+        // var reports = await QueryMessageReportsFromCommunity(dbContext, communityId)
+        //     .Where(r => r.MessageSenderId == userId)
+        //     .Select(r => new MessageReportListingElementDTO {
+        //         CreatedAt = r.CreatedAt,
+        //         Id = r.Id,
+        //         MessageId = r.MessageId,
+        //     })
+        //     .GroupBy(r => r.MessageId, (_, g) => g.OrderByDescending(x => x.CreatedAt).First())
+        //     .OrderByDescending(c => c.CreatedAt)
+        //     .ToListAsync();
+        //
+        // return reports;
+
+        var reports = await QueryMessageReportsFromCommunity(dbContext, communityId)
+            .Where(r => r.MessageSenderId == userId)
+            .Select(r => new ReportedMessageDTO() {
+                CreatedAt = r.CreatedAt,
+                Id = r.Id,
+                MessageId = r.MessageId,
+            })
+            .GroupBy(r => r.MessageId)
+            .Select(g => new { g.Key, Candidate = g.OrderByDescending(x => x.CreatedAt).FirstOrDefault() })
+            .ToListAsync();
+        
+        return reports.Select(r => r.Candidate).OrderByDescending(c => c.CreatedAt).ToList();
+    }
+
+    public async Task<List<MessageReport>> GetMessageReportsAsync(Guid messageId) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+        
+        return await dbContext.MessageReports
+            .Where(r => r.MessageId == messageId)
+            .OrderByDescending(r => r.CreatedAt)
+            .Include(r => r.Message)
+            .Include(r => r.Reporter)
+            .ToListAsync();
+    }
+
+    public async Task<MessageReportStatistics?> GetMessageReportStatisticsAsync(Guid messageId) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        var result = await dbContext.MessageReports
+            .Where(r => r.MessageId == messageId)
+            .GroupBy(r => 1)
+            .Select(group =>
+                new {
+                    ReportCount = group.Count(),
+                    ReasonsCount = group.SelectMany(report => report.Reasons)
+                        .GroupBy(reason => reason)
+                        .Select(g => new {
+                            g.Key,
+                            Count = g.Count(),
+                        }),
+                }
+            )
+            .FirstOrDefaultAsync();
+
+        if (result == null) {
+            return null;
+        }
+
+        return new(result.ReportCount, result.ReasonsCount.ToDictionary(r => r.Key, r => r.Count));
+    }
+    
+    public async Task<ReportDisplayDTO?> GetReportDisplayAsync(Guid reportId) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+        
+        return await dbContext.MessageReports
+            .Where(r => r.Id == reportId)
+            .Include(r => r.MessageSender)
+            .Include(r => r.Reporter)
+            .Select(r => new ReportDisplayDTO(r.MessageSender.DisplayName, r.MessageSender.AvatarProfilePath, r.OriginalMessageBody, r.OriginalMessageAttachments, r.ReporterId, r.CreatedAt, r.Reasons))
+            .Cast<ReportDisplayDTO?>()
+            .FirstOrDefaultAsync();
+    }
+
     private static IQueryable<MessageReport> QueryMessageReportsFromCommunity(ApplicationDbContext context, Guid communityId) {
         return context.MessageReports.Include(r => r.Message)
             .ThenInclude(m => m.Conversation)
             .ThenInclude(c => c.CommunityChannel!)
             .ThenInclude(c => c.ChannelCategory)
-            .AsSplitQuery()
             .Where(c => c.Message.Conversation.CommunityChannel!.ChannelCategory.CommunityId == communityId);
     }
 }
