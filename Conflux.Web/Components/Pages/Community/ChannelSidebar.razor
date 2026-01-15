@@ -163,6 +163,7 @@
     private string? _invitationUrl;
 
     [CascadingParameter] private RolePermissionsWithId? UserPermissions { get; set; }
+    [CascadingParameter(Name = "UserCommunityMemberId")] private Guid MemberId { get; set; }
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
 
     protected override void OnParametersSet() {
@@ -250,6 +251,7 @@
         if ((await AuthorizationService.AuthorizeAsync(authState.User, UserPermissions?.Permissions, "AccessCommunityControlPanel")).Succeeded) {
             ModalService.Open<CommunityControlPanelModal>(parameters: new Dictionary<string, object?> {
                 [nameof(CommunityControlPanelModal.CommunityId)] = CommunityId,
+                [nameof(CommunityControlPanelModal.MemberId)] = MemberId,
                 [nameof(CommunityControlPanelModal.MemberRolePermissions)] = UserPermissions!,
             });
         }

@@ -245,7 +245,7 @@
 
     private Guid _communityId;
     
-    [CascadingParameter(Name = "UserMemberId")] public Guid MemberId { get; set; }
+    [CascadingParameter(Name = "UserCommunityMemberId")] public Guid MemberId { get; set; }
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
 
     private string _authUserId = null!;

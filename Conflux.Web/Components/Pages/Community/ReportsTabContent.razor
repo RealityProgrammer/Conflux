@@ -181,7 +181,8 @@
 </div>
 
 @code {
-    [Parameter] public Guid CommunityId { get; set; }
+    [Parameter, EditorRequired] public required Guid CommunityId { get; set; }
+    [Parameter, EditorRequired] public required Guid MemberId { get; set; }
 
     private ReportCountStatistics? _countStatistics;
     private ReportCountTimeTarget _countTimeTarget;
@@ -222,7 +223,8 @@
         
         ModalService.Open<ReportManagementModal>(parameters: new Dictionary<string, object?> {
             [nameof(ReportManagementModal.CommunityId)] = CommunityId,
-            [nameof(ReportManagementModal.MemberId)] = memberInfo.MemberId,
+            [nameof(ReportManagementModal.ReportedMemberId)] = memberInfo.MemberId,
+            [nameof(ReportManagementModal.ResolvingMemberId)] = MemberId,
         });
     }
 

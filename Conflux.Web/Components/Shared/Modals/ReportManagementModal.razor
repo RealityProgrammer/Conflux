@@ -1,7 +1,7 @@
 ﻿@using Conflux.Application.Dto
 @using Conflux.Components.Shared.Icons
 @using Conflux.Helpers
-@using Conflux.Services
+@using Microsoft.EntityFrameworkCore
 
 @inherits BaseModal
 
@@ -9,7 +9,6 @@
 @inject IConversationService ConversationService
 @inject ICommunityService CommunityService
 @inject IContentService ContentService
-@inject ModalService ModalService
 
 <div class="flex flex-row justify-center items-center size-full text-white">
     <Card class="absolute inset-0 rounded-none! lg:inset-6 lg:rounded-xl!">
@@ -150,7 +149,7 @@
                                                           AvatarSrc="@(string.IsNullOrEmpty(_reporterDisplay.AvatarPath) ? null : ContentService.GetAssetPath(_reporterDisplay.AvatarPath))"
                                                           DisplayName="@_reporterDisplay.DisplayName"
                                                           class="h-10 flex-2"
-                                                          OnClick="EventUtils.AsNonRenderingEventHandler(OpenReporterProfileModal)"/>
+                                                          OnClick="EventUtils.AsNonRenderingEventHandler<UserCard>(OpenMemberProfileModal)"/>
                                             </div>
                                             
                                             <div class="flex-none flex flex-row items-center">
@@ -171,29 +170,53 @@
                                                 <p class="flex-1">Status:</p>
                                                 
                                                 <div class="flex-2">
-                                                    @if (reportDisplay.Status == ReportStatus.InProgress) {
-                                                        <p class="text-yellow-300 inline-block">In Progress</p>
-                                                        <Spinner class="size-5 fill-white ml-2 inline-block"/>
-                                                    } else {
-                                                        <p class="text-green-400 inline-block">Resolved</p>
-                                                        <Check class="size-5 fill-white ml-2 inline-block" Variation="CheckVariation.Large"/>
+                                                    @switch (reportDisplay.Status) {
+                                                        case ReportStatus.InProgress:
+                                                            <p class="animate-pulse inline-block">In Progress</p>
+                                                            <Spinner class="size-5 fill-white ml-2 inline-block"/>
+                                                            break;
+                                                            
+                                                        case ReportStatus.Banned:
+                                                            <p class="text-red-500 inline-block">Banned</p>
+                                                            break;
+                                                            
+                                                        case ReportStatus.Dismissed:
+                                                            <p class="inline-block">Dismissed</p>
+                                                            break;
+                                                            
+                                                        case ReportStatus.Warned:
+                                                            <p class="text-yellow-300 inline-block">Warned</p>
+                                                            break;
                                                     }
                                                 </div>
                                             </div>
+                                            
+                                            @if (_reportResolverDisplay is { } resolverDisplay && reportDisplay.ResolvedAt is { } resolvedAt) {
+                                                <div class="flex-none flex flex-row items-center">
+                                                    <p class="flex-1">Resolved By:</p>
+
+                                                    <UserCard UserId="@resolverDisplay.UserId"
+                                                              MemberId="@resolverDisplay.MemberId"
+                                                              AvatarSrc="@(string.IsNullOrEmpty(_reporterDisplay.AvatarPath) ? null : ContentService.GetAssetPath(_reporterDisplay.AvatarPath))"
+                                                              DisplayName="@resolverDisplay.DisplayName"
+                                                              class="h-10 flex-2"
+                                                              OnClick="EventUtils.AsNonRenderingEventHandler<UserCard>(OpenMemberProfileModal)"/>
+                                                </div>
+                                            
+                                                <div class="flex-none flex flex-row items-center">
+                                                    <p class="flex-1">Resolved At:</p>
+
+                                                    <p class="flex-2">@resolvedAt.ToString("yyyy-MM-dd HH:mm:ss")</p>
+                                                </div>
+                                            }
                                         </div>
                                         
                                         <p class="mt-2 text-xl">Actions:</p>
-                                    
-                                        @if (reportDisplay is { ResolverId: { } resolverId, ResolvedAt: { } resolvedAt }) {
-                                            <p class="text-center">Report has been resolved at @resolvedAt.ToString("yyyy-MM-dd HH:mm:ss") by:</p>
-                                            
-                                            <p>@resolverId</p>
-                                        }
                                         
                                         <div class="grid grid-cols-2 gap-2 mt-2">
-                                            <button class="button-primary">Dismiss Report</button>
-                                            <button class="button-warning">Warn User</button>
-                                            <button class="button-danger col-span-2">Ban User</button>
+                                            <button class="button-primary" disabled="@(_reportResolverDisplay.HasValue)" @onclick="HandleResolveReportByDismiss">Dismiss Report</button>
+                                            <button class="button-warning" disabled="@(_reportResolverDisplay.HasValue)" @onclick="HandleResolveReportByWarning">Warn User</button>
+                                            <button class="button-danger col-span-2" disabled="@(_reportResolverDisplay.HasValue)" @onclick="HandleResolveReportByBanning">Ban User</button>
                                         </div>
                                     }
                                 }
@@ -213,8 +236,9 @@
 
 @code {
     [Parameter, EditorRequired] public required Guid CommunityId { get; set; }
-    [Parameter, EditorRequired] public required Guid MemberId { get; set; }
-
+    [Parameter, EditorRequired] public required Guid ReportedMemberId { get; set; }
+    [Parameter, EditorRequired] public required Guid ResolvingMemberId { get; set; }
+    
     private bool _isLoading = true;
     private List<ReportedMessageDTO>? _reportedMessages;
     private MemberReportStatistics _memberStats;
@@ -227,12 +251,13 @@
     private MessageDisplayDTO? _selectedMessageDisplay;
     private ReportDisplayDTO? _selectedReportDisplay;
     private MemberDisplayDTO _reporterDisplay;
+    private MemberDisplayDTO? _reportResolverDisplay;
     private MessageReportStatistics _messageStatistics;
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
-            _reportedMessages = await ReportService.GetMemberReportedMessagesAsync(CommunityId, MemberId);
-            _memberStats = (await ReportService.GetMemberReportStatisticsAsync(CommunityId, MemberId))!.Value;
+            _reportedMessages = await ReportService.GetMemberReportedMessagesAsync(CommunityId, ReportedMemberId);
+            _memberStats = (await ReportService.GetMemberReportStatisticsAsync(CommunityId, ReportedMemberId))!.Value;
             
             _isLoading = false;
             StateHasChanged();
@@ -254,18 +279,54 @@
         }
         
         _selectedReportId = reportId;
-        _selectedReportDisplay = (await ReportService.GetReportDisplayAsync(reportId))!.Value;
-        _reporterDisplay = (await CommunityService.GetMemberDisplayAsync(CommunityId, _selectedReportDisplay.Value.ReporterId))!.Value;
+        
+        var reportDisplay = (await ReportService.GetReportDisplayAsync(reportId))!.Value;
+        
+        _selectedReportDisplay = reportDisplay;
+        _reporterDisplay = (await CommunityService.GetMemberDisplayAsync(CommunityId, reportDisplay.ReporterId))!.Value;
+        _reportResolverDisplay = reportDisplay.ResolverId.HasValue ? await CommunityService.GetMemberDisplayAsync(reportDisplay.ResolverId.Value) : null;
     }
 
-    private void OpenReporterProfileModal() {
-        if (string.IsNullOrEmpty(_reporterDisplay.UserId)) {
+    private async Task HandleResolveReportByDismiss() {
+        if (_selectedReportId is not { } reportId) {
             return;
         }
+
+        await ReportService.ResolveReportByDismissAsync(reportId, ResolvingMemberId);
+        var reportDisplay = (await ReportService.GetReportDisplayAsync(reportId))!.Value;
         
+        _selectedReportDisplay = reportDisplay;
+        _reportResolverDisplay = reportDisplay.ResolverId.HasValue ? await CommunityService.GetMemberDisplayAsync(reportDisplay.ResolverId.Value) : null;
+    }
+    
+    private async Task HandleResolveReportByWarning() {
+        if (_selectedReportId is not { } reportId) {
+            return;
+        }
+
+        await ReportService.ResolveReportByWarningAsync(reportId, ResolvingMemberId);
+        var reportDisplay = (await ReportService.GetReportDisplayAsync(reportId))!.Value;
+        
+        _selectedReportDisplay = reportDisplay;
+        _reportResolverDisplay = reportDisplay.ResolverId.HasValue ? await CommunityService.GetMemberDisplayAsync(reportDisplay.ResolverId.Value) : null;
+    }
+    
+    private async Task HandleResolveReportByBanning() {
+        if (_selectedReportId is not { } reportId) {
+            return;
+        }
+
+        await ReportService.ResolveReportByBanningAsync(reportId, ResolvingMemberId, TimeSpan.FromDays(1));
+        var reportDisplay = (await ReportService.GetReportDisplayAsync(reportId))!.Value;
+        
+        _selectedReportDisplay = reportDisplay;
+        _reportResolverDisplay = reportDisplay.ResolverId.HasValue ? await CommunityService.GetMemberDisplayAsync(reportDisplay.ResolverId.Value) : null;
+    }
+    
+    private void OpenMemberProfileModal(UserCard userCard) {
         ModalService.Open<UserProfileModal>(parameters: new Dictionary<string, object?> {
-            [nameof(UserProfileModal.UserId)] = _reporterDisplay.UserId,
-            [nameof(UserProfileModal.MemberId)] = _reporterDisplay.MemberId,
+            [nameof(UserProfileModal.UserId)] = userCard.UserId,
+            [nameof(UserProfileModal.MemberId)] = userCard.MemberId,
         });
     }
 }

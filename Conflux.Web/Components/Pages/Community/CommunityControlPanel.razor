@@ -43,7 +43,7 @@
                 </TabContent>
                 
                 <TabContent TabId="reports" class="size-full">
-                    <ReportsTabContent CommunityId="CommunityId"/>
+                    <ReportsTabContent CommunityId="CommunityId" MemberId="MemberId"/>
                 </TabContent>
             </Contents>
         </TabContainer>
@@ -51,7 +51,9 @@
 </Card>
 
 @code {
-    [Parameter] public Guid CommunityId { get; set; }
+    [Parameter, EditorRequired] public required Guid CommunityId { get; set; }
+    [Parameter, EditorRequired] public required Guid MemberId { get; set; }
+    
     [Parameter] public EventCallback OnCloseRequest { get; set; }
 
     private string _activeTabId = "profile";

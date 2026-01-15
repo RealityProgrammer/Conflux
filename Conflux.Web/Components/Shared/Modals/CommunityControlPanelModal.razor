@@ -13,13 +13,16 @@
 
 <div class="flex flex-row justify-center items-center size-full text-white">
     <CascadingValue Value="_memberRole">
-        <CommunityControlPanel CommunityId="CommunityId" OnCloseRequest="@((Action<object?>)CloseModal)"/>
+        <CommunityControlPanel CommunityId="CommunityId"
+                               MemberId="MemberId"
+                               OnCloseRequest="@((Action<object?>)CloseModal)"/>
     </CascadingValue>
 </div>
 
 @code {
     // Copy from CommunityPage until we figure out a better way to managing parameters and rerender.
     [Parameter, EditorRequired] public Guid CommunityId { get; set; }
+    [Parameter, EditorRequired] public Guid MemberId { get; set; }
     [Parameter, EditorRequired] public RolePermissionsWithId? MemberRolePermissions { get; set; }
     
     private RolePermissionsWithId? _memberRole;

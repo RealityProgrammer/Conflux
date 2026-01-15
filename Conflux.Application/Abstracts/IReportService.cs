@@ -19,4 +19,10 @@ public interface IReportService {
     Task<ReportDisplayDTO?> GetReportDisplayAsync(Guid reportId);
     
     Task<(int Count, List<MemberDisplayDTO> Page)> PaginateReportedMembersAsync(Guid communityId, int startIndex, int count);
+
+    Task<bool> ResolveReportByDismissAsync(Guid reportId, Guid resolverMemberId);
+    
+    Task<bool> ResolveReportByWarningAsync(Guid reportId, Guid resolverMemberId);
+    
+    Task<bool> ResolveReportByBanningAsync(Guid reportId, Guid resolverMemberId, TimeSpan banDuration);
 }

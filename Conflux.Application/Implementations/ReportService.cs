@@ -206,9 +206,60 @@ public class ReportService(
             .Where(r => r.Id == reportId)
             .Include(r => r.MessageSender)
             .Include(r => r.Reporter)
-            .Select(r => new ReportDisplayDTO(r.MessageSender.DisplayName, r.MessageSender.AvatarProfilePath, r.OriginalMessageBody, r.OriginalMessageAttachments, r.ReporterId, r.CreatedAt, r.Reasons, r.ExtraMessage, r.Status, r.ResolverId, r.ResolvedAt))
+            .Select(r => new ReportDisplayDTO(r.Id, r.MessageSender.DisplayName, r.MessageSender.AvatarProfilePath, r.OriginalMessageBody, r.OriginalMessageAttachments, r.ReporterId, r.CreatedAt, r.Reasons, r.ExtraMessage, r.Status, r.ResolverId, r.ResolvedAt))
             .Cast<ReportDisplayDTO?>()
             .FirstOrDefaultAsync();
+    }
+
+    public async Task<bool> ResolveReportByDismissAsync(Guid reportId, Guid resolverMemberId) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+        
+        var utcNow = DateTime.UtcNow;
+
+        int affected = await dbContext.MessageReports
+            .Where(r => r.Id == reportId && r.Status == ReportStatus.InProgress)
+            .ExecuteUpdateAsync(builder => {
+                builder.SetProperty(r => r.Status, ReportStatus.Dismissed);
+                builder.SetProperty(r => r.ResolverId, resolverMemberId);
+                builder.SetProperty(r => r.ResolvedAt, utcNow);
+            });
+
+        return affected > 0;
+    }
+    
+    public async Task<bool> ResolveReportByWarningAsync(Guid reportId, Guid resolverMemberId) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+        
+        var utcNow = DateTime.UtcNow;
+
+        int affected = await dbContext.MessageReports
+            .Where(r => r.Id == reportId && r.Status == ReportStatus.InProgress)
+            .ExecuteUpdateAsync(builder => {
+                builder.SetProperty(r => r.Status, ReportStatus.Warned);
+                builder.SetProperty(r => r.ResolverId, resolverMemberId);
+                builder.SetProperty(r => r.ResolvedAt, utcNow);
+            });
+
+        return affected > 0;
+    }
+    
+    public async Task<bool> ResolveReportByBanningAsync(Guid reportId, Guid resolverMemberId, TimeSpan banDuration) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+        
+        var utcNow = DateTime.UtcNow;
+        
+        int affected = await dbContext.MessageReports
+            .Where(r => r.Id == reportId && r.Status == ReportStatus.InProgress)
+            .ExecuteUpdateAsync(builder => {
+                builder.SetProperty(r => r.Status, ReportStatus.Banned);
+                builder.SetProperty(r => r.ResolverId, resolverMemberId);
+                builder.SetProperty(r => r.ResolvedAt, utcNow);
+            });
+
+        return affected > 0;
     }
 
     private static IQueryable<MessageReport> QueryMessageReportsFromCommunity(ApplicationDbContext context, Guid communityId) {

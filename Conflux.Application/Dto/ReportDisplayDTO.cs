@@ -3,6 +3,7 @@
 namespace Conflux.Application.Dto;
 
 public record struct ReportDisplayDTO(
+    Guid Id,
     string SenderDisplayName, 
     string? SenderAvatar, 
     string? OriginalBody, 
