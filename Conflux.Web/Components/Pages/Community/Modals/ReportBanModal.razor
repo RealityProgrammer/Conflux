@@ -1,0 +1,110 @@
+﻿@using Conflux.Components.Shared
+@using Conflux.Components.Shared.Icons
+@using Conflux.Components.Shared.Modals
+@using Humanizer
+@using System.ComponentModel.DataAnnotations
+
+@inherits BaseModal
+
+<EditForm EditContext="_editContext" OnSubmit="OnSubmit" class="size-full">
+    <DataAnnotationsValidator/>
+    
+    <div class="flex flex-row justify-center items-center size-full text-white">
+        <Card>
+            <CardHeader Title="Ban User" OnCloseRequested="@((Action<object?>)CloseModal)"/>
+
+            <CardContent class="pb-3">
+                <p>Are you sure you want to ban this user? This action cannot be reverted.</p>
+
+                <label class="input-label">Ban Duration</label>
+
+                <InputText @ref="_durationInputText" @bind-Value="Model.BanDuration" class="input-field h-11 w-full mt-1"/>
+
+                @if (_durationInputText is { Element: { } targetElement }) {
+                    <Popover TargetReference="targetElement" IsShowing="@(!_editContext.IsValid(() => Model.BanDuration))" ArrowCssClass="bg-[#ff4b6a]" Placement="bottom" Offset="8">
+                        <ValidationMessage For="() => Model.BanDuration" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"/>
+                    </Popover>
+                }
+                
+                @if (string.IsNullOrEmpty(Model.BanDuration)) {
+                    <p class="text-sm text-center text-gray-400 mt-1">Undefined duration</p>
+                } else if (TryParseBanDuration(Model.BanDuration, out var output)) {
+                    <p class="text-sm text-center text-gray-400 mt-1">@output.Humanize(precision: 5)</p>
+                } else {
+                    <p class="text-sm text-center text-gray-400 mt-1">Invalid duration</p>
+                }
+            </CardContent>
+
+            <CardFooter class="flex flex-row justify-end gap-2">
+                <button type="button" class="button-primary w-24" @onclick="@((Action<object?>)CloseModal)">Cancel</button>
+
+                <ProcessingStateButton type="submit" IsProcessing="_isProcessing" class="button-danger w-24" ProcessingCssClass="flex flex-row justify-center items-center">
+                    <ChildContent>
+                        Confirm
+                    </ChildContent>
+
+                    <ProcessingContent>
+                        <Spinner class="size-5 fill-white"/>
+                    </ProcessingContent>
+                </ProcessingStateButton>
+            </CardFooter>
+        </Card>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter, EditorRequired] public EventCallback<TimeSpan> OnConfirm { get; set; }
+
+    [SupplyParameterFromForm] private InputModel Model { get; set; } = null!;
+    private EditContext _editContext = null!;
+
+    private InputText? _durationInputText;
+    
+    private bool _isProcessing;
+
+    protected override void OnInitialized() {
+        Model ??= new();
+        _editContext = new(Model);
+    }
+
+    private static bool TryParseBanDuration(string text, out TimeSpan duration) {
+        if (text == "Infinity") {
+            duration = TimeSpan.MaxValue;
+            return true;
+        }
+
+        if (TimeSpan.TryParseExact(text, "g", null, out duration)) {
+            if (duration < TimeSpan.Zero) {
+                duration = TimeSpan.Zero;
+                return false;
+            }
+
+            return true;
+        }
+
+        duration = TimeSpan.Zero;
+        return false;
+    }
+
+    private async Task OnSubmit() {
+        if (!_editContext.Validate()) {
+            return;
+        }
+        
+        if (OnConfirm.HasDelegate) {
+            _isProcessing = true;
+
+            try {
+                await OnConfirm.InvokeAsync();
+            } finally {
+                _isProcessing = false;
+            }
+        }
+        
+        CloseModal();
+    }
+
+    private sealed class InputModel {
+        [Required(ErrorMessage = "Ban duration is required.")] public string BanDuration { get; set; } = null!;
+    }
+}
