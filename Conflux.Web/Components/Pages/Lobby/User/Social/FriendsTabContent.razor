@@ -152,10 +152,10 @@
         @<p>Are you sure you want to unfriend?<br/>They would be sad...</p>;
 
     private void HandleUnfriend(Guid friendRequestId) {
-        ModalService.Open<DeleteConfirmationModal>(parameters: new Dictionary<string, object?> {
-            [nameof(DeleteConfirmationModal.Title)] = "Confirm Unfriend?",
-            [nameof(DeleteConfirmationModal.Body)] = _unfriendConfirmationBody,
-            [nameof(DeleteConfirmationModal.OnConfirmDelete)] = EventCallback.Factory.Create(this, Unfriend),
+        ModalService.Open<OperationConfirmModal>(parameters: new Dictionary<string, object?> {
+            [nameof(OperationConfirmModal.Title)] = "Confirm Unfriend?",
+            [nameof(OperationConfirmModal.Body)] = _unfriendConfirmationBody,
+            [nameof(OperationConfirmModal.OnConfirm)] = EventCallback.Factory.Create(this, Unfriend),
         });
         return;
 

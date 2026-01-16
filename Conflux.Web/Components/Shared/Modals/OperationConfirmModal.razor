@@ -32,16 +32,16 @@
     
     [Parameter, EditorRequired] public RenderFragment Body { get; set; }
     
-    [Parameter, EditorRequired] public EventCallback OnConfirmDelete { get; set; }
+    [Parameter, EditorRequired] public EventCallback OnConfirm { get; set; }
 
     private bool _isProcessingDelete;
 
     private async Task HandleConfirmDelete() {
-        if (OnConfirmDelete.HasDelegate) {
+        if (OnConfirm.HasDelegate) {
             _isProcessingDelete = true;
 
             try {
-                await OnConfirmDelete.InvokeAsync();
+                await OnConfirm.InvokeAsync();
             } finally {
                 _isProcessingDelete = false;
             }

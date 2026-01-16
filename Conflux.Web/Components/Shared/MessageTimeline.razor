@@ -536,10 +536,10 @@
     private static readonly RenderFragment _deleteConfirmationBody = @<p>Are you sure you want to delete this message?<br/>This action cannot be reverted.</p>;
     
     private void HandleMessageDelete(Guid id) {
-        ModalService.Open<DeleteConfirmationModal>(parameters: new Dictionary<string, object?> {
-            [nameof(DeleteConfirmationModal.Title)] = "Delete Message",
-            [nameof(DeleteConfirmationModal.Body)] = _deleteConfirmationBody,
-            [nameof(DeleteConfirmationModal.OnConfirmDelete)] = EventCallback.Factory.Create(this, async () => {
+        ModalService.Open<OperationConfirmModal>(parameters: new Dictionary<string, object?> {
+            [nameof(OperationConfirmModal.Title)] = "Delete Message",
+            [nameof(OperationConfirmModal.Body)] = _deleteConfirmationBody,
+            [nameof(OperationConfirmModal.OnConfirm)] = EventCallback.Factory.Create(this, async () => {
                 await ConversationService.DeleteMessageAsync(id, UserId);
             }),
         });
@@ -550,10 +550,10 @@
             return;
         }
         
-        ModalService.Open<DeleteConfirmationModal>(parameters: new Dictionary<string, object?> {
-            [nameof(DeleteConfirmationModal.Title)] = "Delete Message",
-            [nameof(DeleteConfirmationModal.Body)] = _deleteConfirmationBody,
-            [nameof(DeleteConfirmationModal.OnConfirmDelete)] = EventCallback.Factory.Create(this, async () => {
+        ModalService.Open<OperationConfirmModal>(parameters: new Dictionary<string, object?> {
+            [nameof(OperationConfirmModal.Title)] = "Delete Message",
+            [nameof(OperationConfirmModal.Body)] = _deleteConfirmationBody,
+            [nameof(OperationConfirmModal.OnConfirm)] = EventCallback.Factory.Create(this, async () => {
                 await ConversationService.DeleteMessageAsync(_extraActionTargetMessage.MessageId, UserId);
             }),
         });

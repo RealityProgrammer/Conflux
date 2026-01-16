@@ -214,8 +214,8 @@
                                         <p class="mt-2 text-xl">Actions:</p>
                                         
                                         <div class="grid grid-cols-2 gap-2 mt-2">
-                                            <button class="button-primary" disabled="@(_reportResolverDisplay.HasValue)" @onclick="HandleResolveReportByDismiss">Dismiss Report</button>
-                                            <button class="button-warning" disabled="@(_reportResolverDisplay.HasValue)" @onclick="HandleResolveReportByWarning">Warn User</button>
+                                            <button class="button-primary" disabled="@(_reportResolverDisplay.HasValue)" @onclick="EventUtils.AsNonRenderingEventHandler(HandleResolveReportByDismiss)">Dismiss Report</button>
+                                            <button class="button-warning" disabled="@(_reportResolverDisplay.HasValue)" @onclick="EventUtils.AsNonRenderingEventHandler(HandleResolveReportByWarning)">Warn User</button>
                                             <button class="button-danger col-span-2" disabled="@(_reportResolverDisplay.HasValue)" @onclick="HandleResolveReportByBanning">Ban User</button>
                                         </div>
                                     }
@@ -287,30 +287,54 @@
         _reportResolverDisplay = reportDisplay.ResolverId.HasValue ? await CommunityService.GetMemberDisplayAsync(reportDisplay.ResolverId.Value) : null;
     }
 
-    private async Task HandleResolveReportByDismiss() {
+    private static readonly RenderFragment _reportDismissModalBody =
+        @<p>Are you sure you want to dismiss this report?<br/>This action cannot be reverted.</p>;
+
+    private void HandleResolveReportByDismiss() {
         if (_selectedReportId is not { } reportId) {
             return;
         }
 
-        await ReportService.ResolveReportByDismissAsync(reportId, ResolvingMemberId);
-        var reportDisplay = (await ReportService.GetReportDisplayAsync(reportId))!.Value;
+        ModalService.Open<OperationConfirmModal>(parameters: new Dictionary<string, object?> {
+            [nameof(OperationConfirmModal.Title)] = "Dismiss Report",
+            [nameof(OperationConfirmModal.Body)] = _reportDismissModalBody,
+            [nameof(OperationConfirmModal.OnConfirm)] = EventCallback.Factory.Create(this, OnConfirm),
+        });
+        return;
         
-        _selectedReportDisplay = reportDisplay;
-        _reportResolverDisplay = reportDisplay.ResolverId.HasValue ? await CommunityService.GetMemberDisplayAsync(reportDisplay.ResolverId.Value) : null;
+        async Task OnConfirm() {
+            await ReportService.ResolveReportByDismissAsync(reportId, ResolvingMemberId);
+            var reportDisplay = (await ReportService.GetReportDisplayAsync(reportId))!.Value;
+            
+            _selectedReportDisplay = reportDisplay;
+            _reportResolverDisplay = reportDisplay.ResolverId.HasValue ? await CommunityService.GetMemberDisplayAsync(reportDisplay.ResolverId.Value) : null;
+        }
     }
     
-    private async Task HandleResolveReportByWarning() {
+    private static readonly RenderFragment _reportWarnModalBody =
+        @<p>Are you sure you want to flag this report as an user warn?<br/>This action cannot be reverted.</p>;
+
+    private void HandleResolveReportByWarning() {
         if (_selectedReportId is not { } reportId) {
             return;
         }
 
-        await ReportService.ResolveReportByWarningAsync(reportId, ResolvingMemberId);
-        var reportDisplay = (await ReportService.GetReportDisplayAsync(reportId))!.Value;
-        
-        _selectedReportDisplay = reportDisplay;
-        _reportResolverDisplay = reportDisplay.ResolverId.HasValue ? await CommunityService.GetMemberDisplayAsync(reportDisplay.ResolverId.Value) : null;
+        ModalService.Open<OperationConfirmModal>(parameters: new Dictionary<string, object?> {
+            [nameof(OperationConfirmModal.Title)] = "Warn User",
+            [nameof(OperationConfirmModal.Body)] = _reportWarnModalBody,
+            [nameof(OperationConfirmModal.OnConfirm)] = EventCallback.Factory.Create(this, OnConfirm),
+        });
+        return;
+
+        async Task OnConfirm() {
+            await ReportService.ResolveReportByWarningAsync(reportId, ResolvingMemberId);
+            var reportDisplay = (await ReportService.GetReportDisplayAsync(reportId))!.Value;
+
+            _selectedReportDisplay = reportDisplay;
+            _reportResolverDisplay = reportDisplay.ResolverId.HasValue ? await CommunityService.GetMemberDisplayAsync(reportDisplay.ResolverId.Value) : null;
+        }
     }
-    
+
     private async Task HandleResolveReportByBanning() {
         if (_selectedReportId is not { } reportId) {
             return;

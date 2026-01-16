@@ -570,11 +570,11 @@
         </p>;
 
     private void OpenDeleteRoleDialog() {
-        ModalService.Open<DeleteConfirmationModal>(parameters: new Dictionary<string, object?> {
-            [nameof(DeleteConfirmationModal.Title)] = "Delete Role",
-            [nameof(DeleteConfirmationModal.Subtitle)] = "Committing massive job loss...",
-            [nameof(DeleteConfirmationModal.Body)] = _roleDeleteBodyFragment,
-            [nameof(DeleteConfirmationModal.OnConfirmDelete)] = EventCallback.Factory.Create(this, async () => {
+        ModalService.Open<OperationConfirmModal>(parameters: new Dictionary<string, object?> {
+            [nameof(OperationConfirmModal.Title)] = "Delete Role",
+            [nameof(OperationConfirmModal.Subtitle)] = "Committing massive job loss...",
+            [nameof(OperationConfirmModal.Body)] = _roleDeleteBodyFragment,
+            [nameof(OperationConfirmModal.OnConfirm)] = EventCallback.Factory.Create(this, async () => {
                 await CommunityService.DeleteRole(CommunityId, _selectedRole.Id);
             }),
         });
