@@ -7,7 +7,8 @@ using Microsoft.EntityFrameworkCore;
 namespace Conflux.Application.Implementations;
 
 public class ReportService(
-    IDbContextFactory<ApplicationDbContext> dbContextFactory
+    IDbContextFactory<ApplicationDbContext> dbContextFactory,
+    ICommunityService communityService
 ) : IReportService {
     public async Task<bool> ReportMessageAsync(Guid messageId, string? extraMessage, ReportReasons[] reasons, string reporterId) {
         if (reasons.Length == 0) {
@@ -31,7 +32,6 @@ public class ReportService(
             Status = ReportStatus.InProgress,
             Reasons = reasons,
             ReporterId = reporterId,
-            MessageSenderId = messageData.SenderId,
             OriginalMessageBody = messageData.Body,
             OriginalMessageAttachments = messageData.Attachments,
         });
@@ -146,7 +146,8 @@ public class ReportService(
         // return reports;
 
         var reports = await QueryMessageReportsFromCommunity(dbContext, communityId)
-            .Where(r => r.MessageSenderId == userId)
+            .Include(r => r.Message)
+            .Where(r => r.Message.SenderId == userId)
             .Select(r => new ReportedMessageDTO() {
                 CreatedAt = r.CreatedAt,
                 Id = r.Id,
@@ -204,9 +205,10 @@ public class ReportService(
         
         return await dbContext.MessageReports
             .Where(r => r.Id == reportId)
-            .Include(r => r.MessageSender)
+            .Include(r => r.Message)
+            .ThenInclude(m => m.Sender)
             .Include(r => r.Reporter)
-            .Select(r => new ReportDisplayDTO(r.Id, r.MessageSender.DisplayName, r.MessageSender.AvatarProfilePath, r.OriginalMessageBody, r.OriginalMessageAttachments, r.ReporterId, r.CreatedAt, r.Reasons, r.ExtraMessage, r.Status, r.ResolverId, r.ResolvedAt))
+            .Select(r => new ReportDisplayDTO(r.Id, r.Message.Sender.DisplayName, r.Message.Sender.AvatarProfilePath, r.OriginalMessageBody, r.OriginalMessageAttachments, r.ReporterId, r.CreatedAt, r.Reasons, r.ExtraMessage, r.Status, r.ResolverId, r.ResolvedAt))
             .Cast<ReportDisplayDTO?>()
             .FirstOrDefaultAsync();
     }
@@ -252,6 +254,25 @@ public class ReportService(
         
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        var extractedIds = await dbContext.MessageReports
+            .Where(r => r.Id == reportId && r.Status == ReportStatus.InProgress)
+            .Include(r => r.Message)
+            .ThenInclude(r => r.Conversation)
+            .ThenInclude(r => r.CommunityChannel!)
+            .ThenInclude(r => r.ChannelCategory)
+            .Include(r => r.Message)
+            .Select(r => new {
+                r.Message.Conversation.CommunityChannel!.ChannelCategory.CommunityId,
+                r.Message.SenderId,
+            })
+            .FirstOrDefaultAsync();
+
+        if (extractedIds == null) {
+            return false;
+        }
+        
+        await using var transaction = await dbContext.Database.BeginTransactionAsync();
         
         var utcNow = DateTime.UtcNow;
         
@@ -264,7 +285,19 @@ public class ReportService(
                 builder.SetProperty(r => r.BanDuration, banDuration);
             });
 
-        return affected > 0;
+        if (affected > 0) {
+            var memberId = await dbContext.CommunityMembers
+                .Where(m => m.CommunityId == extractedIds.CommunityId && m.UserId == extractedIds.SenderId)
+                .Select(m => m.Id)
+                .FirstAsync();
+
+            if (communityService.BanMemberAsync(dbContext, extractedIds.CommunityId, memberId, banDuration)) {
+                await transaction.CommitAsync();
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static IQueryable<MessageReport> QueryMessageReportsFromCommunity(ApplicationDbContext context, Guid communityId) {

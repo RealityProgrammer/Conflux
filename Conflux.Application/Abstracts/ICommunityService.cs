@@ -1,4 +1,5 @@
 ﻿using Conflux.Application.Dto;
+using Conflux.Domain;
 using Conflux.Domain.Entities;
 
 namespace Conflux.Application.Abstracts;
@@ -22,16 +23,19 @@ public interface ICommunityService {
 
      Task<RolePermissionsWithId?> GetUserRolePermissionsAsync(string userId, Guid communityId);
 
-    Task<bool> SetMembersRole(Guid communityId, IReadOnlyCollection<Guid> memberIds, Guid? roleId);
+    Task<bool> SetMembersRoleAsync(Guid communityId, IReadOnlyCollection<Guid> memberIds, Guid? roleId);
 
-    Task<bool> RenameRole(Guid communityId, Guid roleId, string name);
+    Task<bool> RenameRoleAsync(Guid communityId, Guid roleId, string name);
 
-    Task<bool> DeleteRole(Guid communityId, Guid roleId);
+    Task<bool> DeleteRoleAsync(Guid communityId, Guid roleId);
     
     Task<Guid> GetMemberId(Guid communityId, string userId);
     
     Task<MemberDisplayDTO?> GetMemberDisplayAsync(Guid memberId);
     Task<MemberDisplayDTO?> GetMemberDisplayAsync(Guid communityId, string userId);
+
+    Task<bool> BanMemberAsync(Guid communityId, Guid memberId, TimeSpan banDuration);
+    Task<bool> BanMemberAsync(ApplicationDbContext dbContext, Guid communityId, Guid memberId, TimeSpan banDuration);
 
     public enum CreateRoleStatus {
         Success,

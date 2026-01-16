@@ -243,7 +243,7 @@ public class CommunityService(
             .FirstOrDefaultAsync();
     }
 
-    public async Task<bool> SetMembersRole(Guid communityId, IReadOnlyCollection<Guid> memberIds, Guid? roleId) {
+    public async Task<bool> SetMembersRoleAsync(Guid communityId, IReadOnlyCollection<Guid> memberIds, Guid? roleId) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
@@ -260,7 +260,7 @@ public class CommunityService(
         return true;
     }
 
-    public async Task<bool> RenameRole(Guid communityId, Guid roleId, string name) {
+    public async Task<bool> RenameRoleAsync(Guid communityId, Guid roleId, string name) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
         
@@ -279,7 +279,7 @@ public class CommunityService(
         return false;
     }
 
-    public async Task<bool> DeleteRole(Guid communityId, Guid roleId) {
+    public async Task<bool> DeleteRoleAsync(Guid communityId, Guid roleId) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
@@ -337,5 +337,16 @@ public class CommunityService(
             .Select(x => new MemberDisplayDTO(x.Id, x.UserId, x.User.DisplayName, x.User.AvatarProfilePath))
             .Cast<MemberDisplayDTO?>()
             .FirstOrDefaultAsync();
+    }
+    
+    public async Task<bool> BanMemberAsync(Guid communityId, Guid memberId, TimeSpan banDuration) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        return await BanMemberAsync(dbContext, communityId, memberId, banDuration);
+    }
+
+    public async Task<bool> BanMemberAsync(ApplicationDbContext dbContext, Guid communityId, Guid memberId, TimeSpan banDuration) {
+        throw new NotImplementedException();
     }
 }

@@ -444,7 +444,7 @@
         await CommunityService.UpdatePermissionsAsync(CommunityId, _selectedRole.Id, new(Model.ChannelPermissions, Model.RolePermissions, Model.AccessPermissions));
 
         if (_editContext.IsModified(_removeRolesField)) {
-            await CommunityService.SetMembersRole(CommunityId, Model.RemoveRoles, null);
+            await CommunityService.SetMembersRoleAsync(CommunityId, Model.RemoveRoles, null);
             Model.RemoveRoles.Clear();
 
             if (_roleMembersVirtualizeReference != null) {
@@ -453,7 +453,7 @@
         }
 
         if (_editContext.IsModified(_addRolesField)) {
-            await CommunityService.SetMembersRole(CommunityId, Model.AddRoles, _selectedRole.Id);
+            await CommunityService.SetMembersRoleAsync(CommunityId, Model.AddRoles, _selectedRole.Id);
             Model.AddRoles.Clear();
         
             if (_addingMembersVirtualizeReference != null) {
@@ -462,7 +462,7 @@
         }
 
         if (_editContext.IsModified(_roleNameField)) {
-            await CommunityService.RenameRole(CommunityId, _selectedRole.Id, Model.RoleName);
+            await CommunityService.RenameRoleAsync(CommunityId, _selectedRole.Id, Model.RoleName);
         }
         
         _editContext.MarkAsUnmodified();
@@ -576,7 +576,7 @@
             [nameof(OperationConfirmModal.Subtitle)] = "Committing massive job loss...",
             [nameof(OperationConfirmModal.Body)] = _roleDeleteBodyFragment,
             [nameof(OperationConfirmModal.OnConfirm)] = EventCallback.Factory.Create(this, async () => {
-                await CommunityService.DeleteRole(CommunityId, _selectedRole.Id);
+                await CommunityService.DeleteRoleAsync(CommunityId, _selectedRole.Id);
             }),
         });
     }
