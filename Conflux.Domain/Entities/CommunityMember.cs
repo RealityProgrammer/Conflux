@@ -14,5 +14,7 @@ public class CommunityMember : ICreatedAtColumn {
     public Guid? RoleId { get; set; }
     public CommunityRole? Role { get; set; }
     
+    public DateTime? UnbanAt { get; set; }
+    
     public DateTime CreatedAt { get; set; }
 }

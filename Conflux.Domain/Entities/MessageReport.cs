@@ -27,6 +27,8 @@ public class MessageReport : ICreatedAtColumn {
     
     public DateTime? ResolvedAt { get; set; }
     
+    public TimeSpan? BanDuration { get; set; }
+    
     public ReportStatus Status { get; set; }
     public DateTime CreatedAt { get; set; }
 }

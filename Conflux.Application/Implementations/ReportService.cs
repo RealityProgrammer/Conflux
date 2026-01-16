@@ -246,6 +246,10 @@ public class ReportService(
     }
     
     public async Task<bool> ResolveReportByBanningAsync(Guid reportId, Guid resolverMemberId, TimeSpan banDuration) {
+        if (banDuration < TimeSpan.Zero) {
+            return false;
+        }
+        
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
         
@@ -257,6 +261,7 @@ public class ReportService(
                 builder.SetProperty(r => r.Status, ReportStatus.Banned);
                 builder.SetProperty(r => r.ResolverId, resolverMemberId);
                 builder.SetProperty(r => r.ResolvedAt, utcNow);
+                builder.SetProperty(r => r.BanDuration, banDuration);
             });
 
         return affected > 0;
