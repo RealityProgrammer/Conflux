@@ -165,7 +165,7 @@
 
 @code {
     private EditContext _editContext = null!;
-    [SupplyParameterFromForm(FormName = "Register")] private InputModel Model { get; set; } = new();
+    [SupplyParameterFromForm(FormName = "Register")] private InputModel Model { get; set; } = null!;
     private ValidationMessageStore _messageStore = null!;
     
     private FieldIdentifier _emailField, _passwordField, _confirmationPasswordField, _acceptTermsField;
@@ -179,7 +179,8 @@
             RedirectManager.To("/").Execute();
             return;
         }
-        
+
+        Model ??= new();
         _editContext = new(Model);
         _messageStore = new(_editContext);
         

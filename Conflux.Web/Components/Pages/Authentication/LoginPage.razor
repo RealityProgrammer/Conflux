@@ -125,7 +125,7 @@
     [Parameter] public EventCallback<ApplicationUser> OnLoggedIn { get; set; }
     
     private EditContext _editContext = null!;
-    [SupplyParameterFromForm(FormName = "Login")] private InputModel Model { get; set; } = new();
+    [SupplyParameterFromForm(FormName = "Login")] private InputModel Model { get; set; } = null!;
     private string? _errorMessage;
 
     [CascadingParameter] public HttpContext HttpContext { get; set; } = null!;
@@ -140,7 +140,8 @@
             RedirectManager.To("/").Execute();
             return;
         }
-        
+
+        Model ??= new();
         _editContext = new(Model);
     }
     

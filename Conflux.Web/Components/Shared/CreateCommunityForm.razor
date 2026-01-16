@@ -60,7 +60,7 @@
     [Parameter] public EventCallback<InputModel> OnRequestCreateServer { get; set; }
     
     private EditContext _editContext = null!;
-    [SupplyParameterFromForm(FormName = "Login")] private InputModel Model { get; set; } = new();
+    [SupplyParameterFromForm(FormName = "Login")] private InputModel Model { get; set; } = null!;
     private ValidationMessageStore _messageStore = null!;
     private FieldIdentifier _avatarFileField, _nameFieldIdentifier;
     private string? _avatarPreviewUrl;
@@ -69,6 +69,7 @@
     private bool _isCreatingServer;
     
     protected override void OnInitialized() {
+        Model ??= new();
         _editContext = new(Model);
         _messageStore = new(_editContext);
         

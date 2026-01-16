@@ -243,8 +243,6 @@
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
     private string? _cssClass;
 
-    private Guid _communityId;
-    
     [CascadingParameter(Name = "UserCommunityMemberId")] public Guid MemberId { get; set; }
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
 
