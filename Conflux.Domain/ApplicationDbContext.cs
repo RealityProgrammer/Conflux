@@ -160,12 +160,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         builder.Entity<MessageReport>(entity => {
             entity.HasKey(x => x.Id);
 
-            entity.HasOne(report => report.MessageSender)
-                .WithMany()
-                .HasForeignKey(report => report.MessageSenderId)
-                .HasPrincipalKey(user => user.Id)
-                .OnDelete(DeleteBehavior.Cascade);
-
             entity.HasOne(report => report.Message)
                 .WithMany()
                 .HasForeignKey(report => report.MessageId)

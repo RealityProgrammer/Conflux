@@ -2,6 +2,7 @@
 @using Conflux.Components.Pages.Community.Modals
 @using Conflux.Components.Shared.Icons
 @using Conflux.Helpers
+@using Humanizer
 @using Microsoft.EntityFrameworkCore
 
 @inherits BaseModal
@@ -192,6 +193,16 @@
                                                 </div>
                                             </div>
                                             
+                                            @if (reportDisplay.Status == ReportStatus.Banned && reportDisplay.BanDuration is { } banDuration) {
+                                                <div class="flex-none flex flex-row items-center">
+                                                    <p class="flex-1">Ban Duration:</p>
+
+                                                    <div class="flex-2">
+                                                        <p class="inline-block">@banDuration.Humanize(precision: 5)</p>
+                                                    </div>
+                                                </div>
+                                            }
+
                                             @if (_reportResolverDisplay is { } resolverDisplay && reportDisplay.ResolvedAt is { } resolvedAt) {
                                                 <div class="flex-none flex flex-row items-center">
                                                     <p class="flex-1">Resolved By:</p>

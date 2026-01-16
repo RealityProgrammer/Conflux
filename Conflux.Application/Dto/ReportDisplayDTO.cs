@@ -14,5 +14,6 @@ public record struct ReportDisplayDTO(
     string? ExtraMessage,
     ReportStatus Status,
     Guid? ResolverId,
-    DateTime? ResolvedAt
+    DateTime? ResolvedAt,
+    TimeSpan? BanDuration
 );

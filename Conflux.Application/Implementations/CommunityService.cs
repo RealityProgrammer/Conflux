@@ -347,6 +347,15 @@ public class CommunityService(
     }
 
     public async Task<bool> BanMemberAsync(ApplicationDbContext dbContext, Guid communityId, Guid memberId, TimeSpan banDuration) {
-        throw new NotImplementedException();
+        int affected = await dbContext.CommunityMembers
+            .Where(r => r.CommunityId == communityId && r.Id == memberId)
+            .ExecuteUpdateAsync(builder => {
+                builder.SetProperty(
+                    m => m.UnbanAt, 
+                    m => m.UnbanAt == null ? DateTime.UtcNow + banDuration : m.UnbanAt.Value + banDuration
+                );
+            });
+
+        return affected > 0;
     }
 }

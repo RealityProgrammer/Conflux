@@ -3,6 +3,7 @@
 @using Conflux.Components.Shared.Modals
 @using Humanizer
 @using System.ComponentModel.DataAnnotations
+@using System.Diagnostics
 
 @inherits BaseModal
 
@@ -95,7 +96,10 @@
             _isProcessing = true;
 
             try {
-                await OnConfirm.InvokeAsync();
+                bool parseSuccessfully = TryParseBanDuration(Model.BanDuration, out var duration);
+                Debug.Assert(parseSuccessfully);
+                
+                await OnConfirm.InvokeAsync(duration);
             } finally {
                 _isProcessing = false;
             }

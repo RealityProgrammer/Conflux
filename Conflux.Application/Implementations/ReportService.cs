@@ -208,7 +208,7 @@ public class ReportService(
             .Include(r => r.Message)
             .ThenInclude(m => m.Sender)
             .Include(r => r.Reporter)
-            .Select(r => new ReportDisplayDTO(r.Id, r.Message.Sender.DisplayName, r.Message.Sender.AvatarProfilePath, r.OriginalMessageBody, r.OriginalMessageAttachments, r.ReporterId, r.CreatedAt, r.Reasons, r.ExtraMessage, r.Status, r.ResolverId, r.ResolvedAt))
+            .Select(r => new ReportDisplayDTO(r.Id, r.Message.Sender.DisplayName, r.Message.Sender.AvatarProfilePath, r.OriginalMessageBody, r.OriginalMessageAttachments, r.ReporterId, r.CreatedAt, r.Reasons, r.ExtraMessage, r.Status, r.ResolverId, r.ResolvedAt, r.BanDuration))
             .Cast<ReportDisplayDTO?>()
             .FirstOrDefaultAsync();
     }
@@ -291,7 +291,7 @@ public class ReportService(
                 .Select(m => m.Id)
                 .FirstAsync();
 
-            if (communityService.BanMemberAsync(dbContext, extractedIds.CommunityId, memberId, banDuration)) {
+            if (await communityService.BanMemberAsync(dbContext, extractedIds.CommunityId, memberId, banDuration)) {
                 await transaction.CommitAsync();
                 return true;
             }
