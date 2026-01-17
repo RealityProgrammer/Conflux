@@ -34,6 +34,7 @@
         <section>
             @{
                 var permissions = MemberInformation?.Role.Permissions ?? RolePermissions.Default;
+                var isBanned = MemberInformation?.IsBanned ?? false;
             }
             
             <div class="w-full h-32 bg-black relative">
@@ -41,19 +42,21 @@
                     <Gear class="size-5 fill-white"/>
                 </button>
 
-                <Popover TargetReference="_optionButton" @bind-IsShowing="_showExpandableMenu" Placement="left" Offset="4" CloseWhenClickOutside="true">
+                <Popover TargetReference="_optionButton" @bind-IsShowing="_showExpandableMenu" Placement="right" Offset="4" CloseWhenClickOutside="true">
                     <div class="bg-gray-600 p-1 text-white text-sm rounded-lg shadow-md flex flex-col gap-1 z-50" tabindex="-1">
-                        <AuthorizeView Policy="CreateCommunityChannelCategory" Resource="permissions">
-                            <Authorized>
-                                <button class="p-1.5 bg-transparent hover:bg-white/10 active:bg-black/8 cursor-pointer rounded-md text-left" @onclick="HandleDisplayCommunityExpandableMenu">Create channel category</button>
-                            </Authorized>
-                        </AuthorizeView>
+                        @if (!isBanned) {
+                            <AuthorizeView Policy="CreateCommunityChannelCategory" Resource="permissions">
+                                <Authorized>
+                                    <button class="p-1.5 bg-transparent hover:bg-white/10 active:bg-black/8 cursor-pointer rounded-md text-left" @onclick="HandleDisplayCommunityExpandableMenu">Create channel category</button>
+                                </Authorized>
+                            </AuthorizeView>
 
-                        <AuthorizeView Policy="AccessCommunityControlPanel" Resource="permissions">
-                            <Authorized>
-                                <button class="p-1.5 bg-transparent hover:bg-white/10 active:bg-black/8 cursor-pointer rounded-md text-left" @onclick="OpenControlPanelModal">Open Control Panel</button>
-                            </Authorized>
-                        </AuthorizeView>
+                            <AuthorizeView Policy="AccessCommunityControlPanel" Resource="permissions">
+                                <Authorized>
+                                    <button class="p-1.5 bg-transparent hover:bg-white/10 active:bg-black/8 cursor-pointer rounded-md text-left" @onclick="OpenControlPanelModal">Open Control Panel</button>
+                                </Authorized>
+                            </AuthorizeView>
+                        }
 
                         <button class="p-1.5 bg-transparent hover:bg-white/10 active:bg-black/8 cursor-pointer rounded-md text-left" @onclick="OpenInvitationUrlModal">Get invitation URL</button>
                     </div>

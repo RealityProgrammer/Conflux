@@ -1,4 +1,5 @@
-﻿@using Conflux.Components.Shared.Icons
+﻿@using Conflux.Application.Dto
+@using Conflux.Components.Shared.Icons
 @using Conflux.Components.Shared.Modals
 @using Conflux.Domain.Events
 @using Conflux.Helpers
@@ -110,9 +111,11 @@
                                         <span class="px-1 py-1 top-0 right-4 -translate-y-1/2 absolute bg-gray-750 rounded-lg @(_showExtraActionPopover && _extraActionTargetMessage != null && _extraActionTargetMessage.MessageId == actionMessageId ? "flex" : "hidden") group-hover:flex flex-row items-center gap-1">
                                             <p class="text-sm">@message.CreatedAt.ToString("yyyy/MM/dd HH:mm:ss")</p>
 
-                                            <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md" @onclick="@(EventUtils.AsNonRenderingEventHandler(() => HandleMessageReply(actionMessageId)))">
-                                                <TurnArrow class="size-5 fill-none stroke-white"/>
-                                            </button>
+                                            @if (OnReplyRequested.HasDelegate) {
+                                                <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md" @onclick="@(EventUtils.AsNonRenderingEventHandler(() => HandleMessageReply(actionMessageId)))">
+                                                    <TurnArrow class="size-5 fill-none stroke-white"/>
+                                                </button>
+                                            }
 
                                             @if (UserId == message.SenderId) {
                                                 <hr class="border-l border-y-transparent border-l-gray-600 h-5"/>
@@ -181,15 +184,17 @@
                      class="w-60 bg-gray-750 text-white flex flex-col gap-1 p-1 rounded-lg shadow-md border border-gray-600">
                 @{ Debug.Assert(_extraActionTargetMessage != null); }
                 
-                <button class="p-2! button-nav-menu" @onclick="HandleMessageReplyViaExtra">
-                    <TurnArrow class="size-5 fill-none stroke-white"/>
+                @if (OnReplyRequested.HasDelegate) {
+                    <button class="p-2! button-nav-menu" @onclick="HandleMessageReplyViaExtra">
+                        <TurnArrow class="size-5 fill-none stroke-white"/>
+
+                        <span class="text-sm">Reply Message</span>
+                    </button>
                     
-                    <span class="text-sm">Reply Message</span>
-                </button>
-                
-                @if (_extraActionTargetMessage.SenderId == UserId) {
                     <hr class="border-t border-t-gray-600 px-2"/>
-                    
+                }
+
+                @if (_extraActionTargetMessage.SenderId == UserId) {
                     <button class="p-2! button-nav-menu" @onclick="HandleMessageEditViaExtra">
                         <Pencil class="size-5 fill-white"/>
                         
@@ -201,9 +206,9 @@
                         
                         <span class="text-sm">Delete Message</span>
                     </button>
+                    
+                    <hr class="border-t border-t-gray-600 mx-2"/>
                 }
-                
-                <hr class="border-t border-t-gray-600 mx-2"/>
                 
                 <button class="p-2! button-nav-menu" @onclick="HandleCopyMessage">
                     <Copy class="size-5 fill-white"/>
@@ -217,7 +222,7 @@
                     <span class="text-sm">Speak Message</span>
                 </button>
                 
-                @if (_extraActionTargetMessage!.SenderId != _authUserId) {
+                @if (_extraActionTargetMessage!.SenderId != _authUserId && !DisallowReport) {
                     <button class="p-2! button-nav-menu" @onclick="HandleReportMessage">
                         <Flag class="size-5 fill-red-400"/>
 
@@ -232,6 +237,7 @@
 @code {
     [Parameter, EditorRequired] public required int LoadCount { get; set; }
     [Parameter, EditorRequired] public required string UserId { get; set; }
+    [Parameter] public bool DisallowReport { get; set; }
     
     [Parameter] public Guid ConversationId { get; set; }
     private Guid _previousConversationId;
@@ -241,7 +247,7 @@
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
     private string? _cssClass;
 
-    [CascadingParameter(Name = "UserCommunityMemberId")] public Guid MemberId { get; set; }
+    [CascadingParameter] private MemberInformationDTO? MemberInformation { get; set; }
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
 
     private string _authUserId = null!;
@@ -591,7 +597,7 @@
 
         ModalService.Open<ReportMessageModal>(parameters: new Dictionary<string, object?> {
             [nameof(ReportMessageModal.MessageId)] = _extraActionTargetMessage.MessageId,
-            [nameof(ReportMessageModal.ReporterId)] = MemberId,
+            [nameof(ReportMessageModal.ReporterId)] = MemberInformation!.Value.MemberId,
         });
 
         _showExtraActionPopover = false;

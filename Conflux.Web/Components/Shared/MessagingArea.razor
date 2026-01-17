@@ -9,9 +9,10 @@
 
 <section class="min-w-0 flex flex-col @_cssClass">
     <MessageTimeline ConversationId="ConversationId" 
-                     OnReplyRequested="HandleReplyRequested"
+                     OnReplyRequested="@(DisallowInput ? new EventCallback<Guid>(this, null) : EventCallback.Factory.Create<Guid>(this, HandleReplyRequested))"
                      UserId="@_userId"
-                     LoadCount="LoadCount"/>
+                     LoadCount="LoadCount"
+                     DisallowReport="DisallowReport"/>
 
     @if (!DisallowInput) {
         <MessageInputArea @bind-ReplyMessageId="_replyMessageId"
@@ -24,6 +25,7 @@
 @code {
     [Parameter] public Guid ConversationId { get; set; }
     [Parameter] public bool DisallowInput { get; set; }
+    [Parameter] public bool DisallowReport { get; set; }
     
     [Parameter, EditorRequired] public required int LoadCount { get; set; }
 

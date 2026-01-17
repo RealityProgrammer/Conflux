@@ -103,7 +103,7 @@
     }
     
     private void OnCommunityBanned(CommunityBannedEventArgs args) {
-        if (args.CommunityId == CommunityId && _memberInformation is { } info && _userId == args.UserId) {
+        if (args.CommunityId == CommunityId && _userId == args.UserId) {
             InvokeAsync(ReloadMemberInformation);
         }
     }

@@ -56,7 +56,8 @@
                     <MessagingArea class="flex-1" 
                                    ConversationId="_channelInfo!.Value.ConversationId" 
                                    LoadCount="ApplicationConstants.MessageLoadCount"
-                                   DisallowInput="_isBanned"/>
+                                   DisallowInput="_isBanned"
+                                   DisallowReport="_isBanned"/>
 
                     <Sidebar Direction="SidebarDirection.RightToLeft" class="flex-none w-80 flex flex-col gap-1 bg-gray-750 border-l border-l-gray-600 px-1 pt-1 overflow-y-hidden">
                         <SelectionDropdown @bind-Value="_selectedRole" ContainerCssClass="w-full" ButtonCssClass="w-full h-9" PopoverCssClass="w-full flex-none">
@@ -109,8 +110,8 @@
         if (_state is not State.InitialLoading and not State.SequentialLoading && (_previousCommunityId != CommunityId || _previousChannelId != ChannelId)) {
             _state = State.SequentialLoading;
         }
-        
-        _isBanned = MemberInformation?.UnbanAt is { } unbanTime && DateTime.UtcNow < unbanTime;
+
+        _isBanned = MemberInformation?.IsBanned ?? false;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
