@@ -88,7 +88,7 @@
 
     private Guid _previousCommunityId, _previousChannelId;
 
-    [CascadingParameter] private RolePermissions? UserPermissions { get; set; }
+    [CascadingParameter] private MemberInformationDTO? MemberInformation { get; set; }
 
     private State _state;
     private ChannelInformationDTO? _channelInfo;

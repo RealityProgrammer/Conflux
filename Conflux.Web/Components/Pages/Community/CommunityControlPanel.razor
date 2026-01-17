@@ -43,7 +43,7 @@
                 </TabContent>
                 
                 <TabContent TabId="reports" class="size-full">
-                    <ReportsTabContent CommunityId="CommunityId" MemberId="MemberId"/>
+                    <ReportsTabContent CommunityId="CommunityId"/>
                 </TabContent>
             </Contents>
         </TabContainer>
@@ -52,7 +52,6 @@
 
 @code {
     [Parameter, EditorRequired] public required Guid CommunityId { get; set; }
-    [Parameter, EditorRequired] public required Guid MemberId { get; set; }
     
     [Parameter] public EventCallback OnCloseRequest { get; set; }
 

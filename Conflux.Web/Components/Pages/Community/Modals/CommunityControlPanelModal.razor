@@ -11,25 +11,22 @@
 @inject ICommunityEventDispatcher CommunityEventDispatcher
 
 <div class="flex flex-row justify-center items-center size-full text-white">
-    <CascadingValue Value="_memberRole">
-        <CommunityControlPanel CommunityId="CommunityId"
-                               MemberId="MemberId"
-                               OnCloseRequest="@((Action<object?>)CloseModal)"/>
+    <CascadingValue Value="MemberInformation">
+        <CommunityControlPanel CommunityId="CommunityId" OnCloseRequest="@((Action<object?>)CloseModal)"/>
     </CascadingValue>
 </div>
 
 @code {
     // Copy from CommunityPage until we figure out a better way to managing parameters and rerender.
     [Parameter, EditorRequired] public Guid CommunityId { get; set; }
-    [Parameter, EditorRequired] public Guid MemberId { get; set; }
-    [Parameter, EditorRequired] public RolePermissionsWithId? MemberRolePermissions { get; set; }
-    
-    private RolePermissionsWithId? _memberRole;
+    [Parameter, EditorRequired] public MemberInformationDTO MemberInformation { get; set; }
 
+    private MemberInformationDTO _memberInformation;
+    
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
 
     protected override void OnParametersSet() {
-        _memberRole = MemberRolePermissions;
+        _memberInformation = MemberInformation;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
@@ -37,8 +34,14 @@
             var authState = await AuthenticationState;
             var userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
-            _memberRole = await CommunityService.GetUserRolePermissionsAsync(userId, CommunityId);
+            var memberInfo = await CommunityService.GetMemberInformationAsync(CommunityId, userId);
 
+            if (memberInfo == null) {
+                CloseModal();
+                return;
+            }
+            
+            MemberInformation = memberInfo.Value;
             StateHasChanged();
             
             CommunityEventDispatcher.OnMemberRoleChanged += OnMemberRoleChanged;
@@ -48,29 +51,35 @@
     }
 
     private void OnMemberRoleChanged(MemberRoleChangedEventArgs args) {
-        if (args.RoleId == _memberRole?.RoleId) {
-            InvokeAsync(ReloadMemberRole);
+        if (args.RoleId == MemberInformation.Role.RoleId) {
+            InvokeAsync(ReloadMemberInformation);
         }
     }
 
     private void OnRoleDeleted(CommunityRoleDeletedEventArgs args) {
-        if (args.RoleId == _memberRole?.RoleId) {
-            _memberRole = RolePermissionsWithId.Default;
-            InvokeAsync(StateHasChanged);
+        if (args.RoleId == MemberInformation.Role.RoleId) {
+            InvokeAsync(ReloadMemberInformation);
         }
     }
 
     private void OnRolePermissionUpdated(CommunityRolePermissionUpdatedEventArg args) {
-        if (args.RoleId == _memberRole?.RoleId) {
-            InvokeAsync(ReloadMemberRole);
+        if (args.RoleId == MemberInformation.Role.RoleId) {
+            InvokeAsync(ReloadMemberInformation);
         }
     }
 
-    private async Task ReloadMemberRole() {
+    private async Task ReloadMemberInformation() {
         var authState = await AuthenticationState;
         var userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        
+        var memberInfo = await CommunityService.GetMemberInformationAsync(CommunityId, userId);
 
-        _memberRole = await CommunityService.GetUserRolePermissionsAsync(userId, CommunityId);
+        if (memberInfo == null) {
+            CloseModal();
+            return;
+        }
+            
+        MemberInformation = memberInfo.Value;
         StateHasChanged();
     }
     

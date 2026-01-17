@@ -22,6 +22,10 @@
 @inject IAuthorizationService AuthorizationService
 @inject ModalService ModalService
 
+@{
+    var rolePermissions = MemberInformation is { } memberInfo ? memberInfo.Role.Permissions : RolePermissions.Default;
+}
+
 <div class="flex flex-col h-full gap-1 overflow-y-auto">
     <header class="flex-none ml-2">
         <h1 class="text-xl font-bold">Community Roles</h1>
@@ -45,7 +49,7 @@
                     }
                 </div>
                 
-                <AuthorizeView Policy="CreateCommunityRole" Resource="UserPermissions?.Permissions">
+                <AuthorizeView Policy="CreateCommunityRole" Resource="rolePermissions">
                     <Authorized>
                         <li class="flex flex-row items-center mt-1">
                             <input @ref="_roleNameInputElement" type="text" @bind="_creatingRoleName" class="flex-1 input-field h-10 mr-1">
@@ -188,7 +192,7 @@
 
                                             <p class="flex-1">@item.DisplayName</p>
 
-                                            <AuthorizeView Policy="UpdateCommunityMemberRole" Resource="UserPermissions?.Permissions">
+                                            <AuthorizeView Policy="UpdateCommunityMemberRole" Resource="rolePermissions">
                                                 <Authorized>
                                                     @if (isBeingRemoved) {
                                                         <button type="button" class="p-1.5 bg-transparent hover:bg-white/15 rounded-full cursor-pointer" @onclick="@(e => UndoMemberRoleRemove(item.MemberId))">
@@ -213,7 +217,7 @@
                             </div>
                         </section>
 
-                        <AuthorizeView Policy="UpdateCommunityMemberRole" Resource="UserPermissions?.Permissions">
+                        <AuthorizeView Policy="UpdateCommunityMemberRole" Resource="rolePermissions">
                             <Authorized>
                                 <section class="flex-1">
                                     <p>Appending members:</p>
@@ -259,7 +263,7 @@
                     <div class="mt-2 flex flex-col md:flex-row gap-1 md:items-center">
                         <label class="flex-none input-label md:flex-1">Role Name</label>
 
-                        <AuthorizeView Policy="RenameCommunityRole" Resource="UserPermissions?.Permissions">
+                        <AuthorizeView Policy="RenameCommunityRole" Resource="rolePermissions">
                             <Authorized>
                                 @if (_selectedRole.Name == "Owners") {
                                     <input type="text" class="h-10 md:flex-3 input-field" readonly disabled value="Owners"/>
@@ -281,7 +285,7 @@
                     </div>
 
                     @if (_selectedRole.Name != "Owners") {
-                        <AuthorizeView Policy="DeleteCommunityRole" Resource="UserPermissions?.Permissions">
+                        <AuthorizeView Policy="DeleteCommunityRole" Resource="rolePermissions">
                             <Authorized>
                                 <section class="mt-1 border border-red-500 p-2 rounded-lg">
                                     <div class="flex flex-col md:flex-row items-center">
@@ -309,7 +313,7 @@
 @code {
     [Parameter] public Guid CommunityId { get; set; }
     
-    [CascadingParameter] private RolePermissionsWithId? UserPermissions { get; set; }
+    [CascadingParameter] private MemberInformationDTO? MemberInformation { get; set; }
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
 
     // Role Selection Dropdown.
@@ -354,14 +358,18 @@
     }
 
     protected override async Task OnParametersSetAsync() {
-        if (UserPermissions?.Permissions is { } permissions) {
+        if (MemberInformation is { } memberInfo) {
+            var permissions = memberInfo.Role.Permissions;
+            
             Model.ChannelPermissions = permissions.Channel;
             Model.RolePermissions = permissions.Role;
             Model.AccessPermissions = permissions.Access;
+            
+            var authState = await AuthenticationState;
+            _allowsUpdateRolePermissions = (await AuthorizationService.AuthorizeAsync(authState.User, permissions, new UpdateCommunityRolePermissionsRequirement())).Succeeded;
+        } else {
+            _allowsUpdateRolePermissions = false;
         }
-        
-        var authState = await AuthenticationState;
-        _allowsUpdateRolePermissions = (await AuthorizationService.AuthorizeAsync(authState.User, UserPermissions?.Permissions, new UpdateCommunityRolePermissionsRequirement())).Succeeded;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
@@ -619,7 +627,7 @@
     private void OnMemberRoleChanged(MemberRoleChangedEventArgs args) {
         InvokeAsync(async () => {
             var authState = await AuthenticationState;
-            _allowsUpdateRolePermissions = (await AuthorizationService.AuthorizeAsync(authState.User, UserPermissions?.Permissions, new UpdateCommunityRolePermissionsRequirement())).Succeeded;
+            _allowsUpdateRolePermissions = (await AuthorizationService.AuthorizeAsync(authState.User, MemberInformation?.Role.Permissions ?? RolePermissions.Default, new UpdateCommunityRolePermissionsRequirement())).Succeeded;
 
             if (args.RoleId == _selectedRole.Id && _roleMembersVirtualizeReference != null) {
                 await _roleMembersVirtualizeReference.RefreshDataAsync();

@@ -32,30 +32,34 @@
 
     case State.Success:
         <section>
+            @{
+                var permissions = MemberInformation?.Role.Permissions ?? RolePermissions.Default;
+            }
+            
             <div class="w-full h-32 bg-black relative">
                 <button @ref="_optionButton" class="absolute top-0 right-0 p-1.5 bg-transparent hover:bg-white/15 rounded-full" @onclick="@(() => _showExpandableMenu = true)">
                     <Gear class="size-5 fill-white"/>
                 </button>
-        
+
                 <Popover TargetReference="_optionButton" @bind-IsShowing="_showExpandableMenu" Placement="left" Offset="4" CloseWhenClickOutside="true">
                     <div class="bg-gray-600 p-1 text-white text-sm rounded-lg shadow-md flex flex-col gap-1 z-50" tabindex="-1">
-                        <AuthorizeView Policy="CreateCommunityChannelCategory" Resource="UserPermissions?.Permissions">
+                        <AuthorizeView Policy="CreateCommunityChannelCategory" Resource="permissions">
                             <Authorized>
                                 <button class="p-1.5 bg-transparent hover:bg-white/10 active:bg-black/8 cursor-pointer rounded-md text-left" @onclick="HandleDisplayCommunityExpandableMenu">Create channel category</button>
                             </Authorized>
                         </AuthorizeView>
-                        
-                        <AuthorizeView Policy="AccessCommunityControlPanel" Resource="UserPermissions?.Permissions">
+
+                        <AuthorizeView Policy="AccessCommunityControlPanel" Resource="permissions">
                             <Authorized>
                                 <button class="p-1.5 bg-transparent hover:bg-white/10 active:bg-black/8 cursor-pointer rounded-md text-left" @onclick="OpenControlPanelModal">Open Control Panel</button>
                             </Authorized>
                         </AuthorizeView>
-        
+
                         <button class="p-1.5 bg-transparent hover:bg-white/10 active:bg-black/8 cursor-pointer rounded-md text-left" @onclick="OpenInvitationUrlModal">Get invitation URL</button>
                     </div>
                 </Popover>
             </div>
-        
+
             <p class="text-center">
                 Welcome to<br/>
                 <span class="font-bold text-lg">@_community!.Name</span>
@@ -99,7 +103,7 @@
                 <h1 class="text-sm font-bold text-gray-400 mt-2 mb-2 overflow-hidden break-all whitespace-normal flex flex-row items-start">
                     <span class="flex-1 mr-1">@channelCategory.Name</span>
         
-                    <AuthorizeView Policy="CreateCommunityChannel" Resource="UserPermissions?.Permissions">
+                    <AuthorizeView Policy="CreateCommunityChannel" Resource="permissions">
                         <Authorized>
                             <span class="flex-none">
                                 <Tooltip TargetCssClass="inline-block" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" Placement="right" Offset="8">
@@ -138,7 +142,7 @@
             </section>
         }
         
-        <AuthorizeView Policy="CreateCommunityChannelCategory" Resource="UserPermissions?.Permissions">
+        <AuthorizeView Policy="CreateCommunityChannelCategory" Resource="permissions">
             <Authorized Context="_">
                 @if (_isCreatingChannelCategory) {
                     <section class="px-2 mt-2">
@@ -163,8 +167,7 @@
     private Community? _community;
     private string? _invitationUrl;
 
-    [CascadingParameter] private RolePermissionsWithId? UserPermissions { get; set; }
-    [CascadingParameter(Name = "UserCommunityMemberId")] private Guid MemberId { get; set; }
+    [CascadingParameter] private MemberInformationDTO? MemberInformation { get; set; }
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
 
     protected override void OnParametersSet() {
@@ -233,7 +236,7 @@
     private async Task OpenCreateChannelModal(Guid categoryId) {
         var authState = await AuthenticationState;
         
-        if ((await AuthorizationService.AuthorizeAsync(authState.User, UserPermissions?.Permissions, "CreateCommunityChannel")).Succeeded) {
+        if ((await AuthorizationService.AuthorizeAsync(authState.User, MemberInformation?.Role.Permissions ?? RolePermissions.Default, "CreateCommunityChannel")).Succeeded) {
             ModalService.Open<CreateCommunityChannelModal>(parameters: new Dictionary<string, object?> {
                 [nameof(CreateCommunityChannelModal.ReceiverChannelCategoryId)] = categoryId,
             });
@@ -249,11 +252,10 @@
     private async Task OpenControlPanelModal() {
         var authState = await AuthenticationState;
         
-        if ((await AuthorizationService.AuthorizeAsync(authState.User, UserPermissions?.Permissions, "AccessCommunityControlPanel")).Succeeded) {
+        if ((await AuthorizationService.AuthorizeAsync(authState.User, MemberInformation?.Role.Permissions ?? RolePermissions.Default, "AccessCommunityControlPanel")).Succeeded) {
             ModalService.Open<CommunityControlPanelModal>(parameters: new Dictionary<string, object?> {
                 [nameof(CommunityControlPanelModal.CommunityId)] = CommunityId,
-                [nameof(CommunityControlPanelModal.MemberId)] = MemberId,
-                [nameof(CommunityControlPanelModal.MemberRolePermissions)] = UserPermissions!,
+                [nameof(CommunityControlPanelModal.MemberInformation)] = MemberInformation,
             });
         }
     }

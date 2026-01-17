@@ -244,4 +244,19 @@ public class CommunityService(
             .Cast<MemberInformationDTO?>()
             .FirstOrDefaultAsync();
     }
+
+    public async Task<MemberInformationDTO?> GetMemberInformationAsync(Guid communityId, string userId) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        return await dbContext.CommunityMembers
+            .Where(m => m.CommunityId == communityId && m.UserId == userId)
+            .Include(m => m.Role)
+            .Select(m => 
+                new MemberInformationDTO(m.Id, m.Role == null ? 
+                    new RolePermissionsWithId(null, RolePermissions.Default) : 
+                    new(m.RoleId, new(m.Role.ChannelPermissions, m.Role.RolePermissions, m.Role.AccessPermissions)), m.UnbanAt))
+            .Cast<MemberInformationDTO?>()
+            .FirstOrDefaultAsync();
+    }
 }

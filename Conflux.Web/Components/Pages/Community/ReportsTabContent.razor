@@ -182,7 +182,6 @@
 
 @code {
     [Parameter, EditorRequired] public required Guid CommunityId { get; set; }
-    [Parameter, EditorRequired] public required Guid MemberId { get; set; }
 
     private ReportCountStatistics? _countStatistics;
     private ReportCountTimeTarget _countTimeTarget;
@@ -193,6 +192,17 @@
     private SelectedMemberInfo? _selectedMemberInfo;
     private MemberReportStatistics? _selectedMemberStatistics;
     
+    [CascadingParameter] private MemberInformationDTO? MemberInformation { get; set; }
+    private MemberInformationDTO _memberInformation;
+
+    protected override void OnParametersSet() {
+        if (MemberInformation == null) {
+            throw new InvalidOperationException($"Cascading parameter type '{typeof(MemberInformationDTO).FullName}' MemberInformation need to be set.");
+        }
+
+        _memberInformation = MemberInformation.Value;
+    }
+
     private async Task SetStatisticsCollapsible(bool value) {
         if (value && _countStatistics == null) {
             _countStatistics = await ReportService.GetReportCountStatisticsAsync(CommunityId);
@@ -224,7 +234,7 @@
         ModalService.Open<ReportManagementModal>(parameters: new Dictionary<string, object?> {
             [nameof(ReportManagementModal.CommunityId)] = CommunityId,
             [nameof(ReportManagementModal.ReportedMemberId)] = memberInfo.MemberId,
-            [nameof(ReportManagementModal.ResolvingMemberId)] = MemberId,
+            [nameof(ReportManagementModal.ResolvingMemberId)] = _memberInformation.MemberId,
         });
     }
 
