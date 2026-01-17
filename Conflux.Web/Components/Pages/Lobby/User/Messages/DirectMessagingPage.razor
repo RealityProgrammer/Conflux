@@ -1,7 +1,7 @@
 ﻿@page "/lobby/messages/{ConversationId:guid}"
 
 @using Conflux.Components.Shared
-@using Conflux.Services.Abstracts
+@using Conflux.Components.Shared.Icons
 @using Microsoft.EntityFrameworkCore
 @using System.Security.Claims
 
@@ -30,15 +30,20 @@
                 break;
 
             case InitializationState.Success:
-                <Avatar ImageSrc="@(string.IsNullOrEmpty(_otherUserInfo.Avatar) ? null : ContentService.GetAssetPath(_otherUserInfo.Avatar))" ImageAlt="Friend's Avatar" class="size-8 mr-2"/>
-                <p>@_otherUserInfo.DisplayName</p>
+                <Avatar ImageSrc="@(string.IsNullOrEmpty(_otherUserInfo.Avatar) ? null : ContentService.GetAssetPath(_otherUserInfo.Avatar))" ImageAlt="Friend's Avatar" class="size-8 mr-2 flex-none"/>
+                <p class="flex-1">@_otherUserInfo.DisplayName</p>
+                
+                <Microphone class="size-5 ml-2 fill-white"/>
                 break;
         }
     </header>
 
     <section class="flex-1 overflow-hidden">
         <div class="flex flex-row h-full">
-            <MessagingArea class="flex-1" ConversationId="ConversationId" LoadCount="ApplicationConstants.MessageLoadCount"/>
+            <MessagingArea class="flex-1" 
+                           ConversationId="ConversationId" 
+                           LoadCount="ApplicationConstants.MessageLoadCount"
+                           DisallowReport="true"/>
             
             <aside class="flex-none basis-80 hidden md:block bg-gray-750 border-l border-l-gray-600">
                 @if (_initState == InitializationState.Success) {

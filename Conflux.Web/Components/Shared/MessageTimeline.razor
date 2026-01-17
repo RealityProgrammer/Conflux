@@ -519,18 +519,27 @@
     }
 
     private async Task OpenUserProfileModal(string userId) {
+        Guid? memberId = null;
+        
         await using var dbContext = await DbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-
-        var memberId = await dbContext.Conversations
-            .Where(c => c.Id == ConversationId)
-            .Include(c => c.CommunityChannel!)
-            .ThenInclude(c => c.ChannelCategory)
-            .ThenInclude(c => c.Community)
-            .Select(c => c.CommunityChannel!.ChannelCategory.Community.Members.FirstOrDefault(x => x.UserId == userId))
-            .Select(m => m!.Id)
-            .FirstOrDefaultAsync();
         
+        var channelId = await dbContext.Conversations
+            .Where(c => c.Id == ConversationId)
+            .Select(c => c.CommunityChannelId)
+            .FirstOrDefaultAsync();
+
+        if (channelId != null) {
+            memberId = await dbContext.CommunityChannels
+                .Where(r => r.Id == channelId)
+                .Include(c => c.ChannelCategory)
+                .ThenInclude(c => c.Community)
+                .Select(c => c.ChannelCategory.Community.Members.FirstOrDefault(x => x.UserId == userId))
+                .Select(m => m!.Id)
+                .Cast<Guid?>()
+                .FirstOrDefaultAsync();
+        }
+
         ModalService.Open<UserProfileModal>(parameters: new Dictionary<string, object?> {
             [nameof(UserProfileModal.UserId)] = userId,
             [nameof(UserProfileModal.MemberId)] = memberId,
