@@ -1,5 +1,4 @@
 ﻿@inject IJSRuntime JavascriptRuntime
-@inject ILogger<Tooltip> Logger
 
 <div @ref="TargetElement" class="@TargetCssClass" @onmouseenter="HandleShowTooltip" @onmouseleave="HandleHideTooltip">
     @TargetContent
