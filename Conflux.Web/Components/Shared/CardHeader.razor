@@ -1,7 +1,7 @@
 ﻿@using Conflux.Components.Shared.Icons
 @using Conflux.Helpers
 
-<header class="pb-3 px-5 pt-5 flex-none flex flex-row justify-between items-start @_cssClass" @attributes="AdditionalAttributes">
+<header class="pb-3 px-5 pt-5 flex-none flex flex-row justify-between items-center @_cssClass" @attributes="AdditionalAttributes">
     <div class="flex flex-col">
         @if (!string.IsNullOrEmpty(Title)) {
             <h1 class="text-2xl font-bold">@Title</h1>
@@ -13,8 +13,8 @@
     </div>
     
     @if (OnCloseRequested.HasDelegate) {
-        <button class="bg-transparent hover:bg-white/30 p-2 rounded-full cursor-pointer" @onclick="EventUtils.AsNonRenderingEventHandler(OnCloseRequested)">
-            <Cross class="size-4 fill-white" Size="CrossSize.Large"></Cross>
+        <button class="group cursor-pointer" @onclick="EventUtils.AsNonRenderingEventHandler(OnCloseRequested)">
+            <Cross class="size-4 fill-gray-300 group-hover:fill-white" Size="CrossSize.Large"/>
         </button>
     }
 </header>

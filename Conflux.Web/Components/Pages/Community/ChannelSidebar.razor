@@ -38,8 +38,8 @@
             }
             
             <div class="w-full h-32 bg-black relative">
-                <button @ref="_optionButton" class="absolute top-0 right-0 p-1.5 bg-transparent hover:bg-white/15 rounded-full" @onclick="@(() => _showExpandableMenu = true)">
-                    <Gear class="size-5 fill-white"/>
+                <button @ref="_optionButton" class="absolute top-1 right-1 group cursor-pointer" @onclick="@(() => _showExpandableMenu = true)">
+                    <Gear class="size-5 fill-gray-300 group-hover:fill-white"/>
                 </button>
 
                 <Popover TargetReference="_optionButton" @bind-IsShowing="_showExpandableMenu" Placement="right" Offset="4" CloseWhenClickOutside="true">
@@ -111,8 +111,8 @@
                             <span class="flex-none">
                                 <Tooltip TargetCssClass="inline-block" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" Placement="right" Offset="8">
                                     <TargetContent>
-                                        <button class="bg-transparent cursor-pointer" @onclick="() => OpenCreateChannelModal(channelCategory.Id)">
-                                            <Plus Large="true" class="size-4 fill-white"/>
+                                        <button class="cursor-pointer group" @onclick="() => OpenCreateChannelModal(channelCategory.Id)">
+                                            <Plus Large="true" class="size-4 fill-gray-300 group-hover:fill-white"/>
                                         </button>
                                     </TargetContent>
 

@@ -19,9 +19,9 @@
 
 <div class="flex flex-row justify-center items-center size-full text-white p-0 md:p-8">
     <Card class="absolute inset-0 md:static md:h-full md:w-4/5 lg:w-3/5 rounded-none! md:rounded-xl!">
-        <header class="py-1 px-3 flex-none flex flex-row justify-end items-start gap-1.5">
-            <button class="bg-transparent hover:bg-white/30 p-2 rounded-full cursor-pointer" @onclick="EventUtils.AsNonRenderingEventHandler(HandleClose)">
-                <Cross class="size-4 fill-white" Size="CrossSize.Large"/>
+        <header class="py-3 px-3 flex-none flex flex-row justify-end">
+            <button class="group cursor-pointer" @onclick="EventUtils.AsNonRenderingEventHandler(HandleClose)">
+                <Cross class="size-4 fill-gray-300 hover:fill-white" Size="CrossSize.Large"/>
             </button>
         </header>
 
@@ -147,7 +147,7 @@
 
                                             <p class="text-xs mt-1">Unfriend</p>
                                         </div>
-                                        
+
                                         <div class="flex flex-col items-center">
                                             <button class="flex-none rounded-full cursor-pointer hover:bg-white/25 active:bg-black/15 p-2 shadow-md border border-gray-600" @onclick="HandleAccessConversation">
                                                 <SpeechBubble ArrowDirection="ChatArrowDirection.Right" Content="ChatContent.Text" class="size-6 fill-white"/>

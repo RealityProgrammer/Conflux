@@ -196,11 +196,11 @@
                                                 <Authorized>
                                                     @if (isBeingRemoved) {
                                                         <button type="button" class="p-1.5 bg-transparent hover:bg-white/15 rounded-full cursor-pointer" @onclick="@(e => UndoMemberRoleRemove(item.MemberId))">
-                                                            <Cross class="flex-none size-4 fill-white" Size="CrossSize.Large"/>
+                                                            <Cross class="size-4 fill-white" Size="CrossSize.Large"/>
                                                         </button>
                                                     } else {
                                                         <button type="button" class="p-1.5 bg-transparent hover:bg-white/15 rounded-full cursor-pointer" @onclick="@(e => ApplyMemberRoleRemove(item.MemberId))">
-                                                            <Cross class="flex-none size-4 fill-white" Size="CrossSize.Large"/>
+                                                            <Cross class="size-4 fill-white" Size="CrossSize.Large"/>
                                                         </button>
                                                     }
                                                 </Authorized>

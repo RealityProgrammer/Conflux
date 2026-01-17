@@ -67,26 +67,28 @@
                             @onclick="invokesOpenUserModal"/>
     
                     <div class="flex-1 flex flex-col">
-                        <p class="select-none hover:underline cursor-pointer" @onclick="invokesOpenUserModal">@message.SenderDisplayName</p>
-    
+                        <div>
+                            <p class="select-none hover:underline cursor-pointer inline-block" @onclick="invokesOpenUserModal">@message.SenderDisplayName</p>
+                        </div>
+
                         @{
                             // Render the content of consecutive messages.
                             int endIndex = i + 1;
-    
+
                             if (!message.ReplyMessageId.HasValue) {
                                 while (endIndex < c && _visibleMessages[endIndex].SenderId == message.SenderId && !_visibleMessages[endIndex].ReplyMessageId.HasValue) {
                                     endIndex++;
                                 }
                             }
-    
+
                             for (int j = i; j < endIndex; j++) {
                                 message = _visibleMessages[j];
                                 bool isEditing = message.MessageId == _editingMessageId;
-    
+
                                 <div class="relative bg-transparent @(isEditing ? string.Empty : "hover:bg-white/5") group">
                                     @if (isEditing) {
                                         <MessageTextArea @ref="_editTextArea"
-                                                         @bind-Value="_editMessageBody" 
+                                                         @bind-Value="_editMessageBody"
                                                          class="shrink-0 input-field w-full py-2 overflow-x-hidden overflow-y-auto wrap-break-word break-all resize-none scrollbar-hide shadow-lg max-h-96 my-2"
                                                          OnEnterSubmit="HandleSubmitMessageEdit"
                                                          OnEscape="HandleEscapeRequest"
@@ -95,7 +97,7 @@
                                         @if (!string.IsNullOrEmpty(message.Body)) {
                                             <p class="whitespace-pre-wrap wrap-anywhere">
                                                 @message.Body
-                                                
+
                                                 @if (message.IsEdited) {
                                                     <span class="text-xs text-gray-400"> (edited)</span>
                                                 }
@@ -141,18 +143,18 @@
                                     <div class="min-w-0 p-0.5 flex flex-row flex-wrap gap-1">
                                         @foreach (MessageAttachment attachment in message.Attachments) {
                                             string path = ContentService.GetAssetPath(attachment.PhysicalPath);
-                                            
+
                                             switch (attachment.Type) {
                                                 case MessageAttachmentType.Image:
                                                     <img src="@path" alt="" class="max-w-3xl max-h-80 h-full rounded-lg aspect-auto">
                                                     break;
-                                                        
+
                                                 case MessageAttachmentType.Audio:
                                                     <audio controls class="w-full rounded-lg">
                                                         <source src="@path">
                                                     </audio>
                                                     break;
-                                                        
+
                                                 case MessageAttachmentType.Video:
                                                     <video controls class="max-w-3xl max-h-80 h-full aspect-auto">
                                                         <source src="@path">
@@ -163,8 +165,9 @@
                                     </div>
                                 </div>
                             }
-    
+
                             i = endIndex;
+
                         }
                     </div>
                 </div>

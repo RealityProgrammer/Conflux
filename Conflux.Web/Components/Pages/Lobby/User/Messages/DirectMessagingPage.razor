@@ -12,7 +12,7 @@
 @inject IContentService ContentService
 
 <div class="flex flex-col size-full overflow-hidden">
-    <header class="flex-none p-1.5 border-b border-b-gray-600 bg-gray-725 flex flex-row items-center">
+    <header class="flex-none px-2 py-1 border-b border-b-gray-600 bg-gray-725 flex flex-row items-center basis-12">
         @switch (_initState) {
             case InitializationState.Initializing:
                 <Avatar ImageSrc="@null" ImageAlt="@null" class="size-8 mr-2"/>
@@ -33,7 +33,9 @@
                 <Avatar ImageSrc="@(string.IsNullOrEmpty(_otherUserInfo.Avatar) ? null : ContentService.GetAssetPath(_otherUserInfo.Avatar))" ImageAlt="Friend's Avatar" class="size-8 mr-2 flex-none"/>
                 <p class="flex-1">@_otherUserInfo.DisplayName</p>
                 
-                <Microphone class="size-5 ml-2 fill-white"/>
+                <button class="ml-2 cursor-pointer group">
+                    <Telephone class="size-5 fill-gray-300 group-hover:fill-white" Variation="TelephoneVariation.Outbound"/>
+                </button>
                 break;
         }
     </header>
