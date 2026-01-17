@@ -31,7 +31,7 @@ public sealed class FriendshipEventDispatcher(
         if (_hubConnection != null) return;
         
         _hubConnection = new HubConnectionBuilder()
-            .WithUrl(navigationManager.ToAbsoluteUri("/hub/notification"), options => {
+            .WithUrl(navigationManager.ToAbsoluteUri("/hub/friendship"), options => {
                 var cookies = httpContextAccessor.HttpContext!.Request.Cookies.ToDictionary();
                 
                 options.UseDefaultCredentials = true;
