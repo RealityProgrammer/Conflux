@@ -7,6 +7,7 @@
 @implements IAsyncDisposable
 
 @inject IFriendshipEventDispatcher FriendshipEventDispatcher
+@inject IUserNotificationService UserNotificationService
 
 <RedirectToProfileSetup/>
 
@@ -17,11 +18,13 @@
 </div>
 
 @code {
-    protected override void OnInitialized() {
-        FriendshipEventDispatcher.Connect();
+    protected override async Task OnInitializedAsync() {
+        await FriendshipEventDispatcher.Connect();
+        await UserNotificationService.Connect();
     }
 
     public async ValueTask DisposeAsync() {
         await FriendshipEventDispatcher.Disconnect();
+        await UserNotificationService.Disconnect();
     }
 }
