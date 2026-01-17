@@ -137,6 +137,7 @@ builder.Services.AddScoped<ICommunityService, CommunityService>();
 builder.Services.AddScoped<ICommunityRoleService, CommunityRoleService>();
 builder.Services.AddScoped<ICommunityEventDispatcher, CommunityEventDispatcher>();
 builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<IUserNotificationService, UserNotificationService>();
 
 // SignalR related services.
 builder.Services.AddSignalR(options => {
