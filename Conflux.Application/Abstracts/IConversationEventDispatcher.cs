@@ -1,10 +1,6 @@
-﻿using Conflux.Domain.Entities;
+﻿using Conflux.Domain.Events;
 
-namespace Conflux.Domain.Events;
-
-public readonly record struct MessageReceivedEventArgs(Guid MessageId, Guid ConversationId, string SenderId);
-public readonly record struct MessageDeletedEventArgs(Guid MessageId, Guid ConversationId);
-public readonly record struct MessageEditedEventArgs(Guid MessageId, Guid ConversationId, string? Body);
+namespace Conflux.Application.Abstracts;
 
 public interface IConversationEventDispatcher {
     event Action<MessageReceivedEventArgs>? OnMessageReceived;

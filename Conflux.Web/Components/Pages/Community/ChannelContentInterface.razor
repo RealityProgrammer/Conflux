@@ -53,7 +53,10 @@
                 
             case State.Success:
                 <div class="flex flex-row h-full">
-                    <MessagingArea class="flex-1" ConversationId="_channelInfo!.Value.ConversationId" LoadCount="ApplicationConstants.MessageLoadCount"/>
+                    <MessagingArea class="flex-1" 
+                                   ConversationId="_channelInfo!.Value.ConversationId" 
+                                   LoadCount="ApplicationConstants.MessageLoadCount"
+                                   DisallowInput="@(MemberInformation?.UnbanAt is { } unbanTime && DateTime.UtcNow < unbanTime)"/>
 
                     <Sidebar Direction="SidebarDirection.RightToLeft" class="flex-none w-80 flex flex-col gap-1 bg-gray-750 border-l border-l-gray-600 px-1 pt-1 overflow-y-hidden">
                         <SelectionDropdown @bind-Value="_selectedRole" ContainerCssClass="w-full" ButtonCssClass="w-full h-9" PopoverCssClass="w-full flex-none">

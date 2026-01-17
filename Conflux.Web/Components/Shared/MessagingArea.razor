@@ -13,14 +13,17 @@
                      UserId="@_userId"
                      LoadCount="LoadCount"/>
 
-    <MessageInputArea @bind-ReplyMessageId="_replyMessageId"
-                      class="flex-none p-2"
-                      disabled="false"
-                      OnSubmit="HandleMessageSend"/>
+    @if (!DisallowInput) {
+        <MessageInputArea @bind-ReplyMessageId="_replyMessageId"
+                          class="flex-none p-2"
+                          disabled="false"
+                          OnSubmit="HandleMessageSend"/>
+    }
 </section>
 
 @code {
     [Parameter] public Guid ConversationId { get; set; }
+    [Parameter] public bool DisallowInput { get; set; }
     
     [Parameter, EditorRequired] public required int LoadCount { get; set; }
 

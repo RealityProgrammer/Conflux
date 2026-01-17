@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Conflux.Domain.Entities;
-using Conflux.Domain.Events;
 using Conflux.Services;
 using Conflux.Services.Abstracts;
 using Conflux.Services.Authorization;

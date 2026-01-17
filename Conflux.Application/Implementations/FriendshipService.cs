@@ -1,7 +1,6 @@
 ﻿using Conflux.Application.Abstracts;
 using Conflux.Domain;
 using Conflux.Domain.Entities;
-using Conflux.Domain.Events;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;

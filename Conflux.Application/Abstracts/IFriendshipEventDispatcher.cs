@@ -1,10 +1,6 @@
-﻿namespace Conflux.Domain.Events;
+﻿using Conflux.Domain.Events;
 
-public readonly record struct FriendRequestReceivedEventArgs(Guid RequestId, string SenderId, string ReceiverId);
-public readonly record struct FriendRequestCanceledEventArgs(Guid RequestId, string ReceiverId);
-public readonly record struct FriendRequestRejectedEventArgs(Guid RequestId, string SenderId);
-public readonly record struct FriendRequestAcceptedEventArgs(Guid RequestId, string SenderId);
-public readonly record struct UnfriendedEventArgs(Guid RequestId, string User1, string User2);
+namespace Conflux.Application.Abstracts;
 
 public interface IFriendshipEventDispatcher : IAsyncDisposable {
     event Action<FriendRequestReceivedEventArgs>? OnFriendRequestReceived;
