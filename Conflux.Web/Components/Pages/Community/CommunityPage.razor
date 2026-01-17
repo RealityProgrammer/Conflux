@@ -10,6 +10,7 @@
 
 @inject ICommunityService CommunityService
 @inject ICommunityEventDispatcher CommunityEventDispatcher
+@inject IUserNotificationService UserNotificationService
 
 @implements IAsyncDisposable
 
@@ -56,8 +57,14 @@
     [Parameter] public string? Channel { get; set; }
 
     private MemberInformationDTO? _memberInformation;
+    private string _userId = null!;
 
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+
+    protected override async Task OnParametersSetAsync() {
+        var authState = await AuthenticationState;
+        _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (_previousCommunityId != CommunityId) {
@@ -67,11 +74,10 @@
             CommunityEventDispatcher.OnMemberRoleChanged += OnMemberRoleChanged;
             CommunityEventDispatcher.OnRoleDeleted += OnRoleDeleted;
             CommunityEventDispatcher.OnRolePermissionUpdated += OnRolePermissionUpdated;
-            
-            var authState = await AuthenticationState;
-            var userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
-            _memberInformation = await CommunityService.GetMemberInformationAsync(CommunityId, userId);
+            UserNotificationService.OnCommunityBanned += OnCommunityBanned;
+
+            _memberInformation = await CommunityService.GetMemberInformationAsync(CommunityId, _userId);
             StateHasChanged();
             
             _previousCommunityId = CommunityId;
@@ -95,12 +101,15 @@
             InvokeAsync(ReloadMemberInformation);
         }
     }
+    
+    private void OnCommunityBanned(CommunityBannedEventArgs args) {
+        if (args.CommunityId == CommunityId && _memberInformation is { } info && _userId == args.UserId) {
+            InvokeAsync(ReloadMemberInformation);
+        }
+    }
 
     private async Task ReloadMemberInformation() {
-        var authState = await AuthenticationState;
-        var userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-
-        _memberInformation = await CommunityService.GetMemberInformationAsync(CommunityId, userId);
+        _memberInformation = await CommunityService.GetMemberInformationAsync(CommunityId, _userId);
         StateHasChanged();
     }
     
@@ -108,6 +117,8 @@
         CommunityEventDispatcher.OnMemberRoleChanged -= OnMemberRoleChanged;
         CommunityEventDispatcher.OnRoleDeleted -= OnRoleDeleted;
         CommunityEventDispatcher.OnRolePermissionUpdated -= OnRolePermissionUpdated;
+        
+        UserNotificationService.OnCommunityBanned -= OnCommunityBanned;
         
         await CommunityEventDispatcher.Disconnect(CommunityId);
     }
