@@ -14,6 +14,7 @@
 @implements IDisposable
 
 @inject ICommunityService CommunityService
+@inject ICommunityRoleService CommunityRoleService
 @inject ICommunityEventDispatcher CommunityEventDispatcher
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject IJSRuntime JavascriptRuntime
@@ -378,7 +379,7 @@
                 .Select(x => new RoleDTO(x.Id, x.Name))
                 .FirstAsync();
 
-            _originalPermissions = (await CommunityService.GetPermissionsAsync(_selectedRole.Id))!;
+            _originalPermissions = (await CommunityRoleService.GetPermissionsAsync(_selectedRole.Id))!;
 
             Model.RoleName = "Owners";
             
@@ -399,7 +400,7 @@
         } else {
             _selectedRole = role;
 
-            var permissions = await CommunityService.GetPermissionsAsync(_selectedRole.Id);
+            var permissions = await CommunityRoleService.GetPermissionsAsync(_selectedRole.Id);
 
             if (permissions != null) {
                 Model.ChannelPermissions = permissions.Channel;
@@ -441,7 +442,7 @@
             return;
         }
         
-        await CommunityService.UpdatePermissionsAsync(CommunityId, _selectedRole.Id, new(Model.ChannelPermissions, Model.RolePermissions, Model.AccessPermissions));
+        await CommunityRoleService.UpdatePermissionsAsync(_selectedRole.Id, new(Model.ChannelPermissions, Model.RolePermissions, Model.AccessPermissions));
 
         if (_editContext.IsModified(_removeRolesField)) {
             await CommunityService.SetMembersRoleAsync(CommunityId, Model.RemoveRoles, null);
@@ -462,7 +463,7 @@
         }
 
         if (_editContext.IsModified(_roleNameField)) {
-            await CommunityService.RenameRoleAsync(CommunityId, _selectedRole.Id, Model.RoleName);
+            await CommunityRoleService.RenameRoleAsync(CommunityId, _selectedRole.Id, Model.RoleName);
         }
         
         _editContext.MarkAsUnmodified();
@@ -484,22 +485,22 @@
                 return;
             }
 
-            var status = await CommunityService.CreateRoleAsync(CommunityId, _creatingRoleName);
+            var status = await CommunityRoleService.CreateRoleAsync(CommunityId, _creatingRoleName);
 
             switch (status) {
-                case ICommunityService.CreateRoleStatus.Failure:
+                case ICommunityRoleService.CreateRoleStatus.Failure:
                     _roleNameErrorMessage = "Failed to create Role.";
                     break;
                     
-                case ICommunityService.CreateRoleStatus.NameExists:
+                case ICommunityRoleService.CreateRoleStatus.NameExists:
                     _roleNameErrorMessage = "This role name already exists.";
                     break;
                     
-                case ICommunityService.CreateRoleStatus.ReservedName:
+                case ICommunityRoleService.CreateRoleStatus.ReservedName:
                     _roleNameErrorMessage = "This role name is reserved.";
                     break;
                     
-                case ICommunityService.CreateRoleStatus.Success:
+                case ICommunityRoleService.CreateRoleStatus.Success:
                     _creatingRoleName = string.Empty;
                     break;
             }
@@ -576,7 +577,7 @@
             [nameof(OperationConfirmModal.Subtitle)] = "Committing massive job loss...",
             [nameof(OperationConfirmModal.Body)] = _roleDeleteBodyFragment,
             [nameof(OperationConfirmModal.OnConfirm)] = EventCallback.Factory.Create(this, async () => {
-                await CommunityService.DeleteRoleAsync(CommunityId, _selectedRole.Id);
+                await CommunityRoleService.DeleteRoleAsync(CommunityId, _selectedRole.Id);
             }),
         });
     }

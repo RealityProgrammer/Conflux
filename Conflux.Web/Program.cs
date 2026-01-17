@@ -134,8 +134,8 @@ builder.Services.AddScoped<IConversationService, ConversationService>();
 builder.Services.AddScoped<IConversationEventDispatcher, ConversationEventDispatcher>();
 builder.Services.AddScoped<ISnackbarService, SnackbarService>();
 builder.Services.AddScoped<ModalService>();
-builder.Services.AddSingleton<ICommunityCacheService, CommunityCacheService>();
 builder.Services.AddScoped<ICommunityService, CommunityService>();
+builder.Services.AddScoped<ICommunityRoleService, CommunityRoleService>();
 builder.Services.AddScoped<ICommunityEventDispatcher, CommunityEventDispatcher>();
 builder.Services.AddScoped<IReportService, ReportService>();
 
