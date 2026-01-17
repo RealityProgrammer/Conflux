@@ -2,14 +2,14 @@
 
 @using Conflux.Components.Shared
 @using Conflux.Components.Shared.Icons
+@using Conflux.Services.Abstracts
 @using Microsoft.EntityFrameworkCore
 @using System.Security.Claims
 
-@implements IAsyncDisposable
-
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
-@inject NavigationManager NavigationManager
 @inject IContentService ContentService
+@inject ICallRoomManagerService CallRoomManager
+@inject IUserCallRoomService UserCallRoomService
 
 <div class="flex flex-col size-full overflow-hidden">
     <header class="flex-none px-2 py-1 border-b border-b-gray-600 bg-gray-725 flex flex-row items-center basis-12">
@@ -35,7 +35,7 @@
                 
                 <Tooltip TargetCssClass="ml-2 flex flex-row justify-center items-center aspect-square h-full" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" Placement="bottom" Offset="8">
                     <TargetContent>
-                        <button class="cursor-pointer group">
+                        <button class="cursor-pointer group" @onclick="HandleBeginCall">
                             <Telephone class="size-6 fill-gray-300 group-hover:fill-white" Variation="TelephoneVariation.Outbound"/>
                         </button>
                     </TargetContent>
@@ -118,50 +118,46 @@
         if (string.IsNullOrEmpty(_userId)) {
             _initState = InitializationState.NoPermission;
         }
-        
-        NavigationManager.LocationChanged += OnNavigationLocationChanged;
+    }
+
+    protected override void OnParametersSet() {
+        if (_previousConversationId != ConversationId) {
+            _initState = InitializationState.Initializing;
+            _previousConversationId = ConversationId;
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
-        if (_previousConversationId == ConversationId) {
-            return;
-        }
+        if (_initState == InitializationState.Initializing) {
+            await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+            var otherUser = await dbContext.Conversations
+                .Where(c => c.Type == ConversationType.DirectMessage && c.Id == ConversationId)
+                .Select(c => c.FriendRequest!.SenderId == _userId ? c.FriendRequest.ReceiverId : c.FriendRequest.SenderId)
+                .Join(dbContext.Users, id => id, u => u.Id, (id, u) => new OtherUserDTO {
+                    UserId = u.Id,
+                    UserName = u.UserName!,
+                    DisplayName = u.DisplayName,
+                    Avatar = u.AvatarProfilePath,
+                    Pronouns = u.Pronouns,
+                    Bio = u.Bio,
+                    CreatedAt = u.CreatedAt,
+                })
+                .FirstOrDefaultAsync();
 
-        try {
-            await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
-                var otherUser = await dbContext.Conversations
-                    .Where(c => c.Type == ConversationType.DirectMessage && c.Id == ConversationId)
-                    .Select(c => c.FriendRequest!.SenderId == _userId ? c.FriendRequest.ReceiverId : c.FriendRequest.SenderId)
-                    .Join(dbContext.Users, id => id, u => u.Id, (id, u) => new OtherUserDTO {
-                        UserName = u.UserName!,
-                        DisplayName = u.DisplayName,
-                        Avatar = u.AvatarProfilePath,
-                        Pronouns = u.Pronouns,
-                        Bio = u.Bio,
-                        CreatedAt = u.CreatedAt,
-                    })
-                    .FirstOrDefaultAsync();
-        
-                if (otherUser == null) {
-                    _initState = InitializationState.NoConversation;
-                } else {
-                    _initState = InitializationState.Success;
-                    _otherUserInfo = otherUser;
-                }
+            if (otherUser == null) {
+                _initState = InitializationState.NoConversation;
+            } else {
+                _initState = InitializationState.Success;
+                _otherUserInfo = otherUser;
             }
-        } finally {
+            
             StateHasChanged();
         }
-        
-        _previousConversationId = ConversationId;
     }
 
-    private void OnNavigationLocationChanged(object? sender, LocationChangedEventArgs e) {
-        _initState = InitializationState.Initializing;
-    }
-
-    public async ValueTask DisposeAsync() {
-        NavigationManager.LocationChanged -= OnNavigationLocationChanged;
+    private async Task HandleBeginCall() {
+        var callRoom = await CallRoomManager.CreateDirectCallRoom(_userId, _otherUserInfo.UserId);
+        await UserCallRoomService.JoinDirectCallRoom(callRoom);
     }
 
     private enum InitializationState {
@@ -172,6 +168,7 @@
     }
 
     private sealed class OtherUserDTO {
+        public required string UserId { get; init; }
         public required string? Avatar { get; init; }
         public required string DisplayName { get; init; }
         public required string UserName { get; init; }

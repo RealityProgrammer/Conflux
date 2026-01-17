@@ -22,7 +22,6 @@ public sealed class ConversationEventDispatcher(
     public event Action<MessageEditedEventArgs>? OnMessageEdited;
     
     private readonly Dictionary<Guid, HubConnection> _hubConnections = [];
-    private readonly SemaphoreSlim _connectionLock = new(1, 1);
     
     private HubConnection CreateHubConnection(Guid conversationId) {
         return new HubConnectionBuilder()
@@ -62,34 +61,22 @@ public sealed class ConversationEventDispatcher(
     }
 
     public async Task Connect(Guid conversationId) {
-        await _connectionLock.WaitAsync();
+        if (_hubConnections.ContainsKey(conversationId)) return;
 
-        try {
-            if (_hubConnections.ContainsKey(conversationId)) return;
+        var connection = CreateHubConnection(conversationId);
 
-            var connection = CreateHubConnection(conversationId);
+        connection.On<MessageReceivedEventArgs>(MessageReceivedEventName, args => { OnMessageReceived?.Invoke(args); });
+        connection.On<MessageDeletedEventArgs>(MessageDeletedEventName, args => { OnMessageDeleted?.Invoke(args); });
+        connection.On<MessageEditedEventArgs>(MessageEditedEventName, args => { OnMessageEdited?.Invoke(args); });
 
-            connection.On<MessageReceivedEventArgs>(MessageReceivedEventName, args => { OnMessageReceived?.Invoke(args); });
-            connection.On<MessageDeletedEventArgs>(MessageDeletedEventName, args => { OnMessageDeleted?.Invoke(args); });
-            connection.On<MessageEditedEventArgs>(MessageEditedEventName, args => { OnMessageEdited?.Invoke(args); });
+        await connection.StartAsync();
 
-            await connection.StartAsync();
-
-            _hubConnections.Add(conversationId, connection);
-        } finally {
-            _connectionLock.Release();
-        }
+        _hubConnections.Add(conversationId, connection);
     }
 
     public async Task Disconnect(Guid conversationId) {
-        await _connectionLock.WaitAsync();
-
-        try {
-            if (_hubConnections.Remove(conversationId, out var connection)) {
-                await connection.DisposeAsync();
-            }
-        } finally {
-            _connectionLock.Release();
+        if (_hubConnections.Remove(conversationId, out var connection)) {
+            await connection.DisposeAsync();
         }
     }
 
@@ -109,7 +96,5 @@ public sealed class ConversationEventDispatcher(
         foreach ((_, HubConnection connection) in _hubConnections) {
             await connection.DisposeAsync();
         }
-
-        _connectionLock.Dispose();
     }
 }

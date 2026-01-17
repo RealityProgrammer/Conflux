@@ -173,7 +173,7 @@ class Sidebar {
 }
 
 export function initializeSidebar(sidebarElement: HTMLElement, overlayElement: HTMLElement, edgeDetector: HTMLElement, direction: SidebarDirection): Sidebar {
-    document.body.classList.add('dragging-container')
+    // document.body.classList.add('dragging-container')
     
     return new Sidebar(sidebarElement, overlayElement, edgeDetector, direction);
 }

@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@floating-ui/dom": "^1.7.4",
+    "@microsoft/signalr": "^10.0.0",
     "@tailwindcss/vite": "^4.1.16",
     "@tsparticles/engine": "^3.9.1",
     "@types/animejs": "^3.1.13",

@@ -44,10 +44,13 @@
 
     public async ValueTask DisposeAsync() {
         try {
-            if (_module != null) {
-                await _module.InvokeVoidAsync("disposeSidebar", _disposeState);
+            if (_disposeState != null) {
+                await _module!.InvokeVoidAsync("disposeSidebar", _disposeState);
+                await _disposeState.DisposeAsync();
                 _disposeState = null;
-                
+            }
+            
+            if (_module != null) {
                 await _module.DisposeAsync();
                 _module = null;
             }

@@ -1,0 +1,27 @@
+﻿@using Conflux.Services.Abstracts
+
+@implements IDisposable
+
+@inject IUserCallRoomService CallRoomService
+
+<div class="fixed inset-4 z-100000 pointer-events-none">
+    @foreach (var room in CallRoomService.JoinedRooms) {
+        <CallScreen @key="room.Id" CallRoom="room"/>
+    }
+</div>
+
+@code {
+    protected override void OnAfterRender(bool firstRender) {
+        if (firstRender) {
+            CallRoomService.OnCallRoomsChanged += OnCallRoomChanged;
+        }
+    }
+
+    private void OnCallRoomChanged() {
+        StateHasChanged();
+    }
+
+    public void Dispose() {
+        CallRoomService.OnCallRoomsChanged -= OnCallRoomChanged;
+    }
+}

@@ -1,0 +1,50 @@
+﻿@using Conflux.Components.Shared.Icons
+@using Conflux.Core
+@implements IAsyncDisposable
+
+@inject IJSRuntime JavascriptRuntime
+
+<div @ref="_rootElement" class="pointer-events-auto select-none shadow-md flex flex-col text-white" style="width: 32%; height: 18%">
+    <header class="bg-gray-600 h-8 flex-none flex flex-row items-center px-2 py-1">
+        <p class="flex-1 mr-2">Title</p>
+        
+        <button class="cursor-pointer flex-none group">
+            <Cross class="size-6 fill-gray-300 group-hover:fill-white"/>
+        </button>
+    </header>
+    
+    <section class="bg-black flex-1 overflow-hidden">
+        <img src="https://placehold.co/1600x900" alt="E" class="size-full object-contain">
+    </section>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public required CallRoom CallRoom { get; set; }
+    
+    private IJSObjectReference? _module;
+    private IJSObjectReference? _callScreen;
+    private ElementReference _rootElement;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            _module = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import", "./js/Components/CallScreen.js");
+            _callScreen = await _module.InvokeAsync<IJSObjectReference>("initialize", _rootElement);
+        }
+    }
+
+    public async ValueTask DisposeAsync() {
+        try {
+            if (_callScreen != null) {
+                await JavascriptRuntime.InvokeVoidAsync("dispose");
+                await _callScreen.DisposeAsync();
+
+                _callScreen = null!;
+            }
+
+            if (_module != null) {
+                await _module.DisposeAsync();
+            }
+        } catch (JSDisconnectedException) {
+        }
+    }
+}
