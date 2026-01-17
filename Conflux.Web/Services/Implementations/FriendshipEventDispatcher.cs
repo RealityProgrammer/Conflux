@@ -13,11 +13,11 @@ public sealed class FriendshipEventDispatcher(
     NavigationManager navigationManager,
     IHttpContextAccessor httpContextAccessor
 ) : IFriendshipEventDispatcher {
-    public const string FriendRequestReceivedMethodName = "Social.ReceivedFriendRequest";
-    public const string FriendRequestRejectedMethodName = "Social.RejectedFriendRequest";
-    public const string FriendRequestCanceledMethodName = "Social.CanceledFriendRequest";
-    public const string FriendRequestAcceptedMethodName = "Social.AcceptedFriendRequest";
-    public const string UnfriendedMethodName = "Social.Unfriended";
+    private const string FriendRequestReceivedMethodName = "ReceivedFriendRequest";
+    private const string FriendRequestRejectedMethodName = "RejectedFriendRequest";
+    private const string FriendRequestCanceledMethodName = "CanceledFriendRequest";
+    private const string FriendRequestAcceptedMethodName = "AcceptedFriendRequest";
+    private const string UnfriendedMethodName = "Unfriended";
 
     private HubConnection? _hubConnection;
 
