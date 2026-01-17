@@ -5,7 +5,7 @@ namespace Conflux.Application.Abstracts;
 public interface IUserNotificationService {
     event Action<CommunityBannedEventArgs> OnCommunityBanned;
 
-    Task Connect();
+    Task Connect(string userId);
     Task Disconnect();
     
     Task Dispatch(CommunityBannedEventArgs args);

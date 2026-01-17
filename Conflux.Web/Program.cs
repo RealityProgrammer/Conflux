@@ -231,9 +231,10 @@ app.MapPost("/auth/logout", async (ClaimsPrincipal claims, [FromServices] SignIn
     return TypedResults.LocalRedirect($"~/{returnUrl}");
 });
 
-app.MapHub<FriendshipHub>("/hub/notification");
+app.MapHub<FriendshipHub>("/hub/friendship");
 app.MapHub<ConversationHub>("/hub/conversation");
 app.MapHub<CommunityHub>("/hub/community");
+app.MapHub<UserNotificationHub>("/hub/user-notification");
 
 // Add Roles, and assign to users.
 app.Run();

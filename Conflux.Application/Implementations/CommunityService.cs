@@ -11,7 +11,8 @@ public class CommunityService(
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     IContentService contentService,
     ICommunityEventDispatcher eventDispatcher,
-    ICommunityRoleService roleService
+    ICommunityRoleService roleService,
+    IUserNotificationService userNotification
 ) : ICommunityService {
     public event Action<CommunityCreatedEventArgs>? OnUserCreatedCommunity;
 
@@ -219,7 +220,7 @@ public class CommunityService(
 
     public async Task<bool> BanMemberAsync(ApplicationDbContext dbContext, Guid communityId, Guid memberId, TimeSpan banDuration) {
         int affected = await dbContext.CommunityMembers
-            .Where(r => r.CommunityId == communityId && r.Id == memberId)
+            .Where(m => m.CommunityId == communityId && m.Id == memberId)
             .ExecuteUpdateAsync(builder => {
                 builder.SetProperty(
                     m => m.UnbanAt, 
@@ -228,8 +229,12 @@ public class CommunityService(
             });
 
         if (affected > 0) {
-            
-            
+            var userId = await dbContext.CommunityMembers
+                .Where(m => m.CommunityId == communityId && m.Id == memberId)
+                .Select(m => m.UserId)
+                .FirstAsync();
+
+            await userNotification.Dispatch(new CommunityBannedEventArgs(communityId, memberId, userId));
             return true;
         }
 

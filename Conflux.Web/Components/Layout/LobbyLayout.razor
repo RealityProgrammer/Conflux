@@ -1,5 +1,7 @@
 ﻿@using Conflux.Components.Guards
 @using Conflux.Components.Shared
+@using Conflux.Services
+@using System.Security.Claims
 
 @inherits LayoutComponentBase
 @layout MainLayout
@@ -8,6 +10,7 @@
 
 @inject IFriendshipEventDispatcher FriendshipEventDispatcher
 @inject IUserNotificationService UserNotificationService
+@inject ApplicationRedirectManager RedirectManager
 
 <RedirectToProfileSetup/>
 
@@ -18,9 +21,21 @@
 </div>
 
 @code {
-    protected override async Task OnInitializedAsync() {
-        await FriendshipEventDispatcher.Connect();
-        await UserNotificationService.Connect();
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            var authState = await AuthenticationState;
+            var userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userId)) {
+                RedirectManager.To("/").Execute();
+                return;
+            }
+            
+            await FriendshipEventDispatcher.Connect();
+            await UserNotificationService.Connect(userId);
+        }
     }
 
     public async ValueTask DisposeAsync() {

@@ -1,5 +1,6 @@
 ﻿using Conflux.Application.Abstracts;
 using Conflux.Domain.Events;
+using Conflux.Services.Hubs;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -8,7 +9,7 @@ using System.Net;
 namespace Conflux.Services.Implementations;
 
 public sealed class UserNotificationService(
-    IHubContext hubContext,
+    IHubContext<UserNotificationHub> hubContext,
     NavigationManager navigationManager,
     IHttpContextAccessor httpContextAccessor
 ) : IUserNotificationService {
@@ -18,11 +19,11 @@ public sealed class UserNotificationService(
     
     private HubConnection? _hubConnection;
 
-    public async Task Connect() {
+    public async Task Connect(string userId) {
         if (_hubConnection != null) return;
         
         _hubConnection = new HubConnectionBuilder()
-            .WithUrl(navigationManager.ToAbsoluteUri("/hub/user-notification"), options => {
+            .WithUrl(navigationManager.ToAbsoluteUri($"/hub/user-notification?UserId={userId}"), options => {
                 var cookies = httpContextAccessor.HttpContext!.Request.Cookies.ToDictionary();
                 
                 options.UseDefaultCredentials = true;
