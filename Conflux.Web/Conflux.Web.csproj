@@ -11,7 +11,6 @@
       <Folder Include="Client\public\" />
       <Folder Include="Client\scripts\Pages\settings\" />
       <Folder Include="Services\Authentication\" />
-      <Folder Include="Services\Implementations\" />
       <Folder Include="Uploads\" />
       <None Remove="Uploads\" />
     </ItemGroup>

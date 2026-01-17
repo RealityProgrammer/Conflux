@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
 using System.Net;
 
-namespace Conflux.Services;
+namespace Conflux.Services.Implementations;
 
 public sealed class FriendshipEventDispatcher(
     IHubContext<FriendshipHub> hubContext,
@@ -52,7 +52,7 @@ public sealed class FriendshipEventDispatcher(
                     options.Headers.Add(header.Key, header.Value);
                 }
 
-                options.HttpMessageHandlerFactory = (input) => {
+                options.HttpMessageHandlerFactory = _ => {
                     var clientHandler = new HttpClientHandler {
                         PreAuthenticate = true,
                         CookieContainer = cookieContainer,

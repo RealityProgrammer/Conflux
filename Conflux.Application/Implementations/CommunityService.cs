@@ -227,7 +227,13 @@ public class CommunityService(
                 );
             });
 
-        return affected > 0;
+        if (affected > 0) {
+            
+            
+            return true;
+        }
+
+        return false;
     }
 
     public async Task<MemberInformationDTO?> GetMemberInformationAsync(Guid memberId) {

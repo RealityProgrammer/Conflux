@@ -8,7 +8,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
 
-namespace Conflux.Services;
+namespace Conflux.Services.Implementations;
 
 public sealed class CommunityEventDispatcher(
     IHubContext<CommunityHub> hubContext, 
