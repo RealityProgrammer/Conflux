@@ -11,7 +11,7 @@
 @inject ICommunityEventDispatcher CommunityEventDispatcher
 
 <div class="flex flex-row justify-center items-center size-full text-white">
-    <CascadingValue Value="MemberInformation">
+    <CascadingValue Value="_memberInformation">
         <CommunityControlPanel CommunityId="CommunityId" OnCloseRequest="@((Action<object?>)CloseModal)"/>
     </CascadingValue>
 </div>
