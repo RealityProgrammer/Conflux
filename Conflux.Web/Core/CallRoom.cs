@@ -1,11 +1,10 @@
-﻿using System.Text.Json.Serialization;
-
-namespace Conflux.Core;
+﻿namespace Conflux.Core;
 
 public sealed class CallRoom {
     public Guid Id { get; init; }
     public string InitiatorUserId { get; init; }
     public string ReceiverUserId { get; init; }
+    public string? OfferDescription { get; set; }
     
     public CallRoom(string initiatorUserId, string receiverUserId) {
         Id = Guid.CreateVersion7();

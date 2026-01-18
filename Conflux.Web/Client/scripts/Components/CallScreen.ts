@@ -9,15 +9,16 @@ class CallScreen {
     private peerConnection: RTCPeerConnection | undefined | null;
     
     private localMediaStream: MediaStream | undefined;
+    private userId: string;
     // private remoteMediaStream: MediaStream | undefined;
 
     // private localVideoElement: HTMLVideoElement;
     // private audioElement: HTMLAudioElement;
 
 
-    constructor(dotnetHelper: any, containerElement: HTMLElement) {
+    constructor(dotnetHelper: any, containerElement: HTMLElement, userId: string) {
         this.dotnetHelper = dotnetHelper;
-
+        this.userId = userId;
         this.interactable = createInteractable(containerElement);
         //
         // // this.peerConnection.onicecandidate = event => {
@@ -74,6 +75,10 @@ class CallScreen {
                 },
                 audio: false,
             });
+            
+            this.localMediaStream.getTracks().forEach(track => {
+                this.peerConnection!.addTrack(track, this.localMediaStream!);
+            });
         } catch (err: unknown) {
             if (err instanceof Error) {
                 switch (err.name) {
@@ -97,23 +102,60 @@ class CallScreen {
             return;
         }
 
-        const offer = await this.peerConnection.createOffer()
-        await this.peerConnection.setLocalDescription(offer);
-        
-        this.sendOffer(offer);
+        try {
+            const offer = await this.peerConnection.createOffer()
+            await this.peerConnection.setLocalDescription(offer);
+
+            await this.sendOffer(offer);
+            
+            console.log(this.userId + ": create and send offer.");
+        } catch (error) {
+            window.reportError(error);
+        }
     };
 
-    handleInitializeIncomingCall = async (offerInit: RTCSessionDescriptionInit) => {
-        const offer = new RTCSessionDescription(offerInit);
-        this.peerConnection = this.createPeerConnection();
-        
-        await this.peerConnection.setRemoteDescription(offer);
-        
-        const answer = await this.peerConnection.createAnswer();
-        await this.peerConnection.setLocalDescription(answer);
-        
-        this.sendAnswer(answer);
+    handleAcceptCall = async (offerInit: RTCSessionDescriptionInit) => {
+        try {
+            const description = new RTCSessionDescription(offerInit);
+            this.peerConnection = this.createPeerConnection();
+
+            await this.peerConnection.setRemoteDescription(description);
+
+            const answer = await this.peerConnection.createAnswer();
+            await this.peerConnection.setLocalDescription(answer);
+
+            await this.sendAnswer(answer);
+
+            console.log(this.userId + ": set and send answer.");
+        } catch (error) {
+            window.reportError(error);
+        }
     };
+    
+    handleAnswer = async (answer: RTCSessionDescriptionInit) => {
+        try {
+            const description = new RTCSessionDescription(answer);
+            await this.peerConnection!.setRemoteDescription(description);
+
+            console.log(this.userId + ": set answer.");
+        } catch (error) {
+            window.reportError(error);
+        }
+    };
+
+    handleIceCandidateReceived = async (candidate: RTCIceCandidate) => {
+        if (!this.peerConnection) {
+            return;
+        }
+        
+        try {
+            // Why? I don't know
+            const c = new RTCIceCandidate(candidate);
+            await this.peerConnection!.addIceCandidate(c);
+        } catch (error) {
+            window.reportError(error);
+        }
+    }
 
     private createPeerConnection = (): RTCPeerConnection => {
         const connectConfiguration: RTCConfiguration = {
@@ -127,6 +169,7 @@ class CallScreen {
         peerConnection.onicecandidate = (event) => {
             if (event.candidate) {
                 this.sendICECandidate(event.candidate);
+                console.log(this.userId + " send ice candidate");
             }
         };
         
@@ -159,16 +202,16 @@ class CallScreen {
         }
     };
     
-    private sendOffer = (offer: RTCSessionDescriptionInit): void => {
-        this.dotnetHelper.invokeMethodAsync("SendOffer", JSON.stringify(offer));
+    private sendOffer = async (offer: RTCSessionDescriptionInit) => {
+        await this.dotnetHelper.invokeMethodAsync("SendOffer", JSON.stringify(offer));
     }
 
-    private sendAnswer = (answer: RTCSessionDescriptionInit): void => {
-        this.dotnetHelper.invokeMethodAsync("SendAnswer", JSON.stringify(answer));
+    private sendAnswer = async (answer: RTCSessionDescriptionInit) => {
+        await this.dotnetHelper.invokeMethodAsync("SendAnswer", JSON.stringify(answer));
     }
     
-    private sendICECandidate = (candidate: RTCIceCandidate): void => {
-        this.dotnetHelper.invokeMethodAsync("SendIceCandidate", JSON.stringify(candidate));
+    private sendICECandidate = async (candidate: RTCIceCandidate) => {
+        await this.dotnetHelper.invokeMethodAsync("SendIceCandidate", this.userId, JSON.stringify(candidate));
     };
 
     dispose = (): void => {
@@ -181,6 +224,8 @@ function createInteractable(element: HTMLElement): Interactable {
     return interact(element).on('down', _e => {
         // @ts-ignore
         element.parentElement.appendChild(element);
+    }).pointerEvents({
+        ignoreFrom: '.actions-container',
     }).resizable({
         enabled: true,
         edges: {
@@ -200,6 +245,7 @@ function createInteractable(element: HTMLElement): Interactable {
         autoScroll: {
             enabled: true,
         },
+        ignoreFrom: '.actions-container',
         listeners: {
             move: event => {
                 let { x, y } = event.target.dataset;
@@ -229,7 +275,7 @@ function createInteractable(element: HTMLElement): Interactable {
         autoScroll: {
             enabled: true,
         },
-
+        ignoreFrom: '.actions-container',
         listeners: {
             move: event => {
                 let { x, y } = event.target.dataset;
@@ -244,16 +290,24 @@ function createInteractable(element: HTMLElement): Interactable {
     });
 }
 
-export function initialize(dotnetHelper: any, element: HTMLElement): CallScreen {
-    return new CallScreen(dotnetHelper, element);
+export function initialize(dotnetHelper: any, element: HTMLElement, userId: string): CallScreen {
+    return new CallScreen(dotnetHelper, element, userId);
 }
 
 export async function handleInitializeOutcomingCall(callScreen: CallScreen) {
     await callScreen.handleInitializeOutcomingCall();
 }
 
-export async function handleInitializeIncomingCall(callScreen: CallScreen, offerInit: RTCSessionDescriptionInit) {
-    await callScreen.handleInitializeIncomingCall(offerInit);
+export async function handleAcceptCall(callScreen: CallScreen, offer: string) {
+    await callScreen.handleAcceptCall(JSON.parse(offer));
+}
+
+export async function handleCallAnswered(callScreen: CallScreen, answer: string) {
+    await callScreen.handleAnswer(JSON.parse(answer));
+}
+
+export async function handleIceCandidateReceived(callScreen: CallScreen, candidate: string) {
+    await callScreen.handleIceCandidateReceived(JSON.parse(candidate));
 }
 
 export function dispose(component: CallScreen): void {

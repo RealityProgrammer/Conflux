@@ -16,24 +16,24 @@
 }
 
 <div @ref="_rootElement" class="pointer-events-auto select-none shadow-md flex flex-col text-white" style="width: 32%; height: 18%">
-    <header class="bg-gray-600 h-8 flex-none flex flex-row items-center px-2 py-1">
+    <header class="bg-gray-600 h-8 flex-none items-center px-2 py-1">
         @switch (_state) {
             case State.Initializing:
                 <p class="flex-1 animate-pulse">Initializing...</p>
                 break;
-                
+        
             case State.Dialing:
                 @if (isCallInitiator) {
-                    <p class="flex-1 animate-pulse">Calling @_otherUser!.Value.DisplayName</p>
+                    <p class="flex-1 animate-pulse whitespace-nowrap overflow-hidden text-ellipsis">Calling @_otherUser!.Value.DisplayName</p>
                 } else {
-                    <p class="flex-1 animate-pulse">Incoming call from @_otherUser!.Value.DisplayName</p>
+                    <p class="flex-1 animate-pulse whitespace-nowrap overflow-hidden text-ellipsis">Incoming call from @_otherUser!.Value.DisplayName</p>
                 }
                 break;
         }
-
-        <button class="ml-2 cursor-pointer flex-none group">
-            <Telephone Variation="TelephoneVariation.X" class="size-6 fill-gray-300 group-hover:fill-white"/>
-        </button>
+        
+        @* <button class="ml-2 cursor-pointer flex-none group"> *@
+        @*     <Telephone Variation="TelephoneVariation.X" class="size-6 fill-gray-300 group-hover:fill-white"/> *@
+        @* </button> *@
     </header>
 
     <section class="bg-black flex-1 relative overflow-hidden">
@@ -55,6 +55,18 @@
                 break;
             }
         }
+        
+        <div class="actions-container z-10 absolute top-1 right-1 flex flex-col gap-2.5 items-center p-1 rounded-md bg-gray-700 border border-gray-600">
+            <button class="cursor-pointer flex-none group">
+                <Telephone Variation="TelephoneVariation.X" class="size-7 fill-gray-300 group-hover:fill-white"/>
+            </button>
+            
+            @if (!isCallInitiator) {
+                <button class="cursor-pointer flex-none group" @onclick="HandleAcceptCall">
+                    <Telephone Variation="TelephoneVariation.Inbound" class="size-7 fill-gray-300 group-hover:fill-white"/>
+                </button>
+            }
+        </div>
 
         @* @switch (CallRoom.State) { *@
         @*     case CallRoomState.WaitingForAnswer: *@
@@ -100,7 +112,7 @@
             _selfReference = DotNetObjectReference.Create(this);
             
             _module = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import", "./js/Components/CallScreen.js");
-            _callScreen = await _module.InvokeAsync<IJSObjectReference>("initialize", _selfReference, _rootElement);
+            _callScreen = await _module.InvokeAsync<IJSObjectReference>("initialize", _selfReference, _rootElement, SessionUserId);
     
             if (CallRoom.InitiatorUserId == SessionUserId) {
                 _otherUser = await UserService.GetUserDisplayAsync(CallRoom.ReceiverUserId);
@@ -108,14 +120,15 @@
                 _otherUser = await UserService.GetUserDisplayAsync(CallRoom.InitiatorUserId);
             }
 
-            if (SessionUserId == _otherUser!.Value.UserId) {
-                await _module.InvokeAsync<IJSObjectReference>("handleInitializeOutcomingCall", _callScreen);
+            if (CallRoom.InitiatorUserId == SessionUserId) {
+                await _module.InvokeVoidAsync("handleInitializeOutcomingCall", _callScreen);
             }
 
             _state = State.Dialing;
             StateHasChanged();
 
-            UserCallService.OnOfferReceived += OnOfferReceived;
+            UserCallService.OnAnswerReceived += OnAnswerReceived;
+            UserCallService.OnIceCandidateReceived += OnIceCandidateReceived;
         }
     }
     
@@ -125,16 +138,42 @@
     }
     
     [JSInvokable]
-    public async Task SendIceCandidate(string candidate) {
-        await UserCallService.SendIceCandidate(CallRoom, SessionUserId, candidate);
+    public async Task SendAnswer(string answer) {
+        await UserCallService.SendAnswer(CallRoom, SessionUserId, answer);
+    }
+    
+    [JSInvokable]
+    public async Task SendIceCandidate(string userId, string candidate) {
+        await UserCallService.SendIceCandidate(CallRoom, _otherUser!.Value.UserId, candidate);
     }
 
-    private void OnOfferReceived(CallRoom room, string offer) {
-        _module!.InvokeVoidAsync("handleOffer", _callScreen, offer);
+    private async Task HandleAcceptCall() {
+        if (CallRoom.InitiatorUserId != SessionUserId && _module != null) {
+            Logger.LogInformation("HandleAcceptCall");
+            
+            await _module.InvokeVoidAsync("handleAcceptCall", _callScreen, CallRoom.OfferDescription);
+        }
+    }
+
+    private void OnAnswerReceived(CallRoom room, string answer) {
+        InvokeAsync(async () => {
+            Logger.LogInformation("OnAnswerReceived");
+            
+            await _module!.InvokeVoidAsync("handleCallAnswered", _callScreen, answer);
+        });
+    }
+
+    private void OnIceCandidateReceived(CallRoom room, string candidate) {
+        InvokeAsync(async () => {
+            Logger.LogInformation("OnIceCandidateReceived");
+            
+            await _module!.InvokeVoidAsync("handleIceCandidateReceived", _callScreen, candidate);
+        });
     }
 
     public async ValueTask DisposeAsync() {
-        UserCallService.OnOfferReceived -= OnOfferReceived;
+        UserCallService.OnAnswerReceived -= OnAnswerReceived;
+        UserCallService.OnIceCandidateReceived -= OnIceCandidateReceived;
         
         try {
             if (_callScreen != null) {
@@ -146,6 +185,7 @@
 
             if (_module != null) {
                 await _module.DisposeAsync();
+                _module = null;
             }
         } catch (JSDisconnectedException) {
         }

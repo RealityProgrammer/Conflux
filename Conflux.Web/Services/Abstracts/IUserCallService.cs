@@ -4,9 +4,9 @@ namespace Conflux.Services.Abstracts;
 
 public interface IUserCallService {
     event Action OnCallInitialized;
-    event Action<CallRoom, string> OnOfferReceived;
+    event Action<CallRoom> OnOfferReceived;
     event Action<CallRoom, string> OnAnswerReceived;
-    event Action<CallRoom, string> OnIceCandidate;
+    event Action<CallRoom, string> OnIceCandidateReceived;
     
     IReadOnlyList<CallRoom> Rooms { get; }
 
@@ -17,5 +17,5 @@ public interface IUserCallService {
 
     Task SendOffer(CallRoom room, string senderId, string offer);
     Task SendAnswer(CallRoom room, string senderId, string answer);
-    Task SendIceCandidate(CallRoom room, string senderId, string candidate);
+    Task SendIceCandidate(CallRoom room, string receiverId, string candidate);
 }

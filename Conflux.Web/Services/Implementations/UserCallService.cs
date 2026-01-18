@@ -13,13 +13,13 @@ public sealed class UserCallService(
     ILogger<UserCallService> logger,
     NavigationManager navigationManager,
     IHttpContextAccessor httpContextAccessor,
-    IHubContext<WebRTCSignalingHub> hubContext
+    IHubContext<WebRTCSignalingHub> hubContext,
+    ICallRoomsService callRoomsService
 ) : IUserCallService, IAsyncDisposable {
-    
     public event Action? OnCallInitialized;
-    public event Action<CallRoom, string>? OnOfferReceived;
+    public event Action<CallRoom>? OnOfferReceived;
     public event Action<CallRoom, string>? OnAnswerReceived;
-    public event Action<CallRoom, string>? OnIceCandidate;
+    public event Action<CallRoom, string>? OnIceCandidateReceived;
 
     private readonly List<CallRoom> _rooms = [];
     public IReadOnlyList<CallRoom> Rooms => _rooms;
@@ -64,17 +64,23 @@ public sealed class UserCallService(
             .WithAutomaticReconnect()
             .Build();
 
-        _hubConnection.On<CallRoom, string>("offer", (room, offer) => {
-            _rooms.Add(room);
-            OnOfferReceived?.Invoke(room, offer);
+        _hubConnection.On<Guid>("offer", roomId => {
+            if (callRoomsService.GetCallRoom(roomId) is { } room) {
+                _rooms.Add(room);
+                OnOfferReceived?.Invoke(room);
+            }
         });
 
-        _hubConnection.On<CallRoom, string>("answer", (room, offer) => {
-            OnAnswerReceived?.Invoke(room, offer);
+        _hubConnection.On<Guid, string>("answer", (roomId, answer) => {
+            if (callRoomsService.GetCallRoom(roomId) is { } room) {
+                OnAnswerReceived?.Invoke(room, answer);
+            }
         });
         
-        _hubConnection.On<CallRoom, string>("ice-candidate", (room, offer) => {
-            OnIceCandidate?.Invoke(room, offer);
+        _hubConnection.On<Guid, string>("ice-candidate", (roomId, iceCandidate) => {
+            if (callRoomsService.GetCallRoom(roomId) is { } room) {
+                OnIceCandidateReceived?.Invoke(room, iceCandidate);
+            }
         });
 
         await _hubConnection.StartAsync();
@@ -87,7 +93,7 @@ public sealed class UserCallService(
     }
     
     public Task<bool> InitializeDirectCall(string fromUserId, string receiverUserId) {
-        _rooms.Add(new(fromUserId, receiverUserId));
+        _rooms.Add(callRoomsService.CreateCallRoom(fromUserId, receiverUserId));
         OnCallInitialized?.Invoke();
         
         return Task.FromResult(true);
@@ -98,7 +104,8 @@ public sealed class UserCallService(
             return;
         }
 
-        await hubContext.Clients.User(room.ReceiverUserId).SendAsync("offer", offer);
+        room.OfferDescription = offer;
+        await hubContext.Clients.User(room.ReceiverUserId).SendAsync("offer", room.Id);
     }
 
     public async Task SendAnswer(CallRoom room, string senderId, string answer) {
@@ -106,15 +113,15 @@ public sealed class UserCallService(
             return;
         }
         
-        await hubContext.Clients.User(room.ReceiverUserId).SendAsync("offer", answer);
+        await hubContext.Clients.User(room.InitiatorUserId).SendAsync("answer", room.Id, answer);
     }
 
-    public async Task SendIceCandidate(CallRoom room, string senderId, string candidate) {
+    public async Task SendIceCandidate(CallRoom room, string receiverId, string candidate) {
         if (!_rooms.Contains(room)) {
             return;
         }
         
-        await hubContext.Clients.User(room.ReceiverUserId).SendAsync("ice-candidate", candidate);
+        await hubContext.Clients.User(receiverId).SendAsync("ice-candidate", room.Id, candidate);
     }
 
     public async ValueTask DisposeAsync() {

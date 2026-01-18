@@ -139,6 +139,7 @@ builder.Services.AddScoped<ICommunityRoleService, CommunityRoleService>();
 builder.Services.AddScoped<ICommunityEventDispatcher, CommunityEventDispatcher>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IUserNotificationService, UserNotificationService>();
+builder.Services.AddSingleton<ICallRoomsService, CallRoomsService>();
 builder.Services.AddScoped<IUserCallService, UserCallService>();
     
 // SignalR related services.
