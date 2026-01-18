@@ -1,4 +1,5 @@
 ﻿using Conflux.Application.Abstracts;
+using Conflux.Application.Dto;
 using Conflux.Domain;
 using Conflux.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
@@ -10,14 +11,14 @@ namespace Conflux.Application.Implementations;
 public class UserService(
     UserManager<ApplicationUser> userManager,
     SignInManager<ApplicationUser> signInManager,
-    IDbContextFactory<ApplicationDbContext> DbContextFactory
+    IDbContextFactory<ApplicationDbContext> dbContextFactory
 ) : IUserService {
     public Task<ApplicationUser?> GetUserAsync(ClaimsPrincipal claimsPrincipal) {
         return userManager.GetUserAsync(claimsPrincipal);
     }
     
     public async Task<bool> IsUserNameTaken(string username) {
-        await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
+        await using (var dbContext = await dbContextFactory.CreateDbContextAsync()) {
             return await dbContext.Users.AnyAsync(user => userManager.NormalizeName(username).Equals(user.NormalizedUserName, StringComparison.InvariantCultureIgnoreCase));
         }
     }
@@ -45,9 +46,7 @@ public class UserService(
         
         user.IsProfileSetup = value;
         
-        IdentityResult result = await userManager.UpdateAsync(user);
-        
-        GC.KeepAlive(result);
+        await userManager.UpdateAsync(user);
         
         await signInManager.RefreshSignInAsync(user);
     }
@@ -62,5 +61,15 @@ public class UserService(
 
     public Task<IList<string>> GetRolesAsync(ApplicationUser user) {
         return userManager.GetRolesAsync(user);
+    }
+
+    public async Task<UserDisplayDTO?> GetUserDisplayAsync(string userId) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        
+        return await dbContext.Users
+            .Where(u => u.Id == userId)
+            .Select(u => new UserDisplayDTO(u.Id, u.DisplayName, u.UserName, u.AvatarProfilePath))
+            .Cast<UserDisplayDTO?>()
+            .FirstOrDefaultAsync();
     }
 }

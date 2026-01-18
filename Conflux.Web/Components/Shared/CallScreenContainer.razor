@@ -1,27 +1,43 @@
-﻿@using Conflux.Services.Abstracts
+﻿@using Conflux.Core
+@using Conflux.Services.Abstracts
+@using System.Security.Claims
 
 @implements IDisposable
 
-@inject IUserCallRoomService CallRoomService
+@inject IUserCallService CallRoomService
 
 <div class="fixed inset-4 z-100000 pointer-events-none">
-    @foreach (var room in CallRoomService.JoinedRooms) {
-        <CallScreen @key="room.Id" CallRoom="room"/>
-    }
+    <CascadingValue Value="_userId" Name="SessionUserId">
+        @foreach (var room in CallRoomService.Rooms) {
+            <CallScreen @key="room.Id" CallRoom="room"/>
+        }
+    </CascadingValue>
 </div>
 
 @code {
-    protected override void OnAfterRender(bool firstRender) {
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+    private string _userId = null!;
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
-            CallRoomService.OnCallRoomsChanged += OnCallRoomChanged;
+            var authState = await AuthenticationState;
+            _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            
+            CallRoomService.OnCallInitialized += OnCallInitialized;
+            CallRoomService.OnOfferReceived += OnOfferReceived;
         }
     }
 
-    private void OnCallRoomChanged() {
+    private void OnCallInitialized() {
         StateHasChanged();
     }
 
+    private void OnOfferReceived(CallRoom room, string description) {
+        InvokeAsync(StateHasChanged);
+    }
+
     public void Dispose() {
-        CallRoomService.OnCallRoomsChanged -= OnCallRoomChanged;
+        CallRoomService.OnCallInitialized -= OnCallInitialized;
+        CallRoomService.OnOfferReceived -= OnOfferReceived;
     }
 }

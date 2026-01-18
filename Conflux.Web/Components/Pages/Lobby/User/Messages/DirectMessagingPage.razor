@@ -8,8 +8,7 @@
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject IContentService ContentService
-@inject ICallRoomManagerService CallRoomManager
-@inject IUserCallRoomService UserCallRoomService
+@inject IUserCallService UserCallService
 
 <div class="flex flex-col size-full overflow-hidden">
     <header class="flex-none px-2 py-1 border-b border-b-gray-600 bg-gray-725 flex flex-row items-center basis-12">
@@ -35,7 +34,7 @@
                 
                 <Tooltip TargetCssClass="ml-2 flex flex-row justify-center items-center aspect-square h-full" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" Placement="bottom" Offset="8">
                     <TargetContent>
-                        <button class="cursor-pointer group" @onclick="HandleBeginCall">
+                        <button class="cursor-pointer group" @onclick="HandleInitializeCall">
                             <Telephone class="size-6 fill-gray-300 group-hover:fill-white" Variation="TelephoneVariation.Outbound"/>
                         </button>
                     </TargetContent>
@@ -155,9 +154,8 @@
         }
     }
 
-    private async Task HandleBeginCall() {
-        var callRoom = await CallRoomManager.CreateDirectCallRoom(_userId, _otherUserInfo.UserId);
-        await UserCallRoomService.JoinDirectCallRoom(callRoom);
+    private async Task HandleInitializeCall() {
+        await UserCallService.InitializeDirectCall(_userId, _otherUserInfo.UserId);
     }
 
     private enum InitializationState {

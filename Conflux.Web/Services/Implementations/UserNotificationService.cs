@@ -12,11 +12,12 @@ public sealed class UserNotificationService(
     IHubContext<UserNotificationHub> hubContext,
     NavigationManager navigationManager,
     IHttpContextAccessor httpContextAccessor
-) : IUserNotificationService {
+) : IUserNotificationService, IAsyncDisposable {
     public const string CommunityBannedEventName = "CommunityBanned";
+    public const string ReceivedCallOfferEventName = "ReceivedCallOffer";
     
     public event Action<CommunityBannedEventArgs>? OnCommunityBanned;
-    
+
     private HubConnection? _hubConnection;
 
     public async Task Connect(string userId) {
@@ -60,7 +61,7 @@ public sealed class UserNotificationService(
         _hubConnection.On<CommunityBannedEventArgs>(CommunityBannedEventName, args => {
             OnCommunityBanned?.Invoke(args);
         });
-        
+
         await _hubConnection.StartAsync();
     }
 
@@ -74,5 +75,9 @@ public sealed class UserNotificationService(
         var user = hubContext.Clients.User(args.UserId);
         
         await user.SendAsync(CommunityBannedEventName, args);
+    }
+
+    public async ValueTask DisposeAsync() {
+        await Disconnect();
     }
 }

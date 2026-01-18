@@ -1,38 +1,141 @@
-﻿@using Conflux.Components.Shared.Icons
+﻿@using Conflux.Application.Dto
+@using Conflux.Components.Shared.Icons
+@using Conflux.Services.Abstracts
 @using Conflux.Core
+
 @implements IAsyncDisposable
 
 @inject IJSRuntime JavascriptRuntime
+@inject IContentService ContentService
+@inject IUserService UserService
+@inject IUserCallService UserCallService
+@inject ILogger<CallScreen> Logger
+
+@{
+    bool isCallInitiator = CallRoom.InitiatorUserId == SessionUserId;
+}
 
 <div @ref="_rootElement" class="pointer-events-auto select-none shadow-md flex flex-col text-white" style="width: 32%; height: 18%">
     <header class="bg-gray-600 h-8 flex-none flex flex-row items-center px-2 py-1">
-        <p class="flex-1 mr-2">Title</p>
-        
-        <button class="cursor-pointer flex-none group">
-            <Cross class="size-6 fill-gray-300 group-hover:fill-white"/>
+        @switch (_state) {
+            case State.Initializing:
+                <p class="flex-1 animate-pulse">Initializing...</p>
+                break;
+                
+            case State.Dialing:
+                @if (isCallInitiator) {
+                    <p class="flex-1 animate-pulse">Calling @_otherUser!.Value.DisplayName</p>
+                } else {
+                    <p class="flex-1 animate-pulse">Incoming call from @_otherUser!.Value.DisplayName</p>
+                }
+                break;
+        }
+
+        <button class="ml-2 cursor-pointer flex-none group">
+            <Telephone Variation="TelephoneVariation.X" class="size-6 fill-gray-300 group-hover:fill-white"/>
         </button>
     </header>
-    
-    <section class="bg-black flex-1 overflow-hidden">
-        <img src="https://placehold.co/1600x900" alt="E" class="size-full object-contain">
+
+    <section class="bg-black flex-1 relative overflow-hidden">
+        @switch (_state) {
+            case State.Initializing:
+                <div class="size-full flex flex-row justify-center items-center">
+                    <Spinner class="size-8 fill-white"/>
+                </div>
+                break;
+
+            case State.Dialing: {
+                var otherUser = _otherUser!.Value;
+                
+                <div class="size-full overflow-hidden flex items-center justify-center">
+                    <img src="@(string.IsNullOrEmpty(otherUser.AvatarPath) ? null : ContentService.GetAssetPath(otherUser.AvatarPath))"
+                         alt="@(isCallInitiator ? "Receiver's Avatar" : "Caller's Avatar")"
+                         class="size-full object-contain">
+                </div>
+                break;
+            }
+        }
+
+        @* @switch (CallRoom.State) { *@
+        @*     case CallRoomState.WaitingForAnswer: *@
+        @*         <Avatar ImageSrc="@(string.IsNullOrEmpty(otherUserInfo.AvatarPath) ? null : ContentService.GetAssetPath(otherUserInfo.AvatarPath))" *@
+        @*                 ImageAlt="@(isCallInitiator ? "Receiver's Avatar" : "Caller's Avatar")" *@
+        @*                 class="size-full aspect-square object-contain"/> *@
+        @*         break; *@
+        @* } *@
+
+        @* @if (isCallInitiator) { *@
+        @*     <div class="flex-1 size-full"> *@
+        @*         <video @ref="_localVideoElement" class="size-full object-contain -scale-x-100"></video> *@
+        @*     </div> *@
+        @* *@
+        @*     <div class="flex-1 size-full"> *@
+        @*         <video @ref="_remoteVideoElement" class="size-full object-contain -scale-x-100"></video> *@
+        @*     </div> *@
+        @* } else { *@
+        @* *@
+        @* } *@
     </section>
 </div>
 
 @code {
     [Parameter, EditorRequired] public required CallRoom CallRoom { get; set; }
+
+    [CascadingParameter(Name = "SessionUserId")] private string SessionUserId { get; set; } = null!;
     
     private IJSObjectReference? _module;
     private IJSObjectReference? _callScreen;
+    
+    private DotNetObjectReference<CallScreen> _selfReference = null!;
+    
     private ElementReference _rootElement;
-
+    private State _state;
+    
+    // private ElementReference _localVideoElement;
+    
+    private UserDisplayDTO? _otherUser;
+    
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
+            _selfReference = DotNetObjectReference.Create(this);
+            
             _module = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import", "./js/Components/CallScreen.js");
-            _callScreen = await _module.InvokeAsync<IJSObjectReference>("initialize", _rootElement);
+            _callScreen = await _module.InvokeAsync<IJSObjectReference>("initialize", _selfReference, _rootElement);
+    
+            if (CallRoom.InitiatorUserId == SessionUserId) {
+                _otherUser = await UserService.GetUserDisplayAsync(CallRoom.ReceiverUserId);
+            } else {
+                _otherUser = await UserService.GetUserDisplayAsync(CallRoom.InitiatorUserId);
+            }
+
+            if (SessionUserId == _otherUser!.Value.UserId) {
+                await _module.InvokeAsync<IJSObjectReference>("handleInitializeOutcomingCall", _callScreen);
+            }
+
+            _state = State.Dialing;
+            StateHasChanged();
+
+            UserCallService.OnOfferReceived += OnOfferReceived;
         }
+    }
+    
+    [JSInvokable]
+    public async Task SendOffer(string offer) {
+        await UserCallService.SendOffer(CallRoom, SessionUserId, offer);
+    }
+    
+    [JSInvokable]
+    public async Task SendIceCandidate(string candidate) {
+        await UserCallService.SendIceCandidate(CallRoom, SessionUserId, candidate);
+    }
+
+    private void OnOfferReceived(CallRoom room, string offer) {
+        _module!.InvokeVoidAsync("handleOffer", _callScreen, offer);
     }
 
     public async ValueTask DisposeAsync() {
+        UserCallService.OnOfferReceived -= OnOfferReceived;
+        
         try {
             if (_callScreen != null) {
                 await JavascriptRuntime.InvokeVoidAsync("dispose");
@@ -46,5 +149,13 @@
             }
         } catch (JSDisconnectedException) {
         }
+
+        _selfReference.Dispose();
+        _selfReference = null!;
+    }
+
+    private enum State {
+        Initializing,
+        Dialing,
     }
 }

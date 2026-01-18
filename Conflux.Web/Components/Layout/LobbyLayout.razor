@@ -1,6 +1,7 @@
 ﻿@using Conflux.Components.Guards
 @using Conflux.Components.Shared
 @using Conflux.Services
+@using Conflux.Services.Abstracts
 @using System.Security.Claims
 
 @inherits LayoutComponentBase
@@ -11,6 +12,7 @@
 @inject IFriendshipEventDispatcher FriendshipEventDispatcher
 @inject IUserNotificationService UserNotificationService
 @inject ApplicationRedirectManager RedirectManager
+@inject IUserCallService UserCallService
 
 <RedirectToProfileSetup/>
 
@@ -37,11 +39,13 @@
             
             await FriendshipEventDispatcher.Connect();
             await UserNotificationService.Connect(userId);
+            await UserCallService.Connect();
         }
     }
 
     public async ValueTask DisposeAsync() {
         await FriendshipEventDispatcher.Disconnect();
         await UserNotificationService.Disconnect();
+        await UserCallService.Disconnect();
     }
 }

@@ -139,8 +139,7 @@ builder.Services.AddScoped<ICommunityRoleService, CommunityRoleService>();
 builder.Services.AddScoped<ICommunityEventDispatcher, CommunityEventDispatcher>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IUserNotificationService, UserNotificationService>();
-builder.Services.AddSingleton<ICallRoomManagerService, CallRoomManagerService>();
-builder.Services.AddScoped<IUserCallRoomService, UserCallRoomService>();
+builder.Services.AddScoped<IUserCallService, UserCallService>();
     
 // SignalR related services.
 builder.Services.AddSignalR(options => {
@@ -237,6 +236,7 @@ app.MapHub<FriendshipHub>("/hub/friendship");
 app.MapHub<ConversationHub>("/hub/conversation");
 app.MapHub<CommunityHub>("/hub/community");
 app.MapHub<UserNotificationHub>("/hub/user-notification");
+app.MapHub<WebRTCSignalingHub>("/hub/webrtc");
 
 // Add Roles, and assign to users.
 app.Run();
