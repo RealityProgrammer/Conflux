@@ -1,6 +1,16 @@
 ﻿import interact from 'interactjs';
 import {Interactable} from "@interactjs/core/Interactable";
 
+const MEDIA_STREAM_CONSTRAINTS: MediaStreamConstraints = {
+    video: {
+        width: 640,
+        height: 480,
+        facingMode: "user",
+        frameRate: 24,
+    },
+    audio: false,
+};
+
 class CallScreen {
     private readonly interactable: Interactable;
 
@@ -9,72 +19,29 @@ class CallScreen {
     private peerConnection: RTCPeerConnection | undefined | null;
     
     private localMediaStream: MediaStream | undefined;
+    private remoteMediaStream: MediaStream | undefined;
+    
+    private remoteVideoElement: HTMLVideoElement | undefined;
+    private isRemoteStreamSetup: boolean;
+    
     private userId: string;
+    
     // private remoteMediaStream: MediaStream | undefined;
 
     // private localVideoElement: HTMLVideoElement;
     // private audioElement: HTMLAudioElement;
 
-
     constructor(dotnetHelper: any, containerElement: HTMLElement, userId: string) {
         this.dotnetHelper = dotnetHelper;
         this.userId = userId;
         this.interactable = createInteractable(containerElement);
-        //
-        // // this.peerConnection.onicecandidate = event => {
-        // //     if (event.candidate) {
-        // //         this.sendICECandidate(event.candidate);
-        // //     }
-        // // };
-        // //
-        // // this.peerConnection.onnegotiationneeded = (_event: Event) => {
-        // //     console.log("onnegotiationneeded");
-        // // };
-        // //
-        // // // this.peerConnection.ontrack = event => {
-        // // //     if (!this.remoteMediaStream) {
-        // // //         this.remoteMediaStream = new MediaStream();
-        // // //         this.remoteVideoElement.srcObject = this.remoteMediaStream;
-        // // //     }
-        // // //
-        // // //     this.remoteMediaStream.addTrack(event.track);
-        // // //     this.remoteVideoElement.onloadedmetadata = _event => {
-        // // //         this.remoteVideoElement.play();
-        // // //     };
-        // // // };
-        // //
-        // // this.peerConnection.onnegotiationneeded = (_event: Event): void => {
-        // //     if (!this.isInitiator) {
-        // //         return;
-        // //     }
-        // //
-        // //     // @ts-ignore
-        // //     this.peerConnection
-        // //         .createOffer()
-        // //         .then(offer => this.peerConnection?.setLocalDescription(offer))
-        // //         .then(async () => {
-        // //             // @ts-ignore
-        // //             await this.dotnetHelper.invokeMethodAsync("SendCallOffer", JSON.stringify(this.peerConnection?.localDescription));
-        // //         })
-        // //         .catch(error => {
-        // //             console.error("Error handling negotiation offer: " + error);
-        // //         });
-        // // };
     };
     
     handleInitializeOutcomingCall = async () => {
         this.peerConnection = this.createPeerConnection();
 
         try {
-            this.localMediaStream = await navigator.mediaDevices.getUserMedia({
-                video: {
-                    width: {max: 1600, ideal: 1280},
-                    height: {max: 900, ideal: 720},
-                    facingMode: "user",
-                    frameRate: 30,
-                },
-                audio: false,
-            });
+            this.localMediaStream = await navigator.mediaDevices.getUserMedia(MEDIA_STREAM_CONSTRAINTS);
             
             this.localMediaStream.getTracks().forEach(track => {
                 this.peerConnection!.addTrack(track, this.localMediaStream!);
@@ -103,7 +70,11 @@ class CallScreen {
         }
 
         try {
-            const offer = await this.peerConnection.createOffer()
+            const offer = await this.peerConnection.createOffer({
+                offerToReceiveAudio: true,
+                offerToReceiveVideo: true,
+            });
+            
             await this.peerConnection.setLocalDescription(offer);
 
             await this.sendOffer(offer);
@@ -118,6 +89,35 @@ class CallScreen {
         try {
             const description = new RTCSessionDescription(offerInit);
             this.peerConnection = this.createPeerConnection();
+
+            try {
+                this.localMediaStream = await navigator.mediaDevices.getUserMedia(MEDIA_STREAM_CONSTRAINTS);
+
+                this.localMediaStream.getTracks().forEach(track => {
+                    this.peerConnection!.addTrack(track, this.localMediaStream!);
+                });
+            } catch (err: unknown) {
+                if (err instanceof Error) {
+                    switch (err.name) {
+                        case "NotFoundError":
+                            alert("Unable to open your call because no camera and/or microphone were found.");
+                            break;
+
+                        case "SecurityError":
+                        case "PermissionDeniedError":
+                            break;
+
+                        default:
+                            alert("Error opening your camera and/or microphone: " + err.message);
+                            break;
+                    }
+                } else {
+                    alert("Error opening your camera and/or microphone: " + err);
+                }
+
+                this.closeVideoCall();
+                return;
+            }
 
             await this.peerConnection.setRemoteDescription(description);
 
@@ -157,11 +157,47 @@ class CallScreen {
         }
     }
 
+    setupRemoteVideoStream = (videoElement: HTMLVideoElement) => {
+        this.remoteVideoElement = videoElement;
+        
+        // @ts-ignore
+        this.remoteVideoElement.srcObject = this.remoteMediaStream;
+        
+        console.log("Remote video stream tracks: " + this.remoteMediaStream?.getTracks().length);
+        
+        console.log("remote media track kinds: " + this.remoteMediaStream?.getTracks().map(t => t.kind));
+        console.log("video element ready state: " + this.remoteVideoElement.readyState);
+        
+        this.remoteVideoElement.play()
+            .then(() => console.log("remote video play successfully"))
+            .catch((err: unknown) => {
+                console.error("failed to play remote video: " + err);
+            })
+    };
+    
     private createPeerConnection = (): RTCPeerConnection => {
         const connectConfiguration: RTCConfiguration = {
-            iceServers: [{
-                urls: 'stun:stun.1.google.com:19302',
-            }],
+            iceServers: [
+                {
+                    urls: 'stun:stun.1.google.com:19302',
+                },
+                {
+                    urls: 'turn:openrelay.metered.ca:80',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                },
+                {
+                    urls: 'turn:openrelay.metered.ca:443',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                },
+                {
+                    urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                }
+            ],
+            iceTransportPolicy: 'all'
         };
 
         const peerConnection = new RTCPeerConnection(connectConfiguration);
@@ -169,12 +205,27 @@ class CallScreen {
         peerConnection.onicecandidate = (event) => {
             if (event.candidate) {
                 this.sendICECandidate(event.candidate);
-                console.log(this.userId + " send ice candidate");
             }
         };
         
-        peerConnection.ontrack = (_event: RTCTrackEvent) => {
-            console.log("peerConnection: ontrack");
+        peerConnection.ontrack = (event: RTCTrackEvent) => {
+            this.remoteMediaStream = event.streams[0];
+            this.isRemoteStreamSetup = true;
+
+            this.dotnetHelper.invokeMethodAsync("TransitionToCallSetup");
+            
+            // if (!this.isRemoteStreamSetup) {
+            //     this.remoteMediaStream = new MediaStream();
+            // }
+            //
+            // // @ts-ignore
+            // this.remoteMediaStream.addTrack(event.track);
+            //
+            // if (!this.isRemoteStreamSetup) {
+            //     this.dotnetHelper.invokeMethodAsync("TransitionToCallSetup");
+            // }
+            //
+            // this.isRemoteStreamSetup = true;
         };
         
         return peerConnection;
@@ -192,10 +243,10 @@ class CallScreen {
             // if (this.localMediaStream) {
             //     this.localMediaStream.getTracks().forEach((track) => track.stop());
             // }
-            //
-            // if (this.remoteMediaStream) {
-            //     this.remoteMediaStream.getTracks().forEach((track) => track.stop());
-            // }
+            
+            if (this.remoteMediaStream) {
+                this.remoteMediaStream.getTracks().forEach((track) => track.stop());
+            }
 
             this.peerConnection.close();
             this.peerConnection = null;
@@ -308,6 +359,10 @@ export async function handleCallAnswered(callScreen: CallScreen, answer: string)
 
 export async function handleIceCandidateReceived(callScreen: CallScreen, candidate: string) {
     await callScreen.handleIceCandidateReceived(JSON.parse(candidate));
+}
+
+export function setupRemoteVideoStream(callScreen: CallScreen, videoElement: HTMLVideoElement) {
+    callScreen.setupRemoteVideoStream(videoElement);
 }
 
 export function dispose(component: CallScreen): void {

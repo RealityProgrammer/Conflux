@@ -29,11 +29,15 @@
                     <p class="flex-1 animate-pulse whitespace-nowrap overflow-hidden text-ellipsis">Incoming call from @_otherUser!.Value.DisplayName</p>
                 }
                 break;
+                
+            case State.CallSetup:
+                <p class="flex-1 animate-pulse whitespace-nowrap overflow-hidden text-ellipsis">Setting up call...</p>
+                break;
+                
+            case State.Calling:
+                <p class="flex-1 animate-pulse whitespace-nowrap overflow-hidden text-ellipsis">@_otherUser!.Value.DisplayName</p>
+                break;
         }
-        
-        @* <button class="ml-2 cursor-pointer flex-none group"> *@
-        @*     <Telephone Variation="TelephoneVariation.X" class="size-6 fill-gray-300 group-hover:fill-white"/> *@
-        @* </button> *@
     </header>
 
     <section class="bg-black flex-1 relative overflow-hidden">
@@ -47,13 +51,19 @@
             case State.Dialing: {
                 var otherUser = _otherUser!.Value;
                 
-                <div class="size-full overflow-hidden flex items-center justify-center">
+                <div class="size-full overflow-hidden flex justify-center items-center">
                     <img src="@(string.IsNullOrEmpty(otherUser.AvatarPath) ? null : ContentService.GetAssetPath(otherUser.AvatarPath))"
                          alt="@(isCallInitiator ? "Receiver's Avatar" : "Caller's Avatar")"
                          class="size-full object-contain">
                 </div>
                 break;
             }
+                
+            case State.CallSetup or State.Calling:
+                <div class="size-full overflow-hidden flex justify-center items-center">
+                    <video @ref="_remoteVideoElement" class="size-full object-contain"></video>
+                </div>
+                break;
         }
         
         <div class="actions-container z-10 absolute top-1 right-1 flex flex-col gap-2.5 items-center p-1 rounded-md bg-gray-700 border border-gray-600">
@@ -67,26 +77,6 @@
                 </button>
             }
         </div>
-
-        @* @switch (CallRoom.State) { *@
-        @*     case CallRoomState.WaitingForAnswer: *@
-        @*         <Avatar ImageSrc="@(string.IsNullOrEmpty(otherUserInfo.AvatarPath) ? null : ContentService.GetAssetPath(otherUserInfo.AvatarPath))" *@
-        @*                 ImageAlt="@(isCallInitiator ? "Receiver's Avatar" : "Caller's Avatar")" *@
-        @*                 class="size-full aspect-square object-contain"/> *@
-        @*         break; *@
-        @* } *@
-
-        @* @if (isCallInitiator) { *@
-        @*     <div class="flex-1 size-full"> *@
-        @*         <video @ref="_localVideoElement" class="size-full object-contain -scale-x-100"></video> *@
-        @*     </div> *@
-        @* *@
-        @*     <div class="flex-1 size-full"> *@
-        @*         <video @ref="_remoteVideoElement" class="size-full object-contain -scale-x-100"></video> *@
-        @*     </div> *@
-        @* } else { *@
-        @* *@
-        @* } *@
     </section>
 </div>
 
@@ -106,6 +96,8 @@
     // private ElementReference _localVideoElement;
     
     private UserDisplayDTO? _otherUser;
+    private bool _setupRemoteVideo;
+    private ElementReference? _remoteVideoElement;
     
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
@@ -130,6 +122,14 @@
             UserCallService.OnAnswerReceived += OnAnswerReceived;
             UserCallService.OnIceCandidateReceived += OnIceCandidateReceived;
         }
+
+        if (_state == State.CallSetup && !_setupRemoteVideo) {
+            _setupRemoteVideo = true;
+            await _module!.InvokeAsync<IJSObjectReference>("setupRemoteVideoStream", _callScreen, _remoteVideoElement);
+
+            _state = State.Calling;
+            StateHasChanged();
+        }
     }
     
     [JSInvokable]
@@ -147,26 +147,26 @@
         await UserCallService.SendIceCandidate(CallRoom, _otherUser!.Value.UserId, candidate);
     }
 
+    [JSInvokable]
+    public void TransitionToCallSetup() {
+        _state = State.CallSetup;
+        InvokeAsync(StateHasChanged);
+    }
+
     private async Task HandleAcceptCall() {
         if (CallRoom.InitiatorUserId != SessionUserId && _module != null) {
-            Logger.LogInformation("HandleAcceptCall");
-            
             await _module.InvokeVoidAsync("handleAcceptCall", _callScreen, CallRoom.OfferDescription);
         }
     }
 
     private void OnAnswerReceived(CallRoom room, string answer) {
         InvokeAsync(async () => {
-            Logger.LogInformation("OnAnswerReceived");
-            
             await _module!.InvokeVoidAsync("handleCallAnswered", _callScreen, answer);
         });
     }
 
     private void OnIceCandidateReceived(CallRoom room, string candidate) {
         InvokeAsync(async () => {
-            Logger.LogInformation("OnIceCandidateReceived");
-            
             await _module!.InvokeVoidAsync("handleIceCandidateReceived", _callScreen, candidate);
         });
     }
@@ -197,5 +197,7 @@
     private enum State {
         Initializing,
         Dialing,
+        CallSetup,
+        Calling,
     }
 }
