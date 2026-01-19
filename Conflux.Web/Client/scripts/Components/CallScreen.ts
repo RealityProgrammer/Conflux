@@ -19,22 +19,16 @@ class CallScreen {
     private peerConnection: RTCPeerConnection | undefined | null;
     
     private localMediaStream: MediaStream | undefined;
-    private remoteMediaStream: MediaStream | undefined;
     
     private remoteVideoElement: HTMLVideoElement | undefined;
-    private isRemoteStreamSetup: boolean;
     
     private userId: string;
-    
-    // private remoteMediaStream: MediaStream | undefined;
 
-    // private localVideoElement: HTMLVideoElement;
-    // private audioElement: HTMLAudioElement;
-
-    constructor(dotnetHelper: any, containerElement: HTMLElement, userId: string) {
+    constructor(dotnetHelper: any, containerElement: HTMLElement, videoElement: HTMLVideoElement, userId: string) {
         this.dotnetHelper = dotnetHelper;
         this.userId = userId;
         this.interactable = createInteractable(containerElement);
+        this.remoteVideoElement = videoElement;
     };
     
     handleInitializeOutcomingCall = async () => {
@@ -46,6 +40,8 @@ class CallScreen {
             this.localMediaStream.getTracks().forEach(track => {
                 this.peerConnection!.addTrack(track, this.localMediaStream!);
             });
+
+            this.configurePeerConnectionTransceivers();
         } catch (err: unknown) {
             if (err instanceof Error) {
                 switch (err.name) {
@@ -70,25 +66,23 @@ class CallScreen {
         }
 
         try {
-            const offer = await this.peerConnection.createOffer({
-                offerToReceiveAudio: true,
-                offerToReceiveVideo: true,
-            });
+            const offer = await this.peerConnection.createOffer();
+            // offer.sdp = OFFER_SDP;
             
             await this.peerConnection.setLocalDescription(offer);
 
             await this.sendOffer(offer);
             
-            console.log(this.userId + ": create and send offer.");
+            console.log(this.userId + ": create and send offer udp: " + offer.sdp);
         } catch (error) {
             window.reportError(error);
         }
     };
 
-    handleAcceptCall = async (offerInit: RTCSessionDescriptionInit) => {
+    handleAcceptCall = async (offer: RTCSessionDescriptionInit) => {
         try {
-            const description = new RTCSessionDescription(offerInit);
             this.peerConnection = this.createPeerConnection();
+            await this.peerConnection.setRemoteDescription(offer);
 
             try {
                 this.localMediaStream = await navigator.mediaDevices.getUserMedia(MEDIA_STREAM_CONSTRAINTS);
@@ -96,6 +90,8 @@ class CallScreen {
                 this.localMediaStream.getTracks().forEach(track => {
                     this.peerConnection!.addTrack(track, this.localMediaStream!);
                 });
+                
+                this.configurePeerConnectionTransceivers();
             } catch (err: unknown) {
                 if (err instanceof Error) {
                     switch (err.name) {
@@ -119,14 +115,13 @@ class CallScreen {
                 return;
             }
 
-            await this.peerConnection.setRemoteDescription(description);
-
             const answer = await this.peerConnection.createAnswer();
+            
             await this.peerConnection.setLocalDescription(answer);
 
             await this.sendAnswer(answer);
 
-            console.log(this.userId + ": set and send answer.");
+            console.log(this.userId + ": set and send answer: " + answer.sdp);
         } catch (error) {
             window.reportError(error);
         }
@@ -134,10 +129,9 @@ class CallScreen {
     
     handleAnswer = async (answer: RTCSessionDescriptionInit) => {
         try {
-            const description = new RTCSessionDescription(answer);
-            await this.peerConnection!.setRemoteDescription(description);
+            await this.peerConnection!.setRemoteDescription(answer);
 
-            console.log(this.userId + ": set answer.");
+            console.log(this.userId + ": received answer");
         } catch (error) {
             window.reportError(error);
         }
@@ -149,30 +143,39 @@ class CallScreen {
         }
         
         try {
-            // Why? I don't know
-            const c = new RTCIceCandidate(candidate);
-            await this.peerConnection!.addIceCandidate(c);
+            await this.peerConnection!.addIceCandidate(candidate);
         } catch (error) {
             window.reportError(error);
         }
     }
 
     setupRemoteVideoStream = (videoElement: HTMLVideoElement) => {
-        this.remoteVideoElement = videoElement;
-        
-        // @ts-ignore
-        this.remoteVideoElement.srcObject = this.remoteMediaStream;
-        
-        console.log("Remote video stream tracks: " + this.remoteMediaStream?.getTracks().length);
-        
-        console.log("remote media track kinds: " + this.remoteMediaStream?.getTracks().map(t => t.kind));
-        console.log("video element ready state: " + this.remoteVideoElement.readyState);
-        
-        this.remoteVideoElement.play()
-            .then(() => console.log("remote video play successfully"))
-            .catch((err: unknown) => {
-                console.error("failed to play remote video: " + err);
-            })
+        // this.remoteVideoElement = videoElement;
+        //
+        // // @ts-ignore
+        // this.remoteVideoElement.srcObject = this.remoteMediaStream;
+        //
+        // this.remoteVideoElement.play()
+        //     .then(() => console.log("remote video play successfully"))
+        //     .catch((err: unknown) => {
+        //         console.error("failed to play remote video: " + err);
+        //     })
+    };
+
+    reportWebRTCStats = async () => {
+        if (!this.peerConnection) return;
+
+        const stats = await this.peerConnection.getStats();
+
+        stats.forEach(r => {
+            if (r.type === "inbound-rtp" && r.kind === "video") {
+                console.log("Video IN:", r.bytesReceived);
+            }
+
+            if (r.type === "outbound-rtp" && r.kind === "video") {
+                console.log("Video OUT:", r.bytesSent);
+            }
+        });
     };
     
     private createPeerConnection = (): RTCPeerConnection => {
@@ -197,10 +200,20 @@ class CallScreen {
                     credential: 'openrelayproject'
                 }
             ],
-            iceTransportPolicy: 'all'
+            iceTransportPolicy: 'all',
+            bundlePolicy: 'max-bundle',
+            rtcpMuxPolicy: 'require',
         };
 
         const peerConnection = new RTCPeerConnection(connectConfiguration);
+        
+        console.log(this.userId + ": create peer connection");
+
+        // peerConnection.addTransceiver("video", {
+        //     direction: "sendrecv"
+        // });
+        
+        console.log(this.userId + ": set video transceiver");
         
         peerConnection.onicecandidate = (event) => {
             if (event.candidate) {
@@ -209,26 +222,32 @@ class CallScreen {
         };
         
         peerConnection.ontrack = (event: RTCTrackEvent) => {
-            this.remoteMediaStream = event.streams[0];
-            this.isRemoteStreamSetup = true;
-
-            this.dotnetHelper.invokeMethodAsync("TransitionToCallSetup");
+            console.log("peerConnection.ontrack: stream count: " + event.streams.length);
             
-            // if (!this.isRemoteStreamSetup) {
+            // if (!this.remoteMediaStream) {
             //     this.remoteMediaStream = new MediaStream();
             // }
             //
-            // // @ts-ignore
             // this.remoteMediaStream.addTrack(event.track);
-            //
-            // if (!this.isRemoteStreamSetup) {
-            //     this.dotnetHelper.invokeMethodAsync("TransitionToCallSetup");
-            // }
-            //
-            // this.isRemoteStreamSetup = true;
+            
+            // @ts-ignore
+            this.remoteVideoElement.srcObject = event.streams[0];
+
+            // @ts-ignore
+            this.remoteVideoElement.play()
+                .then(() => console.log("remote video play successfully"))
+                .catch((err: unknown) => {
+                    console.error("failed to play remote video: " + err);
+                })
+
+            this.dotnetHelper.invokeMethodAsync("TransitionToCallSetup");
         };
         
         return peerConnection;
+    }
+    
+    private configurePeerConnectionTransceivers = () => {
+        
     }
 
     closeVideoCall = (): void => {
@@ -244,9 +263,9 @@ class CallScreen {
             //     this.localMediaStream.getTracks().forEach((track) => track.stop());
             // }
             
-            if (this.remoteMediaStream) {
-                this.remoteMediaStream.getTracks().forEach((track) => track.stop());
-            }
+            // if (this.remoteMediaStream) {
+            //     this.remoteMediaStream.getTracks().forEach((track) => track.stop());
+            // }
 
             this.peerConnection.close();
             this.peerConnection = null;
@@ -341,8 +360,8 @@ function createInteractable(element: HTMLElement): Interactable {
     });
 }
 
-export function initialize(dotnetHelper: any, element: HTMLElement, userId: string): CallScreen {
-    return new CallScreen(dotnetHelper, element, userId);
+export function initialize(dotnetHelper: any, element: HTMLElement, videoElement: HTMLVideoElement, userId: string): CallScreen {
+    return new CallScreen(dotnetHelper, element, videoElement, userId);
 }
 
 export async function handleInitializeOutcomingCall(callScreen: CallScreen) {
@@ -363,6 +382,10 @@ export async function handleIceCandidateReceived(callScreen: CallScreen, candida
 
 export function setupRemoteVideoStream(callScreen: CallScreen, videoElement: HTMLVideoElement) {
     callScreen.setupRemoteVideoStream(videoElement);
+}
+
+export async function reportWebRTCStats(callScreen: CallScreen) {
+    await callScreen.reportWebRTCStats();
 }
 
 export function dispose(component: CallScreen): void {

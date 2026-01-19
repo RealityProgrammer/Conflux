@@ -58,13 +58,11 @@
                 </div>
                 break;
             }
-                
-            case State.CallSetup or State.Calling:
-                <div class="size-full overflow-hidden flex justify-center items-center">
-                    <video @ref="_remoteVideoElement" class="size-full object-contain"></video>
-                </div>
-                break;
         }
+        
+        <div class="size-full overflow-hidden flex justify-center items-center @(_state is State.CallSetup or State.Calling ? string.Empty : "hidden")">
+            <video @ref="_remoteVideoElement" class="size-full object-contain -scale-x-100" playsinline autoplay muted></video>
+        </div>
         
         <div class="actions-container z-10 absolute top-1 right-1 flex flex-col gap-2.5 items-center p-1 rounded-md bg-gray-700 border border-gray-600">
             <button class="cursor-pointer flex-none group">
@@ -76,6 +74,10 @@
                     <Telephone Variation="TelephoneVariation.Inbound" class="size-7 fill-gray-300 group-hover:fill-white"/>
                 </button>
             }
+            
+            <button class="cursor-pointer flex-none group" @onclick="HandleReportWebRTCDebug">
+                <Telephone Variation="TelephoneVariation.Inbound" class="size-7 fill-gray-300 group-hover:fill-white"/>
+            </button>
         </div>
     </section>
 </div>
@@ -104,7 +106,7 @@
             _selfReference = DotNetObjectReference.Create(this);
             
             _module = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import", "./js/Components/CallScreen.js");
-            _callScreen = await _module.InvokeAsync<IJSObjectReference>("initialize", _selfReference, _rootElement, SessionUserId);
+            _callScreen = await _module.InvokeAsync<IJSObjectReference>("initialize", _selfReference, _rootElement, _remoteVideoElement, SessionUserId);
     
             if (CallRoom.InitiatorUserId == SessionUserId) {
                 _otherUser = await UserService.GetUserDisplayAsync(CallRoom.ReceiverUserId);
@@ -157,6 +159,10 @@
         if (CallRoom.InitiatorUserId != SessionUserId && _module != null) {
             await _module.InvokeVoidAsync("handleAcceptCall", _callScreen, CallRoom.OfferDescription);
         }
+    }
+
+    private async Task HandleReportWebRTCDebug() {
+        await _module!.InvokeVoidAsync("reportWebRTCStats", _callScreen, CallRoom.OfferDescription);
     }
 
     private void OnAnswerReceived(CallRoom room, string answer) {
