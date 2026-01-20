@@ -1,18 +1,23 @@
-﻿@using Microsoft.EntityFrameworkCore
+﻿@using Conflux.Application.Dto
+@using Microsoft.EntityFrameworkCore
 @using System.Security.Claims
 
 @inject IContentService ContentService
-@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IUserService UserService
 
 <div class="h-14 p-1.5 flex flex-row justify-center items-center @_cssClass">
-    @if (string.IsNullOrEmpty(_userDisplayName)) {
+    @if (_isLoading) {
         <Spinner class="size-8 mx-auto fill-white"/>
+    } else if (_userDisplay is not { } userDisplay) {
+        <p class="text-sm text-gray-400">Failed to load user info.</p>
     } else {
-        <Avatar class="h-full flex-none" ImageSrc="@_avatarSrc" ImageAlt="User's Avatar"/>
+        <Avatar class="h-full flex-none" 
+                ImageSrc="@(string.IsNullOrEmpty(userDisplay.AvatarPath) ? null : ContentService.GetAssetPath(userDisplay.AvatarPath))"
+                ImageAlt="User's Avatar"/>
         
         <div class="ml-2 flex-1 flex flex-col justify-center text-white">
-            <p>@_userDisplayName</p>
-            <p class="text-xs">@_username</p>
+            <p>@userDisplay.DisplayName</p>
+            <p class="text-xs">@userDisplay.UserName</p>
         </div>
         
         <div class="flex-none flex flex-row items-center">
@@ -26,8 +31,9 @@
 @code {
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
 
-    private string _userId = null!, _userDisplayName = null!, _username = null!;
-    private string? _avatarSrc;
+    private UserDisplayDTO? _userDisplay;
+    private string _userId;
+    private bool _isLoading = true;
     
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
     private string? _cssClass;
@@ -45,30 +51,35 @@
             var authState = await AuthenticationState;
             _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
-            await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
-                dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-                
-                var data = await dbContext.Users
-                    .Where(u => u.Id == _userId)
-                    .Select(u => new {
-                        u.DisplayName,
-                        u.UserName,
-                        AvatarSrc = u.AvatarProfilePath,
-                    }).FirstOrDefaultAsync();
-
-                if (data == null) {
-                    return;
-                }
-
-                _userDisplayName = data.DisplayName;
-                _username = data.UserName!;
-
-                if (!string.IsNullOrEmpty(data.AvatarSrc)) {
-                    _avatarSrc = ContentService.GetAssetPath(data.AvatarSrc);
-                }
-            }
-
+            _userDisplay = await UserService.GetUserDisplayAsync(_userId);
+            _isLoading = false;
+            
             StateHasChanged();
+            
+            // await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
+            //     dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+            //     
+            //     var data = await dbContext.Users
+            //         .Where(u => u.Id == _userId)
+            //         .Select(u => new {
+            //             u.DisplayName,
+            //             u.UserName,
+            //             AvatarSrc = u.AvatarProfilePath,
+            //         }).FirstOrDefaultAsync();
+            //
+            //     if (data == null) {
+            //         return;
+            //     }
+            //
+            //     _userDisplayName = data.DisplayName;
+            //     _username = data.UserName!;
+            //
+            //     if (!string.IsNullOrEmpty(data.AvatarSrc)) {
+            //         _avatarSrc = ContentService.GetAssetPath(data.AvatarSrc);
+            //     }
+            // }
+            //
+            // StateHasChanged();
         }
     }
 }
