@@ -3,6 +3,7 @@
 @using Conflux.Web.Components.Pages.Settings
 @using Conflux.Domain.Enums
 @using Conflux.Domain.Events
+@using Conflux.Domain.Extensions
 @using Conflux.Web.Components.Shared.Modals
 @using Conflux.Web.Services.Authorization
 @using Conflux.Web.Services.Implementations
@@ -544,6 +545,7 @@
         await using var dbContext = await DbContextFactory.CreateDbContextAsync();
 
         var query = dbContext.CommunityMembers
+            .IncludeBanned()
             .Where(x => x.CommunityId == CommunityId && x.RoleId == _selectedRole.Id);
 
         int count = await query.CountAsync();
@@ -567,6 +569,7 @@
         await using var dbContext = await DbContextFactory.CreateDbContextAsync();
         
         var query = dbContext.CommunityMembers
+            .IncludeBanned()
             .Where(x => Model!.AddRoles.Contains(x.Id) && x.CommunityId == CommunityId);
 
         int count = await query.CountAsync();

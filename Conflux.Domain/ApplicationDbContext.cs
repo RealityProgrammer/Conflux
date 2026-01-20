@@ -145,6 +145,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey(member => member.RoleId)
                 .HasPrincipalKey(role => role.Id)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasQueryFilter("BanFilter", m => !(m.UnbanAt != null && m.UnbanAt > DateTime.UtcNow));
         }).Entity<CommunityChannelCategory>(entity => {
             entity.HasKey(x => x.Id);
 

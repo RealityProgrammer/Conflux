@@ -4,6 +4,7 @@ using Conflux.Domain;
 using Conflux.Domain.Entities;
 using Conflux.Domain.Enums;
 using Conflux.Domain.Events;
+using Conflux.Domain.Extensions;
 using Microsoft.EntityFrameworkCore;
 
 namespace Conflux.Application.Implementations;
@@ -116,7 +117,7 @@ public class CommunityService(
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         
         // Early return if user already in the community.
-        if (await dbContext.CommunityMembers.Where(x => x.UserId == userId && x.CommunityId == communityId).AnyAsync()) {
+        if (await dbContext.CommunityMembers.IncludeBanned().Where(x => x.UserId == userId && x.CommunityId == communityId).AnyAsync()) {
             return false;
         }
         
@@ -146,6 +147,7 @@ public class CommunityService(
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
         
         Guid? memberRoleId = await dbContext.CommunityMembers
+            .IncludeBanned()
             .Where(x => x.UserId == userId && x.CommunityId == communityId)
             .Select(x => x.RoleId)
             .FirstOrDefaultAsync();
@@ -166,6 +168,7 @@ public class CommunityService(
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
         int affected = await dbContext.CommunityMembers
+            .IncludeBanned()
             .Where(x => memberIds.Contains(x.Id))
             .ExecuteUpdateAsync(builder => {
                 builder.SetProperty(x => x.RoleId, roleId);
@@ -183,6 +186,7 @@ public class CommunityService(
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
         return await dbContext.CommunityMembers
+            .IncludeBanned()
             .Where(x => x.CommunityId == communityId && x.UserId == userId)
             .Select(x => x.Id)
             .FirstOrDefaultAsync();
@@ -193,6 +197,7 @@ public class CommunityService(
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
         return await dbContext.CommunityMembers
+            .IncludeBanned()
             .Where(x => x.Id == memberId)
             .Include(x => x.User)
             .Select(x => new MemberDisplayDTO(x.Id, x.UserId, x.User.DisplayName, x.User.AvatarProfilePath))
@@ -205,6 +210,7 @@ public class CommunityService(
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
         return await dbContext.CommunityMembers
+            .IncludeBanned()
             .Where(x => x.CommunityId == communityId && x.UserId == userId)
             .Include(x => x.User)
             .Select(x => new MemberDisplayDTO(x.Id, x.UserId, x.User.DisplayName, x.User.AvatarProfilePath))
@@ -221,6 +227,7 @@ public class CommunityService(
 
     public async Task<bool> BanMemberAsync(ApplicationDbContext dbContext, Guid communityId, Guid memberId, TimeSpan banDuration) {
         int affected = await dbContext.CommunityMembers
+            .IncludeBanned()
             .Where(m => m.CommunityId == communityId && m.Id == memberId)
             .ExecuteUpdateAsync(builder => {
                 builder.SetProperty(
@@ -231,6 +238,7 @@ public class CommunityService(
 
         if (affected > 0) {
             var userId = await dbContext.CommunityMembers
+                .IncludeBanned()
                 .Where(m => m.CommunityId == communityId && m.Id == memberId)
                 .Select(m => m.UserId)
                 .FirstAsync();
@@ -247,6 +255,7 @@ public class CommunityService(
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
         return await dbContext.CommunityMembers
+            .IncludeBanned()
             .Where(m => m.Id == memberId)
             .Include(m => m.Role)
             .Select(m => 
@@ -262,6 +271,7 @@ public class CommunityService(
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
         return await dbContext.CommunityMembers
+            .IncludeBanned()
             .Where(m => m.CommunityId == communityId && m.UserId == userId)
             .Include(m => m.Role)
             .Select(m => 

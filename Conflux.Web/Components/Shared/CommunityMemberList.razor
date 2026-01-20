@@ -1,4 +1,5 @@
 ﻿@using Conflux.Application.Dto
+@using Conflux.Domain.Extensions
 @using Conflux.Web.Components.Shared.Modals
 @using Conflux.Web.Services.Implementations
 @using Microsoft.EntityFrameworkCore
@@ -52,6 +53,7 @@
         await using var dbContext = await DbContextFactory.CreateDbContextAsync();
 
         IQueryable<CommunityMember> query = dbContext.CommunityMembers
+            .IncludeBanned()
             .Where(member => member.RoleId == RoleId);
 
         int totalCount = await query.CountAsync();

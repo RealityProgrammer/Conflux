@@ -1,4 +1,5 @@
 ﻿@page "/invite/{InvitationId:guid}"
+@using Conflux.Domain.Extensions
 @using Conflux.Web.Services
 @using Conflux.Web.Services.Abstracts
 @using Microsoft.EntityFrameworkCore
@@ -111,6 +112,7 @@
                 _communityPopulation = communityData.Population;
                 
                 if (await dbContext.CommunityMembers
+                        .IncludeBanned()
                         .Where(x => x.CommunityId == communityData.Id && x.UserId == _userId)
                         .AnyAsync()) {
                     _state = State.AlreadyJoined;

@@ -1,4 +1,5 @@
 ﻿@using Conflux.Domain.Events
+@using Conflux.Domain.Extensions
 @using Conflux.Web.Helpers
 @using Conflux.Web.Services
 @using Microsoft.EntityFrameworkCore
@@ -274,6 +275,7 @@
 
             if (MemberId != null) {
                 var memberData = await dbContext.CommunityMembers
+                    .IncludeBanned()
                     .Where(m => m.Id == MemberId)
                     .Include(m => m.Role)
                     .Select(m => new {
@@ -288,44 +290,6 @@
                 }
             }
             
-            // _userInfo = await dbContext.CommunityMembers
-            //     .Where(m => m.Id == MemberId && m.UserId == UserId)
-            //     .Include(m => m.User)
-            //     .ThenInclude(u => u.ReceivedFriendRequests.Where(x => x.SenderId == UserId))
-            //     .AsSplitQuery()
-            //     .Include(m => m.User)
-            //     .ThenInclude(u => u.SentFriendRequests.Where(x => x.ReceiverId == UserId))
-            //     .AsSplitQuery()
-            //     .Include(x => x.Role)
-            //     .AsSplitQuery()
-            //     .Select(x => new UserQueryStruct(x.User, x, x.Role, x.User.ReceivedFriendRequests.FirstOrDefault() ?? x.User.SentFriendRequests.FirstOrDefault()))
-            //     .Select(x =>
-            //         new UserDTO(
-            //             x.User.DisplayName,
-            //             x.User.UserName!,
-            //             null,
-            //             x.User.AvatarProfilePath,
-            //             x.User.Bio,
-            //             x.User.Pronouns,
-            //             DateOnly.FromDateTime(x.User.CreatedAt),
-            //             x.Member == null ? null : DateOnly.FromDateTime(x.Member.CreatedAt),
-            //             x.Role == null ?
-            //                 null :
-            //                 x.Role.Name,
-            //             x.FriendRequest == null ?
-            //                 FriendRequestAction.Add :
-            //                 x.FriendRequest.Status == FriendRequestStatus.Accepted ?
-            //                     FriendRequestAction.Unfriend :
-            //                     x.FriendRequest.Status == FriendRequestStatus.Pending ?
-            //                         x.FriendRequest.SenderId == _authUserId ?
-            //                             FriendRequestAction.Cancel :
-            //                             FriendRequestAction.RejectOrAccept
-            //                     : FriendRequestAction.Add,
-            //             x.FriendRequest == null ? null : x.FriendRequest.Id
-            //         )
-            //     )
-            //     .FirstOrDefaultAsync();
-
             _state = string.IsNullOrEmpty(_userInfo.DisplayName) ? State.Invalid : State.Success;
 
             _mutualFriends = await CollectMutualFriends();
@@ -485,9 +449,11 @@
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
         return await dbContext.CommunityMembers
+            .IncludeBanned()
             .Where(x => x.UserId == _authUserId)
             .Join(
                 dbContext.CommunityMembers
+                    .IncludeBanned()
                     .Where(x => x.UserId == UserId),
                 x => x.CommunityId,
                 x => x.CommunityId,
