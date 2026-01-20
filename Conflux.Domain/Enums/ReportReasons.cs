@@ -1,4 +1,4 @@
-﻿namespace Conflux.Domain.Entities;
+﻿namespace Conflux.Domain.Enums;
 
 public enum ReportReasons {
     Spam,

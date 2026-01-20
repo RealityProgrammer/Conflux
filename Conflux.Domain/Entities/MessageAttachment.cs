@@ -1,10 +1,6 @@
-﻿namespace Conflux.Domain.Entities;
+﻿using Conflux.Domain.Enums;
 
-public enum MessageAttachmentType {
-    Image,
-    Audio,
-    Video,
-}
+namespace Conflux.Domain.Entities;
 
 public class MessageAttachment {
     public string Name { get; set; } = null!;

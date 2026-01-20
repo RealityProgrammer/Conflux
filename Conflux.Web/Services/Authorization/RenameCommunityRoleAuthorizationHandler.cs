@@ -1,5 +1,6 @@
 ﻿using Conflux.Application.Dto;
 using Conflux.Domain.Entities;
+using Conflux.Domain.Enums;
 using Conflux.Services.Abstracts;
 using Microsoft.AspNetCore.Authorization;
 
@@ -11,7 +12,7 @@ public class RenameCommunityRoleAuthorizationHandler : AuthorizationHandler<Rena
         RenameCommunityRoleRequirement requirement, 
         RolePermissions permissions)
     {
-        if (permissions.Role.HasFlag(CommunityRole.RolePermissionFlags.RenameRole)) {
+        if (permissions.Role.HasFlag(RolePermissionFlags.RenameRole)) {
             context.Succeed(requirement);
         }
         

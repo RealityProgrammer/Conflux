@@ -1,6 +1,5 @@
 ﻿using Conflux.Application.Dto;
-using Conflux.Domain.Entities;
-using Conflux.Services.Abstracts;
+using Conflux.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Conflux.Services.Authorization;
@@ -11,7 +10,7 @@ public class UpdateCommunityRolePermissionsAuthorizationHandler : AuthorizationH
         UpdateCommunityRolePermissionsRequirement requirement, 
         RolePermissions permissions)
     {
-        if (permissions.Role.HasFlag(CommunityRole.RolePermissionFlags.ModifyRolePermissions)) {
+        if (permissions.Role.HasFlag(RolePermissionFlags.ModifyRolePermissions)) {
             context.Succeed(requirement);
         }
         

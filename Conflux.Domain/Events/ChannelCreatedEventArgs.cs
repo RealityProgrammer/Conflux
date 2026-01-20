@@ -1,4 +1,5 @@
 ﻿using Conflux.Domain.Entities;
+using Conflux.Domain.Enums;
 
 namespace Conflux.Domain.Events;
 

@@ -1,5 +1,6 @@
 ﻿using Conflux.Application.Abstracts;
 using Conflux.Domain.Entities;
+using Conflux.Domain.Enums;
 
 namespace Conflux.Services.Implementations;
 

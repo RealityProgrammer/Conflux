@@ -4,9 +4,8 @@
 @using Conflux.Components.Shared
 @using Conflux.Components.Shared.Icons
 @using Conflux.Components.Shared.Modals
+@using Conflux.Domain.Enums
 @using Conflux.Domain.Events
-@using Conflux.Services
-@using Conflux.Services.Abstracts
 @using Conflux.Services.Authorization
 @using Conflux.Services.Implementations
 @using Microsoft.EntityFrameworkCore
@@ -347,9 +346,9 @@
 
     protected override void OnInitialized() {
         Model ??= new() {
-            ChannelPermissions = CommunityRole.ChannelPermissionFlags.All,
-            RolePermissions = CommunityRole.RolePermissionFlags.All,
-            AccessPermissions = CommunityRole.AccessPermissionFlags.All,
+            ChannelPermissions = ChannelPermissionFlags.All,
+            RolePermissions = RolePermissionFlags.All,
+            AccessPermissions = AccessPermissionFlags.All,
         };
         _editContext = new(Model);
 
@@ -683,58 +682,58 @@
     }
 
     private sealed class InputModel {
-        public CommunityRole.RolePermissionFlags RolePermissions { get; set; }
-        public CommunityRole.ChannelPermissionFlags ChannelPermissions { get; set; }
-        public CommunityRole.AccessPermissionFlags AccessPermissions { get; set; }
+        public RolePermissionFlags RolePermissions { get; set; }
+        public ChannelPermissionFlags ChannelPermissions { get; set; }
+        public AccessPermissionFlags AccessPermissions { get; set; }
         
         public bool CreateRole {
-            get => RolePermissions.HasFlag(CommunityRole.RolePermissionFlags.CreateRole);
-            set => RolePermissions = value ? RolePermissions | CommunityRole.RolePermissionFlags.CreateRole : RolePermissions & ~CommunityRole.RolePermissionFlags.CreateRole;
+            get => RolePermissions.HasFlag(RolePermissionFlags.CreateRole);
+            set => RolePermissions = value ? RolePermissions | RolePermissionFlags.CreateRole : RolePermissions & ~RolePermissionFlags.CreateRole;
         }
 
         public bool DeleteRole {
-            get => RolePermissions.HasFlag(CommunityRole.RolePermissionFlags.DeleteRole);
-            set => RolePermissions = value ? RolePermissions | CommunityRole.RolePermissionFlags.DeleteRole : RolePermissions & ~CommunityRole.RolePermissionFlags.DeleteRole;
+            get => RolePermissions.HasFlag(RolePermissionFlags.DeleteRole);
+            set => RolePermissions = value ? RolePermissions | RolePermissionFlags.DeleteRole : RolePermissions & ~RolePermissionFlags.DeleteRole;
         }
         
         public bool RenameRole {
-            get => RolePermissions.HasFlag(CommunityRole.RolePermissionFlags.RenameRole);
-            set => RolePermissions = value ? RolePermissions | CommunityRole.RolePermissionFlags.RenameRole : RolePermissions & ~CommunityRole.RolePermissionFlags.RenameRole;
+            get => RolePermissions.HasFlag(RolePermissionFlags.RenameRole);
+            set => RolePermissions = value ? RolePermissions | RolePermissionFlags.RenameRole : RolePermissions & ~RolePermissionFlags.RenameRole;
         }
 
         public bool ModifyRolePermissions {
-            get => RolePermissions.HasFlag(CommunityRole.RolePermissionFlags.ModifyRolePermissions);
-            set => RolePermissions = value ? RolePermissions | CommunityRole.RolePermissionFlags.ModifyRolePermissions : RolePermissions & ~CommunityRole.RolePermissionFlags.ModifyRolePermissions;
+            get => RolePermissions.HasFlag(RolePermissionFlags.ModifyRolePermissions);
+            set => RolePermissions = value ? RolePermissions | RolePermissionFlags.ModifyRolePermissions : RolePermissions & ~RolePermissionFlags.ModifyRolePermissions;
         }
 
         public bool ModifyMemberRole {
-            get => RolePermissions.HasFlag(CommunityRole.RolePermissionFlags.ModifyMemberRole);
-            set => RolePermissions = value ? RolePermissions | CommunityRole.RolePermissionFlags.ModifyMemberRole : RolePermissions & ~CommunityRole.RolePermissionFlags.ModifyMemberRole;
+            get => RolePermissions.HasFlag(RolePermissionFlags.ModifyMemberRole);
+            set => RolePermissions = value ? RolePermissions | RolePermissionFlags.ModifyMemberRole : RolePermissions & ~RolePermissionFlags.ModifyMemberRole;
         }
         
         public bool CreateChannelCategory {
-            get => ChannelPermissions.HasFlag(CommunityRole.ChannelPermissionFlags.CreateChannelCategory);
-            set => ChannelPermissions = value ? ChannelPermissions | CommunityRole.ChannelPermissionFlags.CreateChannelCategory : ChannelPermissions & ~CommunityRole.ChannelPermissionFlags.CreateChannelCategory;
+            get => ChannelPermissions.HasFlag(ChannelPermissionFlags.CreateChannelCategory);
+            set => ChannelPermissions = value ? ChannelPermissions | ChannelPermissionFlags.CreateChannelCategory : ChannelPermissions & ~ChannelPermissionFlags.CreateChannelCategory;
         }
 
         public bool DeleteChannelCategory {
-            get => ChannelPermissions.HasFlag(CommunityRole.ChannelPermissionFlags.DeleteChannelCategory);
-            set => ChannelPermissions = value ? ChannelPermissions | CommunityRole.ChannelPermissionFlags.DeleteChannelCategory : ChannelPermissions & ~CommunityRole.ChannelPermissionFlags.DeleteChannelCategory;
+            get => ChannelPermissions.HasFlag(ChannelPermissionFlags.DeleteChannelCategory);
+            set => ChannelPermissions = value ? ChannelPermissions | ChannelPermissionFlags.DeleteChannelCategory : ChannelPermissions & ~ChannelPermissionFlags.DeleteChannelCategory;
         }
         
         public bool CreateChannel {
-            get => ChannelPermissions.HasFlag(CommunityRole.ChannelPermissionFlags.CreateChannel);
-            set => ChannelPermissions = value ? ChannelPermissions | CommunityRole.ChannelPermissionFlags.CreateChannel : ChannelPermissions & ~CommunityRole.ChannelPermissionFlags.CreateChannel;
+            get => ChannelPermissions.HasFlag(ChannelPermissionFlags.CreateChannel);
+            set => ChannelPermissions = value ? ChannelPermissions | ChannelPermissionFlags.CreateChannel : ChannelPermissions & ~ChannelPermissionFlags.CreateChannel;
         }
         
         public bool DeleteChannel {
-            get => ChannelPermissions.HasFlag(CommunityRole.ChannelPermissionFlags.DeleteChannel);
-            set => ChannelPermissions = value ? ChannelPermissions | CommunityRole.ChannelPermissionFlags.DeleteChannel : ChannelPermissions & ~CommunityRole.ChannelPermissionFlags.DeleteChannel;
+            get => ChannelPermissions.HasFlag(ChannelPermissionFlags.DeleteChannel);
+            set => ChannelPermissions = value ? ChannelPermissions | ChannelPermissionFlags.DeleteChannel : ChannelPermissions & ~ChannelPermissionFlags.DeleteChannel;
         }
         
         public bool AccessControlPanel {
-            get => AccessPermissions.HasFlag(CommunityRole.AccessPermissionFlags.AccessControlPanel);
-            set => AccessPermissions = value ? AccessPermissions | CommunityRole.AccessPermissionFlags.AccessControlPanel : AccessPermissions & ~CommunityRole.AccessPermissionFlags.AccessControlPanel;
+            get => AccessPermissions.HasFlag(AccessPermissionFlags.AccessControlPanel);
+            set => AccessPermissions = value ? AccessPermissions | AccessPermissionFlags.AccessControlPanel : AccessPermissions & ~AccessPermissionFlags.AccessControlPanel;
         }
 
         public HashSet<Guid> RemoveRoles { get; set; } = [];

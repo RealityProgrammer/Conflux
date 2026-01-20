@@ -1,11 +1,11 @@
-﻿using Conflux.Domain.Entities;
+﻿using Conflux.Domain.Enums;
 
 namespace Conflux.Application.Dto;
 
 public record RolePermissions(
-    CommunityRole.ChannelPermissionFlags Channel,
-    CommunityRole.RolePermissionFlags Role,
-    CommunityRole.AccessPermissionFlags Access
+    ChannelPermissionFlags Channel,
+    RolePermissionFlags Role,
+    AccessPermissionFlags Access
 ) {
-    public static RolePermissions Default { get; } = new(CommunityRole.ChannelPermissionFlags.None, CommunityRole.RolePermissionFlags.None, CommunityRole.AccessPermissionFlags.None);
+    public static RolePermissions Default { get; } = new(ChannelPermissionFlags.None, RolePermissionFlags.None, AccessPermissionFlags.None);
 }

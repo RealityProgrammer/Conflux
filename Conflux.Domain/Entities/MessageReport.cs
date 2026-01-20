@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Conflux.Domain.Enums;
+using System.ComponentModel.DataAnnotations;
 
 namespace Conflux.Domain.Entities;
 

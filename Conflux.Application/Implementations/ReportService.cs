@@ -2,6 +2,7 @@
 using Conflux.Application.Dto;
 using Conflux.Domain;
 using Conflux.Domain.Entities;
+using Conflux.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace Conflux.Application.Implementations;

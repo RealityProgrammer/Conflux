@@ -2,6 +2,7 @@
 using Conflux.Application.Dto;
 using Conflux.Domain;
 using Conflux.Domain.Entities;
+using Conflux.Domain.Enums;
 using Conflux.Domain.Events;
 using Microsoft.EntityFrameworkCore;
 
@@ -30,9 +31,9 @@ public class CommunityService(
 
         CommunityRole ownerRole = new() {
             Name = "Owners",
-            AccessPermissions = CommunityRole.AccessPermissionFlags.All,
-            ChannelPermissions = CommunityRole.ChannelPermissionFlags.All,
-            RolePermissions = CommunityRole.RolePermissionFlags.All,
+            AccessPermissions = AccessPermissionFlags.All,
+            ChannelPermissions = ChannelPermissionFlags.All,
+            RolePermissions = RolePermissionFlags.All,
             CommunityId = community.Id,
         };
 

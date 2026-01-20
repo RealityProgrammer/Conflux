@@ -1,5 +1,6 @@
 ﻿using Conflux.Application.Dto;
 using Conflux.Domain.Entities;
+using Conflux.Domain.Enums;
 using Conflux.Services.Abstracts;
 using Microsoft.AspNetCore.Authorization;
 
@@ -11,7 +12,7 @@ public class CreateCommunityChannelAuthorizationHandler : AuthorizationHandler<C
         CreateCommunityChannelRequirement requirement, 
         RolePermissions permissions)
     {
-        if (permissions.Channel.HasFlag(CommunityRole.ChannelPermissionFlags.CreateChannel)) {
+        if (permissions.Channel.HasFlag(ChannelPermissionFlags.CreateChannel)) {
             context.Succeed(requirement);
         }
         

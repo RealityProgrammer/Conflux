@@ -1,11 +1,7 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Conflux.Domain.Enums;
+using System.ComponentModel.DataAnnotations;
 
 namespace Conflux.Domain.Entities;
-
-public enum CommunityChannelType {
-    Text,
-    Audio,
-}
 
 public class CommunityChannel : ICreatedAtColumn {
     public Guid Id { get; set; }

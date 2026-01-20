@@ -1,5 +1,6 @@
 ﻿using Conflux.Application.Dto;
 using Conflux.Domain.Entities;
+using Conflux.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Conflux.Services.Authorization;
@@ -10,7 +11,7 @@ public sealed class AccessCommunityControlPanelAuthorizationHandler : Authorizat
         AccessCommunityControlPanelRequirement requirement, 
         RolePermissions permissions
     ) {
-        if (permissions.Access.HasFlag(CommunityRole.AccessPermissionFlags.AccessControlPanel)) {
+        if (permissions.Access.HasFlag(AccessPermissionFlags.AccessControlPanel)) {
             context.Succeed(requirement);
         }
         

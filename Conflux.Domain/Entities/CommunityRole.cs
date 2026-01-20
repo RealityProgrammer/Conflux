@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Conflux.Domain.Enums;
+using System.ComponentModel.DataAnnotations;
 
 namespace Conflux.Domain.Entities;
 
@@ -17,39 +18,4 @@ public class CommunityRole : ICreatedAtColumn {
     public DateTime CreatedAt { get; set; }
 
     public ICollection<CommunityMember> MembersWithRole { get; set; } = null!;
-
-    [Flags]
-    public enum RolePermissionFlags : byte {
-        None = 0,
-        
-        CreateRole = 1 << 0,
-        DeleteRole = 1 << 1,
-        ModifyRolePermissions = 1 << 2,
-        ModifyMemberRole = 1 << 3,
-        RenameRole = 1 << 4,
-        
-        All = CreateRole | DeleteRole | ModifyRolePermissions | ModifyMemberRole | RenameRole,
-    }
-    
-    [Flags]
-    public enum ChannelPermissionFlags : byte {
-        None = 0,
-    
-        CreateChannelCategory = 1 << 0,
-        DeleteChannelCategory = 1 << 1,
-    
-        CreateChannel = 1 << 2,
-        DeleteChannel = 1 << 3,
-        
-        All = CreateChannelCategory | DeleteChannelCategory | CreateChannel | DeleteChannel,
-    }
-
-    [Flags]
-    public enum AccessPermissionFlags {
-        None = 0,
-        
-        AccessControlPanel = 1 << 0,
-        
-        All = AccessControlPanel,
-    }
 }
