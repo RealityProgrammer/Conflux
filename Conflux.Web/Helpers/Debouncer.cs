@@ -1,4 +1,4 @@
-﻿namespace Conflux.Helpers;
+﻿namespace Conflux.Web.Helpers;
 
 public sealed class Debouncer(Func<CancellationToken, Task> callback, TimeSpan delay) : IAsyncDisposable, IDisposable {
     private CancellationTokenSource? _cts;

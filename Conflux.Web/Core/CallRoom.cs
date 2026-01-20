@@ -1,4 +1,4 @@
-﻿namespace Conflux.Core;
+﻿namespace Conflux.Web.Core;
 
 public sealed class CallRoom {
     public Guid Id { get; init; }

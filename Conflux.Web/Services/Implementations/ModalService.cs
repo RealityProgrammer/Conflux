@@ -1,7 +1,7 @@
-﻿using Conflux.Components.Shared.Modals;
+﻿using Conflux.Web.Components.Shared.Modals;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Conflux.Services.Implementations;
+namespace Conflux.Web.Services.Implementations;
 
 public sealed class ModalChangedEventArgs : EventArgs {
     public IModalInstance Instance { get; }

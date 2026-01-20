@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Conflux.Services;
+namespace Conflux.Web.Services;
 
 public class IceServerConfiguration {
     [JsonPropertyName("urls")] public string[] Urls { get; set; }

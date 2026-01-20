@@ -1,9 +1,8 @@
 ﻿using Conflux.Application.Dto;
-using Conflux.Domain.Entities;
 using Conflux.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 
-namespace Conflux.Services.Authorization;
+namespace Conflux.Web.Services.Authorization;
 
 public sealed class AccessCommunityControlPanelAuthorizationHandler : AuthorizationHandler<AccessCommunityControlPanelRequirement, RolePermissions> {
     protected override Task HandleRequirementAsync(

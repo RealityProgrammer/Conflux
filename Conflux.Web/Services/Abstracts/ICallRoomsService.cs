@@ -1,6 +1,6 @@
-﻿using Conflux.Core;
+﻿using Conflux.Web.Core;
 
-namespace Conflux.Services.Abstracts;
+namespace Conflux.Web.Services.Abstracts;
 
 public interface ICallRoomsService {
     CallRoom? GetCallRoom(Guid id);

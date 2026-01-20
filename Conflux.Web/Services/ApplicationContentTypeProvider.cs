@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.StaticFiles;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Conflux.Services;
+namespace Conflux.Web.Services;
 
 internal sealed class ApplicationContentTypeProvider : IContentTypeProvider {
     public bool TryGetContentType(string subpath, [MaybeNullWhen(false)] out string contentType) {

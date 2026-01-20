@@ -1,8 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-using System.Collections.Concurrent;
 
-namespace Conflux.Services.Hubs;
+namespace Conflux.Web.Services.Hubs;
 
 [Authorize]
 public sealed class CommunityHub : Hub {

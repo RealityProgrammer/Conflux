@@ -1,9 +1,8 @@
 ﻿using Conflux.Application.Abstracts;
-using Conflux.Services.Abstracts;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 
-namespace Conflux.Components.Guards;
+namespace Conflux.Web.Components.Guards;
 
 public class RedirectToProfileSetup : ComponentBase {
     [Inject] private NavigationManager Navigation { get; set; } = null!;

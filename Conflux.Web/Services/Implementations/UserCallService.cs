@@ -1,13 +1,12 @@
-﻿using Conflux.Core;
-using Conflux.Domain.Events;
-using Conflux.Services.Abstracts;
-using Conflux.Services.Hubs;
+﻿using Conflux.Web.Core;
+using Conflux.Web.Services.Abstracts;
+using Conflux.Web.Services.Hubs;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
 using System.Net;
 
-namespace Conflux.Services.Implementations;
+namespace Conflux.Web.Services.Implementations;
 
 internal sealed class UserCallService(
     ILogger<UserCallService> logger,

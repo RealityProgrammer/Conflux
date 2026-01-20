@@ -1,4 +1,4 @@
-﻿namespace Conflux;
+﻿namespace Conflux.Web;
 
 public static class ApplicationConstants {
     public const int MaxUserAvatarSize = 128_000;       // 128KB

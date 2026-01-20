@@ -1,4 +1,4 @@
-﻿namespace Conflux.Services.Abstracts;
+﻿namespace Conflux.Web.Services.Abstracts;
 
 public interface IWebRTCService {
     event Action<string>? OnOfferReceived;

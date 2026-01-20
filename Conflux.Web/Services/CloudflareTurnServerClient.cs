@@ -1,8 +1,7 @@
-﻿using System.Net.Http.Headers;
-using System.Text;
+﻿using System.Text;
 using System.Text.Json.Serialization;
 
-namespace Conflux.Services;
+namespace Conflux.Web.Services;
 
 internal sealed class CloudflareTurnServerClient(HttpClient httpClient, IConfiguration configuration) {
     public async Task<IceServerConfiguration[]> GenerateIceServerConfigurations() {

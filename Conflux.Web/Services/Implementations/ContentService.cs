@@ -1,8 +1,7 @@
 ﻿using Conflux.Application.Abstracts;
-using Conflux.Domain.Entities;
 using Conflux.Domain.Enums;
 
-namespace Conflux.Services.Implementations;
+namespace Conflux.Web.Services.Implementations;
 
 public class ContentService(IWebHostEnvironment environment, ILogger<ContentService> logger) : IContentService {
     public async Task<string> UploadUserAvatarAsync(Stream stream, string userId, CancellationToken cancellationToken = default) {

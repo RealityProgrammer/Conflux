@@ -1,10 +1,8 @@
 ﻿using Conflux.Application.Dto;
-using Conflux.Domain.Entities;
 using Conflux.Domain.Enums;
-using Conflux.Services.Abstracts;
 using Microsoft.AspNetCore.Authorization;
 
-namespace Conflux.Services.Authorization;
+namespace Conflux.Web.Services.Authorization;
 
 public class RenameCommunityRoleAuthorizationHandler : AuthorizationHandler<RenameCommunityRoleRequirement, RolePermissions> {
     protected override Task HandleRequirementAsync(

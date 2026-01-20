@@ -1,6 +1,6 @@
-﻿using Conflux.Services.Abstracts;
+﻿using Conflux.Web.Services.Abstracts;
 
-namespace Conflux.Services.Implementations;
+namespace Conflux.Web.Services.Implementations;
 
 public class SnackbarService : ISnackbarService {
     public event Action? OnChange;

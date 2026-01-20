@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components;
 
-namespace Conflux.Services.Abstracts;
+namespace Conflux.Web.Services.Abstracts;
 
 public enum SnackbarType {
     Info,

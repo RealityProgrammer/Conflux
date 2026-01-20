@@ -1,6 +1,6 @@
 ﻿using Conflux.Application.Abstracts;
 using Conflux.Domain.Events;
-using Conflux.Services.Hubs;
+using Conflux.Web.Services.Hubs;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -8,7 +8,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
 
-namespace Conflux.Services.Implementations;
+namespace Conflux.Web.Services.Implementations;
 
 public sealed class CommunityEventDispatcher(
     IHubContext<CommunityHub> hubContext, 

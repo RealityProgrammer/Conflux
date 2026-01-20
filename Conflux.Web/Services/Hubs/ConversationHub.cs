@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 
-namespace Conflux.Services.Hubs;
+namespace Conflux.Web.Services.Hubs;
 
 [Authorize]
 public sealed class ConversationHub : Hub {

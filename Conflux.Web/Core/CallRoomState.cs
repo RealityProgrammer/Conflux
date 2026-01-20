@@ -1,4 +1,4 @@
-﻿namespace Conflux.Core;
+﻿namespace Conflux.Web.Core;
 
 public enum CallRoomState {
     WaitingForAnswer,

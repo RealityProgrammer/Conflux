@@ -1,4 +1,4 @@
-﻿namespace Conflux.Components.Shared.Icons;
+﻿namespace Conflux.Web.Components.Shared.Icons;
 
 public enum ChevronDirection {
     Up,

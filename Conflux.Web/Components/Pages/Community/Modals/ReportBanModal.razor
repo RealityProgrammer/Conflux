@@ -1,11 +1,8 @@
-﻿@using Conflux.Components.Shared
-@using Conflux.Components.Shared.Icons
-@using Conflux.Components.Shared.Modals
-@using Humanizer
+﻿@using Humanizer
 @using System.ComponentModel.DataAnnotations
 @using System.Diagnostics
 
-@inherits BaseModal
+@inherits Conflux.Web.Components.Shared.Modals.BaseModal
 
 <EditForm EditContext="_editContext" OnSubmit="OnSubmit" class="size-full">
     <DataAnnotationsValidator/>

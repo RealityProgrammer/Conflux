@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components.Forms;
 
-namespace Conflux.Components.Shared;
+namespace Conflux.Web.Components.Shared;
 
 public enum ImageUploadOperation {
     Nothing,

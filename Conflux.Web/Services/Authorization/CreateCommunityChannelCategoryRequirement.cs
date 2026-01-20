@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 
-namespace Conflux.Services.Authorization;
+namespace Conflux.Web.Services.Authorization;
 
 public sealed class CreateCommunityChannelCategoryRequirement : IAuthorizationRequirement;

@@ -1,8 +1,7 @@
-﻿using Conflux.Services;
-using Conflux.Services.Implementations;
+﻿using Conflux.Web.Services.Implementations;
 using Microsoft.AspNetCore.Components;
 
-namespace Conflux.Components.Shared.Modals;
+namespace Conflux.Web.Components.Shared.Modals;
 
 public abstract class BaseModal : ComponentBase, IModalComponent {
     [Inject] protected ModalService ModalService { get; set; } = null!;

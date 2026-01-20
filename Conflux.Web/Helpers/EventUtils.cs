@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components;
 
-namespace Conflux.Helpers;
+namespace Conflux.Web.Helpers;
 
 public static class EventUtils {
     public static Action AsNonRenderingEventHandler(Action callback) {

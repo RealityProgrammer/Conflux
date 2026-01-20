@@ -1,7 +1,7 @@
-﻿using Conflux.Core;
-using Conflux.Services.Abstracts;
+﻿using Conflux.Web.Core;
+using Conflux.Web.Services.Abstracts;
 
-namespace Conflux.Services.Implementations;
+namespace Conflux.Web.Services.Implementations;
 
 public sealed class CallRoomsService : ICallRoomsService {
     private readonly Dictionary<Guid, CallRoom> _callRooms = [];
