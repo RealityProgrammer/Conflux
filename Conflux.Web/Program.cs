@@ -1,7 +1,7 @@
 using Conflux.Application.Abstracts;
 using Conflux.Application.Implementations;
 using Microsoft.EntityFrameworkCore;
-using Conflux.Components;
+using Conflux.Web.Components;
 using Conflux.Domain;
 using Vite.AspNetCore;
 using Microsoft.AspNetCore.Components.Authorization;
