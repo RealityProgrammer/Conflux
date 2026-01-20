@@ -14,6 +14,7 @@ public class CommunityRole : ICreatedAtColumn {
     public RolePermissionFlags RolePermissions { get; set; }
     public ChannelPermissionFlags ChannelPermissions { get; set; }
     public AccessPermissionFlags AccessPermissions { get; set; }
+    public ManagementPermissionFlags ManagementPermissions { get; set; }
     
     public DateTime CreatedAt { get; set; }
 

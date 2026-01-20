@@ -94,6 +94,12 @@
 
                                     <PermissionToggle @bind-Value="Model.AccessControlPanel" class="flex-none" disabled="@shouldDisabled"/>
                                 </div>
+                                
+                                <div class="flex flex-row items-center">
+                                    <label class="flex-1">Access Reports</label>
+
+                                    <PermissionToggle @bind-Value="Model.AccessReports" class="flex-none" disabled="@shouldDisabled"/>
+                                </div>
                             </div>
                         </section>
 
@@ -448,7 +454,7 @@
             return;
         }
         
-        await CommunityRoleService.UpdatePermissionsAsync(_selectedRole.Id, new(Model.ChannelPermissions, Model.RolePermissions, Model.AccessPermissions));
+        await CommunityRoleService.UpdatePermissionsAsync(_selectedRole.Id, new(Model.ChannelPermissions, Model.RolePermissions, Model.AccessPermissions, Model.ManagementPermissions));
 
         if (_editContext.IsModified(_removeRolesField)) {
             await CommunityService.SetMembersRoleAsync(CommunityId, Model.RemoveRoles, null);
@@ -683,6 +689,7 @@
         public RolePermissionFlags RolePermissions { get; set; }
         public ChannelPermissionFlags ChannelPermissions { get; set; }
         public AccessPermissionFlags AccessPermissions { get; set; }
+        public ManagementPermissionFlags ManagementPermissions { get; set; }
         
         public bool CreateRole {
             get => RolePermissions.HasFlag(RolePermissionFlags.CreateRole);
@@ -732,6 +739,11 @@
         public bool AccessControlPanel {
             get => AccessPermissions.HasFlag(AccessPermissionFlags.AccessControlPanel);
             set => AccessPermissions = value ? AccessPermissions | AccessPermissionFlags.AccessControlPanel : AccessPermissions & ~AccessPermissionFlags.AccessControlPanel;
+        }
+        
+        public bool AccessReports {
+            get => AccessPermissions.HasFlag(AccessPermissionFlags.AccessReports);
+            set => AccessPermissions = value ? AccessPermissions | AccessPermissionFlags.AccessReports : AccessPermissions & ~AccessPermissionFlags.AccessReports;
         }
 
         public HashSet<Guid> RemoveRoles { get; set; } = [];

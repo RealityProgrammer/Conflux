@@ -92,8 +92,8 @@ public class CommunityRoleService(
     
     public async Task<RolePermissions?> GetPermissionsAsync(ApplicationDbContext dbContext, Guid roleId) {
         return await dbContext.CommunityRoles
-            .Where(x => x.Id == roleId)
-            .Select(x => new RolePermissions(x.ChannelPermissions, x.RolePermissions, x.AccessPermissions))
+            .Where(r => r.Id == roleId)
+            .Select(r => new RolePermissions(r.ChannelPermissions, r.RolePermissions, r.AccessPermissions, r.ManagementPermissions))
             .FirstOrDefaultAsync();
     }
     
@@ -116,6 +116,7 @@ public class CommunityRoleService(
                 builder.SetProperty(x => x.ChannelPermissions, permissions.Channel);
                 builder.SetProperty(x => x.RolePermissions, permissions.Role);
                 builder.SetProperty(x => x.AccessPermissions, permissions.Access);
+                builder.SetProperty(x => x.ManagementPermissions, permissions.Management);
             });
 
         if (numUpdatedRows == 0) {

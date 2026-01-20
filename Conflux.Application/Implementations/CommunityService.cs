@@ -252,7 +252,7 @@ public class CommunityService(
             .Select(m => 
                 new MemberInformationDTO(m.Id, m.Role == null ? 
                     new RolePermissionsWithId(null, RolePermissions.Default) : 
-                    new(m.RoleId, new(m.Role.ChannelPermissions, m.Role.RolePermissions, m.Role.AccessPermissions)), m.UnbanAt))
+                    new(m.RoleId, new(m.Role.ChannelPermissions, m.Role.RolePermissions, m.Role.AccessPermissions, m.Role.ManagementPermissions)), m.UnbanAt))
             .Cast<MemberInformationDTO?>()
             .FirstOrDefaultAsync();
     }
@@ -267,7 +267,7 @@ public class CommunityService(
             .Select(m => 
                 new MemberInformationDTO(m.Id, m.Role == null ? 
                     new RolePermissionsWithId(null, RolePermissions.Default) : 
-                    new(m.RoleId, new(m.Role.ChannelPermissions, m.Role.RolePermissions, m.Role.AccessPermissions)), m.UnbanAt))
+                    new(m.RoleId, new(m.Role.ChannelPermissions, m.Role.RolePermissions, m.Role.AccessPermissions, m.Role.ManagementPermissions)), m.UnbanAt))
             .Cast<MemberInformationDTO?>()
             .FirstOrDefaultAsync();
     }

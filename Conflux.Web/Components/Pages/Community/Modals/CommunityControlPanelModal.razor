@@ -18,15 +18,10 @@
 @code {
     // Copy from CommunityPage until we figure out a better way to managing parameters and rerender.
     [Parameter, EditorRequired] public Guid CommunityId { get; set; }
-    [Parameter, EditorRequired] public MemberInformationDTO MemberInformation { get; set; }
 
-    private MemberInformationDTO _memberInformation;
+    private MemberInformationDTO? _memberInformation;
     
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
-
-    protected override void OnParametersSet() {
-        _memberInformation = MemberInformation;
-    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
@@ -40,7 +35,7 @@
                 return;
             }
             
-            MemberInformation = memberInfo.Value;
+            _memberInformation = memberInfo.Value;
             StateHasChanged();
             
             CommunityEventDispatcher.OnMemberRoleChanged += OnMemberRoleChanged;
@@ -50,19 +45,19 @@
     }
 
     private void OnMemberRoleChanged(MemberRoleChangedEventArgs args) {
-        if (args.RoleId == MemberInformation.Role.RoleId) {
+        if (args.RoleId == _memberInformation?.Role.RoleId) {
             InvokeAsync(ReloadMemberInformation);
         }
     }
 
     private void OnRoleDeleted(CommunityRoleDeletedEventArgs args) {
-        if (args.RoleId == MemberInformation.Role.RoleId) {
+        if (args.RoleId == _memberInformation?.Role.RoleId) {
             InvokeAsync(ReloadMemberInformation);
         }
     }
 
     private void OnRolePermissionUpdated(CommunityRolePermissionUpdatedEventArg args) {
-        if (args.RoleId == MemberInformation.Role.RoleId) {
+        if (args.RoleId == _memberInformation?.Role.RoleId) {
             InvokeAsync(ReloadMemberInformation);
         }
     }
@@ -77,8 +72,8 @@
             CloseModal();
             return;
         }
-            
-        MemberInformation = memberInfo.Value;
+
+        _memberInformation = memberInfo.Value;
         StateHasChanged();
     }
     
