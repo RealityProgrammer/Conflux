@@ -32,17 +32,17 @@
                 <Avatar ImageSrc="@(string.IsNullOrEmpty(_otherUserInfo.Avatar) ? null : ContentService.GetAssetPath(_otherUserInfo.Avatar))" ImageAlt="Friend's Avatar" class="size-9 mr-2 flex-none"/>
                 <p class="flex-1">@_otherUserInfo.DisplayName</p>
                 
-                <Tooltip TargetCssClass="ml-2 flex flex-row justify-center items-center aspect-square h-full" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" Placement="bottom" Offset="8">
-                    <TargetContent>
-                        <button class="cursor-pointer group" @onclick="HandleInitializeCall">
-                            <Telephone class="size-6 fill-gray-300 group-hover:fill-white" Variation="TelephoneVariation.Outbound"/>
-                        </button>
-                    </TargetContent>
-                    
-                    <TooltipContent>
-                        <p>Make a call</p>
-                    </TooltipContent>
-                </Tooltip>
+                @* <Tooltip TargetCssClass="ml-2 flex flex-row justify-center items-center aspect-square h-full" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" Placement="bottom" Offset="8"> *@
+                @*     <TargetContent> *@
+                @*         <button class="cursor-pointer group" @onclick="HandleInitializeCall"> *@
+                @*             <Telephone class="size-6 fill-gray-300 group-hover:fill-white" Variation="TelephoneVariation.Outbound"/> *@
+                @*         </button> *@
+                @*     </TargetContent> *@
+                @*      *@
+                @*     <TooltipContent> *@
+                @*         <p>Make a call</p> *@
+                @*     </TooltipContent> *@
+                @* </Tooltip> *@
                 break;
         }
     </header>

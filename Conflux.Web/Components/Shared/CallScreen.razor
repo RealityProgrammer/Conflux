@@ -1,6 +1,7 @@
 ﻿@using Conflux.Application.Dto
 @using Conflux.Components.Shared.Icons
 @using Conflux.Services.Abstracts
+@using System.Text.Json.Serialization
 @using Conflux.Core
 
 @implements IAsyncDisposable
@@ -106,7 +107,9 @@
             _selfReference = DotNetObjectReference.Create(this);
             
             _module = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import", "./js/Components/CallScreen.js");
-            _callScreen = await _module.InvokeAsync<IJSObjectReference>("initialize", _selfReference, _rootElement, _remoteVideoElement, SessionUserId);
+            _callScreen = await _module.InvokeAsync<IJSObjectReference>("initialize", _selfReference, _rootElement, _remoteVideoElement, SessionUserId, new IceServerConfig[] {
+                new() { Urls = ["stun:stun.l.google.com:19302"] },
+            });
     
             if (CallRoom.InitiatorUserId == SessionUserId) {
                 _otherUser = await UserService.GetUserDisplayAsync(CallRoom.ReceiverUserId);
@@ -205,5 +208,11 @@
         Dialing,
         CallSetup,
         Calling,
+    }
+    
+    public class IceServerConfig {
+        [JsonPropertyName("urls")] public string[] Urls { get; set; }
+        [JsonPropertyName("username")] public string Username { get; set; }
+        [JsonPropertyName("credential")] public string Credential { get; set; } // This is the 'password' in WebRTC terms
     }
 }
