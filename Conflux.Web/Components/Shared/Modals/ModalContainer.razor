@@ -4,7 +4,6 @@
 @implements IDisposable
 
 @inject ModalService ModalService
-@inject ILogger<ModalContainer> Logger
 
 @foreach (var instance in ModalService.Modals) {
     <ModalElementContainer @key="instance.Id" Instance="instance"/>

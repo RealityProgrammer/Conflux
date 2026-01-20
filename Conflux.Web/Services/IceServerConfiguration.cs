@@ -3,7 +3,7 @@
 namespace Conflux.Web.Services;
 
 public class IceServerConfiguration {
-    [JsonPropertyName("urls")] public string[] Urls { get; set; }
-    [JsonPropertyName("username")] public string Username { get; set; }
-    [JsonPropertyName("credential")] public string Credential { get; set; } // This is the 'password' in WebRTC terms
+    [JsonPropertyName("urls")] public string[] Urls { get; set; } = null!;
+    [JsonPropertyName("username")] public string Username { get; set; }= null!;
+    [JsonPropertyName("credential")] public string Credential { get; set; } = null!;
 }
