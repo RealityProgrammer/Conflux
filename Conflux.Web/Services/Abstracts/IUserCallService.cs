@@ -15,6 +15,8 @@ public interface IUserCallService {
     
     Task<bool> InitializeDirectCall(string fromUserId, string receiverUserId);
 
+    Task<IceServerConfiguration[]> CreateShortLivedIceServerConfiguration();
+    
     Task SendOffer(CallRoom room, string senderId, string offer);
     Task SendAnswer(CallRoom room, string senderId, string answer);
     Task SendIceCandidate(CallRoom room, string receiverId, string candidate);

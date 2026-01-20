@@ -115,6 +115,7 @@ builder.Services.AddScoped<RoleManager<IdentityRole>>();
 
 // System services.
 builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient<CloudflareTurnServerClient>();
 
 builder.Services.AddScoped<ApplicationRedirectManager>();
 builder.Services.AddScoped<IUserService, UserService>();

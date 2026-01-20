@@ -9,12 +9,13 @@ using System.Net;
 
 namespace Conflux.Services.Implementations;
 
-public sealed class UserCallService(
+internal sealed class UserCallService(
     ILogger<UserCallService> logger,
     NavigationManager navigationManager,
     IHttpContextAccessor httpContextAccessor,
     IHubContext<WebRTCSignalingHub> hubContext,
-    ICallRoomsService callRoomsService
+    ICallRoomsService callRoomsService,
+    CloudflareTurnServerClient cloudflareTurnServerClient
 ) : IUserCallService, IAsyncDisposable {
     public event Action? OnCallInitialized;
     public event Action<CallRoom>? OnOfferReceived;
@@ -73,6 +74,7 @@ public sealed class UserCallService(
 
         _hubConnection.On<Guid, string>("answer", (roomId, answer) => {
             if (callRoomsService.GetCallRoom(roomId) is { } room) {
+                logger.LogInformation("OnAnswerReceived?.Invoke()");
                 OnAnswerReceived?.Invoke(room, answer);
             }
         });
@@ -122,6 +124,10 @@ public sealed class UserCallService(
         }
         
         await hubContext.Clients.User(receiverId).SendAsync("ice-candidate", room.Id, candidate);
+    }
+
+    public async Task<IceServerConfiguration[]> CreateShortLivedIceServerConfiguration() {
+        return await cloudflareTurnServerClient.GenerateIceServerConfigurations();
     }
 
     public async ValueTask DisposeAsync() {
