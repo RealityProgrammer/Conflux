@@ -233,6 +233,7 @@
             [nameof(ReportManagementModal.CommunityId)] = CommunityId,
             [nameof(ReportManagementModal.ReportedMemberId)] = memberInfo.MemberId,
             [nameof(ReportManagementModal.ResolvingMemberId)] = _memberInformation.MemberId,
+            [nameof(ReportManagementModal.Permissions)] = _memberInformation.Role.Permissions,
         });
     }
 

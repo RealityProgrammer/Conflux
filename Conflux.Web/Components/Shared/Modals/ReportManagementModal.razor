@@ -223,13 +223,17 @@
                                             }
                                         </div>
                                         
-                                        <p class="mt-2 text-xl">Actions:</p>
-                                        
-                                        <div class="grid grid-cols-2 gap-2 mt-2">
-                                            <button class="button-primary" disabled="@(_reportResolverDisplay.HasValue)" @onclick="EventUtils.AsNonRenderingEventHandler(HandleResolveReportByDismiss)">Dismiss Report</button>
-                                            <button class="button-warning" disabled="@(_reportResolverDisplay.HasValue)" @onclick="EventUtils.AsNonRenderingEventHandler(HandleResolveReportByWarning)">Warn User</button>
-                                            <button class="button-danger col-span-2" disabled="@(_reportResolverDisplay.HasValue)" @onclick="EventUtils.AsNonRenderingEventHandler(HandleResolveReportByBanning)">Ban User</button>
-                                        </div>
+                                        <AuthorizeView Policy="ManageCommunityReports" Resource="Permissions">
+                                            <Authorized Context="_">
+                                                <p class="mt-2 text-xl">Actions:</p>
+                                                
+                                                <div class="grid grid-cols-2 gap-2 mt-2">
+                                                    <button class="button-primary" disabled="@(_reportResolverDisplay.HasValue)" @onclick="EventUtils.AsNonRenderingEventHandler(HandleResolveReportByDismiss)">Dismiss Report</button>
+                                                    <button class="button-warning" disabled="@(_reportResolverDisplay.HasValue)" @onclick="EventUtils.AsNonRenderingEventHandler(HandleResolveReportByWarning)">Warn User</button>
+                                                    <button class="button-danger col-span-2" disabled="@(_reportResolverDisplay.HasValue)" @onclick="EventUtils.AsNonRenderingEventHandler(HandleResolveReportByBanning)">Ban User</button>
+                                                </div>
+                                            </Authorized>
+                                        </AuthorizeView>
                                     }
                                 }
                             } else {
@@ -250,6 +254,7 @@
     [Parameter, EditorRequired] public required Guid CommunityId { get; set; }
     [Parameter, EditorRequired] public required Guid ReportedMemberId { get; set; }
     [Parameter, EditorRequired] public required Guid ResolvingMemberId { get; set; }
+    [Parameter, EditorRequired] public required RolePermissions Permissions { get; set; }
     
     private bool _isLoading = true;
     private List<ReportedMessageDTO>? _reportedMessages;

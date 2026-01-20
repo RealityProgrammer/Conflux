@@ -19,9 +19,18 @@
 @inject IContentService ContentService
 @inject IAuthorizationService AuthorizationService
 @inject ModalService ModalService
+@inject ILogger<CommunityRolesTabContent> Logger
+
+@if (_state == State.Initializing) {
+    <div class="size-full flex justify-center items-center">
+        <Spinner class="size-12 fill-white"/>
+    </div>
+
+    return;
+}
 
 @{
-    var rolePermissions = MemberInformation is { } memberInfo ? memberInfo.Role.Permissions : RolePermissions.Default;
+    var rolePermissions = MemberInformation?.Role.Permissions ?? RolePermissions.Default;
 }
 
 <div class="flex flex-col h-full gap-1 overflow-y-auto">
@@ -92,7 +101,7 @@
                                 <div class="flex flex-row items-center">
                                     <label class="flex-1">Access Control Panel</label>
 
-                                    <PermissionToggle @bind-Value="Model.AccessControlPanel" class="flex-none" disabled="@shouldDisabled"/>
+                                    <PermissionToggle @bind-Value="Model!.AccessControlPanel" class="flex-none" disabled="@shouldDisabled"/>
                                 </div>
                                 
                                 <div class="flex flex-row items-center">
@@ -168,6 +177,18 @@
                                 </div>
                             </div>
                         </section>
+                        
+                        <section>
+                            <header class="border-b border-b-gray-600 pb-1">Management</header>
+
+                            <div class="mt-1.5 flex flex-col gap-1.5">
+                                <div class="flex flex-row items-center">
+                                    <label class="flex-1">Manage Reports</label>
+
+                                    <PermissionToggle @bind-Value="Model.ManageReports" class="flex-none" disabled="@shouldDisabled"/>
+                                </div>
+                            </div>
+                        </section>
                     </div>
                 </ChildContent>
             </Collapsible>
@@ -186,7 +207,7 @@
                                 <Virtualize ItemsProvider="RoleMembersProvider" @ref="_roleMembersVirtualizeReference">
                                     <ItemContent Context="item">
                                         @{
-                                            bool isBeingRemoved = Model.RemoveRoles.Contains(item.MemberId);
+                                            bool isBeingRemoved = Model!.RemoveRoles.Contains(item.MemberId);
                                             string backgroundCssClass = isBeingRemoved ? "bg-red-500/45 hover:bg-[#BA4659]" : "bg-transparent hover:bg-white/8";
 
                                         }
@@ -199,11 +220,11 @@
                                             <AuthorizeView Policy="UpdateCommunityMemberRole" Resource="rolePermissions">
                                                 <Authorized>
                                                     @if (isBeingRemoved) {
-                                                        <button type="button" class="p-1.5 bg-transparent hover:bg-white/15 rounded-full cursor-pointer" @onclick="@(e => UndoMemberRoleRemove(item.MemberId))">
+                                                        <button type="button" class="p-1.5 bg-transparent hover:bg-white/15 rounded-full cursor-pointer" @onclick="@(_ => UndoMemberRoleRemove(item.MemberId))">
                                                             <Cross class="size-4 fill-white" Size="CrossSize.Large"/>
                                                         </button>
                                                     } else {
-                                                        <button type="button" class="p-1.5 bg-transparent hover:bg-white/15 rounded-full cursor-pointer" @onclick="@(e => ApplyMemberRoleRemove(item.MemberId))">
+                                                        <button type="button" class="p-1.5 bg-transparent hover:bg-white/15 rounded-full cursor-pointer" @onclick="@(_ => ApplyMemberRoleRemove(item.MemberId))">
                                                             <Cross class="size-4 fill-white" Size="CrossSize.Large"/>
                                                         </button>
                                                     }
@@ -243,7 +264,7 @@
 
                                                         <p class="flex-1">@item.DisplayName</p>
 
-                                                        <button type="button" class="p-1.5 bg-transparent hover:bg-white/15 rounded-full cursor-pointer" @onclick="@(e => RemoveFromAppendingCollection(item.MemberId))">
+                                                        <button type="button" class="p-1.5 bg-transparent hover:bg-white/15 rounded-full cursor-pointer" @onclick="@(_ => RemoveFromAppendingCollection(item.MemberId))">
                                                             <Cross class="flex-none size-4 fill-white" Size="CrossSize.Large"/>
                                                         </button>
                                                     </div>
@@ -272,7 +293,7 @@
                                 @if (_selectedRole.Name == "Owners") {
                                     <input type="text" class="h-10 md:flex-3 input-field" readonly disabled value="Owners"/>
                                 } else {
-                                    <InputText @ref="_roleRenameInputElement" @bind-Value="Model.RoleName" class="h-10 md:flex-3 input-field"/>
+                                    <InputText @ref="_roleRenameInputElement" @bind-Value="Model!.RoleName" class="h-10 md:flex-3 input-field"/>
 
                                     @if (_roleRenameInputElement is { Element: not null }) {
                                         <Popover TargetReference="_roleRenameInputElement.Element.Value" IsShowing="!_editContext.IsValid(_roleNameField)" ArrowCssClass="bg-[#ff4b6a]" Placement="top" Offset="8">
@@ -283,7 +304,7 @@
                             </Authorized>
                         
                             <NotAuthorized>
-                                <input type="text" class="h-10 md:flex-3 input-field" readonly disabled value="@Model.RoleName"/>
+                                <input type="text" class="h-10 md:flex-3 input-field" readonly disabled value="@Model!.RoleName"/>
                             </NotAuthorized>
                         </AuthorizeView>
                     </div>
@@ -326,7 +347,7 @@
     private RoleDTO _selectedRole;
 
     // Forms
-    [SupplyParameterFromForm(Name = "MainForm")] private InputModel Model { get; set; } = null!;
+    [SupplyParameterFromForm(Name = "MainForm")] private InputModel? Model { get; set; }
     private EditContext _editContext = null!;
     private RolePermissions _originalPermissions = null!;
     private FieldIdentifier _removeRolesField, _addRolesField, _roleNameField;
@@ -348,32 +369,15 @@
     // Authorization properties
     private bool _allowsUpdateRolePermissions;
 
-    protected override void OnInitialized() {
-        Model ??= new() {
-            ChannelPermissions = ChannelPermissionFlags.All,
-            RolePermissions = RolePermissionFlags.All,
-            AccessPermissions = AccessPermissionFlags.All,
-        };
-        _editContext = new(Model);
+    private State _state;
 
-        _removeRolesField = FieldIdentifier.Create(() => Model.RemoveRoles);
-        _addRolesField = FieldIdentifier.Create(() => Model.AddRoles);
-        _roleNameField = FieldIdentifier.Create(() => Model.RoleName);
+    protected override void OnInitialized() {
+        Model ??= new();
     }
 
     protected override async Task OnParametersSetAsync() {
-        if (MemberInformation is { } memberInfo) {
-            var permissions = memberInfo.Role.Permissions;
-            
-            Model.ChannelPermissions = permissions.Channel;
-            Model.RolePermissions = permissions.Role;
-            Model.AccessPermissions = permissions.Access;
-            
-            var authState = await AuthenticationState;
-            _allowsUpdateRolePermissions = (await AuthorizationService.AuthorizeAsync(authState.User, permissions, new UpdateCommunityRolePermissionsRequirement())).Succeeded;
-        } else {
-            _allowsUpdateRolePermissions = false;
-        }
+        var authState = await AuthenticationState;
+        _allowsUpdateRolePermissions = (await AuthorizationService.AuthorizeAsync(authState.User, MemberInformation?.Role.Permissions, new UpdateCommunityRolePermissionsRequirement())).Succeeded;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
@@ -386,14 +390,23 @@
                 .Select(x => new RoleDTO(x.Id, x.Name))
                 .ToListAsync();
 
-            _selectedRole = await dbContext.CommunityRoles
-                .Where(x => x.CommunityId == CommunityId && x.Name == "Owners")
-                .Select(x => new RoleDTO(x.Id, x.Name))
-                .FirstAsync();
-
+            _selectedRole = _roles.First(x => x.Name == "Owners");
+            
             _originalPermissions = (await CommunityRoleService.GetPermissionsAsync(_selectedRole.Id))!;
 
-            Model.RoleName = "Owners";
+            Model ??= new();
+            
+            Model.ChannelPermissions = _originalPermissions.Channel;
+            Model.RolePermissions = _originalPermissions.Role;
+            Model.AccessPermissions = _originalPermissions.Access;
+            Model.ManagementPermissions = _originalPermissions.Management;
+            Model.RoleName = _selectedRole.Name;
+            
+            _editContext = new(Model);
+
+            _removeRolesField = FieldIdentifier.Create(() => Model.RemoveRoles);
+            _addRolesField = FieldIdentifier.Create(() => Model.AddRoles);
+            _roleNameField = FieldIdentifier.Create(() => Model.RoleName);
             
             CommunityEventDispatcher.OnRoleCreated += OnRoleCreated;
             CommunityEventDispatcher.OnMemberRoleChanged += OnMemberRoleChanged;
@@ -401,7 +414,8 @@
             CommunityEventDispatcher.OnRoleDeleted += OnRoleDeleted;
 
             ModalService.OnModalChanged += OnAddMemberPanelClosed;
-            
+
+            _state = State.Success;
             StateHasChanged();
         }
     }
@@ -415,14 +429,14 @@
             var permissions = await CommunityRoleService.GetPermissionsAsync(_selectedRole.Id);
 
             if (permissions != null) {
-                Model.ChannelPermissions = permissions.Channel;
+                Model!.ChannelPermissions = permissions.Channel;
                 Model.RolePermissions = permissions.Role;
                 Model.AccessPermissions = permissions.Access;
 
                 _originalPermissions = permissions;
             }
 
-            Model.RoleName = _selectedRole.Name;
+            Model!.RoleName = _selectedRole.Name;
 
             if (_roleMembersVirtualizeReference != null) {
                 await _roleMembersVirtualizeReference.RefreshDataAsync();
@@ -431,7 +445,7 @@
     }
 
     private async Task HandleCancelEdit() {
-        Model.ChannelPermissions = _originalPermissions.Channel;
+        Model!.ChannelPermissions = _originalPermissions.Channel;
         Model.RolePermissions = _originalPermissions.Role;
         Model.AccessPermissions = _originalPermissions.Access;
         Model.RemoveRoles.Clear();
@@ -454,7 +468,7 @@
             return;
         }
         
-        await CommunityRoleService.UpdatePermissionsAsync(_selectedRole.Id, new(Model.ChannelPermissions, Model.RolePermissions, Model.AccessPermissions, Model.ManagementPermissions));
+        await CommunityRoleService.UpdatePermissionsAsync(_selectedRole.Id, new(Model!.ChannelPermissions, Model.RolePermissions, Model.AccessPermissions, Model.ManagementPermissions));
 
         if (_editContext.IsModified(_removeRolesField)) {
             await CommunityService.SetMembersRoleAsync(CommunityId, Model.RemoveRoles, null);
@@ -539,10 +553,11 @@
         }
 
         var members = await query
-            .Select(m => new MemberDisplayDTO(m.Id, m.UserId, m.User.DisplayName, m.User.AvatarProfilePath))
-            .OrderBy(x => x.DisplayName)
+            .Include(m => m.User)
+            .OrderBy(x => x.User.DisplayName)
             .Skip(request.StartIndex)
             .Take(request.Count)
+            .Select(m => new MemberDisplayDTO(m.Id, m.UserId, m.User.DisplayName, m.User.AvatarProfilePath))
             .ToListAsync();
 
         return new(members, count);
@@ -552,7 +567,7 @@
         await using var dbContext = await DbContextFactory.CreateDbContextAsync();
         
         var query = dbContext.CommunityMembers
-            .Where(x => Model.AddRoles.Contains(x.Id) && x.CommunityId == CommunityId);
+            .Where(x => Model!.AddRoles.Contains(x.Id) && x.CommunityId == CommunityId);
 
         int count = await query.CountAsync();
 
@@ -561,10 +576,11 @@
         }
 
         var members = await query
-            .Select(m => new MemberDisplayDTO(m.Id, m.UserId, m.User.DisplayName, m.User.AvatarProfilePath))
-            .OrderBy(x => x.DisplayName)
+            .Include(m => m.User)
+            .OrderBy(x => x.User.DisplayName)
             .Skip(request.StartIndex)
             .Take(request.Count)
+            .Select(m => new MemberDisplayDTO(m.Id, m.UserId, m.User.DisplayName, m.User.AvatarProfilePath))
             .ToListAsync();
 
         return new(members, count);
@@ -573,7 +589,7 @@
     private void HandleOpenAddMemberDialog() {
         ModalService.Open<RoleAddMemberPanel>(name: "Community.ControlPanel.Roles.AddMember", parameters: new Dictionary<string, object?> {
             [nameof(RoleAddMemberPanel.CommunityId)] = CommunityId,
-            [nameof(RoleAddMemberPanel.AddedMembers)] = Model.AddRoles,
+            [nameof(RoleAddMemberPanel.AddedMembers)] = Model!.AddRoles,
         });
     }
 
@@ -596,7 +612,7 @@
 
     private void OnAddMemberPanelClosed(ModalChangedEventArgs args) {
         if (args is { Type: ModalChangedEventType.Closed, Instance.Name: "Community.ControlPanel.Roles.AddMember", ReturnValue: HashSet<Guid> { Count: > 0 } members }) {
-            Model.AddRoles = members;
+            Model!.AddRoles = members;
             _editContext.NotifyFieldChanged(_addRolesField);
             
             InvokeAsync(async () => {
@@ -608,12 +624,12 @@
     }
 
     private void ApplyMemberRoleRemove(Guid memberId) {
-        Model.RemoveRoles.Add(memberId);
+        Model!.RemoveRoles.Add(memberId);
         _editContext.NotifyFieldChanged(_removeRolesField);
     }
 
     private void UndoMemberRoleRemove(Guid memberId) {
-        Model.RemoveRoles.Remove(memberId);
+        Model!.RemoveRoles.Remove(memberId);
 
         if (Model.RemoveRoles.Count == 0) {
             _editContext.MarkAsUnmodified(_removeRolesField);
@@ -621,7 +637,7 @@
     }
 
     private async Task RemoveFromAppendingCollection(Guid memberId) {
-        if (Model.AddRoles.Remove(memberId)) {
+        if (Model!.AddRoles.Remove(memberId)) {
             if (_addingMembersVirtualizeReference != null) {
                 await _addingMembersVirtualizeReference.RefreshDataAsync();
             }
@@ -685,6 +701,11 @@
         public override string ToString() => Name;
     }
 
+    private enum State {
+        Initializing,
+        Success,
+    }
+
     private sealed class InputModel {
         public RolePermissionFlags RolePermissions { get; set; }
         public ChannelPermissionFlags ChannelPermissions { get; set; }
@@ -744,6 +765,11 @@
         public bool AccessReports {
             get => AccessPermissions.HasFlag(AccessPermissionFlags.AccessReports);
             set => AccessPermissions = value ? AccessPermissions | AccessPermissionFlags.AccessReports : AccessPermissions & ~AccessPermissionFlags.AccessReports;
+        }
+
+        public bool ManageReports {
+            get => ManagementPermissions.HasFlag(ManagementPermissionFlags.ManageReports);
+            set => ManagementPermissions = value ? ManagementPermissions | ManagementPermissionFlags.ManageReports : ManagementPermissions & ~ManagementPermissionFlags.ManageReports;
         }
 
         public HashSet<Guid> RemoveRoles { get; set; } = [];

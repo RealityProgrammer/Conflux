@@ -79,6 +79,9 @@ builder.Services.AddAuthorizationBuilder()
     })
     .AddPolicy("UpdateCommunityMemberRole", policy => {
         policy.Requirements.Add(new UpdateCommunityMemberRoleRequirement());
+    })
+    .AddPolicy("ManageCommunityReports", policy => {
+        policy.Requirements.Add(new ManageCommunityReportsRequirement());
     });
 
 builder.Services.AddSingleton<IAuthorizationHandler, CreateCommunityChannelCategoryAuthorizationHandler>();
@@ -90,6 +93,7 @@ builder.Services.AddSingleton<IAuthorizationHandler, UpdateCommunityRolePermissi
 builder.Services.AddSingleton<IAuthorizationHandler, AccessCommunityControlPanelAuthorizationHandler>();
 builder.Services.AddSingleton<IAuthorizationHandler, AccessCommunityReportsAuthorizationHandler>();
 builder.Services.AddSingleton<IAuthorizationHandler, UpdateCommunityMemberRoleAuthorizationHandler>();
+builder.Services.AddSingleton<IAuthorizationHandler, ManageCommunityReportsAuthorizationHandler>();
 
 // Add database services.
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options => {
