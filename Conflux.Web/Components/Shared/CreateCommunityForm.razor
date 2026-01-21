@@ -12,7 +12,7 @@
                     
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="relative">
-            <label class="font-semibold">Community's Avatar</label>
+            <p class="font-semibold text-center md:text-left">Community's Avatar</p>
             
             <InputFile @ref="_inputFile" class="hidden" id="avatar" OnChange="HandleAvatarUpload"/>
             
@@ -36,7 +36,7 @@
         </div>
         
         <div class="relative min-w-0">
-            <label class="font-semibold">Name</label>
+            <p class="font-semibold text-center md:text-left">Name</p>
 
             <InputText @bind-Value="Model!.Name" class="mt-2 input-field h-11 w-full" maxlength="32"/>
             
