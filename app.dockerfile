@@ -8,12 +8,11 @@ EXPOSE 443
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-# Copy the csproj and restore the nuget packages.
-COPY /Conflux/Conflux.csproj .
-RUN dotnet restore "Conflux.csproj"
-
-# Build the project
+# Copy the project
 COPY /Conflux/ .
+
+# Restore
+RUN dotnet restore .\Conflux.Web\Conflux.Web.csproj
 
 # Install NodeJS environment for npm building.
 RUN apt-get install -y curl
@@ -24,11 +23,11 @@ RUN npm install
 RUN npm run build-prod
 
 # Build the project
-RUN dotnet build "Conflux.csproj" -c Release -o /app/build
+RUN dotnet build .\Conflux.Web\Conflux.Web.csproj -c Release -o /app/build
 
 # Publish app
 FROM build AS publish
-RUN dotnet publish "Conflux.csproj" -c Release -o /app/publish
+RUN dotnet publish .\Conflux.Web\Conflux.Web.csproj -c Release -o /app/publish
 
 # ENTRYPOINT ["tail", "-f", "/dev/null"]
 
@@ -40,4 +39,4 @@ COPY --from=publish /app/publish .
 # Copy Vite manifest into published wwwroot
 COPY --from=publish /src/wwwroot/.vite/manifest.json ./wwwroot/.vite/manifest.json
 
-ENTRYPOINT ["dotnet", "Conflux.dll"]
+ENTRYPOINT ["dotnet", "Conflux.Web.dll"]

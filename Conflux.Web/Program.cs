@@ -109,14 +109,12 @@ builder.Services
         options.User.RequireUniqueEmail = true;
         options.User.AllowedUserNameCharacters += ' ';
     })
-    .AddRoles<IdentityRole>()
-    .AddRoleManager<RoleManager<IdentityRole>>()
+    .AddRoles<IdentityRole<Guid>>()
+    .AddRoleManager<RoleManager<IdentityRole<Guid>>>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddClaimsPrincipalFactory<ApplicationUserClaimsPrincipalFactory>()
     .AddSignInManager()
     .AddDefaultTokenProviders();
-
-builder.Services.AddScoped<RoleManager<IdentityRole>>();
 
 // TODO: Email sending services.
 // builder.Services.AddSingleton<IEmailSender<ApplicationUser>, ...>();
@@ -176,7 +174,7 @@ using (var scope = app.Services.CreateScope()) {
         context.Database.Migrate();
     }
     
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
     
     await CreateRoles(roleManager);
 
@@ -252,7 +250,7 @@ app.MapHub<WebRTCSignalingHub>("/hub/webrtc");
 app.Run();
 return;
 
-async Task CreateRoles(RoleManager<IdentityRole> roleManager) {
+async Task CreateRoles(RoleManager<IdentityRole<Guid>> roleManager) {
     string[] roles = [
         "Moderator",
         "Admin",

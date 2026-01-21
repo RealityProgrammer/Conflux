@@ -1,6 +1,7 @@
 ﻿@using Conflux.Domain.Events
 @using Conflux.Web.Components.Shared.Icons
 @using Conflux.Web.Helpers
+@using Conflux.Web.Services
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
 @using System.Collections.Concurrent
@@ -14,6 +15,7 @@
 @inject IFriendshipEventDispatcher FriendshipEventDispatcher
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject IContentService ContentService
+@inject ApplicationRedirectManager RedirectManager
 
 <div class="flex-none px-3 outline-none border rounded-lg bg-gray-700/60 border-gray-600 focus-within:ring-2 focus-within:ring-indigo-600 transition duration-300 flex flex-row items-center">
     <Search class="size-4 fill-white flex-none mr-2"/>
@@ -69,18 +71,23 @@
     private Virtualize<FriendRequest> _virtualizeContainer = null!;
 
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
-    private string _userId = null!;
+    private Guid _userId;
 
     private readonly ConcurrentDictionary<FriendRequest, byte> _cancellingRequests = [];
+    
+    protected override async Task OnParametersSetAsync() {
+        var authState = await AuthenticationState;
 
-    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id ||
+            !Guid.TryParse(id, out _userId))
+        {
+            RedirectManager.To("/").Execute();
+        }
+    }
+
+    protected override void OnAfterRender(bool firstRender) {
         if (firstRender) {
             _searchDebouncer = new(OnDebounceEnd, TimeSpan.FromMilliseconds(250));
-
-            var authState = await AuthenticationState;
-            _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-            
-            Debug.Assert(_userId != null);
             
             FriendshipEventDispatcher.OnFriendRequestRejected += OnFriendRequestRejectedNotification;
             FriendshipEventDispatcher.OnFriendRequestAccepted += OnFriendRequestAcceptedNotification;

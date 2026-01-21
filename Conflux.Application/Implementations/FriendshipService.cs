@@ -12,7 +12,7 @@ public sealed partial class FriendshipService(
     IFriendshipEventDispatcher eventDispatcher,
     ILogger<FriendshipService> logger
 ) : IFriendshipService {
-    public async Task<IFriendshipService.SendingResult> SendFriendRequestAsync(string senderId, string receiverId) {
+    public async Task<IFriendshipService.SendingResult> SendFriendRequestAsync(Guid senderId, Guid receiverId) {
         if (senderId == receiverId) {
             return new(IFriendshipService.SendingStatus.Failed, null);
         }
@@ -95,7 +95,7 @@ public sealed partial class FriendshipService(
             .Select(r => r.ReceiverId)
             .FirstOrDefaultAsync();
 
-        if (receiverId == null) {
+        if (receiverId == Guid.Empty) {
             return false;
         }
         
@@ -125,7 +125,7 @@ public sealed partial class FriendshipService(
             .Select(r => r.SenderId)
             .FirstOrDefaultAsync();
 
-        if (senderId == null) {
+        if (senderId == Guid.Empty) {
             return false;
         }
         
@@ -155,7 +155,7 @@ public sealed partial class FriendshipService(
             .Select(r => r.SenderId)
             .FirstOrDefaultAsync();
 
-        if (senderId == null) {
+        if (senderId == Guid.Empty) {
             return false;
         }
         
@@ -206,5 +206,5 @@ public sealed partial class FriendshipService(
     }
     
     [LoggerMessage(LogLevel.Error, "Updating FriendRequest between user {from} to {user} cause {numRows} rows to be modified.")]
-    private partial void LogUnexpectedNumberOfRowsUpdateWhenRetryFriendRequest(string from, string user, int numRows);
+    private partial void LogUnexpectedNumberOfRowsUpdateWhenRetryFriendRequest(Guid from, Guid user, int numRows);
 }

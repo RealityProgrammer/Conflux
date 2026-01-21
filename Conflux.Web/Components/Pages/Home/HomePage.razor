@@ -1,20 +1,15 @@
 ﻿@page "/"
-@using Conflux.Web.Components.Shared
-@using Conflux.Web.Components.Shared.Icons
-@using Microsoft.AspNetCore.Components.Sections
-@using System.Diagnostics
+
+@using Conflux.Web.Services
 @using Microsoft.EntityFrameworkCore
 @using System.Security.Claims
 
 @implements IAsyncDisposable
 
-@inject IWebHostEnvironment Environment
-@inject IViteManifest ViteManifest
-@inject IViteDevServerStatus Vite
 @inject IJSRuntime JSRuntime
-@inject ILogger<HomePage> Logger
 @inject IContentService ContentService
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject ApplicationRedirectManager RedirectManager
 
 <PageTitle>HomePage</PageTitle>
 
@@ -136,8 +131,8 @@
 
             <NotAuthorized>
                 <div class="button-group justify-end">
-                    <NavLink href="/auth/login" class="text-white py-2 font-bold border-indigo-500/30 grow-0 shrink-1 basis-24 text-center shimmer">Login</NavLink>
-                    <NavLink href="/auth/register" class="text-white py-2 font-bold border-indigo-500/30 grow-0 shrink-1 basis-24 text-center shimmer">Register</NavLink>
+                    <NavLink href="/auth/login" class="text-white py-2 font-bold border-indigo-500/30 grow-0 shrink basis-24 text-center shimmer">Login</NavLink>
+                    <NavLink href="/auth/register" class="text-white py-2 font-bold border-indigo-500/30 grow-0 shrink basis-24 text-center shimmer">Register</NavLink>
                 </div>
             </NotAuthorized>
         </AuthorizeView>
@@ -156,25 +151,29 @@
     
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
+            var authState = await AuthenticationState;
+
+            if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id ||
+                !Guid.TryParse(id, out var userId))
+            {
+                RedirectManager.To("/").Execute();
+                return;
+            }
+            
             _module = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/Pages/HomePage.js");
             await _module.InvokeVoidAsync("initParticlesBackground", _particlesBackground);
 
-            var authState = await AuthenticationState;
-            string? userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
+                var userData = await dbContext.Users
+                    .Where(u => u.Id == userId)
+                    .Select(u => new { u.AvatarProfilePath, u.DisplayName })
+                    .FirstOrDefaultAsync();
+                
+                if (userData != null) {
+                    _userAvatarUrl = string.IsNullOrEmpty(userData.AvatarProfilePath) ? null : ContentService.GetAssetPath(userData.AvatarProfilePath);
+                    _userDisplayName = userData.DisplayName;
 
-            if (!string.IsNullOrEmpty(userId)) {
-                await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
-                    var userData = await dbContext.Users
-                        .Where(u => u.Id == userId)
-                        .Select(u => new { u.AvatarProfilePath, u.DisplayName })
-                        .FirstOrDefaultAsync();
-                    
-                    if (userData != null) {
-                        _userAvatarUrl = string.IsNullOrEmpty(userData.AvatarProfilePath) ? null : ContentService.GetAssetPath(userData.AvatarProfilePath);
-                        _userDisplayName = userData.DisplayName;
-
-                        StateHasChanged();
-                    }
+                    StateHasChanged();
                 }
             }
         }

@@ -11,7 +11,7 @@ public class ReportService(
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     ICommunityService communityService
 ) : IReportService {
-    public async Task<bool> ReportMessageAsync(Guid messageId, string? extraMessage, ReportReasons[] reasons, string reporterId) {
+    public async Task<bool> ReportMessageAsync(Guid messageId, string? extraMessage, ReportReasons[] reasons, Guid reporterId) {
         if (reasons.Length == 0) {
             return false;
         }
@@ -103,7 +103,7 @@ public class ReportService(
             .Select(member => member.UserId)
             .FirstOrDefaultAsync();
 
-        if (string.IsNullOrEmpty(userId)) {
+        if (userId == Guid.Empty) {
             return null;
         }
 
@@ -128,7 +128,7 @@ public class ReportService(
             .Select(member => member.UserId)
             .FirstOrDefaultAsync();
 
-        if (string.IsNullOrEmpty(userId)) {
+        if (userId == Guid.Empty) {
             return [];
         }
         

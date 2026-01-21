@@ -1,4 +1,5 @@
 ﻿using Conflux.Domain.Entities;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ValueGeneration;
@@ -7,7 +8,7 @@ using ICreatedAtColumn = Conflux.Domain.Entities.ICreatedAtColumn;
 
 namespace Conflux.Domain;
 
-public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : IdentityDbContext<ApplicationUser>(options) {
+public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>(options) {
     public DbSet<FriendRequest> FriendRequests { get; set; } = null!;
     public DbSet<Conversation> Conversations { get; set; } = null!;
     public DbSet<ChatMessage> ChatMessages { get; set; } = null!;

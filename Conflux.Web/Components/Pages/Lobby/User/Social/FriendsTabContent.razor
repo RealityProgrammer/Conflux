@@ -72,16 +72,20 @@
     private Virtualize<FriendSearchResult> _virtualizeContainer = null!;
 
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
-    private string _authUserId = null!;
+    private Guid _authUserId;
 
-    protected override async Task OnAfterRenderAsync(bool firstRender) {
+    protected override async Task OnParametersSetAsync() {
+        var authState = await AuthenticationState;
+        if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id ||
+            !Guid.TryParse(id, out _authUserId))
+        {
+            RedirectManager.To("/").Execute();
+        }
+    }
+    
+    protected override void OnAfterRender(bool firstRender) {
         if (firstRender) {
             _searchDebouncer = new(OnDebounceEnd, TimeSpan.FromMilliseconds(250));
-
-            var authState = await AuthenticationState;
-            _authUserId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-            
-            Debug.Assert(_authUserId != null);
 
             FriendshipEventDispatcher.OnFriendRequestAccepted += OnFriendAccepted;
             FriendshipEventDispatcher.OnUnfriended += OnUnfriended;

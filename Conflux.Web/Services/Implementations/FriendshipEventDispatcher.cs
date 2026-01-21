@@ -95,30 +95,30 @@ public sealed class FriendshipEventDispatcher(
     }
 
     public async Task NotifyFriendRequestReceivedAsync(FriendRequestReceivedEventArgs args) {
-        var user = hubContext.Clients.User(args.ReceiverId);
+        var user = hubContext.Clients.User(args.ReceiverId.ToString());
         
         await user.SendAsync(FriendRequestReceivedMethodName, args);
     }
 
     public async Task NotifyFriendRequestCanceledAsync(FriendRequestCanceledEventArgs args) {
-        var user = hubContext.Clients.User(args.ReceiverId);
+        var user = hubContext.Clients.User(args.ReceiverId.ToString());
         
         await user.SendAsync(FriendRequestCanceledMethodName, args);
     }
 
     public async Task NotifyFriendRequestRejectedAsync(FriendRequestRejectedEventArgs args) {
-        var user = hubContext.Clients.User(args.SenderId);
+        var user = hubContext.Clients.User(args.SenderId.ToString());
 
         await user.SendAsync(FriendRequestRejectedMethodName, args);
     }
     
     public async Task NotifyFriendRequestAcceptedAsync(FriendRequestAcceptedEventArgs args) {
-        await hubContext.Clients.User(args.SenderId).SendAsync(FriendRequestAcceptedMethodName, args);
+        await hubContext.Clients.User(args.SenderId.ToString()).SendAsync(FriendRequestAcceptedMethodName, args);
     }
 
     public async Task NotifyUnfriendedAsync(UnfriendedEventArgs args) {
-        await hubContext.Clients.User(args.User1).SendAsync(UnfriendedMethodName, args);
-        await hubContext.Clients.User(args.User2).SendAsync(UnfriendedMethodName, args);
+        await hubContext.Clients.User(args.User1.ToString()).SendAsync(UnfriendedMethodName, args);
+        await hubContext.Clients.User(args.User2.ToString()).SendAsync(UnfriendedMethodName, args);
     }
 
     public async ValueTask DisposeAsync() {

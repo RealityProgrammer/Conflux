@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Conflux.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialMigrations : Migration
+    public partial class InitialMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -16,7 +16,7 @@ namespace Conflux.Infrastructure.Migrations
                 name: "AspNetRoles",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "text", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     NormalizedName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     ConcurrencyStamp = table.Column<string>(type: "text", nullable: true)
@@ -30,7 +30,7 @@ namespace Conflux.Infrastructure.Migrations
                 name: "AspNetUsers",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "text", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
                     IsProfileSetup = table.Column<bool>(type: "boolean", nullable: false),
                     DisplayName = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
                     Pronouns = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: true),
@@ -64,7 +64,7 @@ namespace Conflux.Infrastructure.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    RoleId = table.Column<string>(type: "text", nullable: false),
+                    RoleId = table.Column<Guid>(type: "uuid", nullable: false),
                     ClaimType = table.Column<string>(type: "text", nullable: true),
                     ClaimValue = table.Column<string>(type: "text", nullable: true)
                 },
@@ -85,7 +85,7 @@ namespace Conflux.Infrastructure.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    UserId = table.Column<string>(type: "text", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
                     ClaimType = table.Column<string>(type: "text", nullable: true),
                     ClaimValue = table.Column<string>(type: "text", nullable: true)
                 },
@@ -107,7 +107,7 @@ namespace Conflux.Infrastructure.Migrations
                     LoginProvider = table.Column<string>(type: "text", nullable: false),
                     ProviderKey = table.Column<string>(type: "text", nullable: false),
                     ProviderDisplayName = table.Column<string>(type: "text", nullable: true),
-                    UserId = table.Column<string>(type: "text", nullable: false)
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -124,8 +124,8 @@ namespace Conflux.Infrastructure.Migrations
                 name: "AspNetUserRoles",
                 columns: table => new
                 {
-                    UserId = table.Column<string>(type: "text", nullable: false),
-                    RoleId = table.Column<string>(type: "text", nullable: false)
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    RoleId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -148,7 +148,7 @@ namespace Conflux.Infrastructure.Migrations
                 name: "AspNetUserTokens",
                 columns: table => new
                 {
-                    UserId = table.Column<string>(type: "text", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
                     LoginProvider = table.Column<string>(type: "text", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: false),
                     Value = table.Column<string>(type: "text", nullable: true)
@@ -172,11 +172,11 @@ namespace Conflux.Infrastructure.Migrations
                     Name = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     AvatarPath = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     BannerPath = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    CreatorId = table.Column<string>(type: "character varying(36)", maxLength: 36, nullable: false),
+                    CreatorId = table.Column<Guid>(type: "uuid", nullable: false),
                     InvitationId = table.Column<Guid>(type: "uuid", nullable: false),
                     Description = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ApplicationUserId = table.Column<string>(type: "text", nullable: true)
+                    ApplicationUserId = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -199,8 +199,8 @@ namespace Conflux.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    SenderId = table.Column<string>(type: "character varying(36)", maxLength: 36, nullable: false),
-                    ReceiverId = table.Column<string>(type: "character varying(36)", maxLength: 36, nullable: false),
+                    SenderId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ReceiverId = table.Column<Guid>(type: "uuid", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     ResponseAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
@@ -252,6 +252,7 @@ namespace Conflux.Infrastructure.Migrations
                     RolePermissions = table.Column<byte>(type: "smallint", nullable: false),
                     ChannelPermissions = table.Column<byte>(type: "smallint", nullable: false),
                     AccessPermissions = table.Column<int>(type: "integer", nullable: false),
+                    ManagementPermissions = table.Column<int>(type: "integer", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
@@ -292,8 +293,9 @@ namespace Conflux.Infrastructure.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     CommunityId = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserId = table.Column<string>(type: "character varying(36)", maxLength: 36, nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
                     RoleId = table.Column<Guid>(type: "uuid", nullable: true),
+                    UnbanAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
@@ -352,7 +354,7 @@ namespace Conflux.Infrastructure.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     ConversationId = table.Column<Guid>(type: "uuid", nullable: false),
-                    SenderId = table.Column<string>(type: "character varying(36)", maxLength: 36, nullable: false),
+                    SenderId = table.Column<Guid>(type: "uuid", nullable: false),
                     Body = table.Column<string>(type: "character varying(1024)", maxLength: 1024, nullable: true),
                     ReplyMessageId = table.Column<Guid>(type: "uuid", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -389,11 +391,13 @@ namespace Conflux.Infrastructure.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     MessageId = table.Column<Guid>(type: "uuid", nullable: false),
-                    MessageSenderId = table.Column<string>(type: "character varying(36)", maxLength: 36, nullable: false),
                     OriginalMessageBody = table.Column<string>(type: "character varying(1024)", maxLength: 1024, nullable: true),
                     Reasons = table.Column<int[]>(type: "integer[]", nullable: false),
                     ExtraMessage = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    ReporterId = table.Column<string>(type: "character varying(36)", maxLength: 36, nullable: false),
+                    ReporterId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ResolverId = table.Column<Guid>(type: "uuid", nullable: true),
+                    ResolvedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    BanDuration = table.Column<TimeSpan>(type: "interval", nullable: true),
                     Status = table.Column<int>(type: "integer", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     ChatMessageId = table.Column<Guid>(type: "uuid", nullable: true),
@@ -402,12 +406,6 @@ namespace Conflux.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_MessageReports", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_MessageReports_AspNetUsers_MessageSenderId",
-                        column: x => x.MessageSenderId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_MessageReports_AspNetUsers_ReporterId",
                         column: x => x.ReporterId,
@@ -425,6 +423,12 @@ namespace Conflux.Infrastructure.Migrations
                         principalTable: "ChatMessages",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_MessageReports_CommunityMembers_ResolverId",
+                        column: x => x.ResolverId,
+                        principalTable: "CommunityMembers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
                 });
 
             migrationBuilder.CreateIndex(
@@ -554,14 +558,14 @@ namespace Conflux.Infrastructure.Migrations
                 column: "MessageId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MessageReports_MessageSenderId",
-                table: "MessageReports",
-                column: "MessageSenderId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_MessageReports_ReporterId",
                 table: "MessageReports",
                 column: "ReporterId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MessageReports_ResolverId",
+                table: "MessageReports",
+                column: "ResolverId");
         }
 
         /// <inheritdoc />
@@ -583,22 +587,22 @@ namespace Conflux.Infrastructure.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
-                name: "CommunityMembers");
-
-            migrationBuilder.DropTable(
                 name: "MessageReports");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
-                name: "CommunityRoles");
-
-            migrationBuilder.DropTable(
                 name: "ChatMessages");
 
             migrationBuilder.DropTable(
+                name: "CommunityMembers");
+
+            migrationBuilder.DropTable(
                 name: "Conversations");
+
+            migrationBuilder.DropTable(
+                name: "CommunityRoles");
 
             migrationBuilder.DropTable(
                 name: "CommunityChannels");

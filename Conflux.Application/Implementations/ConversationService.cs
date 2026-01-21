@@ -41,7 +41,7 @@ public sealed class ConversationService(
         return conversation;
     }
 
-    public async Task<IConversationService.SendStatus> SendMessageAsync(Guid conversationId, string senderId, string? body, Guid? replyMessageId, IReadOnlyCollection<IConversationService.UploadingAttachment> attachments, CancellationToken cancellationToken = default) {
+    public async Task<IConversationService.SendStatus> SendMessageAsync(Guid conversationId, Guid senderId, string? body, Guid? replyMessageId, IReadOnlyCollection<IConversationService.UploadingAttachment> attachments, CancellationToken cancellationToken = default) {
         // TODO: Rewrite this, this is goddamn ugly.
         
         await using (var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken)) {
@@ -115,7 +115,7 @@ public sealed class ConversationService(
         }
     }
 
-    public async Task<bool> DeleteMessageAsync(Guid messageId, string senderId) {
+    public async Task<bool> DeleteMessageAsync(Guid messageId, Guid senderId) {
         await using (var dbContext = await dbContextFactory.CreateDbContextAsync()) {
             dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
@@ -176,7 +176,7 @@ public sealed class ConversationService(
         }
     }
     
-    public async Task<bool> EditMessageAsync(Guid messageId, string senderId, string? body) {
+    public async Task<bool> EditMessageAsync(Guid messageId, Guid senderId, string? body) {
         await using (var dbContext = await dbContextFactory.CreateDbContextAsync()) {
             dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 

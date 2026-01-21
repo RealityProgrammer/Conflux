@@ -135,8 +135,6 @@
     [Parameter] public Guid MessageId { get; set; }
     [Parameter] public Guid ReporterId { get; set; }
 
-    [CascadingParameter] public Task<AuthenticationState> AuthenticationState { get; set; } = null!;
-
     private Status _status;
     private MessageDisplayDTO _messageDisplay;
     
@@ -202,9 +200,7 @@
                 reasons[index] = ReportReasons.Other;
             }
 
-            var authState = await AuthenticationState;
-
-            bool success = await ReportService.ReportMessageAsync(MessageId, Model.ExtraMessage, reasons, authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            bool success = await ReportService.ReportMessageAsync(MessageId, Model.ExtraMessage, reasons, ReporterId);
 
             if (success) {
                 ModalService.Open<OperationSuccessModal>(parameters: new Dictionary<string, object?> {

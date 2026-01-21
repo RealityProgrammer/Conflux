@@ -1,6 +1,7 @@
 ﻿@using Conflux.Application.Dto
 @using Conflux.Web.Components.Pages.Community
 @using Conflux.Domain.Events
+@using Conflux.Web.Services
 @using System.Security.Claims
 
 @inherits Conflux.Web.Components.Shared.Modals.BaseModal
@@ -8,6 +9,7 @@
 
 @inject ICommunityService CommunityService
 @inject ICommunityEventDispatcher CommunityEventDispatcher
+@inject ApplicationRedirectManager RedirectManager
 
 <div class="flex flex-row justify-center items-center size-full text-white">
     <CascadingValue Value="_memberInformation">
@@ -23,12 +25,20 @@
     
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
 
+    private Guid _userId;
+
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
             var authState = await AuthenticationState;
-            var userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
-            var memberInfo = await CommunityService.GetMemberInformationAsync(CommunityId, userId);
+            if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id ||
+                !Guid.TryParse(id, out _userId))
+            {
+                RedirectManager.To("/").Execute();
+                return;
+            }
+
+            var memberInfo = await CommunityService.GetMemberInformationAsync(CommunityId, _userId);
 
             if (memberInfo == null) {
                 CloseModal();
@@ -63,10 +73,7 @@
     }
 
     private async Task ReloadMemberInformation() {
-        var authState = await AuthenticationState;
-        var userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        
-        var memberInfo = await CommunityService.GetMemberInformationAsync(CommunityId, userId);
+        var memberInfo = await CommunityService.GetMemberInformationAsync(CommunityId, _userId);
 
         if (memberInfo == null) {
             CloseModal();

@@ -166,7 +166,7 @@
                                 <h1 class="text-xl font-bold flex-none">Mutual</h1>
 
                                 <div class="h-64 md:h-0 md:flex-1">
-                                    <TabContainer @bind-ActiveId:get="_mutualActiveTabId" @bind-ActiveId:set="@(value => SetMutualTabId(value))" class="flex-1 flex flex-col text-white size-full" ButtonContainerCssClass="flex-none border-b border-b-gray-600 pb-2 flex flex-row justify-around gap-1" ContentContainerCssClass="min-h-0 flex-1 mt-2 overflow-y-auto scrollbar-hide">
+                                    <TabContainer @bind-ActiveId:get="_mutualActiveTabId" @bind-ActiveId:set="@(value => SetMutualTabId(value!))" class="flex-1 flex flex-col text-white size-full" ButtonContainerCssClass="flex-none border-b border-b-gray-600 pb-2 flex flex-row justify-around gap-1" ContentContainerCssClass="min-h-0 flex-1 mt-2 overflow-y-auto scrollbar-hide">
                                         <Buttons>
                                             <TabButton TabId="Friends" class="flex-1 x-3 py-1 text-white bg-transparent hover:bg-gray-400/40 active:bg-gray-700/40 rounded-lg cursor-pointer" ActiveCssClass="bg-gray-600/70! cursor-default!">Friends</TabButton>
                                             <TabButton TabId="Communities" class="flex-1 px-3 py-1 text-white bg-transparent hover:bg-gray-400/40 active:bg-gray-700/40 rounded-lg cursor-pointer" ActiveCssClass="bg-gray-600/70! cursor-default!">Communities</TabButton>
@@ -227,14 +227,14 @@
 </div>
 
 @code {
-    [Parameter, EditorRequired] public required string UserId { get; set; }
+    [Parameter, EditorRequired] public required Guid UserId { get; set; }
     [Parameter] public Guid? MemberId { get; set; }
 
     private State _state;
     private UserDTO _userInfo;
 
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
-    private string _authUserId = null!;
+    private Guid _authUserId;
 
     private string _mutualActiveTabId = "Friends";
     private ICollection<MutualFriendDTO>? _mutualFriends;
@@ -242,13 +242,20 @@
 
     private bool _isProcessingFriendRequest;
 
+    protected override async Task OnParametersSetAsync() {
+        var authState = await AuthenticationState;
+
+        if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id ||
+            !Guid.TryParse(id, out _authUserId))
+        {
+            RedirectManager.To("/").Execute();
+        }
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
             await using var dbContext = await DbContextFactory.CreateDbContextAsync();
             dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-
-            var authState = await AuthenticationState;
-            _authUserId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
             _userInfo = await dbContext.Users
                 .Where(u => u.Id == UserId)
@@ -523,6 +530,6 @@
 
     private record struct UserDTO(string DisplayName, string UserName, string? BannerPath, string? AvatarPath, string? Bio, string? Pronouns, DateOnly UserCreatedAt, DateOnly? MemberCreatedAt, string? RoleName, FriendRequestAction FriendRequestAction, Guid? FriendRequestId);
 
-    private readonly record struct MutualFriendDTO(string Id, string DisplayName, string? AvatarPath);
+    private readonly record struct MutualFriendDTO(Guid Id, string DisplayName, string? AvatarPath);
     private readonly record struct MutualCommunityDTO(Guid Id, string CommunityName, string? AvatarPath);
 }

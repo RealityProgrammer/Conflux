@@ -1,10 +1,12 @@
 ﻿@using Conflux.Domain.Enums
 @using Conflux.Web.Core
+@using Conflux.Web.Services
 @using System.Diagnostics
 @using System.Security.Claims
 
 @inject IConversationService ConversationService
 @inject ILogger<MessagingArea> Logger
+@inject ApplicationRedirectManager RedirectManager
 
 <section class="min-w-0 flex flex-col @_cssClass">
     <MessageTimeline ConversationId="ConversationId" 
@@ -34,12 +36,7 @@
     private Guid? _replyMessageId;
 
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
-    private string _userId = null!;
-
-    protected override async Task OnInitializedAsync() {
-        var authState = await AuthenticationState;
-        _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-    }
+    private Guid _userId;
 
     // Called automatically when URL parameter changed.
     protected override void OnParametersSet() {
@@ -50,6 +47,15 @@
         }
 
         AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "class").ToDictionary();
+    }
+    
+    protected override async Task OnParametersSetAsync() {
+        var authState = await AuthenticationState;
+        if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id ||
+            !Guid.TryParse(id, out _userId))
+        {
+            RedirectManager.To("/").Execute();
+        }
     }
     
     private async Task HandleMessageSend(MessageInputArea.MessageData data) {

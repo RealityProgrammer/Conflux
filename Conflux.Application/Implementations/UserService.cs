@@ -12,7 +12,8 @@ public class UserService(
     UserManager<ApplicationUser> userManager,
     SignInManager<ApplicationUser> signInManager,
     IDbContextFactory<ApplicationDbContext> dbContextFactory
-) : IUserService {
+) : IUserService
+{
     public Task<ApplicationUser?> GetUserAsync(ClaimsPrincipal claimsPrincipal) {
         return userManager.GetUserAsync(claimsPrincipal);
     }
@@ -63,7 +64,7 @@ public class UserService(
         return userManager.GetRolesAsync(user);
     }
 
-    public async Task<UserDisplayDTO?> GetUserDisplayAsync(string userId) {
+    public async Task<UserDisplayDTO?> GetUserDisplayAsync(Guid userId) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         
         return await dbContext.Users

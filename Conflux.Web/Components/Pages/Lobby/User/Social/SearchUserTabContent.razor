@@ -1,6 +1,7 @@
 ﻿@using Conflux.Domain.Events
 @using Conflux.Web.Components.Shared.Icons
 @using Conflux.Web.Helpers
+@using Conflux.Web.Services
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
 @using System.Collections.Concurrent
@@ -15,6 +16,7 @@
 @inject IFriendshipService FriendshipService
 @inject IFriendshipEventDispatcher FriendshipEventDispatcher
 @inject IContentService ContentService
+@inject ApplicationRedirectManager RedirectManager
 
 <div class="flex-none px-3 outline-none border rounded-lg bg-gray-700/60 border-gray-600 focus-within:ring-2 focus-within:ring-indigo-600 transition duration-300 flex flex-row items-center">
     <Search class="size-4 fill-white flex-none mr-2"/>
@@ -120,18 +122,23 @@
     private Virtualize<SearchDTO> _virtualizeContainer = null!;
 
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
-    private string _userId = null!;
+    private Guid _userId;
 
-    private ConcurrentDictionary<string, FriendRequestProcessingAction> _processingFriendRequests = [];
+    private ConcurrentDictionary<Guid, FriendRequestProcessingAction> _processingFriendRequests = [];
 
-    protected override async Task OnAfterRenderAsync(bool firstRender) {
+    protected override async Task OnParametersSetAsync() {
+        var authState = await AuthenticationState;
+
+        if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id ||
+            !Guid.TryParse(id, out _userId))
+        {
+            RedirectManager.To("/").Execute();
+        }
+    }
+
+    protected override void OnAfterRender(bool firstRender) {
         if (firstRender) {
             _searchDebouncer = new(OnDebounceEnd, TimeSpan.FromMilliseconds(250));
-
-            var authState = await AuthenticationState;
-            _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-            
-            Debug.Assert(_userId != null);
 
             FriendshipEventDispatcher.OnFriendRequestReceived += OnFriendRequestReceivedNotification;
             FriendshipEventDispatcher.OnFriendRequestCanceled += OnFriendRequestCanceledNotification;
@@ -205,8 +212,7 @@
     private async Task HandleSendFriendRequest(SearchDTO item) {
         if (_processingFriendRequests.TryAdd(item.UserId, FriendRequestProcessingAction.Sending)) {
             try {
-                string receiverId = item.UserId;
-
+                Guid receiverId = item.UserId;
                 var sendStatus = (await FriendshipService.SendFriendRequestAsync(_userId, receiverId)).Status;
 
                 switch (sendStatus) {
@@ -248,7 +254,7 @@
         
         if (_processingFriendRequests.TryAdd(item.UserId, FriendRequestProcessingAction.Cancelling)) {
             try {
-                string receiverId = item.UserId;
+                Guid receiverId = item.UserId;
 
                 if (!await FriendshipService.CancelFriendRequestAsync(friendRequestId)) {
                     Logger.LogWarning("Failed to cancel friend request from user {f} to {r}.", _userId, receiverId);
@@ -363,5 +369,5 @@
         Friend,
     }
 
-    private record struct SearchDTO(string UserId, string DisplayName, string UserName, string? AvatarPath, FriendStatus FriendStatus, Guid? FriendRequestId);
+    private record struct SearchDTO(Guid UserId, string DisplayName, string UserName, string? AvatarPath, FriendStatus FriendStatus, Guid? FriendRequestId);
 }

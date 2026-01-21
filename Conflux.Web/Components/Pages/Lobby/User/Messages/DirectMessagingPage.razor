@@ -1,5 +1,5 @@
 ﻿@page "/lobby/messages/{ConversationId:guid}"
-@using Conflux.Web.Components.Shared.Icons
+
 @using Conflux.Web.Services.Abstracts
 @using Microsoft.EntityFrameworkCore
 @using System.Security.Claims
@@ -30,17 +30,17 @@
                 <Avatar ImageSrc="@(string.IsNullOrEmpty(_otherUserInfo.Avatar) ? null : ContentService.GetAssetPath(_otherUserInfo.Avatar))" ImageAlt="Friend's Avatar" class="size-9 mr-2 flex-none"/>
                 <p class="flex-1">@_otherUserInfo.DisplayName</p>
                 
-                <Tooltip TargetCssClass="ml-2 flex flex-row justify-center items-center aspect-square h-full" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" Placement="bottom" Offset="8">
-                    <TargetContent>
-                        <button class="cursor-pointer group" @onclick="HandleInitializeCall">
-                            <Telephone class="size-6 fill-gray-300 group-hover:fill-white" Variation="TelephoneVariation.Outbound"/>
-                        </button>
-                    </TargetContent>
-                
-                    <TooltipContent>
-                        <p>Make a call</p>
-                    </TooltipContent>
-                </Tooltip>
+                @* <Tooltip TargetCssClass="ml-2 flex flex-row justify-center items-center aspect-square h-full" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" Placement="bottom" Offset="8"> *@
+                @*     <TargetContent> *@
+                @*         <button class="cursor-pointer group" @onclick="HandleInitializeCall"> *@
+                @*             <Telephone class="size-6 fill-gray-300 group-hover:fill-white" Variation="TelephoneVariation.Outbound"/> *@
+                @*         </button> *@
+                @*     </TargetContent> *@
+                @* *@
+                @*     <TooltipContent> *@
+                @*         <p>Make a call</p> *@
+                @*     </TooltipContent> *@
+                @* </Tooltip> *@
                 break;
         }
     </header>
@@ -101,26 +101,24 @@
     private Guid _previousConversationId;
 
     private OtherUserDTO _otherUserInfo = null!;
-    private InitializationState _initState;
+    private InitializationState _initState = InitializationState.Initializing;
 
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
-    private string _userId = null!;
+    private Guid _userId;
     
-    protected override async Task OnInitializedAsync() {
-        _initState = InitializationState.Initializing;
-        
-        var authState = await AuthenticationState;
-        _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-
-        if (string.IsNullOrEmpty(_userId)) {
-            _initState = InitializationState.NoPermission;
-        }
-    }
-
     protected override void OnParametersSet() {
         if (_previousConversationId != ConversationId) {
             _initState = InitializationState.Initializing;
             _previousConversationId = ConversationId;
+        }
+    }
+
+    protected override async Task OnParametersSetAsync() {
+        var authState = await AuthenticationState;
+        if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id ||
+            !Guid.TryParse(id, out _userId))
+        {
+            _initState = InitializationState.NoPermission;
         }
     }
 
@@ -152,9 +150,9 @@
         }
     }
 
-    private async Task HandleInitializeCall() {
-        await UserCallService.InitializeDirectCall(_userId, _otherUserInfo.UserId);
-    }
+    // private async Task HandleInitializeCall() {
+    //     await UserCallService.InitializeDirectCall(_userId, _otherUserInfo.UserId);
+    // }
 
     private enum InitializationState {
         Initializing,
@@ -164,7 +162,7 @@
     }
 
     private sealed class OtherUserDTO {
-        public required string UserId { get; init; }
+        public required Guid UserId { get; init; }
         public required string? Avatar { get; init; }
         public required string DisplayName { get; init; }
         public required string UserName { get; init; }

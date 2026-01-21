@@ -1,3 +1,3 @@
 ﻿namespace Conflux.Application.Dto;
 
-public record struct UserDisplayDTO(string UserId, string DisplayName, string UserName, string? AvatarPath);
+public record struct UserDisplayDTO(Guid UserId, string DisplayName, string? UserName, string? AvatarPath);

@@ -4,7 +4,7 @@ using Conflux.Domain.Enums;
 namespace Conflux.Web.Services.Implementations;
 
 public class ContentService(IWebHostEnvironment environment, ILogger<ContentService> logger) : IContentService {
-    public async Task<string> UploadUserAvatarAsync(Stream stream, string userId, CancellationToken cancellationToken = default) {
+    public async Task<string> UploadUserAvatarAsync(Stream stream, Guid userId, CancellationToken cancellationToken = default) {
         cancellationToken.ThrowIfCancellationRequested();
 
         string avatarDirectory = Path.Combine(environment.ContentRootPath, "Uploads", "users", "avatars");
@@ -13,7 +13,7 @@ public class ContentService(IWebHostEnvironment environment, ILogger<ContentServ
             Directory.CreateDirectory(avatarDirectory);
         }
         
-        string path = Path.Combine("users", "avatars", userId);
+        string path = Path.Combine("users", "avatars", userId.ToString());
         string physicalPath = Path.Combine(environment.ContentRootPath, "Uploads", path);
         
         await using var destinationStream = File.OpenWrite(physicalPath);
@@ -25,9 +25,9 @@ public class ContentService(IWebHostEnvironment environment, ILogger<ContentServ
         return path;
     }
 
-    public Task DeleteUserAvatarAsync(string userId) {
+    public Task DeleteUserAvatarAsync(Guid userId) {
         try {
-            string path = Path.Combine("users", "avatars", userId);
+            string path = Path.Combine("users", "avatars", userId.ToString());
             string physicalPath = Path.Combine(environment.ContentRootPath, "Uploads", path);
 
             File.Delete(physicalPath);
@@ -37,9 +37,9 @@ public class ContentService(IWebHostEnvironment environment, ILogger<ContentServ
         return Task.CompletedTask;
     }
 
-    public DateTime GetUserAvatarUploadTime(string userId) {
+    public DateTime GetUserAvatarUploadTime(Guid userId) {
         try {
-            string path = Path.Combine("users", "avatars", userId);
+            string path = Path.Combine("users", "avatars", userId.ToString());
             string physicalPath = Path.Combine(environment.ContentRootPath, "Uploads", path);
 
             return File.GetLastWriteTimeUtc(physicalPath);

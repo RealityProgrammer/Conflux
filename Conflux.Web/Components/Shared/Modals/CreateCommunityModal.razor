@@ -1,8 +1,10 @@
-﻿@using System.Security.Claims
+﻿@using Conflux.Web.Services
+@using System.Security.Claims
 
 @inherits BaseModal
 
 @inject ICommunityService CommunityService
+@inject ApplicationRedirectManager RedirectManager
 
 <div class="flex flex-row justify-center items-center size-full text-white">
     @switch (_state) {
@@ -34,19 +36,25 @@
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
     
     private State _state;
-    
-    private async Task HandleCreateServer(CreateCommunityForm.InputModel model) {
+    private Guid _userId;
+
+    protected override async Task OnParametersSetAsync() {
         var authState = await AuthenticationState;
-        string? id = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        if (string.IsNullOrEmpty(id)) return;
+        if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id ||
+            !Guid.TryParse(id, out _userId))
+        {
+            RedirectManager.To("/").Execute();
+        }
+    }
 
+    private async Task HandleCreateServer(CreateCommunityForm.InputModel model) {
         if (model.Avatar == null) {
-            await CommunityService.CreateCommunityAsync(model.Name, null, id);
+            await CommunityService.CreateCommunityAsync(model.Name, null, _userId);
         } else {
             await using var avatarStream = model.Avatar.OpenReadStream(ApplicationConstants.MaxCommunityAvatarSize);
 
-            await CommunityService.CreateCommunityAsync(model.Name, avatarStream, id);
+            await CommunityService.CreateCommunityAsync(model.Name, avatarStream, _userId);
         }
 
         CloseModal();

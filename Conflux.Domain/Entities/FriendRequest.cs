@@ -5,10 +5,10 @@ namespace Conflux.Domain.Entities;
 public class FriendRequest : ICreatedAtColumn {
     public Guid Id { get; set; }
     
-    [MaxLength(36)] public string SenderId { get; set; } = null!;
+    public Guid SenderId { get; set; }
     public ApplicationUser Sender { get; set; } = null!;
     
-    [MaxLength(36)] public string ReceiverId { get; set; } = null!;
+    public Guid ReceiverId { get; set; }
     public ApplicationUser Receiver { get; set; } = null!;
     
     public Conversation? Conversation { get; set; }

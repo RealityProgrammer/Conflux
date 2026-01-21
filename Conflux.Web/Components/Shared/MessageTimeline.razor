@@ -58,7 +58,7 @@
                     }
                     
                     @{
-                        string senderId = message.SenderId;
+                        Guid senderId = message.SenderId;
                         EventCallback invokesOpenUserModal = EventCallback.Factory.Create(this, EventUtils.AsNonRenderingEventHandler(() => OpenUserProfileModal(senderId)));
                     }
     
@@ -226,7 +226,7 @@
                     <span class="text-sm">Speak Message</span>
                 </button>
                 
-                @if (_extraActionTargetMessage!.SenderId != _authUserId && !DisallowReport) {
+                @if (_extraActionTargetMessage!.SenderId != UserId && !DisallowReport) {
                     <button class="p-2! button-nav-menu" @onclick="HandleReportMessage">
                         <Flag class="size-5 fill-red-400"/>
 
@@ -240,7 +240,7 @@
 
 @code {
     [Parameter, EditorRequired] public required int LoadCount { get; set; }
-    [Parameter, EditorRequired] public required string UserId { get; set; }
+    [Parameter, EditorRequired] public required Guid UserId { get; set; }
     [Parameter] public bool DisallowReport { get; set; }
     
     [Parameter] public Guid ConversationId { get; set; }
@@ -253,8 +253,6 @@
 
     [CascadingParameter] private MemberInformationDTO? MemberInformation { get; set; }
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
-
-    private string _authUserId = null!;
 
     // Controls.
     private InitializationStatus _initStatus = InitializationStatus.Loading;
@@ -328,9 +326,6 @@
             ConversationEventDispatcher.OnMessageReceived += OnMessageReceived;
             ConversationEventDispatcher.OnMessageDeleted += OnMessageDeleted;
             ConversationEventDispatcher.OnMessageEdited += OnMessageEdited;
-
-            var authState = await AuthenticationState;
-            _authUserId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
         } else {
             if (_module != null) {
                 if (_jumpToBottom) {
@@ -522,7 +517,7 @@
         _editMessageBody = string.Empty;
     }
 
-    private async Task OpenUserProfileModal(string userId) {
+    private async Task OpenUserProfileModal(Guid userId) {
         Guid? memberId = null;
         
         await using var dbContext = await DbContextFactory.CreateDbContextAsync();

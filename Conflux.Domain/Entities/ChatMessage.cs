@@ -7,7 +7,7 @@ public class ChatMessage : ICreatedAtColumn {
     public Guid Id { get; set; }
     public Guid ConversationId { get; set; }
     
-    [MaxLength(36)] public required string SenderId { get; set; } = null!;
+    public required Guid SenderId { get; set; }
     
     [MaxLength(1024)] public string? Body { get; set; }
     

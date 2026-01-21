@@ -20,7 +20,7 @@ public sealed class UserNotificationService(
 
     private HubConnection? _hubConnection;
 
-    public async Task Connect(string userId) {
+    public async Task Connect(Guid userId) {
         if (_hubConnection != null) return;
         
         _hubConnection = new HubConnectionBuilder()
@@ -72,7 +72,7 @@ public sealed class UserNotificationService(
     }
 
     public async Task Dispatch(CommunityBannedEventArgs args) {
-        var user = hubContext.Clients.User(args.UserId);
+        var user = hubContext.Clients.User(args.UserId.ToString());
         
         await user.SendAsync(CommunityBannedEventName, args);
     }

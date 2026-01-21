@@ -18,7 +18,7 @@ public class CommunityService(
 ) : ICommunityService {
     public event Action<CommunityCreatedEventArgs>? OnUserCreatedCommunity;
 
-    public async Task<bool> CreateCommunityAsync(string name, Stream? avatarStream, string creatorId) {
+    public async Task<bool> CreateCommunityAsync(string name, Stream? avatarStream, Guid creatorId) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         await using var transaction = await dbContext.Database.BeginTransactionAsync();
 
@@ -113,7 +113,7 @@ public class CommunityService(
         await eventDispatcher.Dispatch(new ChannelCreatedEventArgs(communityId, channelCategoryId, channel.Id, name, type));
     }
 
-    public async Task<bool> JoinCommunityAsync(string userId, Guid communityId, Guid invitationId) {
+    public async Task<bool> JoinCommunityAsync(Guid userId, Guid communityId, Guid invitationId) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         
         // Early return if user already in the community.
@@ -142,7 +142,7 @@ public class CommunityService(
         return false;
     }
 
-    public async Task<RolePermissionsWithId?> GetUserRolePermissionsAsync(string userId, Guid communityId) {
+    public async Task<RolePermissionsWithId?> GetUserRolePermissionsAsync(Guid userId, Guid communityId) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
         
@@ -181,7 +181,7 @@ public class CommunityService(
         return true;
     }
 
-    public async Task<Guid> GetMemberId(Guid communityId, string userId) {
+    public async Task<Guid> GetMemberId(Guid communityId, Guid userId) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
@@ -205,7 +205,7 @@ public class CommunityService(
             .FirstOrDefaultAsync();
     }
 
-    public async Task<MemberDisplayDTO?> GetMemberDisplayAsync(Guid communityId, string userId) {
+    public async Task<MemberDisplayDTO?> GetMemberDisplayAsync(Guid communityId, Guid userId) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
@@ -266,7 +266,7 @@ public class CommunityService(
             .FirstOrDefaultAsync();
     }
 
-    public async Task<MemberInformationDTO?> GetMemberInformationAsync(Guid communityId, string userId) {
+    public async Task<MemberInformationDTO?> GetMemberInformationAsync(Guid communityId, Guid userId) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 

@@ -56,31 +56,27 @@
     private FieldIdentifier _statusTextField;
     
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
-    private string _userId = null!;
 
     private InputText? _statusInputText;
+    private Guid _userId;
 
     protected override void OnInitialized() {
         StatusModel ??= new();
         _statusEditContext = new(StatusModel);
     }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender) {
-        if (firstRender) {
-            var authState = await AuthenticationState;
-            _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-            
-            if (_userId == null!) {
-                RedirectManager.To("/").Execute();
-                return;
-            }
-            
-            _statusTextField = FieldIdentifier.Create(() => StatusModel!.StatusText);
-
-            StateHasChanged();
-        }
-    }
     
+    protected override async Task OnParametersSetAsync() {
+        var authState = await AuthenticationState;
+
+        if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id ||
+            !Guid.TryParse(id, out _userId))
+        {
+            RedirectManager.To("/").Execute();
+        }
+        
+        _statusTextField = FieldIdentifier.Create(() => StatusModel!.StatusText);
+    }
+
     private async Task UpdateStatus() {
         if (!_statusEditContext.Validate()) {
             return;

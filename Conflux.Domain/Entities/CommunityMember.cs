@@ -8,7 +8,7 @@ public class CommunityMember : ICreatedAtColumn {
     public Guid CommunityId { get; set; }
     public Community Community { get; set; } = null!;
     
-    [MaxLength(36)] public string UserId { get; set; } = null!;
+    public Guid UserId { get; set; }
     public ApplicationUser User { get; set; } = null!;
     
     public Guid? RoleId { get; set; }

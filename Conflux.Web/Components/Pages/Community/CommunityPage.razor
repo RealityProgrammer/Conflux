@@ -4,6 +4,7 @@
 @using Conflux.Web.Components.Layout
 @using Conflux.Domain.Events
 @using Conflux.Web.Components.Layout
+@using Conflux.Web.Services
 @using Microsoft.AspNetCore.Components.Sections
 @using System.Security.Claims
 
@@ -12,6 +13,7 @@
 @inject ICommunityService CommunityService
 @inject ICommunityEventDispatcher CommunityEventDispatcher
 @inject IUserNotificationService UserNotificationService
+@inject ApplicationRedirectManager RedirectManager
 
 @implements IAsyncDisposable
 
@@ -58,13 +60,18 @@
     [Parameter] public string? Channel { get; set; }
 
     private MemberInformationDTO? _memberInformation;
-    private string _userId = null!;
+    private Guid _userId;
 
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
 
     protected override async Task OnParametersSetAsync() {
         var authState = await AuthenticationState;
-        _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        
+        if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id ||
+            !Guid.TryParse(id, out _userId))
+        {
+            RedirectManager.To("/").Execute();
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {

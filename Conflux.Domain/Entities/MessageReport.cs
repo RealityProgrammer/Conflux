@@ -17,7 +17,7 @@ public class MessageReport : ICreatedAtColumn {
     
     [MaxLength(255)] public string? ExtraMessage { get; set; }
 
-    [Required, MaxLength(36)] public string ReporterId { get; set; } = null!;
+    public Guid ReporterId { get; set; }
     public ApplicationUser Reporter { get; set; } = null!;
 
     public Guid? ResolverId { get; set; }

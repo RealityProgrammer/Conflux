@@ -72,7 +72,8 @@
 
     private State _state;
 
-    private string? _userId, _communityName, _communityAvatarPath;
+    private Guid _userId;
+    private string? _communityName, _communityAvatarPath;
     private Guid _communityId;
     private int _communityPopulation;
 
@@ -80,17 +81,20 @@
 
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
 
-    protected override void OnParametersSet() {
+    protected override async Task OnParametersSetAsync() {
         _state = State.Initializing;
+        
+        var authState = await AuthenticationState;
+
+        if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id ||
+            !Guid.TryParse(id, out _userId))
+        {
+            RedirectManager.To("/").Execute();
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (_state == State.Initializing) {
-            var authState = await AuthenticationState;
-            _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-            
-            Debug.Assert(_userId != null);
-            
             await using var dbContext = await DbContextFactory.CreateDbContextAsync();
             
             var communityData = await dbContext.Communities
@@ -126,8 +130,6 @@
     }
 
     private async Task HandleJoinCommunity() {
-        if (_userId == null) return;
-        
         _isProcessingCommunityJoin = true;
 
         try {

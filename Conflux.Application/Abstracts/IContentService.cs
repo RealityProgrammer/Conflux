@@ -3,9 +3,9 @@
 namespace Conflux.Application.Abstracts;
 
 public interface IContentService {
-    Task<string> UploadUserAvatarAsync(Stream stream, string userId, CancellationToken cancellationToken = default);
-    Task DeleteUserAvatarAsync(string userId);
-    DateTime GetUserAvatarUploadTime(string userId);
+    Task<string> UploadUserAvatarAsync(Stream stream, Guid userId, CancellationToken cancellationToken = default);
+    Task DeleteUserAvatarAsync(Guid userId);
+    DateTime GetUserAvatarUploadTime(Guid userId);
 
     Task<string> UploadMessageAttachmentAsync(Stream attachmentStream, MessageAttachmentType type, CancellationToken cancellationToken);
     Task<bool> DeleteMessageAttachmentAsync(string attachmentRelativePath);

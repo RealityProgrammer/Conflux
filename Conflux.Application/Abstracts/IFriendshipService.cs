@@ -1,7 +1,7 @@
 ﻿namespace Conflux.Application.Abstracts;
 
 public interface IFriendshipService {
-    Task<SendingResult> SendFriendRequestAsync(string senderId, string receiverId);
+    Task<SendingResult> SendFriendRequestAsync(Guid senderId, Guid receiverId);
     Task<bool> CancelFriendRequestAsync(Guid friendRequestId);
     Task<bool> RejectFriendRequestAsync(Guid friendRequestId);
     Task<bool> AcceptFriendRequestAsync(Guid friendRequestId);
