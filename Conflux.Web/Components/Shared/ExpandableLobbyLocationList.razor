@@ -28,19 +28,19 @@
             </TooltipContent>
         </Tooltip>
         
-        @if (_isLoadingJoinedServers) {
+        @if (_isLoadingJoinedCommunities) {
             <Spinner class="fill-white h-full aspect-square"/>
         } else {
-            @foreach (var joinedServer in _joinedServers) {
+            @foreach (var joinedCommunity in _joinedCommunities) {
                 <Tooltip TargetCssClass="inline-block h-full aspect-square" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" Placement="bottom" Offset="8">
                     <TargetContent>
-                        <NavLink class="bg-gray-800 hover:bg-gray-750 active:bg-gray-825 hover:shadow-md rounded-full h-full aspect-square flex-none cursor-pointer overflow-hidden flex flex-row justify-center items-center" ActiveClass="border-2 border-blue-700!" href="@($"/community/{joinedServer.Id}")" Match="NavLinkMatch.Prefix">
-                            <Avatar class="w-full aspect-square" ImageSrc="@(string.IsNullOrEmpty(joinedServer.AvatarPath) ? null : ContentService.GetAssetPath(joinedServer.AvatarPath))" ImageAlt="@($"Avatar of {joinedServer.Name}")"/>
+                        <NavLink class="bg-gray-800 hover:bg-gray-750 active:bg-gray-825 hover:shadow-md rounded-full h-full aspect-square flex-none cursor-pointer overflow-hidden flex flex-row justify-center items-center" ActiveClass="border-2 border-blue-700!" href="@($"/community/{joinedCommunity.Id}")" Match="NavLinkMatch.Prefix">
+                            <Avatar class="w-full aspect-square" ImageSrc="@(string.IsNullOrEmpty(joinedCommunity.AvatarPath) ? null : ContentService.GetAssetPath(joinedCommunity.AvatarPath))" ImageAlt="@($"Avatar of {joinedCommunity.Name}")"/>
                         </NavLink>
                     </TargetContent>
                     
                     <TooltipContent>
-                        <p>@joinedServer.Name</p>
+                        <p>@joinedCommunity.Name</p>
                     </TooltipContent>
                 </Tooltip>
             }
@@ -70,21 +70,21 @@
 
 @code {
     private bool _isDrawerExpanded;
-    private bool _isLoadingJoinedServers;
+    private bool _isLoadingJoinedCommunities;
 
-    private List<CommunityServerDTO> _joinedServers = [];
+    private List<CommunityServerDTO> _joinedCommunities = [];
     
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
     private Guid _userId;
     
     protected override void OnInitialized() {
-        _isLoadingJoinedServers = true;
+        _isLoadingJoinedCommunities = true;
     }
 
     protected override async Task OnParametersSetAsync() {
         var authState = await AuthenticationState;
         if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id ||
-            !Guid.TryParse(id, out var userId))
+            !Guid.TryParse(id, out _userId))
         {
             RedirectManager.To("/").Execute();
         }
@@ -95,7 +95,7 @@
             await using var dbContext = await DbContextFactory.CreateDbContextAsync();
             dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
-            _joinedServers = await dbContext.CommunityMembers
+            _joinedCommunities = await dbContext.CommunityMembers
                 .IncludeBanned()
                 .Where(member => member.UserId == _userId)
                 .OrderBy(member => member.CreatedAt)
@@ -103,7 +103,7 @@
                 .Select(community => new CommunityServerDTO(community.Id, community.Name, community.AvatarPath))
                 .ToListAsync();
 
-            _isLoadingJoinedServers = false;
+            _isLoadingJoinedCommunities = false;
             StateHasChanged();
 
             CommunityService.OnUserCreatedCommunity += OnUserCreatedCommunity;
@@ -123,7 +123,7 @@
             await using var dbContext = await DbContextFactory.CreateDbContextAsync();
             dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
             
-            _joinedServers.Add(new(args.Community.Id, args.Community.Name, args.Community.AvatarPath));
+            _joinedCommunities.Add(new(args.Community.Id, args.Community.Name, args.Community.AvatarPath));
             StateHasChanged();
         });
     }

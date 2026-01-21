@@ -12,7 +12,7 @@
                     
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="relative">
-            <label class="font-semibold">Server's Avatar</label>
+            <label class="font-semibold">Community's Avatar</label>
             
             <InputFile @ref="_inputFile" class="hidden" id="avatar" OnChange="HandleAvatarUpload"/>
             
@@ -44,7 +44,7 @@
         </div>
     </div>
     
-    <ProcessingStateButton @bind-IsProcessing="_isCreatingServer" type="submit" class="mt-2 border border-gray-600 bg-black/5 hover:bg-black/2 active:bg-black/8 w-full p-3 rounded-lg shadow-lg cursor-pointer" ProcessingCssClass="flex justify-center items-center" @onclick="HandleCreateServer">
+    <ProcessingStateButton @bind-IsProcessing="_isCreatingCommunity" type="submit" class="mt-2 border border-gray-600 bg-black/5 hover:bg-black/2 active:bg-black/8 w-full p-3 rounded-lg shadow-lg cursor-pointer" ProcessingCssClass="flex justify-center items-center" @onclick="HandleCreateCommunity">
         <ChildContent>
             Create the community
         </ChildContent>
@@ -56,7 +56,7 @@
 </EditForm>
 
 @code {
-    [Parameter] public EventCallback<InputModel> OnRequestCreateServer { get; set; }
+    [Parameter] public EventCallback<InputModel> OnRequestCreateCommunity { get; set; }
     
     private EditContext _editContext = null!;
     [SupplyParameterFromForm(FormName = "Login")] private InputModel Model { get; set; } = null!;
@@ -65,7 +65,7 @@
     private string? _avatarPreviewUrl;
     private InputFile _inputFile = null!;
 
-    private bool _isCreatingServer;
+    private bool _isCreatingCommunity;
     
     protected override void OnInitialized() {
         Model ??= new();
@@ -114,19 +114,19 @@
         }
     }
 
-    private async Task HandleCreateServer() {
-        _isCreatingServer = true;
+    private async Task HandleCreateCommunity() {
+        _isCreatingCommunity = true;
 
         try {
             if (!_editContext.Validate()) {
                 return;
             }
 
-            if (OnRequestCreateServer.HasDelegate) {
-                await OnRequestCreateServer.InvokeAsync(Model);
+            if (OnRequestCreateCommunity.HasDelegate) {
+                await OnRequestCreateCommunity.InvokeAsync(Model);
             }
         } finally {
-            _isCreatingServer = false;
+            _isCreatingCommunity = false;
         }
     }
 
