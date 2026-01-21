@@ -138,7 +138,7 @@
     private async Task HandleAccessConversation(Guid friendRequestId) {
         Conversation? conversation = await ConversationService.GetOrCreateDirectConversationAsync(friendRequestId);
         
-        if (conversation == null) {
+        if (conversation == null!) {
             Logger.LogWarning("Failed to create friend conversation for friend request {id}.", friendRequestId);
             return;
         }

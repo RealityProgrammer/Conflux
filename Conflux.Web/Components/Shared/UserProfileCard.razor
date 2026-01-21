@@ -1,5 +1,4 @@
 ﻿@using Conflux.Application.Dto
-@using Microsoft.EntityFrameworkCore
 @using System.Security.Claims
 
 @inject IContentService ContentService
@@ -32,7 +31,7 @@
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
 
     private UserDisplayDTO? _userDisplay;
-    private string _userId;
+    private string _userId = null!;
     private bool _isLoading = true;
     
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
