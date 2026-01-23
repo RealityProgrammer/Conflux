@@ -93,36 +93,36 @@ internal sealed class UserCallService(
         }
     }
     
-    public Task<bool> InitializeDirectCall(string fromUserId, string receiverUserId) {
+    public Task<bool> InitializeDirectCall(Guid fromUserId, Guid receiverUserId) {
         _rooms.Add(callRoomsService.CreateCallRoom(fromUserId, receiverUserId));
         OnCallInitialized?.Invoke();
         
         return Task.FromResult(true);
     }
 
-    public async Task SendOffer(CallRoom room, string senderId, string offer) {
+    public async Task SendOffer(CallRoom room, Guid senderId, string offer) {
         if (!_rooms.Contains(room)) {
             return;
         }
 
         room.OfferDescription = offer;
-        await hubContext.Clients.User(room.ReceiverUserId).SendAsync("offer", room.Id);
+        await hubContext.Clients.User(room.ReceiverUserId.ToString()).SendAsync("offer", room.Id);
     }
 
-    public async Task SendAnswer(CallRoom room, string senderId, string answer) {
+    public async Task SendAnswer(CallRoom room, Guid senderId, string answer) {
         if (!_rooms.Contains(room)) {
             return;
         }
         
-        await hubContext.Clients.User(room.InitiatorUserId).SendAsync("answer", room.Id, answer);
+        await hubContext.Clients.User(room.InitiatorUserId.ToString()).SendAsync("answer", room.Id, answer);
     }
 
-    public async Task SendIceCandidate(CallRoom room, string receiverId, string candidate) {
+    public async Task SendIceCandidate(CallRoom room, Guid receiverId, string candidate) {
         if (!_rooms.Contains(room)) {
             return;
         }
         
-        await hubContext.Clients.User(receiverId).SendAsync("ice-candidate", room.Id, candidate);
+        await hubContext.Clients.User(receiverId.ToString()).SendAsync("ice-candidate", room.Id, candidate);
     }
 
     public async Task<IceServerConfiguration[]> CreateShortLivedIceServerConfiguration() {

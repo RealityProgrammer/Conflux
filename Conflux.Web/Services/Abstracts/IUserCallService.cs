@@ -13,11 +13,11 @@ public interface IUserCallService {
     Task Connect();
     Task Disconnect();
     
-    Task<bool> InitializeDirectCall(string fromUserId, string receiverUserId);
+    Task<bool> InitializeDirectCall(Guid fromUserId, Guid receiverUserId);
 
     Task<IceServerConfiguration[]> CreateShortLivedIceServerConfiguration();
     
-    Task SendOffer(CallRoom room, string senderId, string offer);
-    Task SendAnswer(CallRoom room, string senderId, string answer);
-    Task SendIceCandidate(CallRoom room, string receiverId, string candidate);
+    Task SendOffer(CallRoom room, Guid senderId, string offer);
+    Task SendAnswer(CallRoom room, Guid senderId, string answer);
+    Task SendIceCandidate(CallRoom room, Guid receiverId, string candidate);
 }

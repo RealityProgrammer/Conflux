@@ -3,213 +3,213 @@
 @using Conflux.Web.Core
 @using Conflux.Web.Services.Abstracts
 @using System.Text.Json.Serialization
-@* *@
-@* @implements IAsyncDisposable *@
-@* *@
-@* @inject IJSRuntime JavascriptRuntime *@
-@* @inject IContentService ContentService *@
-@* @inject IUserService UserService *@
-@* @inject IUserCallService UserCallService *@
-@* @inject ILogger<CallScreen> Logger *@
-@* *@
-@* @{ *@
-@*     bool isCallInitiator = CallRoom.InitiatorUserId == SessionUserId; *@
-@* } *@
-@* *@
-@* <div @ref="_rootElement" class="pointer-events-auto select-none shadow-md flex flex-col text-white" style="width: 32%; height: 18%"> *@
-@*     <header class="bg-gray-600 h-8 flex-none items-center px-2 py-1"> *@
-@*         @switch (_state) { *@
-@*             case State.Initializing: *@
-@*                 <p class="flex-1 animate-pulse">Initializing...</p> *@
-@*                 break; *@
-@*          *@
-@*             case State.Dialing: *@
-@*                 @if (isCallInitiator) { *@
-@*                     <p class="flex-1 animate-pulse whitespace-nowrap overflow-hidden text-ellipsis">Calling @_otherUser!.Value.DisplayName</p> *@
-@*                 } else { *@
-@*                     <p class="flex-1 animate-pulse whitespace-nowrap overflow-hidden text-ellipsis">Incoming call from @_otherUser!.Value.DisplayName</p> *@
-@*                 } *@
-@*                 break; *@
-@*                  *@
-@*             case State.CallSetup: *@
-@*                 <p class="flex-1 animate-pulse whitespace-nowrap overflow-hidden text-ellipsis">Setting up call...</p> *@
-@*                 break; *@
-@*                  *@
-@*             case State.Calling: *@
-@*                 <p class="flex-1 animate-pulse whitespace-nowrap overflow-hidden text-ellipsis">@_otherUser!.Value.DisplayName</p> *@
-@*                 break; *@
-@*         } *@
-@*     </header> *@
-@* *@
-@*     <section class="bg-black flex-1 relative overflow-hidden"> *@
-@*         @switch (_state) { *@
-@*             case State.Initializing: *@
-@*                 <div class="size-full flex flex-row justify-center items-center"> *@
-@*                     <Spinner class="size-8 fill-white"/> *@
-@*                 </div> *@
-@*                 break; *@
-@* *@
-@*             case State.Dialing: { *@
-@*                 var otherUser = _otherUser!.Value; *@
-@*                  *@
-@*                 <div class="size-full overflow-hidden flex justify-center items-center"> *@
-@*                     <img src="@(string.IsNullOrEmpty(otherUser.AvatarPath) ? null : ContentService.GetAssetPath(otherUser.AvatarPath))" *@
-@*                          alt="@(isCallInitiator ? "Receiver's Avatar" : "Caller's Avatar")" *@
-@*                          class="size-full object-contain"> *@
-@*                 </div> *@
-@*                 break; *@
-@*             } *@
-@*         } *@
-@*          *@
-@*         <div class="size-full overflow-hidden flex justify-center items-center @(_state is State.CallSetup or State.Calling ? string.Empty : "hidden")"> *@
-@*             <video @ref="_remoteVideoElement" class="size-full object-contain -scale-x-100" playsinline autoplay muted></video> *@
-@*         </div> *@
-@*          *@
-@*         <div class="actions-container z-10 absolute top-1 right-1 flex flex-col gap-2.5 items-center p-1 rounded-md bg-gray-700 border border-gray-600"> *@
-@*             <button class="cursor-pointer flex-none group"> *@
-@*                 <Telephone Variation="TelephoneVariation.X" class="size-7 fill-gray-300 group-hover:fill-white"/> *@
-@*             </button> *@
-@*              *@
-@*             @if (!isCallInitiator) { *@
-@*                 <button class="cursor-pointer flex-none group" @onclick="HandleAcceptCall"> *@
-@*                     <Telephone Variation="TelephoneVariation.Inbound" class="size-7 fill-gray-300 group-hover:fill-white"/> *@
-@*                 </button> *@
-@*             } *@
-@*              *@
-@*             <button class="cursor-pointer flex-none group" @onclick="HandleReportWebRTCDebug"> *@
-@*                 <Telephone Variation="TelephoneVariation.Inbound" class="size-7 fill-gray-300 group-hover:fill-white"/> *@
-@*             </button> *@
-@*         </div> *@
-@*     </section> *@
-@* </div> *@
-@* *@
+
+@implements IAsyncDisposable
+
+@inject IJSRuntime JavascriptRuntime
+@inject IContentService ContentService
+@inject IUserService UserService
+@inject IUserCallService UserCallService
+@inject ILogger<CallScreen> Logger
+
+@{
+    bool isCallInitiator = CallRoom.InitiatorUserId == SessionUserId;
+}
+
+<div @ref="_rootElement" class="pointer-events-auto select-none shadow-md flex flex-col text-white" style="width: 32%; height: 18%">
+    <header class="bg-gray-600 h-8 flex-none items-center px-2 py-1">
+        @switch (_state) {
+            case State.Initializing:
+                <p class="flex-1 animate-pulse">Initializing...</p>
+                break;
+
+            case State.Dialing:
+                @if (isCallInitiator) {
+                    <p class="flex-1 animate-pulse whitespace-nowrap overflow-hidden text-ellipsis">Calling @_otherUser!.Value.DisplayName</p>
+                } else {
+                    <p class="flex-1 animate-pulse whitespace-nowrap overflow-hidden text-ellipsis">Incoming call from @_otherUser!.Value.DisplayName</p>
+                }
+                break;
+
+            case State.CallSetup:
+                <p class="flex-1 animate-pulse whitespace-nowrap overflow-hidden text-ellipsis">Setting up call...</p>
+                break;
+
+            case State.Calling:
+                <p class="flex-1 animate-pulse whitespace-nowrap overflow-hidden text-ellipsis">@_otherUser!.Value.DisplayName</p>
+                break;
+        }
+    </header>
+
+    <section class="bg-black flex-1 relative overflow-hidden">
+        @switch (_state) {
+            case State.Initializing:
+                <div class="size-full flex flex-row justify-center items-center">
+                    <Spinner class="size-8 fill-white"/>
+                </div>
+                break;
+
+            case State.Dialing: {
+                var otherUser = _otherUser!.Value;
+
+                <div class="size-full overflow-hidden flex justify-center items-center">
+                    <img src="@(string.IsNullOrEmpty(otherUser.AvatarPath) ? null : ContentService.GetAssetPath(otherUser.AvatarPath))"
+                         alt="@(isCallInitiator ? "Receiver's Avatar" : "Caller's Avatar")"
+                         class="size-full object-contain">
+                </div>
+                break;
+            }
+        }
+
+        <div class="size-full overflow-hidden flex justify-center items-center @(_state is State.CallSetup or State.Calling ? string.Empty : "hidden")">
+            <video @ref="_remoteVideoElement" class="size-full object-contain -scale-x-100" playsinline autoplay muted></video>
+        </div>
+
+        <div class="actions-container z-10 absolute top-1 right-1 flex flex-col gap-2.5 items-center p-1 rounded-md bg-gray-700 border border-gray-600">
+            <button class="cursor-pointer flex-none group">
+                <Telephone Variation="TelephoneVariation.X" class="size-7 fill-gray-300 group-hover:fill-white"/>
+            </button>
+
+            @if (!isCallInitiator) {
+                <button class="cursor-pointer flex-none group" @onclick="HandleAcceptCall">
+                    <Telephone Variation="TelephoneVariation.Inbound" class="size-7 fill-gray-300 group-hover:fill-white"/>
+                </button>
+            }
+
+            <button class="cursor-pointer flex-none group" @onclick="HandleReportWebRTCDebug">
+                <Telephone Variation="TelephoneVariation.Inbound" class="size-7 fill-gray-300 group-hover:fill-white"/>
+            </button>
+        </div>
+    </section>
+</div>
+
 @code {
     [Parameter, EditorRequired] public required CallRoom CallRoom { get; set; }
-@* *@
-@*     [CascadingParameter(Name = "SessionUserId")] private string SessionUserId { get; set; } = null!; *@
-@*      *@
-@*     private IJSObjectReference? _module; *@
-@*     private IJSObjectReference? _callScreen; *@
-@*      *@
-@*     private DotNetObjectReference<CallScreen> _selfReference = null!; *@
-@*      *@
-@*     private ElementReference _rootElement; *@
-@*     private State _state; *@
-@*      *@
-@*     // private ElementReference _localVideoElement; *@
-@*      *@
-@*     private UserDisplayDTO? _otherUser; *@
-@*     private bool _setupRemoteVideo; *@
-@*     private ElementReference? _remoteVideoElement; *@
-@*      *@
-@*     protected override async Task OnAfterRenderAsync(bool firstRender) { *@
-@*         if (firstRender) { *@
-@*             if (CallRoom.InitiatorUserId == SessionUserId) { *@
-@*                 UserCallService.OnAnswerReceived += OnAnswerReceived; *@
-@*             } *@
-@*              *@
-@*             UserCallService.OnIceCandidateReceived += OnIceCandidateReceived; *@
-@*              *@
-@*             var iceServers = await UserCallService.CreateShortLivedIceServerConfiguration(); *@
-@*          *@
-@*             _selfReference = DotNetObjectReference.Create(this); *@
-@*              *@
-@*             _module = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import", "./js/Components/CallScreen.js"); *@
-@*             _callScreen = await _module.InvokeAsync<IJSObjectReference>("initialize", _selfReference, _rootElement, _remoteVideoElement, SessionUserId, iceServers); *@
-@*      *@
-@*             if (CallRoom.InitiatorUserId == SessionUserId) { *@
-@*                 _otherUser = await UserService.GetUserDisplayAsync(CallRoom.ReceiverUserId); *@
-@*             } else { *@
-@*                 _otherUser = await UserService.GetUserDisplayAsync(CallRoom.InitiatorUserId); *@
-@*             } *@
-@* *@
-@*             if (CallRoom.InitiatorUserId == SessionUserId) { *@
-@*                 await _module.InvokeVoidAsync("handleInitializeOutcomingCall", _callScreen); *@
-@*             } *@
-@* *@
-@*             _state = State.Dialing; *@
-@*             StateHasChanged(); *@
-@*         } *@
-@* *@
-@*         if (_state == State.CallSetup && !_setupRemoteVideo) { *@
-@*             _setupRemoteVideo = true; *@
-@*             // await _module!.InvokeAsync<IJSObjectReference>("setupRemoteVideoStream", _callScreen, _remoteVideoElement); *@
-@*             // *@
-@*             // _state = State.Calling; *@
-@*             // StateHasChanged(); *@
-@*         } *@
-@*     } *@
-@*      *@
-@*     [JSInvokable] *@
-@*     public async Task SendOffer(string offer) { *@
-@*         await UserCallService.SendOffer(CallRoom, SessionUserId, offer); *@
-@*     } *@
-@*      *@
-@*     [JSInvokable] *@
-@*     public async Task SendAnswer(string answer) { *@
-@*         await UserCallService.SendAnswer(CallRoom, SessionUserId, answer); *@
-@*     } *@
-@*      *@
-@*     [JSInvokable] *@
-@*     public async Task SendIceCandidate(Guid userId, string candidate) { *@
-@*         await UserCallService.SendIceCandidate(CallRoom, _otherUser!.Value.UserId, candidate); *@
-@*     } *@
-@* *@
-@*     [JSInvokable] *@
-@*     public void TransitionToCallSetup() { *@
-@*         _state = State.CallSetup; *@
-@*         InvokeAsync(StateHasChanged); *@
-@*     } *@
-@* *@
-@*     private async Task HandleAcceptCall() { *@
-@*         if (CallRoom.InitiatorUserId != SessionUserId && _module != null) { *@
-@*             await _module.InvokeVoidAsync("handleAcceptCall", _callScreen, CallRoom.OfferDescription); *@
-@*         } *@
-@*     } *@
-@* *@
-@*     private async Task HandleReportWebRTCDebug() { *@
-@*         await _module!.InvokeVoidAsync("reportWebRTCStats", _callScreen, CallRoom.OfferDescription); *@
-@*     } *@
-@* *@
-@*     private void OnAnswerReceived(CallRoom room, string answer) { *@
-@*         InvokeAsync(async () => { *@
-@*             await _module!.InvokeVoidAsync("handleCallAnswered", _callScreen, answer); *@
-@*         }); *@
-@*     } *@
-@* *@
-@*     private void OnIceCandidateReceived(CallRoom room, string candidate) { *@
-@*         InvokeAsync(async () => { *@
-@*             await _module!.InvokeVoidAsync("handleIceCandidateReceived", _callScreen, candidate); *@
-@*         }); *@
-@*     } *@
-@* *@
-@*     public async ValueTask DisposeAsync() { *@
-@*         UserCallService.OnAnswerReceived -= OnAnswerReceived; *@
-@*         UserCallService.OnIceCandidateReceived -= OnIceCandidateReceived; *@
-@*          *@
-@*         try { *@
-@*             if (_callScreen != null) { *@
-@*                 await JavascriptRuntime.InvokeVoidAsync("dispose"); *@
-@*                 await _callScreen.DisposeAsync(); *@
-@* *@
-@*                 _callScreen = null!; *@
-@*             } *@
-@* *@
-@*             if (_module != null) { *@
-@*                 await _module.DisposeAsync(); *@
-@*                 _module = null; *@
-@*             } *@
-@*         } catch (JSDisconnectedException) { *@
-@*         } *@
-@* *@
-@*         _selfReference.Dispose(); *@
-@*         _selfReference = null!; *@
-@*     } *@
-@* *@
-@*     private enum State { *@
-@*         Initializing, *@
-@*         Dialing, *@
-@*         CallSetup, *@
-@*         Calling, *@
-@*     } *@
+
+    [CascadingParameter(Name = "SessionUserId")] private Guid SessionUserId { get; set; }
+
+    private IJSObjectReference? _module;
+    private IJSObjectReference? _callScreen;
+
+    private DotNetObjectReference<CallScreen> _selfReference = null!;
+
+    private ElementReference _rootElement;
+    private State _state;
+
+    // private ElementReference _localVideoElement;
+
+    private UserDisplayDTO? _otherUser;
+    private bool _setupRemoteVideo;
+    private ElementReference? _remoteVideoElement;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            if (CallRoom.InitiatorUserId == SessionUserId) {
+                UserCallService.OnAnswerReceived += OnAnswerReceived;
+            }
+
+            UserCallService.OnIceCandidateReceived += OnIceCandidateReceived;
+
+            var iceServers = await UserCallService.CreateShortLivedIceServerConfiguration();
+
+            _selfReference = DotNetObjectReference.Create(this);
+
+            _module = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import", "./js/Components/CallScreen.js");
+            _callScreen = await _module.InvokeAsync<IJSObjectReference>("initialize", _selfReference, _rootElement, _remoteVideoElement, SessionUserId, iceServers);
+
+            if (CallRoom.InitiatorUserId == SessionUserId) {
+                _otherUser = await UserService.GetUserDisplayAsync(CallRoom.ReceiverUserId);
+            } else {
+                _otherUser = await UserService.GetUserDisplayAsync(CallRoom.InitiatorUserId);
+            }
+
+            if (CallRoom.InitiatorUserId == SessionUserId) {
+                await _module.InvokeVoidAsync("handleInitializeOutcomingCall", _callScreen);
+            }
+
+            _state = State.Dialing;
+            StateHasChanged();
+        }
+
+        if (_state == State.CallSetup && !_setupRemoteVideo) {
+            _setupRemoteVideo = true;
+            // await _module!.InvokeAsync<IJSObjectReference>("setupRemoteVideoStream", _callScreen, _remoteVideoElement);
+            //
+            // _state = State.Calling;
+            // StateHasChanged();
+        }
+    }
+
+    [JSInvokable]
+    public async Task SendOffer(string offer) {
+        await UserCallService.SendOffer(CallRoom, SessionUserId, offer);
+    }
+
+    [JSInvokable]
+    public async Task SendAnswer(string answer) {
+        await UserCallService.SendAnswer(CallRoom, SessionUserId, answer);
+    }
+
+    [JSInvokable]
+    public async Task SendIceCandidate(Guid userId, string candidate) {
+        await UserCallService.SendIceCandidate(CallRoom, _otherUser!.Value.UserId, candidate);
+    }
+
+    [JSInvokable]
+    public void TransitionToCallSetup() {
+        _state = State.CallSetup;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleAcceptCall() {
+        if (CallRoom.InitiatorUserId != SessionUserId && _module != null) {
+            await _module.InvokeVoidAsync("handleAcceptCall", _callScreen, CallRoom.OfferDescription);
+        }
+    }
+
+    private async Task HandleReportWebRTCDebug() {
+        await _module!.InvokeVoidAsync("reportWebRTCStats", _callScreen, CallRoom.OfferDescription);
+    }
+
+    private void OnAnswerReceived(CallRoom room, string answer) {
+        InvokeAsync(async () => {
+            await _module!.InvokeVoidAsync("handleCallAnswered", _callScreen, answer);
+        });
+    }
+
+    private void OnIceCandidateReceived(CallRoom room, string candidate) {
+        InvokeAsync(async () => {
+            await _module!.InvokeVoidAsync("handleIceCandidateReceived", _callScreen, candidate);
+        });
+    }
+
+    public async ValueTask DisposeAsync() {
+        UserCallService.OnAnswerReceived -= OnAnswerReceived;
+        UserCallService.OnIceCandidateReceived -= OnIceCandidateReceived;
+
+        try {
+            if (_callScreen != null) {
+                await JavascriptRuntime.InvokeVoidAsync("dispose");
+                await _callScreen.DisposeAsync();
+
+                _callScreen = null!;
+            }
+
+            if (_module != null) {
+                await _module.DisposeAsync();
+                _module = null;
+            }
+        } catch (JSDisconnectedException) {
+        }
+
+        _selfReference.Dispose();
+        _selfReference = null!;
+    }
+
+     private enum State {
+         Initializing,
+         Dialing,
+         CallSetup,
+         Calling,
+     }
 }

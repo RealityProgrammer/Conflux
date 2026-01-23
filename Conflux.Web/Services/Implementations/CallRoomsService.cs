@@ -13,7 +13,7 @@ public sealed class CallRoomsService : ICallRoomsService {
         }
     }
     
-    public CallRoom CreateCallRoom(string senderId, string receiverId) {
+    public CallRoom CreateCallRoom(Guid senderId, Guid receiverId) {
         using (_lock.EnterScope()) {
             var room = new CallRoom(senderId, receiverId);
             _callRooms.Add(room.Id, room);

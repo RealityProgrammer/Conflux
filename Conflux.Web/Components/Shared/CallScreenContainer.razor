@@ -16,12 +16,16 @@
 
 @code {
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
-    private string _userId = null!;
+    private Guid _userId;
     
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
             var authState = await AuthenticationState;
-            _userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+            if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id ||
+                !Guid.TryParse(id, out _userId)) {
+                return;
+            }
             
             UserCallService.OnCallInitialized += OnUserCallInitialized;
             UserCallService.OnOfferReceived += OnOfferReceived;
