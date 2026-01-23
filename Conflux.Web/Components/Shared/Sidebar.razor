@@ -3,7 +3,7 @@
 @inject IJSRuntime JavascriptRuntime
 @inject ILogger<Sidebar> Logger
 
-<div class="fixed top-0 bottom-0 w-[100px] lg:hidden bg-transparent touch-none select-none pointer-events-auto @(Direction == SidebarDirection.RightToLeft ? "right-0" : "left-0")" @ref="EdgeDetector"></div>
+<div class="absolute top-0 bottom-0 w-[100px] lg:hidden bg-transparent touch-none select-none pointer-events-auto @(Direction == SidebarDirection.RightToLeft ? "right-0" : "left-0")" @ref="EdgeDetector"></div>
 
 <div @ref="OverlayElement" class="cursor-default absolute inset-0 bg-black hidden lg:hidden z-100" style="opacity: 0"></div>
 
