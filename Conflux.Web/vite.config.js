@@ -15,8 +15,8 @@ export default defineConfig({
         alias: { "~": __dirname }
     },
     build: {
-        minify: false, 
-        terserOptions: { compress: false, mangle: false },
+        // minify: false, 
+        // terserOptions: { compress: false, mangle: false },
         
         manifest: true,
         outDir: path.join(__dirname, 'wwwroot'),
