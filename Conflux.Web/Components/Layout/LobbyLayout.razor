@@ -37,14 +37,12 @@
             }
             
             await FriendshipEventDispatcher.Connect();
-            await UserNotificationService.Connect(userId);
-            await UserCallService.Connect();
+            await UserNotificationService.Connect();
         }
     }
 
     public async ValueTask DisposeAsync() {
         await FriendshipEventDispatcher.Disconnect();
         await UserNotificationService.Disconnect();
-        await UserCallService.Disconnect();
     }
 }

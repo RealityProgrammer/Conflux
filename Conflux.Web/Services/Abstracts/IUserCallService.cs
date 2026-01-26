@@ -8,10 +8,10 @@ public interface IUserCallService {
     event Action<CallRoom, string> OnAnswerReceived;
     event Action<CallRoom, string> OnIceCandidateReceived;
     
-    IReadOnlyList<CallRoom> Rooms { get; }
+    IReadOnlyList<CallRoom> JoinedRooms { get; }
 
-    Task Connect();
-    Task Disconnect();
+    // Task Connect();
+    // Task Disconnect();
     
     Task<bool> InitializeDirectCall(Guid fromUserId, Guid receiverUserId);
 

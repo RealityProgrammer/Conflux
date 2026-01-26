@@ -5,10 +5,11 @@
 @implements IDisposable
 
 @inject IUserCallService UserCallService
+@inject IWebUserNotificationService UserNotificationService
 
 <div class="fixed inset-4 z-100000 pointer-events-none">
     <CascadingValue Value="_userId" Name="SessionUserId">
-        @foreach (var room in UserCallService.Rooms) {
+        @foreach (var room in UserCallService.JoinedRooms) {
             <CallScreen @key="room.Id" CallRoom="room"/>
         }
     </CascadingValue>
@@ -29,6 +30,7 @@
             
             UserCallService.OnCallInitialized += OnUserCallInitialized;
             UserCallService.OnOfferReceived += OnOfferReceived;
+            UserNotificationService.OnIncomingCall += OnIncomingCall;
         }
     }
 
@@ -40,8 +42,13 @@
         InvokeAsync(StateHasChanged);
     }
 
+    private void OnIncomingCall(IncomingCallEventArgs args) {
+        InvokeAsync(StateHasChanged);
+    }
+
     public void Dispose() {
         UserCallService.OnCallInitialized -= OnUserCallInitialized;
         UserCallService.OnOfferReceived -= OnOfferReceived;
+        UserNotificationService.OnIncomingCall -= OnIncomingCall;
     }
 }

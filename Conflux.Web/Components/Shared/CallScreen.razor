@@ -62,6 +62,7 @@
         }
 
         <div class="size-full overflow-hidden flex justify-center items-center @(_state is State.CallSetup or State.Calling ? string.Empty : "hidden")">
+            <video @ref="_localVideoElement" class="size-full object-contain -scale-x-100" playsinline autoplay muted></video>
             <video @ref="_remoteVideoElement" class="size-full object-contain -scale-x-100" playsinline autoplay muted></video>
         </div>
 
@@ -100,15 +101,15 @@
 
     private UserDisplayDTO? _otherUser;
     private bool _setupRemoteVideo;
-    private ElementReference? _remoteVideoElement;
+    private ElementReference _localVideoElement, _remoteVideoElement;
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
             if (CallRoom.InitiatorUserId == SessionUserId) {
-                UserCallService.OnAnswerReceived += OnAnswerReceived;
+                // UserCallService.OnAnswerReceived += OnAnswerReceived;
             }
 
-            UserCallService.OnIceCandidateReceived += OnIceCandidateReceived;
+            // UserCallService.OnIceCandidateReceived += OnIceCandidateReceived;
 
             var iceServers = await UserCallService.CreateShortLivedIceServerConfiguration();
 
@@ -123,9 +124,9 @@
                 _otherUser = await UserService.GetUserDisplayAsync(CallRoom.InitiatorUserId);
             }
 
-            if (CallRoom.InitiatorUserId == SessionUserId) {
-                await _module.InvokeVoidAsync("handleInitializeOutcomingCall", _callScreen);
-            }
+            // if (CallRoom.InitiatorUserId == SessionUserId) {
+            //     await _module.InvokeVoidAsync("handleInitializeOutcomingCall", _callScreen);
+            // }
 
             _state = State.Dialing;
             StateHasChanged();
@@ -147,45 +148,45 @@
 
     [JSInvokable]
     public async Task SendAnswer(string answer) {
-        await UserCallService.SendAnswer(CallRoom, SessionUserId, answer);
+        // await UserCallService.SendAnswer(CallRoom, SessionUserId, answer);
     }
 
     [JSInvokable]
     public async Task SendIceCandidate(Guid userId, string candidate) {
-        await UserCallService.SendIceCandidate(CallRoom, _otherUser!.Value.UserId, candidate);
+        // await UserCallService.SendIceCandidate(CallRoom, _otherUser!.Value.UserId, candidate);
     }
 
     [JSInvokable]
     public void TransitionToCallSetup() {
-        _state = State.CallSetup;
-        InvokeAsync(StateHasChanged);
+        // _state = State.CallSetup;
+        // InvokeAsync(StateHasChanged);
     }
 
     private async Task HandleAcceptCall() {
-        if (CallRoom.InitiatorUserId != SessionUserId && _module != null) {
-            await _module.InvokeVoidAsync("handleAcceptCall", _callScreen, CallRoom.OfferDescription);
-        }
+        // if (CallRoom.InitiatorUserId != SessionUserId && _module != null) {
+        //     await _module.InvokeVoidAsync("handleAcceptCall", _callScreen, CallRoom.OfferDescription);
+        // }
     }
 
     private async Task HandleReportWebRTCDebug() {
-        await _module!.InvokeVoidAsync("reportWebRTCStats", _callScreen, CallRoom.OfferDescription);
+        // await _module!.InvokeVoidAsync("reportWebRTCStats", _callScreen, CallRoom.OfferDescription);
     }
 
-    private void OnAnswerReceived(CallRoom room, string answer) {
-        InvokeAsync(async () => {
-            await _module!.InvokeVoidAsync("handleCallAnswered", _callScreen, answer);
-        });
-    }
-
-    private void OnIceCandidateReceived(CallRoom room, string candidate) {
-        InvokeAsync(async () => {
-            await _module!.InvokeVoidAsync("handleIceCandidateReceived", _callScreen, candidate);
-        });
-    }
+    // private void OnAnswerReceived(CallRoom room, string answer) {
+    //     InvokeAsync(async () => {
+    //         await _module!.InvokeVoidAsync("handleCallAnswered", _callScreen, answer);
+    //     });
+    // }
+    //
+    // private void OnIceCandidateReceived(CallRoom room, string candidate) {
+    //     InvokeAsync(async () => {
+    //         await _module!.InvokeVoidAsync("handleIceCandidateReceived", _callScreen, candidate);
+    //     });
+    // }
 
     public async ValueTask DisposeAsync() {
-        UserCallService.OnAnswerReceived -= OnAnswerReceived;
-        UserCallService.OnIceCandidateReceived -= OnIceCandidateReceived;
+        // UserCallService.OnAnswerReceived -= OnAnswerReceived;
+        // UserCallService.OnIceCandidateReceived -= OnIceCandidateReceived;
 
         try {
             if (_callScreen != null) {

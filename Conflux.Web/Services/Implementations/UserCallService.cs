@@ -1,4 +1,5 @@
-﻿using Conflux.Web.Core;
+﻿using Conflux.Application.Abstracts;
+using Conflux.Web.Core;
 using Conflux.Web.Services.Abstracts;
 using Conflux.Web.Services.Hubs;
 using Microsoft.AspNetCore.Components;
@@ -8,30 +9,47 @@ using System.Net;
 
 namespace Conflux.Web.Services.Implementations;
 
-internal sealed class UserCallService(
-    ILogger<UserCallService> logger,
-    NavigationManager navigationManager,
-    IHttpContextAccessor httpContextAccessor,
-    IHubContext<WebRTCSignalingHub> hubContext,
-    ICallRoomsService callRoomsService,
-    CloudflareTurnServerClient cloudflareTurnServerClient
-) : IUserCallService, IAsyncDisposable {
+internal sealed class UserCallService : IUserCallService, IAsyncDisposable {
     public event Action? OnCallInitialized;
     public event Action<CallRoom>? OnOfferReceived;
     public event Action<CallRoom, string>? OnAnswerReceived;
     public event Action<CallRoom, string>? OnIceCandidateReceived;
 
-    private readonly List<CallRoom> _rooms = [];
-    public IReadOnlyList<CallRoom> Rooms => _rooms;
+    private readonly List<CallRoom> _joinedRooms = [];
+    public IReadOnlyList<CallRoom> JoinedRooms => _joinedRooms;
     
-    private HubConnection? _hubConnection;
+    private readonly ILogger<UserCallService> _logger;
+    private readonly NavigationManager _navigationManager;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IHubContext<WebRTCSignalingHub> _hubContext;
+    private readonly ICallService _callServices;
+    private readonly IWebUserNotificationService _userNotificationService;
+    private readonly CloudflareTurnServerClient _cloudflareTurnServerClient;
 
-    public async Task Connect() {
-        if (_hubConnection != null) return;
-        
-        _hubConnection = new HubConnectionBuilder()
-            .WithUrl(navigationManager.ToAbsoluteUri("/hub/webrtc"), options => {
-                var cookies = httpContextAccessor.HttpContext!.Request.Cookies.ToDictionary();
+    public UserCallService(
+        ILogger<UserCallService> logger,
+        NavigationManager navigationManager,
+        IHttpContextAccessor httpContextAccessor,
+        IHubContext<WebRTCSignalingHub> hubContext,
+        ICallService callServices,
+        IWebUserNotificationService userNotificationService,
+        CloudflareTurnServerClient cloudflareTurnServerClient
+    ) {
+        _logger = logger;
+        _navigationManager = navigationManager;
+        _httpContextAccessor = httpContextAccessor;
+        _hubContext = hubContext;
+        _callServices = callServices;
+        _userNotificationService = userNotificationService;
+        _cloudflareTurnServerClient = cloudflareTurnServerClient;
+
+        _userNotificationService.OnIncomingCall += OnIncomingCall;
+    }
+
+    private HubConnection CreateCallHubConnection() {
+        var connection = new HubConnectionBuilder()
+            .WithUrl(_navigationManager.ToAbsoluteUri(""), options => {
+                var cookies = _httpContextAccessor.HttpContext!.Request.Cookies.ToDictionary();
                 
                 options.UseDefaultCredentials = true;
                 
@@ -42,7 +60,7 @@ internal sealed class UserCallService(
                         cookie.Key,
                         WebUtility.UrlEncode(cookie.Value),
                         path: "/",
-                        domain: navigationManager.ToAbsoluteUri("/").Host));
+                        domain: _navigationManager.ToAbsoluteUri("/").Host));
                 }
 
                 options.Cookies = cookieContainer;
@@ -64,72 +82,84 @@ internal sealed class UserCallService(
             .WithAutomaticReconnect()
             .Build();
 
-        _hubConnection.On<Guid>("offer", roomId => {
-            if (callRoomsService.GetCallRoom(roomId) is { } room) {
-                _rooms.Add(room);
-                OnOfferReceived?.Invoke(room);
-            }
-        });
+        return connection;
 
-        _hubConnection.On<Guid, string>("answer", (roomId, answer) => {
-            if (callRoomsService.GetCallRoom(roomId) is { } room) {
-                logger.LogInformation("OnAnswerReceived?.Invoke()");
-                OnAnswerReceived?.Invoke(room, answer);
-            }
-        });
-        
-        _hubConnection.On<Guid, string>("ice-candidate", (roomId, iceCandidate) => {
-            if (callRoomsService.GetCallRoom(roomId) is { } room) {
-                OnIceCandidateReceived?.Invoke(room, iceCandidate);
-            }
-        });
-
-        await _hubConnection.StartAsync();
+        // connection.On<Guid>("offer", roomId => {
+        //     if (_callRoomsService.GetCallRoom(roomId) is { } room) {
+        //         _rooms.Add(room);
+        //         OnOfferReceived?.Invoke(room);
+        //     }
+        // });
+        //
+        // _hubConnection.On<Guid, string>("answer", (roomId, answer) => {
+        //     if (_callRoomsService.GetCallRoom(roomId) is { } room) {
+        //         _logger.LogInformation("OnAnswerReceived?.Invoke()");
+        //         OnAnswerReceived?.Invoke(room, answer);
+        //     }
+        // });
+        //
+        // _hubConnection.On<Guid, string>("ice-candidate", (roomId, iceCandidate) => {
+        //     if (_callRoomsService.GetCallRoom(roomId) is { } room) {
+        //         OnIceCandidateReceived?.Invoke(room, iceCandidate);
+        //     }
+        // });
+        //
+        // await _hubConnection.StartAsync();
     }
 
-    public async Task Disconnect() {
-        if (_hubConnection != null) {
-            await _hubConnection.DisposeAsync();
-        }
-    }
+    // public async Task Disconnect() {
+        // if (_hubConnection != null) {
+        //     await _hubConnection.DisposeAsync();
+        // }
+    // }
     
-    public Task<bool> InitializeDirectCall(Guid fromUserId, Guid receiverUserId) {
-        _rooms.Add(callRoomsService.CreateCallRoom(fromUserId, receiverUserId));
+    public async Task<bool> InitializeDirectCall(Guid fromUserId, Guid receiverUserId) {
+        var callRoom = _callServices.CreateCallRoom(fromUserId, receiverUserId);
+        _joinedRooms.Add(callRoom);
         OnCallInitialized?.Invoke();
         
-        return Task.FromResult(true);
+        await _userNotificationService.Dispatch(new IncomingCallEventArgs(receiverUserId, callRoom.Id));
+
+        return true;
     }
 
     public async Task SendOffer(CallRoom room, Guid senderId, string offer) {
-        if (!_rooms.Contains(room)) {
+        if (!_joinedRooms.Contains(room)) {
             return;
         }
 
         room.OfferDescription = offer;
-        await hubContext.Clients.User(room.ReceiverUserId.ToString()).SendAsync("offer", room.Id);
+        await _hubContext.Clients.User(room.ReceiverUserId.ToString()).SendAsync("offer", room.Id);
     }
 
     public async Task SendAnswer(CallRoom room, Guid senderId, string answer) {
-        if (!_rooms.Contains(room)) {
+        if (!_joinedRooms.Contains(room)) {
             return;
         }
         
-        await hubContext.Clients.User(room.InitiatorUserId.ToString()).SendAsync("answer", room.Id, answer);
+        await _hubContext.Clients.User(room.InitiatorUserId.ToString()).SendAsync("answer", room.Id, answer);
     }
 
     public async Task SendIceCandidate(CallRoom room, Guid receiverId, string candidate) {
-        if (!_rooms.Contains(room)) {
+        if (!_joinedRooms.Contains(room)) {
             return;
         }
         
-        await hubContext.Clients.User(receiverId.ToString()).SendAsync("ice-candidate", room.Id, candidate);
+        await _hubContext.Clients.User(receiverId.ToString()).SendAsync("ice-candidate", room.Id, candidate);
     }
 
     public async Task<IceServerConfiguration[]> CreateShortLivedIceServerConfiguration() {
-        return await cloudflareTurnServerClient.GenerateIceServerConfigurations();
+        return await _cloudflareTurnServerClient.GenerateIceServerConfigurations();
+    }
+
+    private void OnIncomingCall(IncomingCallEventArgs args) {
+        if (_callServices.TryGetCallRoom(args.CallId, out var room) && room.ReceiverUserId == args.UserId) {
+            _joinedRooms.Add(room);
+        }
     }
 
     public async ValueTask DisposeAsync() {
-        await Disconnect();
+        _userNotificationService.OnIncomingCall -= OnIncomingCall;
+        // await Disconnect();
     }
 }

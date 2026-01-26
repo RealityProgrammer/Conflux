@@ -1,5 +1,6 @@
 ﻿using Conflux.Application.Abstracts;
 using Conflux.Domain.Events;
+using Conflux.Web.Services.Abstracts;
 using Conflux.Web.Services.Hubs;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR;
@@ -12,19 +13,20 @@ public sealed class UserNotificationService(
     IHubContext<UserNotificationHub> hubContext,
     NavigationManager navigationManager,
     IHttpContextAccessor httpContextAccessor
-) : IUserNotificationService, IAsyncDisposable {
+) : IWebUserNotificationService, IAsyncDisposable {
     public const string CommunityBannedEventName = "CommunityBanned";
-    public const string ReceivedCallOfferEventName = "ReceivedCallOffer";
+    public const string IncomingCallEventName = "IncomingCall";
     
     public event Action<CommunityBannedEventArgs>? OnCommunityBanned;
+    public event Action<IncomingCallEventArgs>? OnIncomingCall;
 
     private HubConnection? _hubConnection;
 
-    public async Task Connect(Guid userId) {
+    public async Task Connect() {
         if (_hubConnection != null) return;
         
         _hubConnection = new HubConnectionBuilder()
-            .WithUrl(navigationManager.ToAbsoluteUri($"/hub/user-notification?UserId={userId}"), options => {
+            .WithUrl(navigationManager.ToAbsoluteUri("/hub/user-notification"), options => {
                 var cookies = httpContextAccessor.HttpContext!.Request.Cookies.ToDictionary();
                 
                 options.UseDefaultCredentials = true;
@@ -56,10 +58,18 @@ public sealed class UserNotificationService(
                 };
             })
             .WithAutomaticReconnect()
+            .ConfigureLogging(logging => {
+                logging.AddFilter("Microsoft.AspNetCore.SignalR", LogLevel.Debug);
+                logging.AddFilter("Microsoft.AspNetCore.Http.Connections", LogLevel.Debug);
+            })
             .Build();
 
         _hubConnection.On<CommunityBannedEventArgs>(CommunityBannedEventName, args => {
             OnCommunityBanned?.Invoke(args);
+        });
+
+        _hubConnection.On<IncomingCallEventArgs>(IncomingCallEventName, args => {
+            OnIncomingCall?.Invoke(args);
         });
 
         await _hubConnection.StartAsync();
@@ -75,6 +85,12 @@ public sealed class UserNotificationService(
         var user = hubContext.Clients.User(args.UserId.ToString());
         
         await user.SendAsync(CommunityBannedEventName, args);
+    }
+
+    public async Task Dispatch(IncomingCallEventArgs args) {
+        var user = hubContext.Clients.User(args.UserId.ToString());
+        
+        await user.SendAsync(IncomingCallEventName, args);
     }
 
     public async ValueTask DisposeAsync() {

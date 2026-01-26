@@ -145,8 +145,9 @@ builder.Services.AddScoped<ICommunityService, CommunityService>();
 builder.Services.AddScoped<ICommunityRoleService, CommunityRoleService>();
 builder.Services.AddScoped<ICommunityEventDispatcher, CommunityEventDispatcher>();
 builder.Services.AddScoped<IReportService, ReportService>();
-builder.Services.AddScoped<IUserNotificationService, UserNotificationService>();
-builder.Services.AddSingleton<ICallRoomsService, CallRoomsService>();
+builder.Services.AddScoped<IWebUserNotificationService, UserNotificationService>();
+builder.Services.AddScoped<IUserNotificationService>(provider => provider.GetRequiredService<IWebUserNotificationService>());
+builder.Services.AddSingleton<ICallService, CallService>();
 builder.Services.AddScoped<IUserCallService, UserCallService>();
     
 // SignalR related services.
