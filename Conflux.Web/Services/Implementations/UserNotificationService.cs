@@ -18,7 +18,7 @@ public sealed class UserNotificationService(
     public const string IncomingCallEventName = "IncomingCall";
     
     public event Action<CommunityBannedEventArgs>? OnCommunityBanned;
-    public event Action<IncomingCallEventArgs>? OnIncomingCall;
+    public event Func<IncomingCallEventArgs, Task>? OnIncomingCall;
 
     private HubConnection? _hubConnection;
 
@@ -68,8 +68,10 @@ public sealed class UserNotificationService(
             OnCommunityBanned?.Invoke(args);
         });
 
-        _hubConnection.On<IncomingCallEventArgs>(IncomingCallEventName, args => {
-            OnIncomingCall?.Invoke(args);
+        _hubConnection.On<IncomingCallEventArgs>(IncomingCallEventName, async args => {
+            if (OnIncomingCall != null) {
+                await OnIncomingCall.Invoke(args);
+            }
         });
 
         await _hubConnection.StartAsync();

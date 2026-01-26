@@ -163,7 +163,7 @@
     }
 
     private async Task HandleHangUp() {
-        await UserCallService.HangUp(CallRoom.Id, SessionUserId);
+        await UserCallService.LeaveCall(CallRoom.Id, SessionUserId);
     }
 
     private async Task HandleAcceptCall() {
@@ -191,10 +191,10 @@
     public async ValueTask DisposeAsync() {
         // UserCallService.OnAnswerReceived -= OnAnswerReceived;
         // UserCallService.OnIceCandidateReceived -= OnIceCandidateReceived;
-
+        
         try {
             if (_callScreen != null) {
-                await JavascriptRuntime.InvokeVoidAsync("dispose");
+                await _module!.InvokeVoidAsync("dispose", _callScreen);
                 await _callScreen.DisposeAsync();
 
                 _callScreen = null!;

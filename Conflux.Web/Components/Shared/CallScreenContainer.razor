@@ -28,13 +28,14 @@
                 return;
             }
             
-            UserCallService.OnCallInitialized += OnUserCallInitialized;
+            UserCallService.OnCallJoined += OnUserCallJoined;
             UserCallService.OnOfferReceived += OnOfferReceived;
             UserNotificationService.OnIncomingCall += OnIncomingCall;
+            UserCallService.OnCallLeft += OnCallLeft;
         }
     }
 
-    private void OnUserCallInitialized() {
+    private void OnUserCallJoined() {
         StateHasChanged();
     }
 
@@ -42,13 +43,18 @@
         InvokeAsync(StateHasChanged);
     }
 
-    private void OnIncomingCall(IncomingCallEventArgs args) {
+    private async Task OnIncomingCall(IncomingCallEventArgs args) {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void OnCallLeft(Guid callId) {
         InvokeAsync(StateHasChanged);
     }
 
     public void Dispose() {
-        UserCallService.OnCallInitialized -= OnUserCallInitialized;
+        UserCallService.OnCallJoined -= OnUserCallJoined;
         UserCallService.OnOfferReceived -= OnOfferReceived;
         UserNotificationService.OnIncomingCall -= OnIncomingCall;
+        UserCallService.OnCallLeft -= OnCallLeft;
     }
 }
