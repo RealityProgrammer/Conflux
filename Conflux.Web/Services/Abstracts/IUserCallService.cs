@@ -4,6 +4,8 @@ namespace Conflux.Web.Services.Abstracts;
 
 public interface IUserCallService {
     event Action OnCallInitialized;
+    event Action<Guid, Guid> OnUserHangUp;
+        
     event Action<CallRoom> OnOfferReceived;
     event Action<CallRoom, string> OnAnswerReceived;
     event Action<CallRoom, string> OnIceCandidateReceived;
@@ -14,6 +16,7 @@ public interface IUserCallService {
     // Task Disconnect();
     
     Task<bool> InitializeDirectCall(Guid fromUserId, Guid receiverUserId);
+    Task HangUp(Guid callId, Guid userId);
 
     Task<IceServerConfiguration[]> CreateShortLivedIceServerConfiguration();
     

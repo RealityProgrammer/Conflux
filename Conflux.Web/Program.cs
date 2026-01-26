@@ -245,7 +245,7 @@ app.MapHub<FriendshipHub>("/hub/friendship");
 app.MapHub<ConversationHub>("/hub/conversation");
 app.MapHub<CommunityHub>("/hub/community");
 app.MapHub<UserNotificationHub>("/hub/user-notification");
-app.MapHub<WebRTCSignalingHub>("/hub/webrtc");
+app.MapHub<CallingHub>("/hub/calling");
 
 // Add Roles, and assign to users.
 app.Run();

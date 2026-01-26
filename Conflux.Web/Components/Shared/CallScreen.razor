@@ -67,7 +67,7 @@
         </div>
 
         <div class="actions-container z-10 absolute top-1 right-1 flex flex-col gap-2.5 items-center p-1 rounded-md bg-gray-700 border border-gray-600">
-            <button class="cursor-pointer flex-none group">
+            <button class="cursor-pointer flex-none group" @onclick="HandleHangUp">
                 <Telephone Variation="TelephoneVariation.X" class="size-7 fill-gray-300 group-hover:fill-white"/>
             </button>
 
@@ -77,9 +77,9 @@
                 </button>
             }
 
-            <button class="cursor-pointer flex-none group" @onclick="HandleReportWebRTCDebug">
-                <Telephone Variation="TelephoneVariation.Inbound" class="size-7 fill-gray-300 group-hover:fill-white"/>
-            </button>
+            @* <button class="cursor-pointer flex-none group" @onclick="HandleReportWebRTCDebug"> *@
+            @*     <Telephone Variation="TelephoneVariation.Inbound" class="size-7 fill-gray-300 group-hover:fill-white"/> *@
+            @* </button> *@
         </div>
     </section>
 </div>
@@ -160,6 +160,10 @@
     public void TransitionToCallSetup() {
         // _state = State.CallSetup;
         // InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleHangUp() {
+        await UserCallService.HangUp(CallRoom.Id, SessionUserId);
     }
 
     private async Task HandleAcceptCall() {

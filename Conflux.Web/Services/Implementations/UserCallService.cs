@@ -11,6 +11,8 @@ namespace Conflux.Web.Services.Implementations;
 
 internal sealed class UserCallService : IUserCallService, IAsyncDisposable {
     public event Action? OnCallInitialized;
+    public event Action<Guid, Guid>? OnUserHangUp;
+    
     public event Action<CallRoom>? OnOfferReceived;
     public event Action<CallRoom, string>? OnAnswerReceived;
     public event Action<CallRoom, string>? OnIceCandidateReceived;
@@ -21,7 +23,7 @@ internal sealed class UserCallService : IUserCallService, IAsyncDisposable {
     private readonly ILogger<UserCallService> _logger;
     private readonly NavigationManager _navigationManager;
     private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly IHubContext<WebRTCSignalingHub> _hubContext;
+    private readonly IHubContext<CallingHub> _hubContext;
     private readonly ICallService _callServices;
     private readonly IWebUserNotificationService _userNotificationService;
     private readonly CloudflareTurnServerClient _cloudflareTurnServerClient;
@@ -30,7 +32,7 @@ internal sealed class UserCallService : IUserCallService, IAsyncDisposable {
         ILogger<UserCallService> logger,
         NavigationManager navigationManager,
         IHttpContextAccessor httpContextAccessor,
-        IHubContext<WebRTCSignalingHub> hubContext,
+        IHubContext<CallingHub> hubContext,
         ICallService callServices,
         IWebUserNotificationService userNotificationService,
         CloudflareTurnServerClient cloudflareTurnServerClient
@@ -48,7 +50,7 @@ internal sealed class UserCallService : IUserCallService, IAsyncDisposable {
 
     private HubConnection CreateCallHubConnection() {
         var connection = new HubConnectionBuilder()
-            .WithUrl(_navigationManager.ToAbsoluteUri(""), options => {
+            .WithUrl(_navigationManager.ToAbsoluteUri("/hub/calling"), options => {
                 var cookies = _httpContextAccessor.HttpContext!.Request.Cookies.ToDictionary();
                 
                 options.UseDefaultCredentials = true;
@@ -81,6 +83,10 @@ internal sealed class UserCallService : IUserCallService, IAsyncDisposable {
             })
             .WithAutomaticReconnect()
             .Build();
+
+        connection.On<Guid, Guid>("UserHangUp", (roomId, userId) => {
+            OnUserHangUp?.Invoke(roomId, userId);
+        });
 
         return connection;
 
@@ -121,6 +127,14 @@ internal sealed class UserCallService : IUserCallService, IAsyncDisposable {
         await _userNotificationService.Dispatch(new IncomingCallEventArgs(receiverUserId, callRoom.Id));
 
         return true;
+    }
+
+    public async Task HangUp(Guid callId, Guid userId) {
+        if (_callServices.TryGetCallRoom(callId, out var room) && _joinedRooms.Remove(room)) {
+            var otherUserId = room.InitiatorUserId == userId ? room.ReceiverUserId : room.InitiatorUserId;
+            
+            await _hubContext.Clients.User(otherUserId.ToString()).SendAsync("UserHangUp", room.Id, userId);
+        }
     }
 
     public async Task SendOffer(CallRoom room, Guid senderId, string offer) {
