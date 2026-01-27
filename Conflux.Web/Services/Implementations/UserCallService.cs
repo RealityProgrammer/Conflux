@@ -91,7 +91,7 @@ internal sealed class UserCallService : IUserCallService, IAsyncDisposable {
                 if (_joinedRooms.Remove(callRoom)) {
                     OnUserHangUp?.Invoke(args);
 
-                    if (_callConnections.TryGetValue(args.CallId, out var callConnection)) {
+                    if (_callConnections.Remove(args.CallId, out var callConnection)) {
                         await callConnection.DisposeAsync();
                     }
                     
