@@ -12,8 +12,9 @@ internal sealed class UserCallService : IUserCallService, IAsyncDisposable {
     public event Action? OnCallJoined;
     public event Action<Guid>? OnCallLeft;
     public event Action<CallUserHangUpEventArgs>? OnUserHangUp;
+    public event Action<CallRoom>? OnCallAccepted;
     
-    public event Action<CallRoom>? OnOfferReceived;
+    public event Action<CallRoom, string>? OnOfferReceived;
     public event Action<CallRoom, string>? OnAnswerReceived;
     public event Action<CallRoom, string>? OnIceCandidateReceived;
 
@@ -100,31 +101,34 @@ internal sealed class UserCallService : IUserCallService, IAsyncDisposable {
             }
         });
 
+        connection.On<Guid>("CallAccepted", callId => {
+            if (_callServices.GetCallRoom(callId) is { } callRoom) {
+                OnCallAccepted?.Invoke(callRoom);
+            }
+        });
+
+        connection.On<Guid, string>("offer", (callId, offer) => {
+            if (_callServices.GetCallRoom(callId) is { } room && _joinedRooms.Contains(room)) {
+                OnOfferReceived?.Invoke(room, offer);
+            }
+        });
+        
+        connection.On<Guid, string>("answer", (callId, answer) => {
+            if (_callServices.GetCallRoom(callId) is { } room) {
+                _logger.LogInformation("OnAnswerReceived?.Invoke()");
+                OnAnswerReceived?.Invoke(room, answer);
+            }
+        });
+        
+        connection.On<Guid, string>("ice-candidate", (callId, iceCandidate) => {
+            if (_callServices.GetCallRoom(callId) is { } room) {
+                OnIceCandidateReceived?.Invoke(room, iceCandidate);
+            }
+        });
+
         await connection.StartAsync();
 
         return connection;
-
-        // connection.On<Guid>("offer", roomId => {
-        //     if (_callRoomsService.GetCallRoom(roomId) is { } room) {
-        //         _rooms.Add(room);
-        //         OnOfferReceived?.Invoke(room);
-        //     }
-        // });
-        //
-        // _hubConnection.On<Guid, string>("answer", (roomId, answer) => {
-        //     if (_callRoomsService.GetCallRoom(roomId) is { } room) {
-        //         _logger.LogInformation("OnAnswerReceived?.Invoke()");
-        //         OnAnswerReceived?.Invoke(room, answer);
-        //     }
-        // });
-        //
-        // _hubConnection.On<Guid, string>("ice-candidate", (roomId, iceCandidate) => {
-        //     if (_callRoomsService.GetCallRoom(roomId) is { } room) {
-        //         OnIceCandidateReceived?.Invoke(room, iceCandidate);
-        //     }
-        // });
-        //
-        // await _hubConnection.StartAsync();
     }
     
     public async Task<bool> InitializeDirectCall(Guid fromUserId, Guid receiverUserId) {
@@ -153,13 +157,34 @@ internal sealed class UserCallService : IUserCallService, IAsyncDisposable {
         }
     }
 
+    public async Task<bool> AcceptIncomingCall(Guid callId, Guid receiverUserId) {
+        if (_callServices.TryGetCallRoom(callId, out var room) && room.ReceiverUserId == receiverUserId && _joinedRooms.Contains(room)) {
+            room.State = CallRoomState.Calling;
+
+            await _hubContext.Clients.Group(callId.ToString()).SendAsync("CallAccepted", callId);
+            
+            // OnCallLeft?.Invoke(callId);
+            //
+            // var otherUserId = room.InitiatorUserId == userId ? room.ReceiverUserId : room.InitiatorUserId;
+            //
+            // await _hubContext.Clients.User(otherUserId.ToString()).SendAsync("UserHangUp", new CallUserHangUpEventArgs(callId, userId));
+            //
+            // if (_callConnections.Remove(callId, out var hubConnection)) {
+            //     await hubConnection.DisposeAsync();
+            // }
+
+            return true;
+        }
+
+        return false;
+    }
+
     public async Task SendOffer(CallRoom room, Guid senderId, string offer) {
         if (!_joinedRooms.Contains(room)) {
             return;
         }
 
-        room.OfferDescription = offer;
-        await _hubContext.Clients.User(room.ReceiverUserId.ToString()).SendAsync("offer", room.Id);
+        await _hubContext.Clients.User(room.ReceiverUserId.ToString()).SendAsync("offer", room.Id, offer);
     }
 
     public async Task SendAnswer(CallRoom room, Guid senderId, string answer) {
@@ -170,12 +195,12 @@ internal sealed class UserCallService : IUserCallService, IAsyncDisposable {
         await _hubContext.Clients.User(room.InitiatorUserId.ToString()).SendAsync("answer", room.Id, answer);
     }
 
-    public async Task SendIceCandidate(CallRoom room, Guid receiverId, string candidate) {
+    public async Task SendIceCandidate(CallRoom room, Guid targetUserId, string candidate) {
         if (!_joinedRooms.Contains(room)) {
             return;
         }
         
-        await _hubContext.Clients.User(receiverId.ToString()).SendAsync("ice-candidate", room.Id, candidate);
+        await _hubContext.Clients.User(targetUserId.ToString()).SendAsync("ice-candidate", room.Id, candidate);
     }
 
     public async Task<IceServerConfiguration[]> CreateShortLivedIceServerConfiguration() {

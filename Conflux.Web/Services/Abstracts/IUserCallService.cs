@@ -8,8 +8,9 @@ public interface IUserCallService {
     event Action OnCallJoined;
     event Action<Guid> OnCallLeft;
     event Action<CallUserHangUpEventArgs> OnUserHangUp;
+    event Action<CallRoom>? OnCallAccepted;
         
-    event Action<CallRoom> OnOfferReceived;
+    event Action<CallRoom, string> OnOfferReceived;
     event Action<CallRoom, string> OnAnswerReceived;
     event Action<CallRoom, string> OnIceCandidateReceived;
     
@@ -20,10 +21,11 @@ public interface IUserCallService {
     
     Task<bool> InitializeDirectCall(Guid fromUserId, Guid receiverUserId);
     Task LeaveCall(Guid callId, Guid userId);
+    Task<bool> AcceptIncomingCall(Guid callId, Guid receiverUserId);
 
     Task<IceServerConfiguration[]> CreateShortLivedIceServerConfiguration();
     
     Task SendOffer(CallRoom room, Guid senderId, string offer);
     Task SendAnswer(CallRoom room, Guid senderId, string answer);
-    Task SendIceCandidate(CallRoom room, Guid receiverId, string candidate);
+    Task SendIceCandidate(CallRoom room, Guid targetUserId, string candidate);
 }

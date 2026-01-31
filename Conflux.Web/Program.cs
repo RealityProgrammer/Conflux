@@ -279,4 +279,40 @@ async Task CreateFakeUsers(UserManager<ApplicationUser> userManager) {
             }, "Password1!");
         }
     }
+    
+    if (!await userManager.Users.AnyAsync(u => userManager.NormalizeEmail("admin@example.com") == u.NormalizedEmail)) {
+        await userManager.CreateAsync(new() {
+            Email = "admin@example.com",
+            UserName = $"Admin User",
+            DisplayName = $"Admin User",
+            EmailConfirmed = true,
+            IsProfileSetup = false,
+        }, "Password1!");
+
+        await userManager.AddToRoleAsync(await userManager.Users.Where(u => u.Email == "admin@example.com").FirstAsync(), "Admin");
+    }
+    
+    if (!await userManager.Users.AnyAsync(u => userManager.NormalizeEmail("moderator@example.com") == u.NormalizedEmail)) {
+        await userManager.CreateAsync(new() {
+            Email = "moderator@example.com",
+            UserName = $"Moderator User",
+            DisplayName = $"Moderator User",
+            EmailConfirmed = true,
+            IsProfileSetup = false,
+        }, "Password1!");
+
+        await userManager.AddToRoleAsync(await userManager.Users.Where(u => u.Email == "moderator@example.com").FirstAsync(), "Moderator");
+    }
+    
+    if (!await userManager.Users.AnyAsync(u => userManager.NormalizeEmail("sysdev@example.com") == u.NormalizedEmail)) {
+        await userManager.CreateAsync(new() {
+            Email = "sysdev@example.com",
+            UserName = $"System Developer",
+            DisplayName = $"System Developer",
+            EmailConfirmed = true,
+            IsProfileSetup = false,
+        }, "Password1!");
+
+        await userManager.AddToRoleAsync(await userManager.Users.Where(u => u.Email == "sysdev@example.com").FirstAsync(), "SystemDeveloper");
+    }
 }

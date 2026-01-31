@@ -16,25 +16,28 @@ class CallScreen {
 
     private readonly dotnetHelper: any;
 
-    private peerConnection: RTCPeerConnection | undefined | null;
+    private peerConnection: RTCPeerConnection | null;
     
     private localMediaStream: MediaStream | undefined;
+    private localVideoElement: HTMLVideoElement | undefined;
+    
     private remoteMediaStream: MediaStream | undefined;
-    private remoteVideoElement: HTMLVideoElement | undefined;
+    private remoteVideoElement: HTMLVideoElement;
     
     private iceServers: RTCIceServer[];
     
     private userId: string;
 
-    constructor(dotnetHelper: any, containerElement: HTMLElement, videoElement: HTMLVideoElement, userId: string, iceServers: RTCIceServer[]) {
+    constructor(dotnetHelper: any, containerElement: HTMLElement, remoteVideoElement: HTMLVideoElement, userId: string, iceServers: RTCIceServer[]) {
         this.dotnetHelper = dotnetHelper;
         this.userId = userId;
         this.interactable = createInteractable(containerElement);
-        this.remoteVideoElement = videoElement;
         this.iceServers = iceServers;
+        this.peerConnection = null;
+        this.remoteVideoElement = remoteVideoElement;
     };
     
-    handleInitializeOutcomingCall = async () => {
+    initializeConnectionOffer = async (localVideoElement: HTMLVideoElement) => {
         this.peerConnection = this.createPeerConnection();
 
         this.peerConnection.addTransceiver("video", {
@@ -43,7 +46,8 @@ class CallScreen {
 
         try {
             this.localMediaStream = await navigator.mediaDevices.getUserMedia(MEDIA_STREAM_CONSTRAINTS);
-
+            this.localVideoElement = localVideoElement;
+            
             // const videoTrack = this.localMediaStream.getVideoTracks()[0]!;
 
             // 2) Bind track to transceiver sender
@@ -56,8 +60,8 @@ class CallScreen {
             this.localMediaStream.getTracks().forEach(track => {
                 this.peerConnection!.addTrack(track, this.localMediaStream!);
             });
-            //
-            // this.configurePeerConnectionTransceivers();
+            
+            this.localVideoElement.srcObject = this.localMediaStream;
         } catch (err: unknown) {
             if (err instanceof Error) {
                 switch (err.name) {
@@ -88,21 +92,19 @@ class CallScreen {
             await this.sendOffer(offer);
 
             dumpTransceivers(this.peerConnection);
-            
-            console.log(this.userId + ": create and send offer udp: " + offer.sdp);
         } catch (error) {
             window.reportError(error);
         }
     };
 
-    handleAcceptCall = async (offer: RTCSessionDescriptionInit) => {
+    initializeConnectionAnswer = async (offer: RTCSessionDescriptionInit, localVideoElement: HTMLVideoElement) => {
         try {
             this.peerConnection = this.createPeerConnection();
             await this.peerConnection.setRemoteDescription(offer);
 
             try {
                 this.localMediaStream = await navigator.mediaDevices.getUserMedia(MEDIA_STREAM_CONSTRAINTS);
-
+                this.localVideoElement = localVideoElement;
                 // const videoTrack = this.localMediaStream.getVideoTracks()[0]!;
                 //
                 // // 3) Attach to offered transceiver
@@ -118,8 +120,8 @@ class CallScreen {
                 this.localMediaStream.getTracks().forEach(track => {
                     this.peerConnection!.addTrack(track, this.localMediaStream!);
                 });
-                //
-                // this.configurePeerConnectionTransceivers();
+                
+                this.localVideoElement.srcObject = this.localMediaStream;
             } catch (err: unknown) {
                 if (err instanceof Error) {
                     switch (err.name) {
@@ -150,8 +152,6 @@ class CallScreen {
             await this.sendAnswer(answer);
 
             dumpTransceivers(this.peerConnection);
-            
-            console.log(this.userId + ": set and send answer: " + answer.sdp);
         } catch (error) {
             window.reportError(error);
         }
@@ -161,14 +161,12 @@ class CallScreen {
         try {
             await this.peerConnection!.setRemoteDescription(answer);
             dumpTransceivers(this.peerConnection!);
-
-            console.log(this.userId + ": received answer");
         } catch (error) {
             window.reportError(error);
         }
     };
 
-    handleIceCandidateReceived = async (candidate: RTCIceCandidate) => {
+    addIceCandidate = async (candidate: RTCIceCandidate) => {
         if (!this.peerConnection) {
             return;
         }
@@ -179,19 +177,6 @@ class CallScreen {
             window.reportError(error);
         }
     }
-
-    setupRemoteVideoStream = (videoElement: HTMLVideoElement) => {
-        // this.remoteVideoElement = videoElement;
-        //
-        // // @ts-ignore
-        // this.remoteVideoElement.srcObject = this.remoteMediaStream;
-        //
-        // this.remoteVideoElement.play()
-        //     .then(() => console.log("remote video play successfully"))
-        //     .catch((err: unknown) => {
-        //         console.error("failed to play remote video: " + err);
-        //     })
-    };
 
     reportWebRTCStats = async () => {
         if (!this.peerConnection) return;
@@ -218,10 +203,6 @@ class CallScreen {
 
         const peerConnection = new RTCPeerConnection(connectConfiguration);
         
-        console.log(this.userId + ": create peer connection");
-        
-        console.log(this.userId + ": set video transceiver");
-        
         peerConnection.onicecandidate = (event) => {
             if (event.candidate) {
                 this.sendICECandidate(event.candidate);
@@ -229,8 +210,6 @@ class CallScreen {
         };
         
         peerConnection.ontrack = (event: RTCTrackEvent) => {
-            this.dotnetHelper.invokeMethodAsync("TransitionToCallSetup");
-            
             if (!this.remoteMediaStream) {
                 this.remoteMediaStream = event.streams && event.streams[0] ? event.streams[0] : new MediaStream([event.track]);
 
@@ -382,28 +361,24 @@ function dumpTransceivers(pc: RTCPeerConnection) {
     console.log("TRANSCEIVERS:", JSON.stringify(dump, null, 2));
 }
 
-export function initialize(dotnetHelper: any, element: HTMLElement, videoElement: HTMLVideoElement, userId: string, iceServers: RTCIceServer[]): CallScreen {
-    return new CallScreen(dotnetHelper, element, videoElement, userId, iceServers);
+export function initialize(dotnetHelper: any, element: HTMLElement, remoteVideoElement: HTMLVideoElement, userId: string, iceServers: RTCIceServer[]): CallScreen {
+    return new CallScreen(dotnetHelper, element, remoteVideoElement, userId, iceServers);
 }
 
-export async function handleInitializeOutcomingCall(callScreen: CallScreen) {
-    await callScreen.handleInitializeOutcomingCall();
+export async function initializeConnectionOffer(callScreen: CallScreen, localVideoElement: HTMLVideoElement) {
+    await callScreen.initializeConnectionOffer(localVideoElement);
 }
 
-export async function handleAcceptCall(callScreen: CallScreen, offer: string) {
-    await callScreen.handleAcceptCall(JSON.parse(offer));
+export async function initializeConnectionAnswer(callScreen: CallScreen, offer: string, localVideoElement: HTMLVideoElement) {
+    await callScreen.initializeConnectionAnswer(JSON.parse(offer), localVideoElement);
 }
 
 export async function handleCallAnswered(callScreen: CallScreen, answer: string) {
     await callScreen.handleAnswer(JSON.parse(answer));
 }
 
-export async function handleIceCandidateReceived(callScreen: CallScreen, candidate: string) {
-    await callScreen.handleIceCandidateReceived(JSON.parse(candidate));
-}
-
-export function setupRemoteVideoStream(callScreen: CallScreen, videoElement: HTMLVideoElement) {
-    callScreen.setupRemoteVideoStream(videoElement);
+export async function addIceCandidate(callScreen: CallScreen, candidate: string) {
+    await callScreen.addIceCandidate(JSON.parse(candidate));
 }
 
 export async function reportWebRTCStats(callScreen: CallScreen) {

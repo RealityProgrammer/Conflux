@@ -1,5 +1,4 @@
-﻿@using Conflux.Web.Core
-@using Conflux.Web.Services.Abstracts
+﻿@using Conflux.Web.Services.Abstracts
 @using System.Security.Claims
 
 @implements IDisposable
@@ -29,7 +28,6 @@
             }
             
             UserCallService.OnCallJoined += OnUserCallJoined;
-            UserCallService.OnOfferReceived += OnOfferReceived;
             UserNotificationService.OnIncomingCall += OnIncomingCall;
             UserCallService.OnCallLeft += OnCallLeft;
         }
@@ -37,10 +35,6 @@
 
     private void OnUserCallJoined() {
         StateHasChanged();
-    }
-
-    private void OnOfferReceived(CallRoom room) {
-        InvokeAsync(StateHasChanged);
     }
 
     private async Task OnIncomingCall(IncomingCallEventArgs args) {
@@ -53,7 +47,6 @@
 
     public void Dispose() {
         UserCallService.OnCallJoined -= OnUserCallJoined;
-        UserCallService.OnOfferReceived -= OnOfferReceived;
         UserNotificationService.OnIncomingCall -= OnIncomingCall;
         UserCallService.OnCallLeft -= OnCallLeft;
     }

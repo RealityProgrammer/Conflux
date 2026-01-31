@@ -4,7 +4,7 @@ public sealed class CallRoom {
     public Guid Id { get; init; }
     public Guid InitiatorUserId { get; init; }
     public Guid ReceiverUserId { get; init; }
-    public string? OfferDescription { get; set; }
+    public CallRoomState State { get; internal set; }
     
     public CallRoom(Guid initiatorUserId, Guid receiverUserId) {
         Id = Guid.CreateVersion7();

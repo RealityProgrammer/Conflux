@@ -2,6 +2,7 @@
 @using Conflux.Web.Components.Shared.Icons
 @using Conflux.Web.Core
 @using Conflux.Web.Services.Abstracts
+@using System.Diagnostics
 @using System.Text.Json.Serialization
 
 @implements IAsyncDisposable
@@ -23,20 +24,22 @@
                 <p class="flex-1 animate-pulse">Initializing...</p>
                 break;
 
-            case State.Dialing:
-                @if (isCallInitiator) {
-                    <p class="flex-1 animate-pulse whitespace-nowrap overflow-hidden text-ellipsis">Calling @_otherUser!.Value.DisplayName</p>
-                } else {
-                    <p class="flex-1 animate-pulse whitespace-nowrap overflow-hidden text-ellipsis">Incoming call from @_otherUser!.Value.DisplayName</p>
+            case State.Success:
+                var otherUser = _otherUser!.Value;
+                
+                @switch (CallRoom.State) {
+                    case CallRoomState.WaitingForAnswer:
+                        @if (isCallInitiator) {
+                            <p class="flex-1 animate-pulse whitespace-nowrap overflow-hidden text-ellipsis">Calling @otherUser.DisplayName</p>
+                        } else {
+                            <p class="flex-1 animate-pulse whitespace-nowrap overflow-hidden text-ellipsis">Incoming call from @otherUser.DisplayName</p>
+                        }
+                        break;
+                        
+                    case CallRoomState.Calling:
+                        <p class="flex-1 animate-pulse whitespace-nowrap overflow-hidden text-ellipsis">@otherUser.DisplayName</p>
+                        break;
                 }
-                break;
-
-            case State.CallSetup:
-                <p class="flex-1 animate-pulse whitespace-nowrap overflow-hidden text-ellipsis">Setting up call...</p>
-                break;
-
-            case State.Calling:
-                <p class="flex-1 animate-pulse whitespace-nowrap overflow-hidden text-ellipsis">@_otherUser!.Value.DisplayName</p>
                 break;
         }
     </header>
@@ -49,21 +52,28 @@
                 </div>
                 break;
 
-            case State.Dialing: {
+            case State.Success: {
                 var otherUser = _otherUser!.Value;
-
-                <div class="size-full overflow-hidden flex justify-center items-center">
-                    <img src="@(string.IsNullOrEmpty(otherUser.AvatarPath) ? null : ContentService.GetAssetPath(otherUser.AvatarPath))"
-                         alt="@(isCallInitiator ? "Receiver's Avatar" : "Caller's Avatar")"
-                         class="size-full object-contain">
-                </div>
+                
+                @if (CallRoom.State == CallRoomState.WaitingForAnswer) {
+                    <div class="size-full overflow-hidden flex justify-center items-center">
+                        <img src="@(string.IsNullOrEmpty(otherUser.AvatarPath) ? null : ContentService.GetAssetPath(otherUser.AvatarPath))"
+                             alt="@(isCallInitiator ? "Receiver's Avatar" : "Caller's Avatar")"
+                             class="size-full object-contain">
+                    </div>
+                }
                 break;
             }
         }
-
-        <div class="size-full overflow-hidden flex justify-center items-center @(_state is State.CallSetup or State.Calling ? string.Empty : "hidden")">
-            <video @ref="_localVideoElement" class="size-full object-contain -scale-x-100" playsinline autoplay muted></video>
-            <video @ref="_remoteVideoElement" class="size-full object-contain -scale-x-100" playsinline autoplay muted></video>
+        
+        <div class="size-full overflow-hidden flex justify-center items-center @(_state == State.Success && CallRoom.State == CallRoomState.Calling ? string.Empty : "hidden")">
+            <div class="flex-1 h-full flex justify-center items-center">
+                <video @ref="_localVideoElement" class="max-w-full max-h-full object-contain -scale-x-100" playsinline autoplay muted></video>
+            </div>
+            
+            <div class="flex-1 h-full flex justify-center items-center">
+                <video @ref="_remoteVideoElement" class="max-w-full max-h-full object-contain -scale-x-100" playsinline autoplay muted></video>
+            </div>
         </div>
 
         <div class="actions-container z-10 absolute top-1 right-1 flex flex-col gap-2.5 items-center p-1 rounded-md bg-gray-700 border border-gray-600">
@@ -76,10 +86,6 @@
                     <Telephone Variation="TelephoneVariation.Inbound" class="size-7 fill-gray-300 group-hover:fill-white"/>
                 </button>
             }
-
-            @* <button class="cursor-pointer flex-none group" @onclick="HandleReportWebRTCDebug"> *@
-            @*     <Telephone Variation="TelephoneVariation.Inbound" class="size-7 fill-gray-300 group-hover:fill-white"/> *@
-            @* </button> *@
         </div>
     </section>
 </div>
@@ -100,17 +106,20 @@
     // private ElementReference _localVideoElement;
 
     private UserDisplayDTO? _otherUser;
-    private bool _setupRemoteVideo;
+    private bool _emitOffer;
     private ElementReference _localVideoElement, _remoteVideoElement;
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
             if (CallRoom.InitiatorUserId == SessionUserId) {
-                // UserCallService.OnAnswerReceived += OnAnswerReceived;
+                UserCallService.OnAnswerReceived += OnAnswerReceived;
+            } else {
+                UserCallService.OnOfferReceived += OnOfferReceived;
             }
 
-            // UserCallService.OnIceCandidateReceived += OnIceCandidateReceived;
-
+            UserCallService.OnIceCandidateReceived += OnIceCandidateReceived;
+            UserCallService.OnCallAccepted += OnCallAccepted;
+            
             var iceServers = await UserCallService.CreateShortLivedIceServerConfiguration();
 
             _selfReference = DotNetObjectReference.Create(this);
@@ -128,17 +137,22 @@
             //     await _module.InvokeVoidAsync("handleInitializeOutcomingCall", _callScreen);
             // }
 
-            _state = State.Dialing;
+            _state = State.Success;
             StateHasChanged();
         }
 
-        if (_state == State.CallSetup && !_setupRemoteVideo) {
-            _setupRemoteVideo = true;
-            // await _module!.InvokeAsync<IJSObjectReference>("setupRemoteVideoStream", _callScreen, _remoteVideoElement);
-            //
-            // _state = State.Calling;
-            // StateHasChanged();
+        if (_state == State.Success && CallRoom.State == CallRoomState.Calling && !_emitOffer) {
+            _emitOffer = true;
+            await _module!.InvokeVoidAsync("initializeConnectionOffer", _callScreen, _localVideoElement);
         }
+
+        // if (_state == State.CallSetup && !_setupRemoteVideo) {
+        //     _setupRemoteVideo = true;
+        //     // await _module!.InvokeAsync<IJSObjectReference>("setupRemoteVideoStream", _callScreen, _remoteVideoElement);
+        //     //
+        //     // _state = State.Calling;
+        //     // StateHasChanged();
+        // }
     }
 
     [JSInvokable]
@@ -148,18 +162,12 @@
 
     [JSInvokable]
     public async Task SendAnswer(string answer) {
-        // await UserCallService.SendAnswer(CallRoom, SessionUserId, answer);
+        await UserCallService.SendAnswer(CallRoom, SessionUserId, answer);
     }
 
     [JSInvokable]
     public async Task SendIceCandidate(Guid userId, string candidate) {
-        // await UserCallService.SendIceCandidate(CallRoom, _otherUser!.Value.UserId, candidate);
-    }
-
-    [JSInvokable]
-    public void TransitionToCallSetup() {
-        // _state = State.CallSetup;
-        // InvokeAsync(StateHasChanged);
+        await UserCallService.SendIceCandidate(CallRoom, _otherUser!.Value.UserId, candidate);
     }
 
     private async Task HandleHangUp() {
@@ -167,30 +175,70 @@
     }
 
     private async Task HandleAcceptCall() {
-        // if (CallRoom.InitiatorUserId != SessionUserId && _module != null) {
-        //     await _module.InvokeVoidAsync("handleAcceptCall", _callScreen, CallRoom.OfferDescription);
-        // }
+        if (CallRoom.InitiatorUserId != SessionUserId && _module != null) {
+            if (await UserCallService.AcceptIncomingCall(CallRoom.Id, SessionUserId)) {
+                StateHasChanged();
+            }
+        }
     }
 
-    private async Task HandleReportWebRTCDebug() {
-        // await _module!.InvokeVoidAsync("reportWebRTCStats", _callScreen, CallRoom.OfferDescription);
+    private void OnCallAccepted(CallRoom callRoom) {
+        if (!ReferenceEquals(CallRoom, callRoom)) {
+            return;
+        }
+        
+        Debug.Assert(CallRoom.State == CallRoomState.Calling);
+
+        InvokeAsync(StateHasChanged);
     }
 
-    // private void OnAnswerReceived(CallRoom room, string answer) {
-    //     InvokeAsync(async () => {
-    //         await _module!.InvokeVoidAsync("handleCallAnswered", _callScreen, answer);
-    //     });
-    // }
-    //
-    // private void OnIceCandidateReceived(CallRoom room, string candidate) {
-    //     InvokeAsync(async () => {
-    //         await _module!.InvokeVoidAsync("handleIceCandidateReceived", _callScreen, candidate);
-    //     });
-    // }
+    private void OnOfferReceived(CallRoom callRoom, string offer) {
+        if (!ReferenceEquals(callRoom, CallRoom)) {
+            return;
+        }
+
+        InvokeAsync(async () => {
+            if (_module == null) {
+                return;
+            }
+            
+            await _module.InvokeVoidAsync("initializeConnectionAnswer", _callScreen, offer, _localVideoElement);
+        });
+    }
+    
+    private void OnAnswerReceived(CallRoom callRoom, string answer) {
+        if (!ReferenceEquals(callRoom, CallRoom)) {
+            return;
+        }
+        
+        InvokeAsync(async () => {
+            if (_module == null) {
+                return;
+            }
+            
+            await _module.InvokeVoidAsync("handleCallAnswered", _callScreen, answer);
+        });
+    }
+    
+    private void OnIceCandidateReceived(CallRoom callRoom, string candidate) {
+        if (!ReferenceEquals(callRoom, CallRoom)) {
+            return;
+        }
+        
+        InvokeAsync(async () => {
+            if (_module == null) {
+                return;
+            }
+            
+            await _module.InvokeVoidAsync("addIceCandidate", _callScreen, candidate);
+        });
+    }
 
     public async ValueTask DisposeAsync() {
-        // UserCallService.OnAnswerReceived -= OnAnswerReceived;
-        // UserCallService.OnIceCandidateReceived -= OnIceCandidateReceived;
+        UserCallService.OnCallAccepted -= OnCallAccepted;
+        UserCallService.OnOfferReceived -= OnOfferReceived;
+        UserCallService.OnAnswerReceived -= OnAnswerReceived;
+        UserCallService.OnIceCandidateReceived -= OnIceCandidateReceived;
         
         try {
             if (_callScreen != null) {
@@ -213,8 +261,6 @@
 
      private enum State {
          Initializing,
-         Dialing,
-         CallSetup,
-         Calling,
+         Success,
      }
 }
