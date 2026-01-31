@@ -115,7 +115,6 @@ internal sealed class UserCallService : IUserCallService, IAsyncDisposable {
         
         connection.On<Guid, string>("answer", (callId, answer) => {
             if (_callServices.GetCallRoom(callId) is { } room) {
-                _logger.LogInformation("OnAnswerReceived?.Invoke()");
                 OnAnswerReceived?.Invoke(room, answer);
             }
         });
@@ -184,6 +183,7 @@ internal sealed class UserCallService : IUserCallService, IAsyncDisposable {
             return;
         }
 
+        _logger.LogInformation("Send Offer.");
         await _hubContext.Clients.User(room.ReceiverUserId.ToString()).SendAsync("offer", room.Id, offer);
     }
 

@@ -81,7 +81,7 @@
                 <Telephone Variation="TelephoneVariation.X" class="size-7 fill-gray-300 group-hover:fill-white"/>
             </button>
 
-            @if (!isCallInitiator) {
+            @if (!isCallInitiator && CallRoom.State == CallRoomState.WaitingForAnswer) {
                 <button class="cursor-pointer flex-none group" @onclick="HandleAcceptCall">
                     <Telephone Variation="TelephoneVariation.Inbound" class="size-7 fill-gray-300 group-hover:fill-white"/>
                 </button>
@@ -141,7 +141,7 @@
             StateHasChanged();
         }
 
-        if (_state == State.Success && CallRoom.State == CallRoomState.Calling && !_emitOffer) {
+        if (CallRoom.InitiatorUserId == SessionUserId && _state == State.Success && CallRoom.State == CallRoomState.Calling && !_emitOffer) {
             _emitOffer = true;
             await _module!.InvokeVoidAsync("initializeConnectionOffer", _callScreen, _localVideoElement);
         }
@@ -193,6 +193,8 @@
     }
 
     private void OnOfferReceived(CallRoom callRoom, string offer) {
+        Logger.LogInformation("{id}: OnOfferReceived", SessionUserId);
+        
         if (!ReferenceEquals(callRoom, CallRoom)) {
             return;
         }

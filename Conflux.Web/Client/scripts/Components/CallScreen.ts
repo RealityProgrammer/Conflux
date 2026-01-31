@@ -8,7 +8,7 @@ const MEDIA_STREAM_CONSTRAINTS: MediaStreamConstraints = {
         facingMode: "user",
         frameRate: 24,
     },
-    audio: false,
+    audio: true,    // TODO: Audio
 };
 
 class CallScreen {
@@ -38,6 +38,8 @@ class CallScreen {
     };
     
     initializeConnectionOffer = async (localVideoElement: HTMLVideoElement) => {
+        console.log("initializeConnectionOffer");
+        
         this.peerConnection = this.createPeerConnection();
 
         this.peerConnection.addTransceiver("video", {
@@ -98,6 +100,8 @@ class CallScreen {
     };
 
     initializeConnectionAnswer = async (offer: RTCSessionDescriptionInit, localVideoElement: HTMLVideoElement) => {
+        console.log("initializeConnectionAnswer");
+        
         try {
             this.peerConnection = this.createPeerConnection();
             await this.peerConnection.setRemoteDescription(offer);
@@ -173,8 +177,8 @@ class CallScreen {
         
         try {
             await this.peerConnection!.addIceCandidate(candidate);
-        } catch (error) {
-            window.reportError(error);
+        } catch (err: unknown) {
+            console.error("Error while adding Ice candidate: " + err);
         }
     }
 
@@ -192,8 +196,6 @@ class CallScreen {
     };
     
     private createPeerConnection = (): RTCPeerConnection => {
-        console.log("Creating peer connection with ice servers: " + JSON.stringify(this.iceServers));
-        
         const connectConfiguration: RTCConfiguration = {
             iceServers: this.iceServers,
             iceTransportPolicy: 'all',
@@ -203,38 +205,31 @@ class CallScreen {
 
         const peerConnection = new RTCPeerConnection(connectConfiguration);
         
-        peerConnection.onicecandidate = (event) => {
-            if (event.candidate) {
-                this.sendICECandidate(event.candidate);
+        peerConnection.onicecandidate = async (event: RTCPeerConnectionIceEvent) => {
+            if (!event || !event.candidate) {
+                return;
             }
+            
+            await this.sendIceCandidate(event.candidate);
         };
         
         peerConnection.ontrack = (event: RTCTrackEvent) => {
             if (!this.remoteMediaStream) {
-                this.remoteMediaStream = event.streams && event.streams[0] ? event.streams[0] : new MediaStream([event.track]);
-
-                this.remoteVideoElement!.muted = true;
-                this.remoteVideoElement!.playsInline = true;
-                this.remoteVideoElement!.srcObject = this.remoteMediaStream;
-
-                // this.remoteMediaStream.addTrack(event.track);
+                // this.remoteMediaStream = event.streams && event.streams[0] ? event.streams[0] : new MediaStream([event.track]);
+                this.remoteMediaStream = new MediaStream();
                 
-                // @ts-ignore
-                this.remoteVideoElement.load();
+                this.remoteVideoElement.srcObject = this.remoteMediaStream;
                 
-                // @ts-ignore
-                this.remoteVideoElement.play()
-                    .then(() => console.log("remote video play successfully"))
-                    .catch((err: unknown) => {
-                        console.error("failed to play remote video: " + err);
-                    });
+                // this.remoteVideoElement.load();
             }
+            
+            this.remoteMediaStream.addTrack(event.track);
+            
+            this.remoteVideoElement.play().catch((err: unknown) => {
+                console.error("failed to play remote video: " + err);
+            });
         };
 
-        peerConnection.oniceconnectionstatechange = () => {
-            console.log("ICE connection state: ", peerConnection.iceConnectionState);
-        };
-        
         return peerConnection;
     };
 
@@ -268,7 +263,7 @@ class CallScreen {
         await this.dotnetHelper.invokeMethodAsync("SendAnswer", JSON.stringify(answer));
     }
     
-    private sendICECandidate = async (candidate: RTCIceCandidate) => {
+    private sendIceCandidate = async (candidate: RTCIceCandidate) => {
         await this.dotnetHelper.invokeMethodAsync("SendIceCandidate", this.userId, JSON.stringify(candidate));
     };
 
