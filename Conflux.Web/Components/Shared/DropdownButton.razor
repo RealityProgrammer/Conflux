@@ -1,7 +1,6 @@
-﻿@using Conflux.Web.Components.Shared.Icons
-<div class="relative @ContainerCssClass">
-    <button @ref="ButtonElementReference" class="input-field text-left relative inset-0 flex flex-row items-center hover:bg-white/15 active:bg-black/25 cursor-pointer @_cssClass" @onclick="HandleToggleDropdown">
-        <span class="flex-1">
+﻿<div class="relative @ContainerCssClass">
+    <button @ref="ButtonElementReference" class="input-field text-left relative inset-0 flex flex-row items-center hover:bg-white/15 active:bg-black/25 cursor-pointer min-w-0 @_cssClass" @onclick="HandleToggleDropdown">
+        <span class="flex-1 min-w-0">
             @if (ChildContent != null) {
                 @ChildContent
             }

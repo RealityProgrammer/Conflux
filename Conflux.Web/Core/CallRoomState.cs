@@ -3,4 +3,5 @@
 public enum CallRoomState {
     WaitingForAnswer,
     Calling,
+    Ending,
 }

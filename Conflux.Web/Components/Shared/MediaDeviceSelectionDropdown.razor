@@ -1,0 +1,113 @@
+﻿@implements IAsyncDisposable
+
+@inject IJSRuntime JavascriptRuntime
+@inject ILogger<MediaDeviceSelectionDropdown> Logger
+
+<SelectionDropdown @bind-Value="DeviceId" ContainerCssClass="@ContainerCssClass" ButtonCssClass="@ButtonCssClass" PopoverCssClass="@PopoverCssClass">
+    <ValueDisplayContent>
+        <p class="whitespace-nowrap overflow-hidden text-ellipsis">@GetDeviceLabel()</p>
+    </ValueDisplayContent>
+    
+    <ChildContent>
+        @if (_isPermissionDenied) {
+            <p class="text-center text-gray-400">Permission denied.</p>
+        } else if (_deviceInfos == null) {
+            <div class="flex justify-center items-center">
+                <Spinner class="size-8 fill-white"/>
+            </div>
+        } else if (_deviceInfos.Length == 0) {
+            <p class="text-center text-gray-400">No device found.</p>
+        } else {
+            @foreach (var info in _deviceInfos) {
+                <SelectionOption class="px-1.5 py-1 text-left button-nav-menu" Value="info.DeviceId">@info.Label</SelectionOption>
+            }
+        }
+    </ChildContent>
+</SelectionDropdown>
+
+@code {
+    [Parameter] public string DeviceId { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> DeviceIdChanged { get; set; }
+    
+    [Parameter, EditorRequired] public MediaDeviceKind DeviceKind { get; set; }
+    
+    [Parameter] public string? ContainerCssClass { get; set; }
+    [Parameter] public string? ButtonCssClass { get; set; }
+    [Parameter] public string? PopoverCssClass { get; set; }
+
+    private IJSObjectReference? _module;
+    private IJSObjectReference? _deviceDropdown;
+    private DotNetObjectReference<MediaDeviceSelectionDropdown> _selfReference;
+
+    private DeviceInfo[]? _deviceInfos;
+    private bool _isPermissionDenied;
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            _selfReference = DotNetObjectReference.Create(this);
+            _module = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import", "./js/Components/MediaDeviceSelectionDropdown.js");
+            
+            string mediaDeviceKind = DeviceKind switch {
+                MediaDeviceKind.VideoInput => "videoinput",
+                MediaDeviceKind.AudioInput => "audioinput",
+                MediaDeviceKind.AudioOutput => "audiooutput",
+                _ => "videoinput",
+            };
+            
+            _deviceDropdown = await _module.InvokeAsync<IJSObjectReference>("initialize", _selfReference, mediaDeviceKind);
+        }
+    }
+
+    [JSInvokable]
+    public void OnReceivedMediaDevices(DeviceInfo[] devices) {
+        _deviceInfos = devices;
+        InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable]
+    public void OnMediaPermissionDenied() {
+        _isPermissionDenied = true;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private string GetDeviceLabel() {
+        if (_isPermissionDenied) {
+            return "No Permission";
+        }
+        
+        if (_deviceInfos == null) {
+            return "Loading...";
+        }
+        
+        if (string.IsNullOrEmpty(DeviceId) || _deviceInfos.Length == 0) {
+            return "None";
+        }
+
+        foreach (var device in _deviceInfos) {
+            if (device.DeviceId == DeviceId) {
+                return device.Label;
+            }
+        }
+
+        return "???";
+    }
+
+    public async ValueTask DisposeAsync() {
+        if (_module != null) {
+            try {
+                if (_deviceDropdown != null) {
+                    await _module.InvokeVoidAsync("dispose", _deviceDropdown);
+                    await _deviceDropdown.DisposeAsync();
+                    _deviceDropdown = null;
+                }
+
+                await _module.DisposeAsync();
+                _module = null;
+
+                _selfReference.Dispose();
+            } catch (JSDisconnectedException) { }
+        }
+    }
+
+    public readonly record struct DeviceInfo(string DeviceId, string Label);
+}

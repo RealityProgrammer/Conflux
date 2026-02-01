@@ -1,10 +1,7 @@
 ﻿@using Conflux.Application.Dto
-@using Conflux.Web.Components.Pages.Settings
-@using Conflux.Web.Components.Shared.Icons
 @using Conflux.Web.Core
 @using Conflux.Web.Services.Abstracts
 @using System.Diagnostics
-@using System.Text.Json.Serialization
 
 @implements IAsyncDisposable
 
@@ -12,7 +9,6 @@
 @inject IContentService ContentService
 @inject IUserService UserService
 @inject IUserCallService UserCallService
-@inject ILogger<CallScreen> Logger
 
 @{
     bool isCallInitiator = CallRoom.InitiatorUserId == SessionUserId;
@@ -98,16 +94,15 @@
                     
                     <Popover TargetReference="_audioOptionsButton" @bind-IsShowing="_isShowingAudioOptions" CloseWhenClickOutside="true" DisplayArrow="true" ArrowCssClass="bg-gray-700" Placement="right" Offset="15">
                         <div class="bg-gray-700 p-2 rounded-lg">
+                            <label class="input-label">Input Device</label>
+                            
+                            <MediaDeviceSelectionDropdown @bind-DeviceId="_audioInputDevice" ContainerCssClass="w-64 mt-1 mb-2" ButtonCssClass="w-full h-9" PopoverCssClass="w-full flex-none" DeviceKind="MediaDeviceKind.AudioInput"/>
+                            
                             <label class="input-label">Output Device</label>
                             
-                            <SelectionDropdown @bind-Value="_audioOutputDevice" ContainerCssClass="w-64 mt-1 mb-2" ButtonCssClass="w-full h-9" PopoverCssClass="w-full flex-none">
-                                <SelectionOption class="px-1.5 py-1 text-left button-nav-menu" Value="@("Audio 1")">Audio 1</SelectionOption>
-                                <SelectionOption class="px-1.5 py-1 text-left button-nav-menu" Value="@("Audio 2")">Audio 2</SelectionOption>
-                                <SelectionOption class="px-1.5 py-1 text-left button-nav-menu" Value="@("Audio 3")">Audio 3</SelectionOption>
-                                <SelectionOption class="px-1.5 py-1 text-left button-nav-menu" Value="@("Audio 4")">Audio 4</SelectionOption>
-                            </SelectionDropdown>
+                            <MediaDeviceSelectionDropdown @bind-DeviceId="_audioOutputDevice" ContainerCssClass="w-64 mt-1 mb-2" ButtonCssClass="w-full h-9" PopoverCssClass="w-full flex-none" DeviceKind="MediaDeviceKind.AudioOutput"/>
                             
-                            <label class="input-label">Volume</label>
+                            @* <label class="input-label">Volume</label> *@
                         </div>
                     </Popover>
                     
@@ -117,14 +112,16 @@
                     
                     <Popover TargetReference="_videoButtonsOption" @bind-IsShowing="_isShowingVideoOptions" CloseWhenClickOutside="true" DisplayArrow="true" ArrowCssClass="bg-gray-700" Placement="right" Offset="15">
                         <div class="bg-gray-700 p-2 rounded-lg">
-                            <label class="input-label">Camera Device</label>
+                            <label class="input-label">Input Device</label>
                             
-                            <SelectionDropdown @bind-Value="_cameraDevice" ContainerCssClass="w-64 mt-1 mb-2" ButtonCssClass="w-full h-9" PopoverCssClass="w-full flex-none">
-                                <SelectionOption class="px-1.5 py-1 text-left button-nav-menu" Value="@("Camera 1")">Camera 1</SelectionOption>
-                                <SelectionOption class="px-1.5 py-1 text-left button-nav-menu" Value="@("Camera 2")">Camera 2</SelectionOption>
-                                <SelectionOption class="px-1.5 py-1 text-left button-nav-menu" Value="@("Camera 3")">Camera 3</SelectionOption>
-                                <SelectionOption class="px-1.5 py-1 text-left button-nav-menu" Value="@("Camera 4")">Camera 4</SelectionOption>
-                            </SelectionDropdown>
+                            <MediaDeviceSelectionDropdown @bind-DeviceId="_videoInputDevice" ContainerCssClass="w-64 mt-1 mb-2" ButtonCssClass="w-full h-9" PopoverCssClass="w-full flex-none" DeviceKind="MediaDeviceKind.VideoInput"/>
+                            
+                            @* <SelectionDropdown @bind-Value="_cameraDevice" ContainerCssClass="w-64 mt-1 mb-2" ButtonCssClass="w-full h-9" PopoverCssClass="w-full flex-none"> *@
+                            @*     <SelectionOption class="px-1.5 py-1 text-left button-nav-menu" Value="@("Camera 1")">Camera 1</SelectionOption> *@
+                            @*     <SelectionOption class="px-1.5 py-1 text-left button-nav-menu" Value="@("Camera 2")">Camera 2</SelectionOption> *@
+                            @*     <SelectionOption class="px-1.5 py-1 text-left button-nav-menu" Value="@("Camera 3")">Camera 3</SelectionOption> *@
+                            @*     <SelectionOption class="px-1.5 py-1 text-left button-nav-menu" Value="@("Camera 4")">Camera 4</SelectionOption> *@
+                            @* </SelectionDropdown> *@
                         </div>
                     </Popover>
                     break;
@@ -154,9 +151,9 @@
 
     private bool _isShowingVideoOptions, _isShowingAudioOptions;
 
-    private string _audioOutputDevice = string.Empty;
+    private string _audioInputDevice = string.Empty, _audioOutputDevice = string.Empty;
     private float _audioVolume;
-    private string _cameraDevice = string.Empty;
+    private string _videoInputDevice = string.Empty;
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
@@ -242,8 +239,6 @@
     }
 
     private void OnOfferReceived(CallRoom callRoom, string offer) {
-        Logger.LogInformation("{id}: OnOfferReceived", SessionUserId);
-        
         if (!ReferenceEquals(callRoom, CallRoom)) {
             return;
         }
@@ -298,6 +293,8 @@
         UserCallService.OnOfferReceived -= OnOfferReceived;
         UserCallService.OnAnswerReceived -= OnAnswerReceived;
         UserCallService.OnIceCandidateReceived -= OnIceCandidateReceived;
+        
+        await UserCallService.LeaveCall(CallRoom.Id, SessionUserId);
         
         try {
             if (_callScreen != null) {

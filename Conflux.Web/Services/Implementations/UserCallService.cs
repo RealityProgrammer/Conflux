@@ -143,7 +143,8 @@ internal sealed class UserCallService : IUserCallService, IAsyncDisposable {
     }
 
     public async Task LeaveCall(Guid callId, Guid userId) {
-        if (_callServices.TryGetCallRoom(callId, out var room) && _joinedRooms.Remove(room)) {
+        if (_callServices.TryGetCallRoom(callId, out var room) && _joinedRooms.Remove(room) && room.State != CallRoomState.Ending) {
+            room.State = CallRoomState.Ending;
             OnCallLeft?.Invoke(callId);
             
             var otherUserId = room.InitiatorUserId == userId ? room.ReceiverUserId : room.InitiatorUserId;
