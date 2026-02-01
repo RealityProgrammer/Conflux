@@ -91,13 +91,21 @@
                     break;
                     
                 case CallRoomState.Calling:
-                    <div class="cursor-pointer flex-none group relative">
+                    <button class="cursor-pointer flex-none group relative" @ref="_audioOptionsButton" @onclick="ToggleAudioOptions">
                         <Volume Variation="VolumeVariations.Up" class="size-7 fill-gray-300 group-hover:fill-white"/>
-                    </div>
+                    </button>
                     
-                    <div class="cursor-pointer flex-none group relative">
+                    <Popover TargetReference="_audioOptionsButton" @bind-IsShowing="_isShowingAudioOptions" CloseWhenClickOutside="true" DisplayArrow="true" Placement="right" Offset="8">
+                        A
+                    </Popover>
+                    
+                    <button class="cursor-pointer flex-none group relative" @ref="_videoButtonsOption" @onclick="ToggleVideoOptions">
                         <Camera class="size-7 fill-gray-300 group-hover:fill-white"/>
-                    </div>
+                    </button>
+                    
+                    <Popover TargetReference="_videoButtonsOption" @bind-IsShowing="_isShowingVideoOptions" CloseWhenClickOutside="true" DisplayArrow="true" Placement="right" Offset="8">
+                        A
+                    </Popover>
                     break;
             }
         </div>
@@ -121,7 +129,9 @@
 
     private UserDisplayDTO? _otherUser;
     private bool _emitOffer;
-    private ElementReference _localVideoElement, _remoteVideoElement;
+    private ElementReference _localVideoElement, _remoteVideoElement, _audioOptionsButton, _videoButtonsOption;
+
+    private bool _isShowingVideoOptions, _isShowingAudioOptions;
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
@@ -248,6 +258,14 @@
             
             await _module.InvokeVoidAsync("addIceCandidate", _callScreen, candidate);
         });
+    }
+
+    private void ToggleAudioOptions() {
+        _isShowingAudioOptions ^= true;
+    }
+
+    private void ToggleVideoOptions() {
+        _isShowingVideoOptions ^= true;
     }
 
     public async ValueTask DisposeAsync() {

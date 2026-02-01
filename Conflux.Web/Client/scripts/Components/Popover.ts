@@ -2,15 +2,12 @@
     computePosition, flip, shift, arrow, autoUpdate, offset, ComputePositionReturn, Placement,
 } from "@floating-ui/dom";
 
-interface TooltipDisposer {
+interface Disposer {
     tooltipDisposer: () => void;
     clickDisposer: (() => void) | null;
 }
 
-const disposerMap = new Map<number, TooltipDisposer>();
-let tooltipId: number = 0;
-
-function updateTooltipPosition(targetElement: Element, tooltipElement: HTMLElement, arrowElement: HTMLElement | null, tooltipPlacement: Placement, tooltipOffset: number) {
+function updatePosition(targetElement: Element, tooltipElement: HTMLElement, arrowElement: HTMLElement | null, tooltipPlacement: Placement, tooltipOffset: number) {
     computePosition(targetElement, tooltipElement, {
         placement: tooltipPlacement,
         middleware: [
@@ -42,35 +39,19 @@ function updateTooltipPosition(targetElement: Element, tooltipElement: HTMLEleme
                 bottom: '',
                 [staticSide]: '-4px',
             });
-            
-            // switch (position.placement.split('-')[0]) {
-            //     case 'top':
-            //         arrowElement.style.transform = 'translateY(-50%)';
-            //         break;
-            //        
-            //     case 'bottom':
-            //         arrowElement.style.transform = 'translateY(50%)';
-            //         break;
-            //        
-            //     case 'left':
-            //         arrowElement.style.transform = 'translateX(-50%)';
-            //         break;
-            //        
-            //     case 'right':
-            //         arrowElement.style.transform = 'translateX(50%)';
-            //         break;
-            // }
         }
     });
 }
 
-export function registerTooltip(targetElement: Element, tooltipElement: HTMLElement, arrowElement: HTMLElement | null, tooltipPlacement: Placement, tooltipOffset: number, dotnetHelper: any, closeWhenClickOutside: boolean): number {
+export function register(targetElement: Element, tooltipElement: HTMLElement, arrowElement: HTMLElement | null, tooltipPlacement: Placement, tooltipOffset: number, dotnetHelper: any, closeWhenClickOutside: boolean): Disposer | null {
     if (!targetElement || !tooltipElement) {
-        return 0;
+        return null;
     }
     
-    const tooltipDisposer = autoUpdate(targetElement, tooltipElement, () => {
-        updateTooltipPosition(targetElement, tooltipElement, arrowElement, tooltipPlacement, tooltipOffset);
+    console.log("register popover.");
+    
+    const disposer = autoUpdate(targetElement, tooltipElement, () => {
+        updatePosition(targetElement, tooltipElement, arrowElement, tooltipPlacement, tooltipOffset);
     });
     
     let clickDisposer: (() => void) | null = null;
@@ -79,31 +60,30 @@ export function registerTooltip(targetElement: Element, tooltipElement: HTMLElem
         const handler = async (e: PointerEvent) => {
             if (!e.target) return;
             
-            if (!tooltipElement.contains(e.target as Node)) {
-                await dotnetHelper.invokeMethodAsync('HandleOutsideClick');
-            }
+            const composedPath = e.composedPath();
+            
+            if (composedPath.includes(tooltipElement) || composedPath.includes(targetElement)) return;
+            
+            console.log("click outside.")
+            await dotnetHelper.invokeMethodAsync('HandleOutsideClick');
         };
 
-        document.addEventListener("click", handler);
+        document.addEventListener("pointerdown", handler, { 
+            capture: true,
+        });
 
-        clickDisposer = () => document.removeEventListener("click", handler);
+        clickDisposer = () => document.removeEventListener("pointerdown", handler, { capture: true });
     }
     
-    disposerMap.set(++tooltipId, {
+    return {
         clickDisposer,
-        tooltipDisposer,
-    });
-    
-    return tooltipId;
+        tooltipDisposer: disposer,
+    };
 }
 
-export function unregisterTooltip(id: number): void {
-    const cleanup = disposerMap.get(id);
+export function unregister(disposer: Disposer): void {
+    console.log("unregister popover.");
     
-    if (cleanup) {
-        cleanup.tooltipDisposer();
-        cleanup.clickDisposer?.();
-        
-        disposerMap.delete(id);
-    }
+    disposer.tooltipDisposer();
+    disposer.clickDisposer?.();
 }

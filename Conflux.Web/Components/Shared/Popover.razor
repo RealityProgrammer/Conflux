@@ -7,7 +7,7 @@
 
 @if (IsShowing) {
     <div class="absolute inset-0 pointer-events-none z-10" tabindex="-1">
-        <div class="absolute pointer-events-auto @_cssClass" @attributes="AdditionalAttributes" @ref="_tooltip" style="left: -9999px; top: -9999px;">
+        <div class="absolute pointer-events-auto @_cssClass" @attributes="AdditionalAttributes" @ref="_popover" style="left: -9999px; top: -9999px;">
             @ChildContent
 
             @if (DisplayArrow) {
@@ -31,15 +31,18 @@
 
     [Parameter] public bool DisplayArrow { get; set; } = true;
 
-    private ElementReference _tooltip;
-    private ElementReference? _arrow;
-    
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
     private string? _cssClass;
     
+    private ElementReference _popover;
+    private ElementReference? _arrow;
+
+    private bool _isShowing;
+    
     private IJSObjectReference? _module;
-    private DotNetObjectReference<Popover>? _objectReference;
-    private int _tooltipId;
+    private DotNetObjectReference<Popover>? _selfReference;
+
+    private IJSObjectReference? _disposer;
     
     protected override void OnParametersSet() {
         if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
@@ -47,42 +50,72 @@
         }
 
         AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key != "class").ToDictionary();
+        _isShowing = IsShowing;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
             _module = await JavascriptRuntime.InvokeAsync<IJSObjectReference>("import", "./js/Components/Popover.js");
-            _objectReference = DotNetObjectReference.Create(this);
+            _selfReference = DotNetObjectReference.Create(this);
         }
 
         if (_module != null) {
-            if (IsShowing) {
-                if (_tooltipId == 0) {
-                    _tooltipId = await _module.InvokeAsync<int>("registerTooltip", TargetReference, _tooltip, _arrow, Placement, Offset, _objectReference, CloseWhenClickOutside);
+            if (_isShowing) {
+                if (_disposer == null) {
+                    _disposer = await _module.InvokeAsync<IJSObjectReference>("register", TargetReference, _popover, _arrow, Placement, Offset, _selfReference, CloseWhenClickOutside);
+                    Logger.LogInformation("{id}: Register Popover.", TargetReference.Id);
                 }
-            } else if (_tooltipId != 0) {
-                await _module!.InvokeVoidAsync("unregisterTooltip", _tooltipId);
-                _tooltipId = 0;
+            } else {
+                if (_disposer != null) {
+                    await _module!.InvokeVoidAsync("unregister", _disposer);
+                    await _disposer.DisposeAsync();
+                
+                    _disposer = null;
+                    Logger.LogInformation("{id}: Unregister Popover.", TargetReference.Id);
+                }
             }
+            
+            // if (IsShowing) {
+            //     _disposer ??= await _module.InvokeAsync<IJSObjectReference>("register", TargetReference, _popover, _arrow, Placement, Offset, _objectReference, CloseWhenClickOutside);
+            // } else if (_disposer != null) {
+            //     await _module!.InvokeVoidAsync("unregister", _disposer);
+            //     await _disposer.DisposeAsync();
+            //     
+            //     _disposer = null;
+            // }
         }
     }
     
     [JSInvokable]
     public async Task HandleOutsideClick() {
-        if (!CloseWhenClickOutside) return;
+        if (!CloseWhenClickOutside || !_isShowing) return;
+        
+        if (_disposer != null) {
+            await _module!.InvokeVoidAsync("unregister", _disposer);
+            await _disposer.DisposeAsync();
+                
+            _disposer = null;
+            Logger.LogInformation("{id}: Unregister Popover.", TargetReference.Id);
+        }
 
-        await IsShowingChanged.InvokeAsync(false);
+        _isShowing = false;
+        await IsShowingChanged.InvokeAsync(_isShowing);
     }
     
     public async ValueTask DisposeAsync() {
-        _objectReference?.Dispose();
+        _selfReference?.Dispose();
         
         if (_module != null) {
             try {
-                await _module.InvokeVoidAsync("unregisterTooltip", _tooltipId);
+                if (_disposer != null) {
+                    await _module.InvokeVoidAsync("unregister", _disposer);
+                    await _disposer.DisposeAsync();
+                    
+                    _disposer = null;
+                }
+                
                 await _module.DisposeAsync();
 
-                _tooltipId = 0;
             } catch (JSDisconnectedException) {
             }
         }
