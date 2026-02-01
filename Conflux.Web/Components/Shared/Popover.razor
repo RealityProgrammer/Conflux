@@ -3,6 +3,7 @@
 @implements IAsyncDisposable
 
 @inject IJSRuntime JavascriptRuntime
+@inject ILogger<Popover> Logger
 
 @if (IsShowing) {
     <div class="absolute inset-0 pointer-events-none z-10" tabindex="-1">
@@ -76,13 +77,18 @@
     
     [JSInvokable]
     public async Task HandleOutsideClick() {
-        if (!CloseWhenClickOutside || !_isShowing) return;
+        if (!CloseWhenClickOutside || !_isShowing || _disposer == null) return;
         
-        if (_disposer != null) {
-            await _module!.InvokeVoidAsync("unregister", _disposer);
-            await _disposer.DisposeAsync();
-                
-            _disposer = null;
+        var currentDisposer = _disposer;
+        _disposer = null;
+
+        try {
+            if (_module != null) {
+                await _module.InvokeVoidAsync("unregister", currentDisposer);
+                await currentDisposer.DisposeAsync();
+            }
+        } catch (Exception e) {
+            Logger.LogError("Failed to close popover when click outside: {msg}.", e.Message);
         }
 
         _isShowing = false;

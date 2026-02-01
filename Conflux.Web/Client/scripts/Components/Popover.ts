@@ -3,7 +3,7 @@
 } from "@floating-ui/dom";
 
 interface Disposer {
-    tooltipDisposer: () => void;
+    popoverDisposer: () => void;
     clickDisposer: (() => void) | null;
 }
 
@@ -74,11 +74,15 @@ export function register(targetElement: Element, tooltipElement: HTMLElement, ar
     
     return {
         clickDisposer,
-        tooltipDisposer: disposer,
+        popoverDisposer: disposer,
     };
 }
 
 export function unregister(disposer: Disposer): void {
-    disposer.tooltipDisposer();
+    if (!disposer) {
+        return;
+    }
+    
+    disposer.popoverDisposer();
     disposer.clickDisposer?.();
 }

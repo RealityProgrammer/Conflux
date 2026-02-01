@@ -27,10 +27,12 @@ class DeviceDropdown {
             audio: this.deviceKind === "audioinput" || this.deviceKind === "audiooutput",
             video: this.deviceKind === "videoinput"
         }).then((stream) => {
-            stream.getTracks().forEach(track => track.stop());
-            
             navigator.mediaDevices.enumerateDevices().then((devices) => {
-                const deviceInfos: DeviceInfo[] = devices.filter((device) => device.kind === this.deviceKind).map((device) => {
+                const deviceInfos: DeviceInfo[] = devices.filter((device) => device.kind === this.deviceKind && device.deviceId !== "communications").map((device) => {
+                    if (device.deviceId === "default") {
+                        return { deviceId: "default", label: "System Default " }
+                    }
+                    
                     return { deviceId: device.deviceId, label: device.label }
                 });
                 
@@ -38,6 +40,8 @@ class DeviceDropdown {
     
                 this.dotnetHelper.invokeMethodAsync("OnReceivedMediaDevices", deviceInfos);
             });
+            
+            stream.getTracks().forEach(track => track.stop());
         }).catch((err: unknown) => {
             console.error("Failed to get media device: " + err);
             this.dotnetHelper.invokeMethodAsync("OnMediaPermissionDenied");
