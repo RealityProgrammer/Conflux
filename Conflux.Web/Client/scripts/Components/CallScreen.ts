@@ -81,8 +81,6 @@ class CallScreen {
             await this.peerConnection.setLocalDescription(offer);
 
             await this.sendOffer(offer);
-
-            dumpTransceivers(this.peerConnection);
         } catch (error) {
             window.reportError(error);
         }
@@ -130,8 +128,6 @@ class CallScreen {
             await this.peerConnection.setLocalDescription(answer);
 
             await this.sendAnswer(answer);
-
-            dumpTransceivers(this.peerConnection);
         } catch (error) {
             window.reportError(error);
         }
@@ -140,7 +136,6 @@ class CallScreen {
     handleAnswer = async (answer: RTCSessionDescriptionInit) => {
         try {
             await this.peerConnection!.setRemoteDescription(answer);
-            dumpTransceivers(this.peerConnection!);
         } catch (error) {
             window.reportError(error);
         }
@@ -316,19 +311,6 @@ function createInteractable(element: HTMLElement): Interactable {
             },
         }
     });
-}
-
-function dumpTransceivers(pc: RTCPeerConnection) {
-    const dump = pc.getTransceivers().map((t, i) => ({
-        index: i,
-        mid: t.mid,
-        direction: t.direction,
-        currentDirection: t.currentDirection,
-        senderTrack: t.sender?.track?.kind || null,
-        receiverTrack: t.receiver?.track?.kind || null,
-    }));
-
-    console.log("TRANSCEIVERS:", JSON.stringify(dump, null, 2));
 }
 
 export function initialize(dotnetHelper: any, element: HTMLElement, remoteVideoElement: HTMLVideoElement, userId: string, iceServers: RTCIceServer[]): CallScreen {

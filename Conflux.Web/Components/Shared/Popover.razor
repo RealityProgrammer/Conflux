@@ -3,7 +3,6 @@
 @implements IAsyncDisposable
 
 @inject IJSRuntime JavascriptRuntime
-@inject ILogger<Popover> Logger
 
 @if (IsShowing) {
     <div class="absolute inset-0 pointer-events-none z-10" tabindex="-1">
@@ -63,7 +62,6 @@
             if (_isShowing) {
                 if (_disposer == null) {
                     _disposer = await _module.InvokeAsync<IJSObjectReference>("register", TargetReference, _popover, _arrow, Placement, Offset, _selfReference, CloseWhenClickOutside);
-                    Logger.LogInformation("{id}: Register Popover.", TargetReference.Id);
                 }
             } else {
                 if (_disposer != null) {
@@ -71,18 +69,8 @@
                     await _disposer.DisposeAsync();
                 
                     _disposer = null;
-                    Logger.LogInformation("{id}: Unregister Popover.", TargetReference.Id);
                 }
             }
-            
-            // if (IsShowing) {
-            //     _disposer ??= await _module.InvokeAsync<IJSObjectReference>("register", TargetReference, _popover, _arrow, Placement, Offset, _objectReference, CloseWhenClickOutside);
-            // } else if (_disposer != null) {
-            //     await _module!.InvokeVoidAsync("unregister", _disposer);
-            //     await _disposer.DisposeAsync();
-            //     
-            //     _disposer = null;
-            // }
         }
     }
     
@@ -95,7 +83,6 @@
             await _disposer.DisposeAsync();
                 
             _disposer = null;
-            Logger.LogInformation("{id}: Unregister Popover.", TargetReference.Id);
         }
 
         _isShowing = false;

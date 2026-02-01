@@ -48,8 +48,6 @@ export function register(targetElement: Element, tooltipElement: HTMLElement, ar
         return null;
     }
     
-    console.log("register popover.");
-    
     const disposer = autoUpdate(targetElement, tooltipElement, () => {
         updatePosition(targetElement, tooltipElement, arrowElement, tooltipPlacement, tooltipOffset);
     });
@@ -64,7 +62,6 @@ export function register(targetElement: Element, tooltipElement: HTMLElement, ar
             
             if (composedPath.includes(tooltipElement) || composedPath.includes(targetElement)) return;
             
-            console.log("click outside.")
             await dotnetHelper.invokeMethodAsync('HandleOutsideClick');
         };
 
@@ -82,8 +79,6 @@ export function register(targetElement: Element, tooltipElement: HTMLElement, ar
 }
 
 export function unregister(disposer: Disposer): void {
-    console.log("unregister popover.");
-    
     disposer.tooltipDisposer();
     disposer.clickDisposer?.();
 }
