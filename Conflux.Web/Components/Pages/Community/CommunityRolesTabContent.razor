@@ -793,7 +793,7 @@
         }
         
         public bool BanMember {
-            get => ManagementPermissions.HasFlag(ManagementPermissionFlags.ManageReports);
+            get => ManagementPermissions.HasFlag(ManagementPermissionFlags.BanMember);
             set => ManagementPermissions = value ? ManagementPermissions | ManagementPermissionFlags.BanMember : ManagementPermissions & ~ManagementPermissionFlags.BanMember;
         }
 
