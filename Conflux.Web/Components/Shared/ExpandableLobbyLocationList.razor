@@ -142,16 +142,7 @@
     private static readonly RenderFragment _logoutConfirmationBody = @<p>Are you sure you want to logout?</p>;
 
     private void OpenLogoutConfirmationModal() {
-        ModalService.Open<OperationConfirmModal>(parameters: new Dictionary<string, object?> {
-            [nameof(OperationConfirmModal.Title)] = "Logout Confirmation",
-            [nameof(OperationConfirmModal.Body)] = _logoutConfirmationBody,
-            [nameof(OperationConfirmModal.OnConfirm)] = EventCallback.Factory.Create(this, ConfirmLogout),
-        });
-        return;
-
-        void ConfirmLogout() {
-            NavigationManager.NavigateTo("/auth/logout");
-        }
+        ModalService.Open<LogoutConfirmationForm>();
     }
 
     private void OnUserCreatedCommunity(CommunityCreatedEventArgs args) {

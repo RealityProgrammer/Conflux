@@ -1,0 +1,21 @@
+﻿@inherits BaseModal
+
+<div class="flex flex-row justify-center items-center size-full text-white">
+    <Card>
+        <CardHeader Title="Logout Confirmation" OnCloseRequested="@((Action<object?>)CloseModal)"/>
+
+        <CardContent class="pb-3">
+            <p>Are you sure you want to logout?</p>
+        </CardContent>
+        
+        <CardFooter class="flex flex-row justify-end gap-2">
+            <button type="button" class="button-primary w-24" @onclick="@((Action<object?>)CloseModal)">Cancel</button>
+            
+            <form class="w-24" action="/auth/logout" method="post" @formname="logout">
+                <AntiforgeryToken/>
+
+                <button type="submit" class="button-danger w-full">Logout</button>
+            </form>
+        </CardFooter>
+    </Card>
+</div>
