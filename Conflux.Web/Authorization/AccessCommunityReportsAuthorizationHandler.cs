@@ -2,7 +2,7 @@
 using Conflux.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 
-namespace Conflux.Web.Services.Authorization;
+namespace Conflux.Web.Authorization;
 
 public sealed class AccessCommunityReportsAuthorizationHandler : AuthorizationHandler<AccessCommunityReportRequirement, RolePermissions> {
     protected override Task HandleRequirementAsync(

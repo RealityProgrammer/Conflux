@@ -1,6 +1,6 @@
 ﻿using Conflux.Application.Abstracts;
 using Conflux.Domain.Events;
-using Conflux.Web.Services.Hubs;
+using Conflux.Web.Hubs;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;

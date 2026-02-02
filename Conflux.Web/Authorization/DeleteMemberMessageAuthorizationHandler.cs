@@ -2,18 +2,18 @@
 using Conflux.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 
-namespace Conflux.Web.Services.Authorization;
+namespace Conflux.Web.Authorization;
 
-public class CreateCommunityRoleAuthorizationHandler : AuthorizationHandler<CreateCommunityRoleRequirement, RolePermissions> {
+public class DeleteMemberMessageAuthorizationHandler : AuthorizationHandler<DeleteMemberMessageRequirement, RolePermissions> {
     protected override Task HandleRequirementAsync(
         AuthorizationHandlerContext context, 
-        CreateCommunityRoleRequirement requirement, 
+        DeleteMemberMessageRequirement requirement, 
         RolePermissions permissions)
     {
-        if (permissions.Role.HasFlag(RolePermissionFlags.CreateRole)) {
+        if (permissions.Management.HasFlag(ManagementPermissionFlags.DeleteMemberMessage)) {
             context.Succeed(requirement);
         }
-        
+    
         return Task.CompletedTask;
     }
 }

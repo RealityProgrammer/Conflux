@@ -2,18 +2,18 @@
 using Conflux.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 
-namespace Conflux.Web.Services.Authorization;
+namespace Conflux.Web.Authorization;
 
-public class BanCommunityMemberAuthorizationHandler : AuthorizationHandler<BanCommunityMemberRequirement, RolePermissions> {
+public class RenameCommunityRoleAuthorizationHandler : AuthorizationHandler<RenameCommunityRoleRequirement, RolePermissions> {
     protected override Task HandleRequirementAsync(
         AuthorizationHandlerContext context, 
-        BanCommunityMemberRequirement requirement, 
+        RenameCommunityRoleRequirement requirement, 
         RolePermissions permissions)
     {
-        if (permissions.Management.HasFlag(ManagementPermissionFlags.BanMember)) {
+        if (permissions.Role.HasFlag(RolePermissionFlags.RenameRole)) {
             context.Succeed(requirement);
         }
-    
+        
         return Task.CompletedTask;
     }
 }

@@ -2,18 +2,18 @@
 using Conflux.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 
-namespace Conflux.Web.Services.Authorization;
+namespace Conflux.Web.Authorization;
 
-public class CreateCommunityChannelAuthorizationHandler : AuthorizationHandler<CreateCommunityChannelRequirement, RolePermissions> {
+public class BanCommunityMemberAuthorizationHandler : AuthorizationHandler<BanCommunityMemberRequirement, RolePermissions> {
     protected override Task HandleRequirementAsync(
         AuthorizationHandlerContext context, 
-        CreateCommunityChannelRequirement requirement, 
+        BanCommunityMemberRequirement requirement, 
         RolePermissions permissions)
     {
-        if (permissions.Channel.HasFlag(ChannelPermissionFlags.CreateChannel)) {
+        if (permissions.Management.HasFlag(ManagementPermissionFlags.BanMember)) {
             context.Succeed(requirement);
         }
-        
+    
         return Task.CompletedTask;
     }
 }

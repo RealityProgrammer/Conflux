@@ -2,15 +2,15 @@
 using Conflux.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 
-namespace Conflux.Web.Services.Authorization;
+namespace Conflux.Web.Authorization;
 
-public class ManageCommunityReportsAuthorizationHandler : AuthorizationHandler<ManageCommunityReportsRequirement, RolePermissions> {
+public class CreateCommunityRoleAuthorizationHandler : AuthorizationHandler<CreateCommunityRoleRequirement, RolePermissions> {
     protected override Task HandleRequirementAsync(
         AuthorizationHandlerContext context, 
-        ManageCommunityReportsRequirement requirement, 
+        CreateCommunityRoleRequirement requirement, 
         RolePermissions permissions)
     {
-        if (permissions.Management.HasFlag(ManagementPermissionFlags.ManageReports)) {
+        if (permissions.Role.HasFlag(RolePermissionFlags.CreateRole)) {
             context.Succeed(requirement);
         }
         
