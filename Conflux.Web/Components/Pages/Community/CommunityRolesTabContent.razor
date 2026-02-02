@@ -188,6 +188,18 @@
 
                                     <PermissionToggle @bind-Value="Model.ManageReports" class="flex-none" disabled="@shouldDisabled"/>
                                 </div>
+                                
+                                <div class="flex flex-row items-center">
+                                    <label class="flex-1">Delete Member Message</label>
+
+                                    <PermissionToggle @bind-Value="Model.DeleteMemberMessage" class="flex-none" disabled="@shouldDisabled"/>
+                                </div>
+                                
+                                <div class="flex flex-row items-center">
+                                    <label class="flex-1">Ban Member</label>
+
+                                    <PermissionToggle @bind-Value="Model.BanMember" class="flex-none" disabled="@shouldDisabled"/>
+                                </div>
                             </div>
                         </section>
                     </div>
@@ -773,6 +785,16 @@
         public bool ManageReports {
             get => ManagementPermissions.HasFlag(ManagementPermissionFlags.ManageReports);
             set => ManagementPermissions = value ? ManagementPermissions | ManagementPermissionFlags.ManageReports : ManagementPermissions & ~ManagementPermissionFlags.ManageReports;
+        }
+        
+        public bool DeleteMemberMessage {
+            get => ManagementPermissions.HasFlag(ManagementPermissionFlags.DeleteMemberMessage);
+            set => ManagementPermissions = value ? ManagementPermissions | ManagementPermissionFlags.DeleteMemberMessage : ManagementPermissions & ~ManagementPermissionFlags.DeleteMemberMessage;
+        }
+        
+        public bool BanMember {
+            get => ManagementPermissions.HasFlag(ManagementPermissionFlags.ManageReports);
+            set => ManagementPermissions = value ? ManagementPermissions | ManagementPermissionFlags.BanMember : ManagementPermissions & ~ManagementPermissionFlags.BanMember;
         }
 
         public HashSet<Guid> RemoveRoles { get; set; } = [];
