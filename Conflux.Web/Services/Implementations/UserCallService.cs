@@ -26,7 +26,7 @@ internal sealed class UserCallService : IUserCallService, IAsyncDisposable {
     private readonly ILogger<UserCallService> _logger;
     private readonly NavigationManager _navigationManager;
     private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly IHubContext<CallingHub> _hubContext;
+    private readonly IHubContext<CallingHub, ICallClient> _hubContext;
     private readonly ICallService _callServices;
     private readonly IWebUserNotificationService _userNotificationService;
     private readonly CloudflareTurnServerClient _cloudflareTurnServerClient;
@@ -35,7 +35,7 @@ internal sealed class UserCallService : IUserCallService, IAsyncDisposable {
         ILogger<UserCallService> logger,
         NavigationManager navigationManager,
         IHttpContextAccessor httpContextAccessor,
-        IHubContext<CallingHub> hubContext,
+        IHubContext<CallingHub, ICallClient> hubContext,
         ICallService callServices,
         IWebUserNotificationService userNotificationService,
         CloudflareTurnServerClient cloudflareTurnServerClient
@@ -87,7 +87,7 @@ internal sealed class UserCallService : IUserCallService, IAsyncDisposable {
             .WithAutomaticReconnect()
             .Build();
 
-        connection.On<CallUserHangUpEventArgs>("UserHangUp", async args => {
+        connection.On<CallUserHangUpEventArgs>(nameof(ICallClient.UserHangUp), async args => {
             if (_callServices.TryGetCallRoom(args.CallId, out var callRoom)) {
                 if (_joinedRooms.Remove(callRoom)) {
                     OnUserHangUp?.Invoke(args);
@@ -101,25 +101,25 @@ internal sealed class UserCallService : IUserCallService, IAsyncDisposable {
             }
         });
 
-        connection.On<Guid>("CallAccepted", callId => {
+        connection.On<Guid>(nameof(ICallClient.CallAccepted), callId => {
             if (_callServices.GetCallRoom(callId) is { } callRoom) {
                 OnCallAccepted?.Invoke(callRoom);
             }
         });
 
-        connection.On<Guid, string>("offer", (callId, offer) => {
+        connection.On<Guid, string>(nameof(ICallClient.Offer), (callId, offer) => {
             if (_callServices.GetCallRoom(callId) is { } room && _joinedRooms.Contains(room)) {
                 OnOfferReceived?.Invoke(room, offer);
             }
         });
         
-        connection.On<Guid, string>("answer", (callId, answer) => {
+        connection.On<Guid, string>(nameof(ICallClient.Answer), (callId, answer) => {
             if (_callServices.GetCallRoom(callId) is { } room) {
                 OnAnswerReceived?.Invoke(room, answer);
             }
         });
         
-        connection.On<Guid, string>("ice-candidate", (callId, iceCandidate) => {
+        connection.On<Guid, string>(nameof(ICallClient.IceCandidate), (callId, iceCandidate) => {
             if (_callServices.GetCallRoom(callId) is { } room) {
                 OnIceCandidateReceived?.Invoke(room, iceCandidate);
             }
@@ -149,7 +149,7 @@ internal sealed class UserCallService : IUserCallService, IAsyncDisposable {
             
             var otherUserId = room.InitiatorUserId == userId ? room.ReceiverUserId : room.InitiatorUserId;
             
-            await _hubContext.Clients.User(otherUserId.ToString()).SendAsync("UserHangUp", new CallUserHangUpEventArgs(callId, userId));
+            await _hubContext.Clients.User(otherUserId.ToString()).UserHangUp(new(callId, userId));
             
             if (_callConnections.Remove(callId, out var hubConnection)) {
                 await hubConnection.DisposeAsync();
@@ -161,17 +161,7 @@ internal sealed class UserCallService : IUserCallService, IAsyncDisposable {
         if (_callServices.TryGetCallRoom(callId, out var room) && room.ReceiverUserId == receiverUserId && _joinedRooms.Contains(room)) {
             room.State = CallRoomState.Calling;
 
-            await _hubContext.Clients.Group(callId.ToString()).SendAsync("CallAccepted", callId);
-            
-            // OnCallLeft?.Invoke(callId);
-            //
-            // var otherUserId = room.InitiatorUserId == userId ? room.ReceiverUserId : room.InitiatorUserId;
-            //
-            // await _hubContext.Clients.User(otherUserId.ToString()).SendAsync("UserHangUp", new CallUserHangUpEventArgs(callId, userId));
-            //
-            // if (_callConnections.Remove(callId, out var hubConnection)) {
-            //     await hubConnection.DisposeAsync();
-            // }
+            await _hubContext.Clients.Group(callId.ToString()).CallAccepted(callId);
 
             return true;
         }
@@ -185,7 +175,7 @@ internal sealed class UserCallService : IUserCallService, IAsyncDisposable {
         }
 
         _logger.LogInformation("Send Offer.");
-        await _hubContext.Clients.User(room.ReceiverUserId.ToString()).SendAsync("offer", room.Id, offer);
+        await _hubContext.Clients.User(room.ReceiverUserId.ToString()).Offer(room.Id, offer);
     }
 
     public async Task SendAnswer(CallRoom room, Guid senderId, string answer) {
@@ -193,7 +183,7 @@ internal sealed class UserCallService : IUserCallService, IAsyncDisposable {
             return;
         }
         
-        await _hubContext.Clients.User(room.InitiatorUserId.ToString()).SendAsync("answer", room.Id, answer);
+        await _hubContext.Clients.User(room.InitiatorUserId.ToString()).Answer(room.Id, answer);
     }
 
     public async Task SendIceCandidate(CallRoom room, Guid targetUserId, string candidate) {
@@ -201,7 +191,7 @@ internal sealed class UserCallService : IUserCallService, IAsyncDisposable {
             return;
         }
         
-        await _hubContext.Clients.User(targetUserId.ToString()).SendAsync("ice-candidate", room.Id, candidate);
+        await _hubContext.Clients.User(targetUserId.ToString()).IceCandidate(room.Id, candidate);
     }
 
     public async Task<IceServerConfiguration[]> CreateShortLivedIceServerConfiguration() {

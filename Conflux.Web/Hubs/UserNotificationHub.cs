@@ -4,4 +4,4 @@ using Microsoft.AspNetCore.SignalR;
 namespace Conflux.Web.Hubs;
 
 [Authorize]
-public sealed class UserNotificationHub : Hub;
+public sealed class UserNotificationHub : Hub<IUserClient>;

@@ -4,4 +4,4 @@ using Microsoft.AspNetCore.SignalR;
 namespace Conflux.Web.Hubs;
 
 [Authorize]
-public sealed class FriendshipHub : Hub;
+public sealed class FriendshipHub : Hub<IFriendshipClient>;

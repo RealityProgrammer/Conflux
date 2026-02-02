@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.SignalR;
 namespace Conflux.Web.Hubs;
 
 [Authorize]
-public sealed class ConversationHub : Hub {
+public sealed class ConversationHub : Hub<IConversationClient> {
     public override async Task OnConnectedAsync() {
         string? conversationId = Context.GetHttpContext()!.Request.Query["ConversationId"];
 

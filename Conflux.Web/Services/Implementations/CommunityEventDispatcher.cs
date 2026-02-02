@@ -11,19 +11,10 @@ using System.Net;
 namespace Conflux.Web.Services.Implementations;
 
 public sealed class CommunityEventDispatcher(
-    IHubContext<CommunityHub> hubContext, 
+    IHubContext<CommunityHub, ICommunityClient> hubContext, 
     IHttpContextAccessor httpContextAccessor, 
     NavigationManager navigationManager
 ) : ICommunityEventDispatcher, IAsyncDisposable {
-    private const string ChannelCategoryCreatedEventName = "ChannelCategoryCreated";
-    private const string ChannelCreatedEventName = "ChannelCreated";
-    private const string MemberJoinedEventName = "MemberJoined";
-    private const string RoleCreatedEventName = "RoleCreated";
-    private const string RoleRenamedEventName = "RoleRenamed";
-    private const string RoleDeletedEventName = "RoleDeleted";
-    private const string RolePermissionUpdatedEventName = "RolePermissionUpdated";
-    private const string MemberRoleChangedEventName = "MemberRoleChanged";
-    
     private readonly ConcurrentDictionary<Guid, HubConnection> _hubConnections = [];
 
     public event Action<ChannelCategoryCreatedEventArgs>? OnChannelCategoryCreated;
@@ -41,35 +32,35 @@ public sealed class CommunityEventDispatcher(
         
         var connection = CreateHubConnection(communityId);
 
-        connection.On<ChannelCategoryCreatedEventArgs>(ChannelCategoryCreatedEventName, args => {
+        connection.On<ChannelCategoryCreatedEventArgs>(nameof(ICommunityClient.ChannelCategoryCreated), args => {
             OnChannelCategoryCreated?.Invoke(args);
         });
 
-        connection.On<ChannelCreatedEventArgs>(ChannelCreatedEventName, args => {
+        connection.On<ChannelCreatedEventArgs>(nameof(ICommunityClient.ChannelCreated), args => {
             OnChannelCreated?.Invoke(args);
         });
 
-        connection.On<CommunityMemberJoinedEventArgs>(MemberJoinedEventName, args => {
+        connection.On<CommunityMemberJoinedEventArgs>(nameof(ICommunityClient.MemberJoined), args => {
             OnMemberJoined?.Invoke(args);
         });
 
-        connection.On<CommunityRoleCreatedEventArgs>(RoleCreatedEventName, args => {
+        connection.On<CommunityRoleCreatedEventArgs>(nameof(ICommunityClient.RoleCreated), args => {
             OnRoleCreated?.Invoke(args);
         });
 
-        connection.On<CommunityRoleRenamedEventArgs>(RoleRenamedEventName, args => {
+        connection.On<CommunityRoleRenamedEventArgs>(nameof(ICommunityClient.RoleRenamed), args => {
             OnRoleRenamed?.Invoke(args);
         });
 
-        connection.On<CommunityRoleDeletedEventArgs>(RoleDeletedEventName, args => {
+        connection.On<CommunityRoleDeletedEventArgs>(nameof(ICommunityClient.RoleDeleted), args => {
             OnRoleDeleted?.Invoke(args);
         });
 
-        connection.On<CommunityRolePermissionUpdatedEventArg>(RolePermissionUpdatedEventName, args => {
+        connection.On<CommunityRolePermissionUpdatedEventArg>(nameof(ICommunityClient.RolePermissionUpdated), args => {
             OnRolePermissionUpdated?.Invoke(args);
         });
         
-        connection.On<MemberRoleChangedEventArgs>(MemberRoleChangedEventName, args => {
+        connection.On<MemberRoleChangedEventArgs>(nameof(ICommunityClient.MemberRoleChanged), args => {
             OnMemberRoleChanged?.Invoke(args);
         });
         
@@ -123,35 +114,35 @@ public sealed class CommunityEventDispatcher(
     }
 
     public async Task Dispatch(ChannelCategoryCreatedEventArgs args) {
-        await hubContext.Clients.Group(args.CommunityId.ToString()).SendAsync(ChannelCategoryCreatedEventName, args);
+        await hubContext.Clients.Group(args.CommunityId.ToString()).ChannelCategoryCreated(args);
     }
 
     public async Task Dispatch(ChannelCreatedEventArgs args) {
-        await hubContext.Clients.Group(args.CommunityId.ToString()).SendAsync(ChannelCreatedEventName, args);
+        await hubContext.Clients.Group(args.CommunityId.ToString()).ChannelCreated(args);
     }
 
     public async Task Dispatch(CommunityMemberJoinedEventArgs args) {
-        await hubContext.Clients.Group(args.CommunityId.ToString()).SendAsync(MemberJoinedEventName, args);
+        await hubContext.Clients.Group(args.CommunityId.ToString()).MemberJoined(args);
     }
 
     public async Task Dispatch(CommunityRoleCreatedEventArgs args) {
-        await hubContext.Clients.Group(args.CommunityId.ToString()).SendAsync(RoleCreatedEventName, args);
+        await hubContext.Clients.Group(args.CommunityId.ToString()).RoleCreated(args);
     }
 
     public async Task Dispatch(CommunityRoleRenamedEventArgs args) {
-        await hubContext.Clients.Group(args.CommunityId.ToString()).SendAsync(RoleRenamedEventName, args);
+        await hubContext.Clients.Group(args.CommunityId.ToString()).RoleRenamed(args);
     }
     
     public async Task Dispatch(CommunityRoleDeletedEventArgs args) {
-        await hubContext.Clients.Group(args.CommunityId.ToString()).SendAsync(RoleDeletedEventName, args);
+        await hubContext.Clients.Group(args.CommunityId.ToString()).RoleDeleted(args);
     }
 
     public async Task Dispatch(CommunityRolePermissionUpdatedEventArg args) {
-        await hubContext.Clients.Group(args.CommunityId.ToString()).SendAsync(RolePermissionUpdatedEventName, args);
+        await hubContext.Clients.Group(args.CommunityId.ToString()).RolePermissionUpdated(args);
     }
 
     public async Task Dispatch(MemberRoleChangedEventArgs args) {
-        await hubContext.Clients.Group(args.CommunityId.ToString()).SendAsync(RolePermissionUpdatedEventName, args);
+        await hubContext.Clients.Group(args.CommunityId.ToString()).MemberRoleChanged(args);
     }
 
     public async ValueTask DisposeAsync() {

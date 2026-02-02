@@ -9,14 +9,10 @@ using System.Net;
 namespace Conflux.Web.Services.Implementations;
 
 public sealed class ConversationEventDispatcher(
-    IHubContext<ConversationHub> hubContext, 
+    IHubContext<ConversationHub, IConversationClient> hubContext, 
     IHttpContextAccessor httpContextAccessor, 
     NavigationManager navigationManager
 ) : IConversationEventDispatcher, IAsyncDisposable {
-    private const string MessageReceivedEventName = "MessageReceived";
-    private const string MessageDeletedEventName = "MessageDeleted";
-    private const string MessageEditedEventName = "MessageEdited";
-    
     public event Action<MessageReceivedEventArgs>? OnMessageReceived;
     public event Action<MessageDeletedEventArgs>? OnMessageDeleted;
     public event Action<MessageEditedEventArgs>? OnMessageEdited;
@@ -65,9 +61,17 @@ public sealed class ConversationEventDispatcher(
 
         var connection = CreateHubConnection(conversationId);
 
-        connection.On<MessageReceivedEventArgs>(MessageReceivedEventName, args => { OnMessageReceived?.Invoke(args); });
-        connection.On<MessageDeletedEventArgs>(MessageDeletedEventName, args => { OnMessageDeleted?.Invoke(args); });
-        connection.On<MessageEditedEventArgs>(MessageEditedEventName, args => { OnMessageEdited?.Invoke(args); });
+        connection.On<MessageReceivedEventArgs>(nameof(IConversationClient.MessageReceived), args => {
+            OnMessageReceived?.Invoke(args);
+        });
+        
+        connection.On<MessageDeletedEventArgs>(nameof(IConversationClient.MessageDeleted), args => {
+            OnMessageDeleted?.Invoke(args);
+        });
+        
+        connection.On<MessageEditedEventArgs>(nameof(IConversationClient.MessageEdited), args => {
+            OnMessageEdited?.Invoke(args);
+        });
 
         await connection.StartAsync();
 
@@ -81,15 +85,15 @@ public sealed class ConversationEventDispatcher(
     }
 
     public async Task Dispatch(MessageReceivedEventArgs args) {
-        await hubContext.Clients.Group(args.ConversationId.ToString()).SendAsync(MessageReceivedEventName, args);
+        await hubContext.Clients.Group(args.ConversationId.ToString()).MessageReceived(args);
     }
 
     public async Task Dispatch(MessageDeletedEventArgs args) {
-        await hubContext.Clients.Group(args.ConversationId.ToString()).SendAsync(MessageDeletedEventName, args);
+        await hubContext.Clients.Group(args.ConversationId.ToString()).MessageDeleted(args);
     }
 
     public async Task Dispatch(MessageEditedEventArgs args) {
-        await hubContext.Clients.Group(args.ConversationId.ToString()).SendAsync(MessageEditedEventName, args);
+        await hubContext.Clients.Group(args.ConversationId.ToString()).MessageEdited(args);
     }
 
     public async ValueTask DisposeAsync() {

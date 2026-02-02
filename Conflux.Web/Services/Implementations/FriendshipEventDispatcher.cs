@@ -9,16 +9,10 @@ using System.Net;
 namespace Conflux.Web.Services.Implementations;
 
 public sealed class FriendshipEventDispatcher(
-    IHubContext<FriendshipHub> hubContext,
+    IHubContext<FriendshipHub, IFriendshipClient> hubContext,
     NavigationManager navigationManager,
     IHttpContextAccessor httpContextAccessor
 ) : IFriendshipEventDispatcher {
-    private const string FriendRequestReceivedMethodName = "ReceivedFriendRequest";
-    private const string FriendRequestRejectedMethodName = "RejectedFriendRequest";
-    private const string FriendRequestCanceledMethodName = "CanceledFriendRequest";
-    private const string FriendRequestAcceptedMethodName = "AcceptedFriendRequest";
-    private const string UnfriendedMethodName = "Unfriended";
-
     private HubConnection? _hubConnection;
 
     public event Action<FriendRequestReceivedEventArgs>? OnFriendRequestReceived;
@@ -65,23 +59,23 @@ public sealed class FriendshipEventDispatcher(
             .WithAutomaticReconnect()
             .Build();
 
-        _hubConnection.On<FriendRequestReceivedEventArgs>(FriendRequestReceivedMethodName, args => {
+        _hubConnection.On<FriendRequestReceivedEventArgs>(nameof(IFriendshipClient.FriendRequestReceived), args => {
             OnFriendRequestReceived?.Invoke(args);
         });
 
-        _hubConnection.On<FriendRequestRejectedEventArgs>(FriendRequestRejectedMethodName, args => {
+        _hubConnection.On<FriendRequestRejectedEventArgs>(nameof(IFriendshipClient.FriendRequestRejected), args => {
             OnFriendRequestRejected?.Invoke(args);
         });
 
-        _hubConnection.On<FriendRequestCanceledEventArgs>(FriendRequestCanceledMethodName, args => {
+        _hubConnection.On<FriendRequestCanceledEventArgs>(nameof(IFriendshipClient.FriendRequestCanceled), args => {
             OnFriendRequestCanceled?.Invoke(args);
         });
         
-        _hubConnection.On<FriendRequestAcceptedEventArgs>(FriendRequestAcceptedMethodName, args => {
+        _hubConnection.On<FriendRequestAcceptedEventArgs>(nameof(IFriendshipClient.FriendRequestAccepted), args => {
             OnFriendRequestAccepted?.Invoke(args);
         });
 
-        _hubConnection.On<UnfriendedEventArgs>(UnfriendedMethodName, args => {
+        _hubConnection.On<UnfriendedEventArgs>(nameof(IFriendshipClient.Unfriended), args => {
             OnUnfriended?.Invoke(args);
         });
         
@@ -95,30 +89,23 @@ public sealed class FriendshipEventDispatcher(
     }
 
     public async Task NotifyFriendRequestReceivedAsync(FriendRequestReceivedEventArgs args) {
-        var user = hubContext.Clients.User(args.ReceiverId.ToString());
-        
-        await user.SendAsync(FriendRequestReceivedMethodName, args);
+        await hubContext.Clients.User(args.ReceiverId.ToString()).FriendRequestReceived(args);
     }
 
     public async Task NotifyFriendRequestCanceledAsync(FriendRequestCanceledEventArgs args) {
-        var user = hubContext.Clients.User(args.ReceiverId.ToString());
-        
-        await user.SendAsync(FriendRequestCanceledMethodName, args);
+        await hubContext.Clients.User(args.ReceiverId.ToString()).FriendRequestCanceled(args);
     }
 
     public async Task NotifyFriendRequestRejectedAsync(FriendRequestRejectedEventArgs args) {
-        var user = hubContext.Clients.User(args.SenderId.ToString());
-
-        await user.SendAsync(FriendRequestRejectedMethodName, args);
+        await hubContext.Clients.User(args.SenderId.ToString()).FriendRequestRejected(args);
     }
     
     public async Task NotifyFriendRequestAcceptedAsync(FriendRequestAcceptedEventArgs args) {
-        await hubContext.Clients.User(args.SenderId.ToString()).SendAsync(FriendRequestAcceptedMethodName, args);
+        await hubContext.Clients.User(args.SenderId.ToString()).FriendRequestAccepted(args);
     }
 
     public async Task NotifyUnfriendedAsync(UnfriendedEventArgs args) {
-        await hubContext.Clients.User(args.User1.ToString()).SendAsync(UnfriendedMethodName, args);
-        await hubContext.Clients.User(args.User2.ToString()).SendAsync(UnfriendedMethodName, args);
+        await hubContext.Clients.Users([args.User1.ToString(), args.User2.ToString()]).Unfriended(args);
     }
 
     public async ValueTask DisposeAsync() {

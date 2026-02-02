@@ -11,14 +11,10 @@ using System.Net;
 namespace Conflux.Web.Services.Implementations;
 
 public sealed class UserNotificationService(
-    IHubContext<UserNotificationHub> hubContext,
+    IHubContext<UserNotificationHub, IUserClient> hubContext,
     NavigationManager navigationManager,
     IHttpContextAccessor httpContextAccessor
 ) : IWebUserNotificationService, IAsyncDisposable {
-    public const string CommunityBannedEventName = "CommunityBanned";
-    public const string IncomingDirectMessageEventName = "IncomingDirectMessage";
-    public const string IncomingCallEventName = "IncomingCall";
-    
     public event Action<CommunityBannedEventArgs>? OnCommunityBanned;
     public event Func<IncomingCallEventArgs, Task>? OnIncomingCall;
     public event Action<IncomingDirectMessageEventArgs>? OnIncomingDirectMessage;
@@ -67,15 +63,15 @@ public sealed class UserNotificationService(
             })
             .Build();
 
-        _hubConnection.On<CommunityBannedEventArgs>(CommunityBannedEventName, args => {
+        _hubConnection.On<CommunityBannedEventArgs>(nameof(IUserClient.CommunityBanned), args => {
             OnCommunityBanned?.Invoke(args);
         });
 
-        _hubConnection.On<IncomingDirectMessageEventArgs>(IncomingDirectMessageEventName, args => {
+        _hubConnection.On<IncomingDirectMessageEventArgs>(nameof(IUserClient.IncomingDirectMessage), args => {
             OnIncomingDirectMessage?.Invoke(args);
         });
 
-        _hubConnection.On<IncomingCallEventArgs>(IncomingCallEventName, async args => {
+        _hubConnection.On<IncomingCallEventArgs>(nameof(IUserClient.IncomingCall), async args => {
             if (OnIncomingCall != null) {
                 await OnIncomingCall.Invoke(args);
             }
@@ -91,20 +87,15 @@ public sealed class UserNotificationService(
     }
 
     public async Task Dispatch(CommunityBannedEventArgs args) {
-        var user = hubContext.Clients.User(args.UserId.ToString());
-        
-        await user.SendAsync(CommunityBannedEventName, args);
+        await hubContext.Clients.User(args.UserId.ToString()).CommunityBanned(args);
     }
 
     public async Task Dispatch(IncomingDirectMessageEventArgs args) {
-        var user = hubContext.Clients.User(args.TargetUserId.ToString());
-        await user.SendAsync(IncomingDirectMessageEventName, args);
+        await hubContext.Clients.User(args.TargetUserId.ToString()).IncomingDirectMessage(args);
     }
 
     public async Task Dispatch(IncomingCallEventArgs args) {
-        var user = hubContext.Clients.User(args.UserId.ToString());
-        
-        await user.SendAsync(IncomingCallEventName, args);
+        await hubContext.Clients.User(args.UserId.ToString()).IncomingCall(args);
     }
 
     public async ValueTask DisposeAsync() {
