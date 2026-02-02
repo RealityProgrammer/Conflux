@@ -213,6 +213,5 @@ internal sealed class UserCallService : IUserCallService, IAsyncDisposable {
         _callConnections.Clear();
         
         _userNotificationService.OnIncomingCall -= OnIncomingCall;
-        // await Disconnect();
     }
 }
