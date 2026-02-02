@@ -1,4 +1,5 @@
 ﻿using Conflux.Application.Abstracts;
+using Conflux.Domain.Enums;
 using Conflux.Domain.Events;
 using Conflux.Web.Services.Abstracts;
 using Conflux.Web.Services.Hubs;
@@ -15,10 +16,12 @@ public sealed class UserNotificationService(
     IHttpContextAccessor httpContextAccessor
 ) : IWebUserNotificationService, IAsyncDisposable {
     public const string CommunityBannedEventName = "CommunityBanned";
+    public const string IncomingDirectMessageEventName = "IncomingDirectMessage";
     public const string IncomingCallEventName = "IncomingCall";
     
     public event Action<CommunityBannedEventArgs>? OnCommunityBanned;
     public event Func<IncomingCallEventArgs, Task>? OnIncomingCall;
+    public event Action<IncomingDirectMessageEventArgs>? OnIncomingDirectMessage;
 
     private HubConnection? _hubConnection;
 
@@ -68,6 +71,10 @@ public sealed class UserNotificationService(
             OnCommunityBanned?.Invoke(args);
         });
 
+        _hubConnection.On<IncomingDirectMessageEventArgs>(IncomingDirectMessageEventName, args => {
+            OnIncomingDirectMessage?.Invoke(args);
+        });
+
         _hubConnection.On<IncomingCallEventArgs>(IncomingCallEventName, async args => {
             if (OnIncomingCall != null) {
                 await OnIncomingCall.Invoke(args);
@@ -87,6 +94,11 @@ public sealed class UserNotificationService(
         var user = hubContext.Clients.User(args.UserId.ToString());
         
         await user.SendAsync(CommunityBannedEventName, args);
+    }
+
+    public async Task Dispatch(IncomingDirectMessageEventArgs args) {
+        var user = hubContext.Clients.User(args.TargetUserId.ToString());
+        await user.SendAsync(IncomingDirectMessageEventName, args);
     }
 
     public async Task Dispatch(IncomingCallEventArgs args) {

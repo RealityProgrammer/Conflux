@@ -2,20 +2,18 @@
 using Conflux.Application.Dto;
 using Conflux.Domain;
 using Conflux.Domain.Entities;
+using Conflux.Domain.Enums;
 using Conflux.Domain.Events;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System.Collections.Concurrent;
-using System.Diagnostics;
-using System.Net;
 
 namespace Conflux.Application.Implementations;
 
 public sealed class ConversationService(
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     IContentService contentService,
-    IConversationEventDispatcher eventDispatcher,
+    IConversationEventDispatcher conversationEventDispatcher,
+    IUserNotificationService userNotificationService,
     ILogger<ConversationService> logger
 ) : IConversationService {
     public event Action<Conversation>? OnConversationCreated;
@@ -48,84 +46,93 @@ public sealed class ConversationService(
 
     public async Task<IConversationService.SendStatus> SendMessageAsync(Guid conversationId, Guid senderUserId, string? body, Guid? replyMessageId, IReadOnlyCollection<IConversationService.UploadingAttachment> attachments, CancellationToken cancellationToken = default) {
         // TODO: Rewrite this, this is goddamn ugly.
+
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
         
-        await using (var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken)) {
-            await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+        // Upload the attachments.
+        var attachmentPaths = new List<MessageAttachment>(attachments.Count);
+
+        try {
+            foreach (var attachment in attachments) {
+                var path = await contentService.UploadMessageAttachmentAsync(attachment.Stream, attachment.Type, cancellationToken);
+                
+                attachmentPaths.Add(new() {
+                    Name = attachment.Name,
+                    Type = attachment.Type,
+                    PhysicalPath = path,
+                });
+            }
+        } catch (Exception e) {
+            logger.LogError(e, "Failed to upload message attachment.");
+
+            for (int i = 0; i < attachmentPaths.Count; i++) {
+                await contentService.DeleteMessageAttachmentAsync(attachmentPaths[i].PhysicalPath);
+            }
             
-            // Upload the attachments.
-            var attachmentPaths = new List<MessageAttachment>(attachments.Count);
-
-            try {
-                foreach (var attachment in attachments) {
-                    var path = await contentService.UploadMessageAttachmentAsync(attachment.Stream, attachment.Type, cancellationToken);
-                    
-                    attachmentPaths.Add(new() {
-                        Name = attachment.Name,
-                        Type = attachment.Type,
-                        PhysicalPath = path,
-                    });
-                }
-            } catch (Exception e) {
-                logger.LogError(e, "Failed to upload message attachment.");
-
-                for (int i = 0; i < attachmentPaths.Count; i++) {
-                    await contentService.DeleteMessageAttachmentAsync(attachmentPaths[i].PhysicalPath);
-                }
-                
-                return IConversationService.SendStatus.AttachmentFailure;
-            }
-
-            IConversationService.SendStatus returnStatus = IConversationService.SendStatus.Success;
-
-            try {
-                // Register the message to database.
-                ChatMessage message = new() {
-                    ConversationId = conversationId,
-                    SenderId = senderUserId,
-                    Body = body,
-                    ReplyMessageId = replyMessageId,
-                    Attachments = attachmentPaths,
-                    CreatedAt = DateTime.UtcNow,
-                };
-
-                dbContext.ChatMessages.Add(message);
-                
-                // Update the Latest Message Time in Conversation.
-                await dbContext.Conversations
-                    .Where(c => c.Id == conversationId)
-                    .ExecuteUpdateAsync(builder => {
-                        builder.SetProperty(c => c.LatestMessageTime, message.CreatedAt);
-                    }, cancellationToken);
-
-                if (await dbContext.SaveChangesAsync(cancellationToken) > 0) {
-                    await transaction.CommitAsync(cancellationToken);
-
-                    returnStatus = IConversationService.SendStatus.Success;
-
-                    await eventDispatcher.Dispatch(new MessageReceivedEventArgs(message.Id, conversationId, senderUserId));
-
-                    return returnStatus;
-                } else {
-                    returnStatus = IConversationService.SendStatus.MessageFailure;
-                }
-            } catch (OperationCanceledException) {
-                returnStatus = IConversationService.SendStatus.Canceled;
-            } catch (Exception e) {
-                returnStatus = IConversationService.SendStatus.Failure;
-                
-                logger.LogError(e, "Failed to send message.");
-            } finally {
-                if (returnStatus != IConversationService.SendStatus.Success) {
-                    await transaction.RollbackAsync(cancellationToken);
-                    
-                    foreach (var attachmentPath in attachmentPaths) {
-                        await contentService.DeleteMessageAttachmentAsync(attachmentPath.PhysicalPath);
-                    }
-                }
-            }
-
-            return returnStatus;
+            return IConversationService.SendStatus.AttachmentFailure;
         }
+
+        IConversationService.SendStatus returnStatus = IConversationService.SendStatus.Success;
+
+        try {
+            // Register the message to database.
+            ChatMessage message = new() {
+                ConversationId = conversationId,
+                SenderId = senderUserId,
+                Body = body,
+                ReplyMessageId = replyMessageId,
+                Attachments = attachmentPaths,
+                CreatedAt = DateTime.UtcNow,
+            };
+
+            dbContext.ChatMessages.Add(message);
+            
+            // Update the Latest Message Time in Conversation.
+            await dbContext.Conversations
+                .Where(c => c.Id == conversationId)
+                .ExecuteUpdateAsync(builder => {
+                    builder.SetProperty(c => c.LatestMessageTime, message.CreatedAt);
+                }, cancellationToken);
+            
+            // Notify the other user if the conversation is direct conversation.
+            Guid? otherUserIdOnDirectConversation = await dbContext.Conversations
+                .Where(c => c.Id == conversationId && c.Type == ConversationType.DirectMessage && c.FriendRequestId != null)
+                .Include(c => c.FriendRequest!)
+                .Select(c => c.FriendRequest!.SenderId == senderUserId ? c.FriendRequest!.ReceiverId : c.FriendRequest!.SenderId)
+                .Cast<Guid?>()
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (await dbContext.SaveChangesAsync(cancellationToken) > 0) {
+                await transaction.CommitAsync(cancellationToken);
+
+                returnStatus = IConversationService.SendStatus.Success;
+
+                await conversationEventDispatcher.Dispatch(new MessageReceivedEventArgs(message.Id, conversationId, senderUserId));
+
+                if (otherUserIdOnDirectConversation != null) {
+                    await userNotificationService.Dispatch(new IncomingDirectMessageEventArgs(otherUserIdOnDirectConversation.Value, conversationId, message.Id));
+                }
+                
+                return returnStatus;
+            } else {
+                returnStatus = IConversationService.SendStatus.MessageFailure;
+            }
+        } catch (OperationCanceledException) {
+            returnStatus = IConversationService.SendStatus.Canceled;
+        } catch (Exception e) {
+            returnStatus = IConversationService.SendStatus.Failure;
+            
+            logger.LogError(e, "Failed to send message.");
+        } finally {
+            if (returnStatus != IConversationService.SendStatus.Success) {
+                foreach (var attachmentPath in attachmentPaths) {
+                    await contentService.DeleteMessageAttachmentAsync(attachmentPath.PhysicalPath);
+                }
+            }
+        }
+
+        return returnStatus;
     }
 
     public async Task<bool> DeleteMessageAsync(Guid messageId, Guid deleteUserId) {
@@ -150,7 +157,7 @@ public sealed class ConversationService(
                 });
 
             if (rowsAffected > 0) {
-                await eventDispatcher.Dispatch(new MessageDeletedEventArgs(messageId, conversationId));
+                await conversationEventDispatcher.Dispatch(new MessageDeletedEventArgs(messageId, conversationId));
 
                 return true;
             }
@@ -181,7 +188,7 @@ public sealed class ConversationService(
                 });
 
             if (rowsAffected > 0) {
-                await eventDispatcher.Dispatch(new MessageEditedEventArgs(messageId, conversationId, body));
+                await conversationEventDispatcher.Dispatch(new MessageEditedEventArgs(messageId, conversationId, body));
 
                 return true;
             }
@@ -212,7 +219,7 @@ public sealed class ConversationService(
                 });
 
             if (rowsAffected > 0) {
-                await eventDispatcher.Dispatch(new MessageEditedEventArgs(messageId, conversationId, body));
+                await conversationEventDispatcher.Dispatch(new MessageEditedEventArgs(messageId, conversationId, body));
 
                 return true;
             }

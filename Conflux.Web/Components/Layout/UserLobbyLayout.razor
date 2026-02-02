@@ -1,4 +1,5 @@
-﻿@using Conflux.Web.Services
+﻿@using Conflux.Domain.Enums
+@using Conflux.Web.Services
 @using Microsoft.AspNetCore.Components.Sections
 @using Microsoft.EntityFrameworkCore
 @using System.Security.Claims
@@ -13,6 +14,7 @@
 @inject IContentService ContentService
 @inject ApplicationRedirectManager RedirectManager
 @inject IConversationService ConversationService
+@inject IUserNotificationService UserNotificationService
 
 <SectionContent SectionName="lobby-sidebar">
     <div class="flex flex-col gap-2 p-2">
@@ -57,7 +59,7 @@
 
     private Guid _userId;
 
-    private Virtualize<ConversationElement> _conversationsVirtualize;
+    private Virtualize<ConversationElement> _conversationsVirtualize = null!;
 
     protected override async Task OnInitializedAsync() {
         var authState = await AuthenticationState;
@@ -70,6 +72,7 @@
     protected override void OnAfterRender(bool firstRender) {
         if (firstRender) {
             ConversationService.OnConversationCreated += OnConversationCreated;
+            UserNotificationService.OnIncomingDirectMessage += OnIncomingDirectMessage;
         }
     }
 
@@ -87,7 +90,7 @@
             }
 
             List<ConversationElement> elements = await query
-                .OrderBy(x => x.LatestMessageTime ?? DateTime.MinValue)
+                .OrderByDescending(x => x.LatestMessageTime ?? DateTime.MinValue)
                 .Skip(request.StartIndex)
                 .Take(request.Count)
                 .Join(
@@ -111,8 +114,16 @@
         });
     }
 
+    private void OnIncomingDirectMessage(IncomingDirectMessageEventArgs args) {
+        InvokeAsync(async () => {
+            await _conversationsVirtualize.RefreshDataAsync();
+            StateHasChanged();
+        });
+    }
+
     public void Dispose() {
         ConversationService.OnConversationCreated -= OnConversationCreated;
+        UserNotificationService.OnIncomingDirectMessage -= OnIncomingDirectMessage;
     }
 
     private sealed class ConversationElement {
