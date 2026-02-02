@@ -242,7 +242,18 @@ class CallScreen {
     };
 
     setAudioOutputDevice = async (deviceId: string) => {
-        // TODO: Implementation.
+        // Can I use double bang instead of this?
+        if (typeof this.remoteVideoElement.setSinkId === 'function') {
+            try {
+                // Chrome expects empty string as default output device for some reason.
+                const sinkId = deviceId === 'default' ? '' : deviceId;
+                await this.remoteVideoElement.setSinkId(sinkId);
+            } catch (err) {
+                console.error("Error setting audio output device: ", err);
+            }
+        } else {
+            console.warn("Browser does not support setSinkId.");
+        }
     }
 
     setVideoInputDevice = async (deviceId: string) => {
