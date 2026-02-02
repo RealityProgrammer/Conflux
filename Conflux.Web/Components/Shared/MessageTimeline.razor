@@ -1,6 +1,7 @@
 ﻿@using Conflux.Application.Dto
 @using Conflux.Domain.Enums
 @using Conflux.Domain.Events
+@using Conflux.Web.Components.Pages.Community.Modals
 @using Conflux.Web.Components.Shared.Icons
 @using Conflux.Web.Components.Shared.Modals
 @using Conflux.Web.Helpers
@@ -15,6 +16,7 @@
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject IContentService ContentService
 @inject ModalService ModalService
+@inject ICommunityService CommunityService
 
 @implements IAsyncDisposable
 
@@ -58,7 +60,7 @@
                     }
                     
                     @{
-                        Guid senderId = message.SenderId;
+                        Guid senderId = message.SenderUserId;
                         EventCallback invokesOpenUserModal = EventCallback.Factory.Create(this, EventUtils.AsNonRenderingEventHandler(() => OpenUserProfileModal(senderId)));
                     }
     
@@ -77,7 +79,7 @@
                             int endIndex = i + 1;
 
                             if (!message.ReplyMessageId.HasValue) {
-                                while (endIndex < c && _visibleMessages[endIndex].SenderId == message.SenderId && !_visibleMessages[endIndex].ReplyMessageId.HasValue) {
+                                while (endIndex < c && _visibleMessages[endIndex].SenderUserId == message.SenderUserId && !_visibleMessages[endIndex].ReplyMessageId.HasValue) {
                                     endIndex++;
                                 }
                             }
@@ -120,7 +122,7 @@
                                                 </button>
                                             }
 
-                                            @if (UserId == message.SenderId) {
+                                            @if (UserId == message.SenderUserId) {
                                                 <hr class="border-l border-y-transparent border-l-gray-600 h-5"/>
 
                                                 <button class="p-1 bg-transparent hover:bg-white/15 cursor-pointer rounded-md" @onclick="@(() => HandleMessageEdit(actionMessageId))">
@@ -198,7 +200,7 @@
                     <hr class="border-t border-t-gray-600 px-2"/>
                 }
 
-                @if (_extraActionTargetMessage.SenderId == UserId) {
+                @if (_extraActionTargetMessage.SenderUserId == UserId) {
                     <button class="p-2! button-nav-menu" @onclick="HandleMessageEditViaExtra">
                         <Pencil class="size-5 fill-white"/>
                         
@@ -212,6 +214,18 @@
                     </button>
                     
                     <hr class="border-t border-t-gray-600 mx-2"/>
+                } else {
+                    @if (MemberInformation?.Role.Permissions is { } rolePermissions) {
+                        <AuthorizeView Policy="Delete Member Message" Resource="rolePermissions">
+                            <Authorized>
+                                <button class="p-2! button-nav-menu text-red-500" @onclick="HandleDeleteMemberMessage">
+                                    <Trashcan class="size-5 fill-red-500"/> 
+                        
+                                    <span class="text-sm">Delete Message</span>
+                                </button>
+                            </Authorized>
+                        </AuthorizeView>
+                    }
                 }
                 
                 <button class="p-2! button-nav-menu" @onclick="HandleCopyMessage">
@@ -226,12 +240,26 @@
                     <span class="text-sm">Speak Message</span>
                 </button>
                 
-                @if (_extraActionTargetMessage!.SenderId != UserId && !DisallowReport) {
+                @if (_extraActionTargetMessage!.SenderUserId != UserId && !DisallowReport) {
+                    <hr class="border-t border-t-gray-600 mx-2"/>
+                    
                     <button class="p-2! button-nav-menu" @onclick="HandleReportMessage">
                         <Flag class="size-5 fill-red-400"/>
 
                         <span class="text-sm text-red-400">Report Message</span>
                     </button>
+                    
+                    @if (MemberInformation?.Role.Permissions is { } rolePermissions) {
+                        <AuthorizeView Policy="BanCommunityMember" Resource="rolePermissions">
+                            <Authorized>
+                                <button class="p-2! button-nav-menu" @onclick="HandleBanMember">
+                                    <Person class="size-5 fill-red-500" Addition="PersonAddition.X"/>
+
+                                    <span class="text-sm text-red-500">Ban Member</span>
+                                </button>
+                            </Authorized>
+                        </AuthorizeView>
+                    }
                 }
             </Popover>
             break;
@@ -253,7 +281,7 @@
 
     [CascadingParameter] private MemberInformationDTO? MemberInformation { get; set; }
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
-
+    
     // Controls.
     private InitializationStatus _initStatus = InitializationStatus.Loading;
     
@@ -573,6 +601,22 @@
         _showExtraActionPopover = false;
     }
 
+    private void HandleDeleteMemberMessage() {
+        if (!_showExtraActionPopover || _extraActionTargetMessage == null) {
+            return;
+        }
+        
+        ModalService.Open<OperationConfirmModal>(parameters: new Dictionary<string, object?> {
+            [nameof(OperationConfirmModal.Title)] = "Delete Member Message",
+            [nameof(OperationConfirmModal.Body)] = _deleteConfirmationBody,
+            [nameof(OperationConfirmModal.OnConfirm)] = EventCallback.Factory.Create(this, async () => {
+                await ConversationService.DeleteMessageAsync(_extraActionTargetMessage.MessageId, UserId);
+            }),
+        });
+
+        _showExtraActionPopover = false;
+    }
+
     private void HandleShowExtraActionPopover(IConversationService.RenderingMessageDTO messageDTO) {
         if (_extraActionPopoverTargets.TryGetValue(messageDTO.MessageId, out var target)) {
             _extraActionTargetMessage = messageDTO;
@@ -609,6 +653,56 @@
         });
 
         _showExtraActionPopover = false;
+    }
+
+    private static readonly RenderFragment _banFailureBody =
+        @<p>Failed to ban member. Please try again later.</p>;
+    
+    private static readonly RenderFragment _banSuccessBody =
+        @<p>Member has been banned.</p>;
+
+    private void HandleBanMember() {
+        _showExtraActionPopover = false;
+        
+        ModalService.Open<BanDurationModal>(parameters: new Dictionary<string, object?> {
+            [nameof(BanDurationModal.OnConfirm)] = EventCallback.Factory.Create<TimeSpan>(this, BanUser),
+        });
+        return;
+
+        async Task BanUser(TimeSpan duration) {
+            if (_extraActionTargetMessage == null) {
+                return;
+            }
+            
+            await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+
+            var channelId = await dbContext.Conversations
+                .Where(c => c.Id == ConversationId && c.CommunityChannelId != null)
+                .Select(c => c.CommunityChannelId)
+                .FirstOrDefaultAsync();
+
+            if (channelId != null) {
+                var communityId = await dbContext.CommunityChannels
+                    .Where(c => c.Id == channelId)
+                    .Include(c => c.ChannelCategory)
+                    .Select(c => c.ChannelCategory.CommunityId)
+                    .FirstAsync();
+
+                bool success = await CommunityService.BanMemberFromUserIdAsync(communityId, _extraActionTargetMessage.SenderUserId, duration);
+
+                if (success) {
+                    ModalService.Open<OperationSuccessModal>(parameters: new Dictionary<string, object?> {
+                        [nameof(OperationFailureModal.Title)] = "Ban Success",
+                        [nameof(OperationFailureModal.Body)] = _banSuccessBody,
+                    });
+                } else {
+                    ModalService.Open<OperationFailureModal>(parameters: new Dictionary<string, object?> {
+                        [nameof(OperationFailureModal.Title)] = "Ban Failure",
+                        [nameof(OperationFailureModal.Body)] = _banFailureBody,
+                    });
+                }
+            }
+        }
     }
 
     private void OnMessageReceived(MessageReceivedEventArgs args) {

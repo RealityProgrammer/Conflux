@@ -41,7 +41,7 @@ public sealed class ConversationService(
         return conversation;
     }
 
-    public async Task<IConversationService.SendStatus> SendMessageAsync(Guid conversationId, Guid senderId, string? body, Guid? replyMessageId, IReadOnlyCollection<IConversationService.UploadingAttachment> attachments, CancellationToken cancellationToken = default) {
+    public async Task<IConversationService.SendStatus> SendMessageAsync(Guid conversationId, Guid senderUserId, string? body, Guid? replyMessageId, IReadOnlyCollection<IConversationService.UploadingAttachment> attachments, CancellationToken cancellationToken = default) {
         // TODO: Rewrite this, this is goddamn ugly.
         
         await using (var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken)) {
@@ -76,7 +76,7 @@ public sealed class ConversationService(
                 // Register the message to database.
                 ChatMessage message = new() {
                     ConversationId = conversationId,
-                    SenderId = senderId,
+                    SenderId = senderUserId,
                     Body = body,
                     ReplyMessageId = replyMessageId,
                     Attachments = attachmentPaths,
@@ -89,7 +89,7 @@ public sealed class ConversationService(
 
                     returnStatus = IConversationService.SendStatus.Success;
 
-                    await eventDispatcher.Dispatch(new MessageReceivedEventArgs(message.Id, conversationId, senderId));
+                    await eventDispatcher.Dispatch(new MessageReceivedEventArgs(message.Id, conversationId, senderUserId));
 
                     return returnStatus;
                 } else {
@@ -115,13 +115,13 @@ public sealed class ConversationService(
         }
     }
 
-    public async Task<bool> DeleteMessageAsync(Guid messageId, Guid senderId) {
+    public async Task<bool> DeleteMessageAsync(Guid messageId, Guid deleteUserId) {
         await using (var dbContext = await dbContextFactory.CreateDbContextAsync()) {
             dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
             // Get the conversation ID and check exists at the same time.
             Guid conversationId = await dbContext.ChatMessages
-                .Where(m => m.Id == messageId && m.SenderId == senderId && m.DeletedAt == null)
+                .Where(m => m.Id == messageId && m.DeletedAt == null)
                 .Select(m => m.ConversationId)
                 .FirstOrDefaultAsync();
 
@@ -130,9 +130,10 @@ public sealed class ConversationService(
             DateTime utcNow = DateTime.UtcNow;
             
             int rowsAffected = await dbContext.ChatMessages
-                .Where(m => m.Id == messageId && m.SenderId == senderId && m.DeletedAt == null)
+                .Where(m => m.Id == messageId && m.DeletedAt == null)
                 .ExecuteUpdateAsync(builder => {
                     builder.SetProperty(m => m.DeletedAt, utcNow);
+                    builder.SetProperty(m => m.DeleterUserId, deleteUserId);
                 });
 
             if (rowsAffected > 0) {
@@ -176,13 +177,13 @@ public sealed class ConversationService(
         }
     }
     
-    public async Task<bool> EditMessageAsync(Guid messageId, Guid senderId, string? body) {
+    public async Task<bool> EditMessageAsync(Guid messageId, Guid senderUserId, string? body) {
         await using (var dbContext = await dbContextFactory.CreateDbContextAsync()) {
             dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
             // Get the conversation ID and check exists at the same time.
             Guid conversationId = await dbContext.ChatMessages
-                .Where(m => m.Id == messageId && m.SenderId == senderId && m.DeletedAt == null && m.Body != body)
+                .Where(m => m.Id == messageId && m.SenderId == senderUserId && m.DeletedAt == null && m.Body != body)
                 .Select(m => m.ConversationId)
                 .FirstOrDefaultAsync();
 
@@ -191,7 +192,7 @@ public sealed class ConversationService(
             DateTime utcNow = DateTime.UtcNow;
             
             int rowsAffected = await dbContext.ChatMessages
-                .Where(m => m.Id == messageId && m.SenderId == senderId && m.DeletedAt == null)
+                .Where(m => m.Id == messageId && m.SenderId == senderUserId && m.DeletedAt == null)
                 .ExecuteUpdateAsync(builder => {
                     builder.SetProperty(m => m.Body, body);
                     builder.SetProperty(m => m.LastModifiedAt, utcNow);

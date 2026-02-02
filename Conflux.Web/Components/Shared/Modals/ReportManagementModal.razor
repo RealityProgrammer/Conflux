@@ -357,8 +357,8 @@
             return;
         }
         
-        ModalService.Open<ReportBanModal>(parameters: new Dictionary<string, object?> {
-            [nameof(ReportBanModal.OnConfirm)] = EventCallback.Factory.Create<TimeSpan>(this, OnConfirm),
+        ModalService.Open<BanDurationModal>(parameters: new Dictionary<string, object?> {
+            [nameof(BanDurationModal.OnConfirm)] = EventCallback.Factory.Create<TimeSpan>(this, OnConfirm),
         });
         
         return;

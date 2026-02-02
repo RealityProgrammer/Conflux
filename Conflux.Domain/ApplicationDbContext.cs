@@ -94,8 +94,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             
             entity.HasOne(message => message.ReplyMessage)
                 .WithMany()
-                .HasForeignKey(message => message.ReplyMessageId)
-                .OnDelete(DeleteBehavior.SetNull);
+                .HasForeignKey(message => message.ReplyMessageId);
+
+            entity.HasOne(message => message.DeleterUser)
+                .WithMany()
+                .HasForeignKey(message => message.DeleterUserId);
 
             entity.ComplexCollection(m => m.Attachments, action => action.ToJson());
         });
