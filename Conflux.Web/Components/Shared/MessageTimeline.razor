@@ -2,12 +2,10 @@
 @using Conflux.Domain.Enums
 @using Conflux.Domain.Events
 @using Conflux.Web.Components.Pages.Community.Modals
-@using Conflux.Web.Components.Shared.Icons
 @using Conflux.Web.Components.Shared.Modals
 @using Conflux.Web.Helpers
 @using Conflux.Web.Services.Implementations
 @using Microsoft.EntityFrameworkCore
-@using System.Security.Claims
 @using System.Diagnostics
 
 @inject IJSRuntime JavascriptRuntime
@@ -88,7 +86,7 @@
                                 message = _visibleMessages[j];
                                 bool isEditing = message.MessageId == _editingMessageId;
 
-                                <div class="relative bg-transparent @(isEditing ? string.Empty : "hover:bg-white/5") group">
+                                <div @key="message.MessageId" class="relative bg-transparent @(isEditing ? string.Empty : "hover:bg-white/5") group">
                                     @if (isEditing) {
                                         <MessageTextArea @ref="_editTextArea"
                                                          @bind-Value="_editMessageBody"
@@ -213,19 +211,7 @@
                         <span class="text-sm">Delete Message</span>
                     </button>
                     
-                    <hr class="border-t border-t-gray-600 mx-2"/>
-                } else {
-                    @if (MemberInformation?.Role.Permissions is { } rolePermissions) {
-                        <AuthorizeView Policy="Delete Member Message" Resource="rolePermissions">
-                            <Authorized>
-                                <button class="p-2! button-nav-menu text-red-500" @onclick="HandleDeleteMemberMessage">
-                                    <Trashcan class="size-5 fill-red-500"/> 
-                        
-                                    <span class="text-sm">Delete Message</span>
-                                </button>
-                            </Authorized>
-                        </AuthorizeView>
-                    }
+                    <hr class="border-t border-t-gray-600 px-2"/>
                 }
                 
                 <button class="p-2! button-nav-menu" @onclick="HandleCopyMessage">
@@ -250,6 +236,18 @@
                     </button>
                     
                     @if (MemberInformation?.Role.Permissions is { } rolePermissions) {
+                        if (_extraActionTargetMessage.SenderUserId != UserId) {
+                            <AuthorizeView Policy="DeleteMemberMessage" Resource="rolePermissions">
+                                <Authorized>
+                                    <button class="p-2! button-nav-menu text-red-500"@onclick="HandleDeleteMemberMessage">
+                                        <Trashcan class="size-5 fill-red-500"/>
+
+                                        <span class="text-sm">Delete Message</span>
+                                    </button>
+                                </Authorized>
+                            </AuthorizeView>
+                        }
+
                         <AuthorizeView Policy="BanCommunityMember" Resource="rolePermissions">
                             <Authorized>
                                 <button class="p-2! button-nav-menu" @onclick="HandleBanMember">
@@ -576,6 +574,8 @@
     private static readonly RenderFragment _deleteConfirmationBody = @<p>Are you sure you want to delete this message?<br/>This action cannot be reverted.</p>;
     
     private void HandleMessageDelete(Guid id) {
+        _showExtraActionPopover = false;
+        
         ModalService.Open<OperationConfirmModal>(parameters: new Dictionary<string, object?> {
             [nameof(OperationConfirmModal.Title)] = "Delete Message",
             [nameof(OperationConfirmModal.Body)] = _deleteConfirmationBody,
@@ -594,7 +594,10 @@
             [nameof(OperationConfirmModal.Title)] = "Delete Message",
             [nameof(OperationConfirmModal.Body)] = _deleteConfirmationBody,
             [nameof(OperationConfirmModal.OnConfirm)] = EventCallback.Factory.Create(this, async () => {
-                await ConversationService.DeleteMessageAsync(_extraActionTargetMessage.MessageId, UserId);
+                if (await ConversationService.DeleteMessageAsync(_extraActionTargetMessage.MessageId, UserId)) {
+                    _extraActionTargetMessage = null;
+                    _extraActionTargetElement = default;
+                }
             }),
         });
 
@@ -610,7 +613,10 @@
             [nameof(OperationConfirmModal.Title)] = "Delete Member Message",
             [nameof(OperationConfirmModal.Body)] = _deleteConfirmationBody,
             [nameof(OperationConfirmModal.OnConfirm)] = EventCallback.Factory.Create(this, async () => {
-                await ConversationService.DeleteMessageAsync(_extraActionTargetMessage.MessageId, UserId);
+                if (await ConversationService.DeleteMessageAsync(_extraActionTargetMessage.MessageId, UserId)) {
+                    _extraActionTargetMessage = null;
+                    _extraActionTargetElement = default;
+                }
             }),
         });
 
@@ -631,6 +637,11 @@
 
     private void SetIsShowingExtraActionPopover(bool value) {
         _showExtraActionPopover = value;
+
+        if (!value) {
+            _extraActionTargetMessage = null;
+            _extraActionTargetElement = default;
+        }
     }
 
     private async Task HandleCopyMessage() {
@@ -773,6 +784,8 @@
                 }
             }
 
+            _extraActionPopoverTargets.Remove(args.MessageId);
+            
             InvokeAsync(StateHasChanged);
         } finally {
             _messageSemaphore.Release();
