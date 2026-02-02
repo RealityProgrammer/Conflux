@@ -18,6 +18,8 @@ public sealed class ConversationService(
     IConversationEventDispatcher eventDispatcher,
     ILogger<ConversationService> logger
 ) : IConversationService {
+    public event Action<Conversation>? OnConversationCreated;
+    
     public async Task<Conversation> GetOrCreateDirectConversationAsync(Guid friendRequestId) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
 
@@ -37,6 +39,8 @@ public sealed class ConversationService(
         dbContext.Conversations.Add(conversation);
             
         await dbContext.SaveChangesAsync();
+        
+        OnConversationCreated?.Invoke(conversation);
 
         return conversation;
     }

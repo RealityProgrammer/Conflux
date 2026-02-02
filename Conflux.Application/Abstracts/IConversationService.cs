@@ -5,6 +5,8 @@ using Conflux.Domain.Enums;
 namespace Conflux.Application.Abstracts;
 
 public interface IConversationService {
+    event Action<Conversation> OnConversationCreated;
+    
     Task<Conversation> GetOrCreateDirectConversationAsync(Guid friendRequestId);
     
     Task<SendStatus> SendMessageAsync(Guid conversationId, Guid senderUserId, string? body, Guid? replyMessageId, IReadOnlyCollection<UploadingAttachment> attachments, CancellationToken cancellationToken = default);
