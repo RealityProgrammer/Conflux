@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using Conflux.Web.Core;
+using System.Text;
 using System.Text.Json.Serialization;
 
 namespace Conflux.Web.Services;

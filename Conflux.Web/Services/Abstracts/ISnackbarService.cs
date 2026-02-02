@@ -1,4 +1,6 @@
-﻿namespace Conflux.Web.Services.Abstracts;
+﻿using Conflux.Web.Core;
+
+namespace Conflux.Web.Services.Abstracts;
 
 public interface ISnackbarService {
     event Action OnChange;

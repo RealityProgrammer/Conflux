@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using System.Security.Claims;
 
-namespace Conflux.Web.Services;
+namespace Conflux.Web.Authentication;
 
 internal sealed class ApplicationAuthenticationStateProvider(
     ILoggerFactory loggerFactory,
