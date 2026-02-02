@@ -82,6 +82,12 @@ builder.Services.AddAuthorizationBuilder()
     })
     .AddPolicy("ManageCommunityReports", policy => {
         policy.Requirements.Add(new ManageCommunityReportsRequirement());
+    })
+    .AddPolicy("DeleteMemberMessage", policy => {
+        policy.Requirements.Add(new DeleteMemberMessageRequirement());
+    })
+    .AddPolicy("BanCommunityMember", policy => {
+        policy.Requirements.Add(new BanCommunityMemberRequirement());
     });
 
 builder.Services.AddSingleton<IAuthorizationHandler, CreateCommunityChannelCategoryAuthorizationHandler>();
@@ -94,6 +100,8 @@ builder.Services.AddSingleton<IAuthorizationHandler, AccessCommunityControlPanel
 builder.Services.AddSingleton<IAuthorizationHandler, AccessCommunityReportsAuthorizationHandler>();
 builder.Services.AddSingleton<IAuthorizationHandler, UpdateCommunityMemberRoleAuthorizationHandler>();
 builder.Services.AddSingleton<IAuthorizationHandler, ManageCommunityReportsAuthorizationHandler>();
+builder.Services.AddSingleton<IAuthorizationHandler, DeleteMemberMessageAuthorizationHandler>();
+builder.Services.AddSingleton<IAuthorizationHandler, BanCommunityMemberAuthorizationHandler>();
 
 // Add database services.
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options => {
