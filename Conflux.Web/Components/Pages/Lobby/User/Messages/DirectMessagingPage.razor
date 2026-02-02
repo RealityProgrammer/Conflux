@@ -66,8 +66,8 @@
             
             <Overlay class="bg-transparent duration-200 ease-in-out block lg:hidden" ActiveCssClass="bg-black/80!" OnClick="HideUserSidebar" @bind-Active="_showUserSidebar"/>
             
-            <aside class="absolute right-0 inset-y-0 z-5 lg:relative lg:flex-none lg:block bg-gray-750 border-l border-l-gray-600 transition-[width] duration-300 ease-linear @(_showUserSidebar ? "w-80" : "w-0")">
-                <div class="absolute top-0 right-0 w-80 h-full transition-transform duration-300 ease-linear @(_showUserSidebar ? "translate-x-0" : "translate-x-full")">
+            <aside class="absolute right-0 inset-y-0 z-5 lg:relative lg:flex-none lg:block bg-gray-750 border-l border-l-gray-600 transition-[width] duration-300 ease-in-out @(_showUserSidebar ? "w-80" : "w-0")">
+                <div class="absolute top-0 right-0 w-80 h-full transition-transform duration-300 ease-in-out @(_showUserSidebar ? "translate-x-0" : "translate-x-full")">
                     @if (_initState == InitializationState.Success) {
                         <section class="relative h-32">
                             <div class="absolute inset-0 bg-cover bg-center bg-black"></div>

@@ -34,7 +34,7 @@
 
                 <p class="flex-1 mr-2">@channelInfo.ChannelName</p>
                 
-                <button class="flex-none group cursor-pointer lg:hidden" @onclick="ToggleMemberSidebar">
+                <button class="flex-none group cursor-pointer" @onclick="ToggleMemberSidebar">
                     <People class="size-6 fill-gray-300 group-hover:fill-white"/>
                 </button>
                 break;
@@ -65,27 +65,29 @@
                                    DisallowReport="_isBanned"/>
 
                     <Overlay class="bg-transparent duration-200 ease-in-out block lg:hidden" ActiveCssClass="bg-black/80!" OnClick="HideMemberSidebar" @bind-Active="_showMemberSidebar"/>
-                    
-                    <aside class="h-full absolute top-0 z-101 lg:static flex-none w-80 flex flex-col gap-1 bg-gray-750 border-l border-l-gray-600 px-1 pt-1 overflow-y-hidden right-0 transition-transform duration-500 @(_showMemberSidebar ? "translate-x-0" : "translate-x-full")">
-                        <SelectionDropdown @bind-Value="_selectedRole" ContainerCssClass="w-full" ButtonCssClass="w-full h-9" PopoverCssClass="w-full flex-none">
-                            <ValueDisplayContent Context="Value">
-                                @if (Value.RoleId == Guid.Empty) {
-                                    <p>None</p>
-                                } else {
-                                    <p>@Value.RoleName</p>
-                                }
-                            </ValueDisplayContent>
-                        
-                            <ChildContent>
-                                <SelectionOption Value="@(new RoleDTO(string.Empty, Guid.Empty))" class="select-none px-1.5 py-1 text-left bg-transparent hover:bg-white/15 active:bg-black/25 cursor-pointer rounded-md">None</SelectionOption>
-                        
-                                @foreach (var role in _communityRoles) {
-                                    <SelectionOption Value="role" class="select-none px-1.5 py-1 text-left bg-transparent hover:bg-white/15 active:bg-black/25 cursor-pointer rounded-md">@role.RoleName</SelectionOption>
-                                }
-                            </ChildContent>
-                        </SelectionDropdown>
-                        
-                        <CommunityMemberList RoleId="@(_selectedRole.RoleId == Guid.Empty ? null : _selectedRole.RoleId)" class="flex-1 overflow-y-auto scrollbar-hide pb-1"/>
+            
+                    <aside class="absolute right-0 inset-y-0 z-5 lg:relative lg:flex-none lg:block bg-gray-750 border-l border-l-gray-600 transition-[width] duration-300 ease-in-out @(_showMemberSidebar ? "w-80" : "w-0")">
+                        <div class="absolute top-0 right-0 w-80 h-full px-1 py-1 transition-transform duration-300 ease-in-out @(_showMemberSidebar ? "translate-x-0" : "translate-x-full")">
+                            <SelectionDropdown @bind-Value="_selectedRole" ContainerCssClass="w-full" ButtonCssClass="w-full h-9" PopoverCssClass="w-full flex-none">
+                                <ValueDisplayContent Context="Value">
+                                    @if (Value.RoleId == Guid.Empty) {
+                                        <p>None</p>
+                                    } else {
+                                        <p>@Value.RoleName</p>
+                                    }
+                                </ValueDisplayContent>
+                            
+                                <ChildContent>
+                                    <SelectionOption Value="@(new RoleDTO(string.Empty, Guid.Empty))" class="select-none px-1.5 py-1 text-left bg-transparent hover:bg-white/15 active:bg-black/25 cursor-pointer rounded-md">None</SelectionOption>
+                            
+                                    @foreach (var role in _communityRoles) {
+                                        <SelectionOption Value="role" class="select-none px-1.5 py-1 text-left bg-transparent hover:bg-white/15 active:bg-black/25 cursor-pointer rounded-md">@role.RoleName</SelectionOption>
+                                    }
+                                </ChildContent>
+                            </SelectionDropdown>
+                            
+                            <CommunityMemberList RoleId="@(_selectedRole.RoleId == Guid.Empty ? null : _selectedRole.RoleId)" class="flex-1 overflow-y-auto scrollbar-hide pb-1"/>
+                        </div>
                     </aside>
                 </div>
                 break;
@@ -108,7 +110,7 @@
     private List<RoleDTO> _communityRoles = [];
 
     private bool _isBanned;
-    private bool _showMemberSidebar = false;
+    private bool _showMemberSidebar;
     
     protected override void OnInitialized() {
         _state = State.InitialLoading;
