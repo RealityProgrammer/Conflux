@@ -13,6 +13,7 @@
 @inject IContentService ContentService
 @inject ModalService ModalService
 @inject ApplicationRedirectManager RedirectManager
+@inject NavigationManager NavigationManager
 
 <section class="z-1000 absolute top-0 inset-x-0 h-16 bg-(--bg-color-1) shadow-lg transition-all duration-500 @(_isDrawerExpanded ? "translate-y-0" : "-translate-y-full")">
     <div class="overflow-x-auto flex flex-row items-center gap-2 h-full p-2">
@@ -54,6 +55,26 @@
                     
                 <TooltipContent>
                     <p>Create a community</p>
+                </TooltipContent>
+            </Tooltip>
+            
+            <Tooltip TargetCssClass="inline-block h-full aspect-square" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" Placement="bottom" Offset="8">
+                <TargetContent>
+                    <button class="bg-gray-800 hover:bg-gray-750 active:bg-gray-825 hover:shadow-md rounded-full h-full aspect-square flex-none cursor-pointer overflow-hidden flex flex-row justify-center items-center" @onclick="OpenLogoutConfirmationModal">
+                        <Door Open="true" class="size-6 fill-red-500"/>
+                    </button>
+                    
+                    @* <form method="post" action="/auth/logout" class="rounded-full h-full aspect-square flex-none overflow-hidden" @formname="logout"> *@
+                    @*     <AntiforgeryToken/> *@
+                    @* *@
+                    @*     <button type="submit" class="bg-gray-800 hover:bg-gray-750 active:bg-gray-825 hover:shadow-md flex-none size-full cursor-pointer overflow-hidden flex flex-row justify-center items-center"> *@
+                    @*         <Door Open="true" class="size-6 fill-red-500"/> *@
+                    @*     </button> *@
+                    @* </form> *@
+                </TargetContent>
+                    
+                <TooltipContent>
+                    <p>Logout</p>
                 </TooltipContent>
             </Tooltip>
         }
@@ -116,6 +137,21 @@
 
     private void HandleOpenCreateCommunityModal() {
         ModalService.Open<CreateCommunityModal>();
+    }
+
+    private static readonly RenderFragment _logoutConfirmationBody = @<p>Are you sure you want to logout?</p>;
+
+    private void OpenLogoutConfirmationModal() {
+        ModalService.Open<OperationConfirmModal>(parameters: new Dictionary<string, object?> {
+            [nameof(OperationConfirmModal.Title)] = "Logout Confirmation",
+            [nameof(OperationConfirmModal.Body)] = _logoutConfirmationBody,
+            [nameof(OperationConfirmModal.OnConfirm)] = EventCallback.Factory.Create(this, ConfirmLogout),
+        });
+        return;
+
+        void ConfirmLogout() {
+            NavigationManager.NavigateTo("/auth/logout");
+        }
     }
 
     private void OnUserCreatedCommunity(CommunityCreatedEventArgs args) {

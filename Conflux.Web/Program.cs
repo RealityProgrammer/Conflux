@@ -244,7 +244,7 @@ app.MapPost("/auth/confirm-profile-setup", async (ClaimsPrincipal claims, [FromS
     return TypedResults.LocalRedirect($"~/{returnUrl}");
 });
 
-app.MapPost("/auth/logout", async (ClaimsPrincipal claims, [FromServices] SignInManager<ApplicationUser> signInManager, [FromForm(Name = "ReturnUrl")] string returnUrl) => {
+app.MapPost("/auth/logout", async (ClaimsPrincipal claims, [FromServices] SignInManager<ApplicationUser> signInManager, [FromForm(Name = "ReturnUrl")] string? returnUrl) => {
     await signInManager.SignOutAsync();
     return TypedResults.LocalRedirect($"~/{returnUrl}");
 });
