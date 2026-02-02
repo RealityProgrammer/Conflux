@@ -28,9 +28,9 @@
 
             case InitializationState.Success:
                 <Avatar ImageSrc="@(string.IsNullOrEmpty(_otherUserInfo.Avatar) ? null : ContentService.GetAssetPath(_otherUserInfo.Avatar))" ImageAlt="Friend's Avatar" class="size-9 mr-2 flex-none"/>
-                <p class="flex-1">@_otherUserInfo.DisplayName</p>
+                <p class="flex-1 mr-2">@_otherUserInfo.DisplayName</p>
                 
-                <Tooltip TargetCssClass="ml-2 flex flex-row justify-center items-center aspect-square h-full" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" Placement="bottom" Offset="8">
+                <Tooltip TargetCssClass="flex flex-row justify-center items-center aspect-square h-full" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" Placement="bottom" Offset="8">
                     <TargetContent>
                         <button class="cursor-pointer group" @onclick="HandleInitializeCall">
                             <Telephone class="size-6 fill-gray-300 group-hover:fill-white" Variation="TelephoneVariation.Outbound"/>
@@ -39,6 +39,18 @@
                 
                     <TooltipContent>
                         <p>Make a call</p>
+                    </TooltipContent>
+                </Tooltip>
+                
+                <Tooltip TargetCssClass="flex flex-row justify-center items-center aspect-square h-full" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" Placement="bottom" Offset="8">
+                    <TargetContent>
+                        <button class="cursor-pointer group" @onclick="ToggleUserSidebar">
+                            <Person class="size-6 fill-gray-300 group-hover:fill-white"/>
+                        </button>
+                    </TargetContent>
+                
+                    <TooltipContent>
+                        <p>Toggle User Info Sidebar</p>
                     </TooltipContent>
                 </Tooltip>
                 break;
@@ -52,45 +64,49 @@
                            LoadCount="ApplicationConstants.MessageLoadCount"
                            DisallowReport="true"/>
             
-            <aside class="flex-none basis-80 hidden md:block bg-gray-750 border-l border-l-gray-600">
-                @if (_initState == InitializationState.Success) {
-                    <section class="relative h-32">
-                        <div class="absolute inset-0 bg-cover bg-center bg-black"></div>
+            <Overlay class="bg-transparent duration-200 ease-in-out block lg:hidden" ActiveCssClass="bg-black/80!" OnClick="HideUserSidebar" @bind-Active="_showUserSidebar"/>
+            
+            <aside class="absolute right-0 inset-y-0 z-5 lg:relative lg:flex-none lg:block bg-gray-750 border-l border-l-gray-600 transition-[width] duration-300 ease-linear @(_showUserSidebar ? "w-80" : "w-0")">
+                <div class="absolute top-0 right-0 w-80 h-full transition-transform duration-300 ease-linear @(_showUserSidebar ? "translate-x-0" : "translate-x-full")">
+                    @if (_initState == InitializationState.Success) {
+                        <section class="relative h-32">
+                            <div class="absolute inset-0 bg-cover bg-center bg-black"></div>
 
-                        <div class="absolute -bottom-8 left-4">
-                            <div class="relative">
-                                <Avatar class="size-20 border-4 border-gray-700" ImageSrc="@(string.IsNullOrEmpty(_otherUserInfo.Avatar) ? null : ContentService.GetAssetPath(_otherUserInfo.Avatar))" ImageAlt="Preview Avatar"/>
+                            <div class="absolute -bottom-8 left-4">
+                                <div class="relative">
+                                    <Avatar class="size-20 border-4 border-gray-700" ImageSrc="@(string.IsNullOrEmpty(_otherUserInfo.Avatar) ? null : ContentService.GetAssetPath(_otherUserInfo.Avatar))" ImageAlt="Preview Avatar"/>
 
-                                @* TODO: Status indicator *@
+                                    @* TODO: Status indicator *@
+                                </div>
                             </div>
-                        </div>
-                    </section>
+                        </section>
 
-                    <section class="px-2 pt-10">
-                        <p class="text-xl font-bold">@_otherUserInfo.DisplayName</p>
-                        <p class="text-sm">@_otherUserInfo.UserName</p>
+                        <section class="px-2 pt-10">
+                            <p class="text-xl font-bold">@_otherUserInfo.DisplayName</p>
+                            <p class="text-sm">@_otherUserInfo.UserName</p>
 
-                        <p class="mt-2 text-sm">
-                            <span class="font-semibold">Joined since:</span> @_otherUserInfo.CreatedAt.ToString("yyyy/MM/dd")
-                        </p>
-                        
-                        @if (!string.IsNullOrEmpty(_otherUserInfo.Pronouns)) {
-                            <p class="text-sm mt-2">
-                                <span class="font-semibold">Pronouns:</span>
-                        
-                                @_otherUserInfo.Pronouns
+                            <p class="mt-2 text-sm">
+                                <span class="font-semibold">Joined since:</span> @_otherUserInfo.CreatedAt.ToString("yyyy/MM/dd")
                             </p>
-                        }
-                        
-                        @if (!string.IsNullOrEmpty(_otherUserInfo.Bio)) {
-                            <p class="text-sm mt-2 font-semibold">About me</p>
-                            
-                            <p class="bg-gray-700 mt-1 p-1 rounded-lg text-sm">
-                                @_otherUserInfo.Bio
-                            </p>
-                        }
-                    </section>
-                }
+
+                            @if (!string.IsNullOrEmpty(_otherUserInfo.Pronouns)) {
+                                <p class="text-sm mt-2">
+                                    <span class="font-semibold">Pronouns:</span>
+
+                                    @_otherUserInfo.Pronouns
+                                </p>
+                            }
+
+                            @if (!string.IsNullOrEmpty(_otherUserInfo.Bio)) {
+                                <p class="text-sm mt-2 font-semibold">About me</p>
+
+                                <p class="bg-gray-700 mt-1 p-1 rounded-lg text-sm">
+                                    @_otherUserInfo.Bio
+                                </p>
+                            }
+                        </section>
+                    }
+                </div>
             </aside>
         </div>
     </section>
@@ -105,6 +121,8 @@
 
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
     private Guid _userId;
+
+    private bool _showUserSidebar = false;
     
     protected override void OnParametersSet() {
         if (_previousConversationId != ConversationId) {
@@ -152,6 +170,14 @@
 
     private async Task HandleInitializeCall() {
         await UserCallService.InitializeDirectCall(_userId, _otherUserInfo.UserId);
+    }
+
+    private void ToggleUserSidebar() {
+        _showUserSidebar ^= true;
+    }
+
+    private void HideUserSidebar() {
+        _showUserSidebar = false;
     }
 
     private enum InitializationState {
