@@ -17,26 +17,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<CommunityChannelCategory> CommunityChannelCategories { get; set; } = null!;
     public DbSet<CommunityRole> CommunityRoles { get; set; } = null!;
     public DbSet<MessageReport> MessageReports { get; set; } = null!;
-    
-    public override int SaveChanges() {
-        InsertTimestamps();
-        return base.SaveChanges();
-    }
-
-    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) {
-        InsertTimestamps();
-        return base.SaveChangesAsync(cancellationToken);
-    }
-
-    private void InsertTimestamps() {
-        var entries = ChangeTracker.Entries().Where(e => e is { State: EntityState.Added, Entity: ICreatedAtColumn });
-
-        DateTime now = DateTime.UtcNow;
-        
-        foreach (var entry in entries) {
-            Unsafe.As<ICreatedAtColumn>(entry.Entity).CreatedAt = now;
-        }
-    }
 
     protected override void OnModelCreating(ModelBuilder builder) {
         base.OnModelCreating(builder);

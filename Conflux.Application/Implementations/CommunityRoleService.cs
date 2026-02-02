@@ -25,6 +25,7 @@ public class CommunityRoleService(
         CommunityRole role = new() {
             CommunityId = communityId,
             Name = roleName,
+            CreatedAt = DateTime.UtcNow,
         };
         
         dbContext.CommunityRoles.Add(role);

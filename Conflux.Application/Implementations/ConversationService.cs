@@ -34,6 +34,7 @@ public sealed class ConversationService(
         conversation = new() {
             Type = ConversationType.DirectMessage,
             FriendRequestId = friendRequestId,
+            CreatedAt = DateTime.UtcNow,
         };
 
         dbContext.Conversations.Add(conversation);
@@ -84,6 +85,7 @@ public sealed class ConversationService(
                     Body = body,
                     ReplyMessageId = replyMessageId,
                     Attachments = attachmentPaths,
+                    CreatedAt = DateTime.UtcNow,
                 };
 
                 dbContext.ChatMessages.Add(message);

@@ -73,6 +73,7 @@ public sealed partial class FriendshipService(
             SenderId = senderId,
             ReceiverId = receiverId,
             Status = FriendRequestStatus.Pending,
+            CreatedAt = DateTime.UtcNow,
         };
 
         database.FriendRequests.Add(newRequest);

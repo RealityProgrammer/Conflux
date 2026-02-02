@@ -26,6 +26,7 @@ public class CommunityService(
             Name = name,
             CreatorId = creatorId,
             AvatarPath = null,
+            CreatedAt = DateTime.UtcNow,
         };
 
         dbContext.Communities.Add(community);
@@ -36,6 +37,7 @@ public class CommunityService(
             ChannelPermissions = ChannelPermissionFlags.All,
             RolePermissions = RolePermissionFlags.All,
             CommunityId = community.Id,
+            CreatedAt = DateTime.UtcNow,
         };
 
         dbContext.CommunityRoles.Add(ownerRole);
@@ -45,6 +47,7 @@ public class CommunityService(
                 Community = community,
                 UserId = creatorId,
                 RoleId = ownerRole.Id,
+                CreatedAt = DateTime.UtcNow,
             });
             
             if (avatarStream != null) {
@@ -70,6 +73,7 @@ public class CommunityService(
         CommunityChannelCategory category = new() {
             Name = name,
             CommunityId = communityId,
+            CreatedAt = DateTime.UtcNow,
         };
         
         dbContext.CommunityChannelCategories.Add(category);
@@ -97,12 +101,14 @@ public class CommunityService(
             Name = name,
             Type = type,
             ChannelCategoryId = channelCategoryId,
+            CreatedAt = DateTime.UtcNow,
         };
         
         dbContext.CommunityChannels.Add(channel);
 
         Conversation conversation = new() {
             CommunityChannelId = channel.Id,
+            CreatedAt = DateTime.UtcNow,
         };
 
         dbContext.Conversations.Add(conversation);
@@ -129,6 +135,7 @@ public class CommunityService(
         CommunityMember member = new() {
             UserId = userId,
             CommunityId = communityId,
+            CreatedAt = DateTime.UtcNow,
         };
 
         dbContext.CommunityMembers.Add(member);

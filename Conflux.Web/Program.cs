@@ -283,6 +283,7 @@ async Task CreateFakeUsers(UserManager<ApplicationUser> userManager) {
                 DisplayName = $"TestUser{i}",
                 EmailConfirmed = true,
                 IsProfileSetup = false,
+                CreatedAt = DateTime.Now,
             }, "Password1!");
         }
     }

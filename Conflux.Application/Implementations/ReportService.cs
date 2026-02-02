@@ -35,6 +35,7 @@ public class ReportService(
             ReporterId = reporterId,
             OriginalMessageBody = messageData.Body,
             OriginalMessageAttachments = messageData.Attachments,
+            CreatedAt = DateTime.UtcNow,
         });
 
         if (await dbContext.SaveChangesAsync() > 0) {

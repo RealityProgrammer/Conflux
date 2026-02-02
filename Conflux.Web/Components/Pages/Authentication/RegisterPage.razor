@@ -191,6 +191,7 @@
     private async Task OnValidSubmit() {
         var user = new ApplicationUser {
             DisplayName = Model.Email[..Model.Email.IndexOf('@')],
+            CreatedAt = DateTime.UtcNow,
         };
         
         await UserStore.SetUserNameAsync(user, Model.Email, CancellationToken.None);
