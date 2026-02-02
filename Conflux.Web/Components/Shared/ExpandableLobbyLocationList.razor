@@ -16,43 +16,49 @@
 @inject NavigationManager NavigationManager
 
 <section class="z-1000 absolute top-0 inset-x-0 h-16 bg-(--bg-color-1) shadow-lg transition-all duration-500 @(_isDrawerExpanded ? "translate-y-0" : "-translate-y-full")">
-    <div class="overflow-x-auto flex flex-row items-center gap-2 h-full p-2">
-        <Tooltip TargetCssClass="inline-block h-full aspect-square" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" Placement="bottom" Offset="8">
+    <div class="flex flex-row justify-center items-center gap-2 h-full p-2">
+        <Tooltip TargetCssClass="inline-block h-full aspect-square flex-none" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" Placement="bottom" Offset="8">
             <TargetContent>
                 <NavLink class="bg-gray-800 hover:bg-gray-750 active:bg-gray-825 hover:shadow-md rounded-full h-full aspect-square flex-none cursor-pointer overflow-hidden flex flex-row justify-center items-center" ActiveClass="border-2 border-blue-700!" href="/lobby" Match="NavLinkMatch.Prefix">
                     <House class="size-6 fill-white"/>
                 </NavLink>
             </TargetContent>
-                    
+        
             <TooltipContent>
                 <p>My Lobby</p>
             </TooltipContent>
         </Tooltip>
         
-        @if (_isLoadingJoinedCommunities) {
-            <Spinner class="fill-white h-full aspect-square"/>
-        } else {
-            @foreach (var joinedCommunity in _joinedCommunities) {
-                <Tooltip TargetCssClass="inline-block h-full aspect-square" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" Placement="bottom" Offset="8">
-                    <TargetContent>
-                        <NavLink class="bg-gray-800 hover:bg-gray-750 active:bg-gray-825 hover:shadow-md rounded-full h-full aspect-square flex-none cursor-pointer overflow-hidden flex flex-row justify-center items-center" ActiveClass="border-2 border-blue-700!" href="@($"/community/{joinedCommunity.Id}")" Match="NavLinkMatch.Prefix">
-                            <Avatar class="w-full aspect-square" ImageSrc="@(string.IsNullOrEmpty(joinedCommunity.AvatarPath) ? null : ContentService.GetAssetPath(joinedCommunity.AvatarPath))" ImageAlt="@($"Avatar of {joinedCommunity.Name}")"/>
-                        </NavLink>
-                    </TargetContent>
-                    
-                    <TooltipContent>
-                        <p>@joinedCommunity.Name</p>
-                    </TooltipContent>
-                </Tooltip>
-            }
+        <div class="flex-1 h-full overflow-x-auto scrollbar-hide gap-1 flex flex-row">
+            @if (_isLoadingJoinedCommunities) {
+                <div class="size-full flex justify-center items-center">
+                    <Spinner class="fill-white h-4/5 aspect-square"/>
+                </div>
+            } else {
+                @foreach (var joinedCommunity in _joinedCommunities) {
+                    <Tooltip TargetCssClass="inline-block h-full aspect-square" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" Placement="bottom" Offset="8">
+                        <TargetContent>
+                            <NavLink class="bg-gray-800 hover:bg-gray-750 active:bg-gray-825 hover:shadow-md rounded-full h-full aspect-square flex-none cursor-pointer overflow-hidden flex flex-row justify-center items-center" ActiveClass="border-2 border-blue-700!" href="@($"/community/{joinedCommunity.Id}")" Match="NavLinkMatch.Prefix">
+                                <Avatar class="w-full aspect-square" ImageSrc="@(string.IsNullOrEmpty(joinedCommunity.AvatarPath) ? null : ContentService.GetAssetPath(joinedCommunity.AvatarPath))" ImageAlt="@($"Avatar of {joinedCommunity.Name}")"/>
+                            </NavLink>
+                        </TargetContent>
             
+                        <TooltipContent>
+                            <p>@joinedCommunity.Name</p>
+                        </TooltipContent>
+                    </Tooltip>
+                }
+            }
+        </div>
+        
+        <div class="flex-none h-full">
             <Tooltip TargetCssClass="inline-block h-full aspect-square" class="p-1.5 rounded-md bg-gray-600 text-white font-semibold shadow-lg whitespace-nowrap" ArrowCssClass="bg-gray-600" Placement="bottom" Offset="8">
                 <TargetContent>
                     <button class="bg-gray-800 hover:bg-gray-750 active:bg-gray-825 hover:shadow-md rounded-full h-full aspect-square flex-none cursor-pointer overflow-hidden flex flex-row justify-center items-center" @onclick="HandleOpenCreateCommunityModal">
                         <Plus class="size-6 fill-white" Large="true"/>
                     </button>
                 </TargetContent>
-                    
+            
                 <TooltipContent>
                     <p>Create a community</p>
                 </TooltipContent>
@@ -63,25 +69,17 @@
                     <button class="bg-gray-800 hover:bg-gray-750 active:bg-gray-825 hover:shadow-md rounded-full h-full aspect-square flex-none cursor-pointer overflow-hidden flex flex-row justify-center items-center" @onclick="OpenLogoutConfirmationModal">
                         <Door Open="true" class="size-6 fill-red-500"/>
                     </button>
-                    
-                    @* <form method="post" action="/auth/logout" class="rounded-full h-full aspect-square flex-none overflow-hidden" @formname="logout"> *@
-                    @*     <AntiforgeryToken/> *@
-                    @* *@
-                    @*     <button type="submit" class="bg-gray-800 hover:bg-gray-750 active:bg-gray-825 hover:shadow-md flex-none size-full cursor-pointer overflow-hidden flex flex-row justify-center items-center"> *@
-                    @*         <Door Open="true" class="size-6 fill-red-500"/> *@
-                    @*     </button> *@
-                    @* </form> *@
                 </TargetContent>
-                    
+            
                 <TooltipContent>
                     <p>Logout</p>
                 </TooltipContent>
             </Tooltip>
-        }
+        </div>
     </div>
 </section>
 
-<button class="z-1000 absolute @(_isDrawerExpanded ? "top-16" : "top-0") left-1/2 -translate-x-1/2 rounded-b-lg bg-gray-600 shadow-md px-5 py-0.5 cursor-pointer transition-all duration-500" @onclick="ToggleDrawer">
+<button class="z-5 absolute @(_isDrawerExpanded ? "top-16" : "top-0") left-1/2 -translate-x-1/2 rounded-b-lg bg-gray-600 shadow-md px-5 py-0.5 cursor-pointer transition-all duration-500" @onclick="ToggleDrawer">
     @if (_isDrawerExpanded) {
         <Chevron Direction="ChevronDirection.Up" Mode="ChevronMode.Compact" class="animate-bounce size-5 fill-white"/>
     } else {
@@ -138,8 +136,6 @@
     private void HandleOpenCreateCommunityModal() {
         ModalService.Open<CreateCommunityModal>();
     }
-
-    private static readonly RenderFragment _logoutConfirmationBody = @<p>Are you sure you want to logout?</p>;
 
     private void OpenLogoutConfirmationModal() {
         ModalService.Open<LogoutConfirmationForm>();
