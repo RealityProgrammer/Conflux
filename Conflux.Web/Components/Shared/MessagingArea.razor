@@ -92,9 +92,7 @@
                     browserFileStreams.Add(new(browserFile.Name, type, readStream));
                 }
 
-                var status = await ConversationService.SendMessageAsync(ConversationId, _userId, data.Body, data.ReplyMessageId, browserFileStreams);
-                
-                Logger.LogInformation("Send Message status: {s}", status);
+                await ConversationService.SendMessageAsync(ConversationId, _userId, data.Body, data.ReplyMessageId, browserFileStreams);
             } finally {
                 foreach (var attachment in browserFileStreams) {
                     await attachment.Stream.DisposeAsync();

@@ -50,8 +50,6 @@ public class ContentService(IWebHostEnvironment environment, ILogger<ContentServ
 
     public async Task<string> UploadMessageAttachmentAsync(Stream attachmentStream, MessageAttachmentType type, CancellationToken cancellationToken) {
         try {
-            logger.LogInformation("Uploading message attachment type {t}.", type);
-            
             string typePath = type switch {
                 MessageAttachmentType.Image => "images",
                 MessageAttachmentType.Audio => "audios",
@@ -71,14 +69,11 @@ public class ContentService(IWebHostEnvironment environment, ILogger<ContentServ
             await using var destinationStream = File.OpenWrite(physicalPath);
             destinationStream.SetLength(0);
             
-            logger.LogInformation("Attachment stream length: {l}.", attachmentStream.Length);
-
             await destinationStream.FlushAsync(cancellationToken);
             await attachmentStream.CopyToAsync(destinationStream, cancellationToken);
 
             return path;
         } catch (Exception e) {
-            logger.LogInformation(e, "Failed to upload message attachment type {t}.", type);
             logger.LogError(e, "Failed to upload message attachment type {t}.", type);
             return string.Empty;
         }

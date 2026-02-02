@@ -8,4 +8,5 @@ public interface ICallService {
     CallRoom CreateCallRoom(Guid senderId, Guid receiverId);
     
     bool TryGetCallRoom(Guid id, [NotNullWhen(true)] out CallRoom? room);
+    bool RemoveCallRoom(Guid id);
 }

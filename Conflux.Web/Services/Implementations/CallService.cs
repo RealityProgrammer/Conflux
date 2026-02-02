@@ -27,4 +27,10 @@ public sealed class CallService : ICallService {
             return _callRooms.TryGetValue(id, out room);
         }
     }
+
+    public bool RemoveCallRoom(Guid id) {
+        using (_lock.EnterScope()) {
+            return _callRooms.Remove(id);
+        }
+    }
 }

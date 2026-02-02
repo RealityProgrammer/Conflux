@@ -88,10 +88,12 @@ internal sealed class UserCallService : IUserCallService, IAsyncDisposable {
             .Build();
 
         connection.On<CallUserHangUpEventArgs>(nameof(ICallClient.UserHangUp), async args => {
-            if (_callServices.TryGetCallRoom(args.CallId, out var callRoom)) {
-                if (_joinedRooms.Remove(callRoom)) {
+            for (int i = 0; i < _joinedRooms.Count; i++) {
+                if (_joinedRooms[i].Id == args.CallId) {
                     OnUserHangUp?.Invoke(args);
-
+                    
+                    _joinedRooms.RemoveAt(i);
+                    
                     if (_callConnections.Remove(args.CallId, out var callConnection)) {
                         await callConnection.DisposeAsync();
                     }
@@ -154,6 +156,8 @@ internal sealed class UserCallService : IUserCallService, IAsyncDisposable {
             if (_callConnections.Remove(callId, out var hubConnection)) {
                 await hubConnection.DisposeAsync();
             }
+
+            _callServices.RemoveCallRoom(callId);
         }
     }
 
@@ -174,7 +178,6 @@ internal sealed class UserCallService : IUserCallService, IAsyncDisposable {
             return;
         }
 
-        _logger.LogInformation("Send Offer.");
         await _hubContext.Clients.User(room.ReceiverUserId.ToString()).Offer(room.Id, offer);
     }
 
