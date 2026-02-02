@@ -43,11 +43,11 @@ class CallScreen {
         this.peerConnection.addTransceiver("video", {
             direction: "sendrecv"
         });
-
+        
         try {
             this.localMediaStream = await navigator.mediaDevices.getUserMedia(MEDIA_STREAM_CONSTRAINTS);
             this.localVideoElement = localVideoElement;
-
+            
             this.localMediaStream.getTracks().forEach(track => {
                 this.peerConnection!.addTrack(track, this.localMediaStream!);
             });
@@ -237,6 +237,51 @@ class CallScreen {
         await this.dotnetHelper.invokeMethodAsync("SendIceCandidate", this.userId, JSON.stringify(candidate));
     };
 
+    setAudioInputDevice = async (deviceId: string) => {
+        await this.replaceTrackInStream("audio", deviceId);
+    };
+
+    setAudioOutputDevice = async (deviceId: string) => {
+        // TODO: Implementation.
+    }
+
+    setVideoInputDevice = async (deviceId: string) => {
+        await this.replaceTrackInStream("video", deviceId);
+    };
+
+    private replaceTrackInStream = async (kind: 'audio' | 'video', deviceId: string) => {
+        if (!this.localMediaStream) return;
+
+        const constraints = {
+            [kind]: deviceId === 'default' ? true : { deviceId: { exact: deviceId } }
+        };
+
+        try {
+            const newStream = await navigator.mediaDevices.getUserMedia(constraints);
+            const newTrack = (kind === 'audio' ? newStream.getAudioTracks()[0] : newStream.getVideoTracks()[0])!;
+
+            const oldTrack = kind === 'audio'
+                ? this.localMediaStream.getAudioTracks()[0]
+                : this.localMediaStream.getVideoTracks()[0];
+
+            if (oldTrack) {
+                oldTrack.stop();
+                this.localMediaStream.removeTrack(oldTrack);
+            }
+
+            this.localMediaStream.addTrack(newTrack);
+
+            if (this.peerConnection) {
+                const sender = this.peerConnection.getSenders().find(s => s.track?.kind === kind);
+                if (sender) {
+                    await sender.replaceTrack(newTrack);
+                }
+            }
+        } catch (err) {
+            console.error(`Failed to switch ${kind} device:`, err);
+        }
+    };
+
     dispose = (): void => {
         this.closeVideoCall();
         this.interactable.unset();
@@ -335,6 +380,18 @@ export async function addIceCandidate(callScreen: CallScreen, candidate: string)
 
 export async function reportWebRTCStats(callScreen: CallScreen) {
     await callScreen.reportWebRTCStats();
+}
+
+export async function setAudioInputDevice(callScreen: CallScreen, deviceId: string) {
+    await callScreen.setAudioInputDevice(deviceId);
+}
+
+export async function setAudioOutputDevice(callScreen: CallScreen, deviceId: string) {
+    await callScreen.setAudioOutputDevice(deviceId);
+}
+
+export async function setVideoInputDevice(callScreen: CallScreen, deviceId: string) {
+    await callScreen.setVideoInputDevice(deviceId);
 }
 
 export function dispose(component: CallScreen): void {

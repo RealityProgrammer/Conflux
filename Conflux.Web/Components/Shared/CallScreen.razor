@@ -96,11 +96,11 @@
                         <div class="bg-gray-700 p-2 rounded-lg">
                             <label class="input-label">Input Device</label>
                             
-                            <MediaDeviceSelectionDropdown @bind-DeviceId="_audioInputDevice" ContainerCssClass="w-64 mt-1 mb-2" ButtonCssClass="w-full h-9" PopoverCssClass="w-full flex-none" DeviceKind="MediaDeviceKind.AudioInput"/>
+                            <MediaDeviceSelectionDropdown @bind-DeviceId:get="_audioInputDevice" @bind-DeviceId:set="SetAudioInputDevice" ContainerCssClass="w-64 mt-1 mb-2" ButtonCssClass="w-full h-9" PopoverCssClass="w-full flex-none" DeviceKind="MediaDeviceKind.AudioInput"/>
                             
                             <label class="input-label">Output Device</label>
                             
-                            <MediaDeviceSelectionDropdown @bind-DeviceId="_audioOutputDevice" ContainerCssClass="w-64 mt-1 mb-2" ButtonCssClass="w-full h-9" PopoverCssClass="w-full flex-none" DeviceKind="MediaDeviceKind.AudioOutput"/>
+                            <MediaDeviceSelectionDropdown @bind-DeviceId:get="_audioOutputDevice" @bind-DeviceId:set="SetAudioOutputDevice" ContainerCssClass="w-64 mt-1 mb-2" ButtonCssClass="w-full h-9" PopoverCssClass="w-full flex-none" DeviceKind="MediaDeviceKind.AudioOutput"/>
                         </div>
                     </Popover>
                     
@@ -112,7 +112,7 @@
                         <div class="bg-gray-700 p-2 rounded-lg">
                             <label class="input-label">Input Device</label>
                             
-                            <MediaDeviceSelectionDropdown @bind-DeviceId="_videoInputDevice" ContainerCssClass="w-64 mt-1 mb-2" ButtonCssClass="w-full h-9" PopoverCssClass="w-full flex-none" DeviceKind="MediaDeviceKind.VideoInput"/>
+                            <MediaDeviceSelectionDropdown @bind-DeviceId:get="_videoInputDevice" @bind-DeviceId:set="SetVideoInputDevice" ContainerCssClass="w-64 mt-1 mb-2" ButtonCssClass="w-full h-9" PopoverCssClass="w-full flex-none" DeviceKind="MediaDeviceKind.VideoInput"/>
                         </div>
                     </Popover>
                     break;
@@ -277,6 +277,30 @@
 
     private void ToggleVideoOptions() {
         _isShowingVideoOptions ^= true;
+    }
+
+    private async Task SetAudioInputDevice(string deviceId) {
+        if (_module == null) {
+            return;
+        }
+
+        await _module.InvokeVoidAsync("setAudioInputDevice", deviceId);
+    }
+
+    private async Task SetAudioOutputDevice(string deviceId) {
+        if (_module == null) {
+            return;
+        }
+        
+        await _module.InvokeVoidAsync("setAudioOutputDevice", deviceId);
+    }
+    
+    private async Task SetVideoInputDevice(string deviceId) {
+        if (_module == null) {
+            return;
+        }
+
+        await _module.InvokeVoidAsync("SetVideoInputDevice", deviceId);
     }
 
     public async ValueTask DisposeAsync() {

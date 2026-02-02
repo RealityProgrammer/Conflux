@@ -28,16 +28,15 @@ class DeviceDropdown {
             video: this.deviceKind === "videoinput"
         }).then((stream) => {
             navigator.mediaDevices.enumerateDevices().then((devices) => {
-                const deviceInfos: DeviceInfo[] = devices.filter((device) => device.kind === this.deviceKind && device.deviceId !== "communications").map((device) => {
-                    if (device.deviceId === "default") {
-                        return { deviceId: "default", label: "System Default " }
-                    }
-                    
-                    return { deviceId: device.deviceId, label: device.label }
+                const deviceInfos: DeviceInfo[] = devices.filter((device) => device.kind === this.deviceKind && device.deviceId !== "communications" && device.deviceId !== "default").map((device) => {
+                    return { 
+                        deviceId: device.deviceId, 
+                        
+                        // Cleanup the metadata of the device vendor ID and product ID in Chrome.
+                        label: device.label.replace(/\s*\([0-9a-f]{4}:[0-9a-f]{4}\)$/i, '')
+                    };
                 });
                 
-                console.log(this.deviceKind + ": " + JSON.stringify(deviceInfos));
-    
                 this.dotnetHelper.invokeMethodAsync("OnReceivedMediaDevices", deviceInfos);
             });
             
