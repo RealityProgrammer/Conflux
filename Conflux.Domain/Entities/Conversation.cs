@@ -7,8 +7,11 @@ public enum ConversationType {
 
 public class Conversation : ICreatedAtColumn {
     public Guid Id { get; set; }
+    
     public ConversationType Type { get; set; }
     public DateTime CreatedAt { get; set; }
+    
+    public DateTime? LatestMessageTime { get; set; }
     
     public ICollection<ChatMessage> Messages { get; set; } = null!;
     

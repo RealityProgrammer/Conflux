@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ValueGeneration;
 using System.Runtime.CompilerServices;
-using ICreatedAtColumn = Conflux.Domain.Entities.ICreatedAtColumn;
 
 namespace Conflux.Domain;
 

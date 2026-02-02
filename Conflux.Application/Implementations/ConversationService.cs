@@ -87,6 +87,13 @@ public sealed class ConversationService(
                 };
 
                 dbContext.ChatMessages.Add(message);
+                
+                // Update the Latest Message Time in Conversation.
+                await dbContext.Conversations
+                    .Where(c => c.Id == conversationId)
+                    .ExecuteUpdateAsync(builder => {
+                        builder.SetProperty(c => c.LatestMessageTime, message.CreatedAt);
+                    }, cancellationToken);
 
                 if (await dbContext.SaveChangesAsync(cancellationToken) > 0) {
                     await transaction.CommitAsync(cancellationToken);

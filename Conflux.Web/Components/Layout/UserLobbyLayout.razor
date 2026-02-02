@@ -87,7 +87,7 @@
             }
 
             List<ConversationElement> elements = await query
-                .OrderBy(x => x.CreatedAt)
+                .OrderBy(x => x.LatestMessageTime ?? DateTime.MinValue)
                 .Skip(request.StartIndex)
                 .Take(request.Count)
                 .Join(
