@@ -19,7 +19,7 @@
 <div class="flex flex-row justify-center items-center size-full text-white p-0 md:p-8">
     <Card class="absolute inset-0 md:static md:h-full md:w-4/5 lg:w-3/5 rounded-none! md:rounded-xl!">
         <header class="py-3 px-3 flex-none flex flex-row justify-end">
-            <button class="group cursor-pointer" @onclick="EventUtils.AsNonRenderingEventHandler(HandleClose)">
+            <button class="group cursor-pointer" @onclick="EventUtils.AsNonRenderingEventHandler((Action)CloseModal)">
                 <Cross class="size-4 fill-gray-300 hover:fill-white" Size="CrossSize.Large"/>
             </button>
         </header>
@@ -309,10 +309,6 @@
 
             StateHasChanged();
         }
-    }
-
-    private void HandleClose() {
-        CloseModal();
     }
 
     private async Task SetMutualTabId(string value) {

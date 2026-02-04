@@ -1,8 +1,10 @@
-﻿@inherits BaseModal
+﻿@using Conflux.Web.Helpers
+
+@inherits BaseModal
 
 <div class="flex flex-row justify-center items-center size-full text-white">
     <Card>
-        <CardHeader Title="Avatar Adjustment" OnCloseRequested="@((Action<object?>)CloseModal)"/>
+        <CardHeader Title="Avatar Adjustment" @onclick="EventUtils.AsNonRenderingEventHandler(CloseModal)"/>
 
         <CardContent class="flex flex-row justify-center items-center">
             <PreviewableImageInput File="File" FileChanged="FileChanged" FileExpression="FileExpression"

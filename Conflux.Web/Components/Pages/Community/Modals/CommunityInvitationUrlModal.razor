@@ -3,16 +3,20 @@
 
 @inject IJSRuntime JavascriptRuntime
 
+@{
+    Action closeDelegate = EventUtils.AsNonRenderingEventHandler(CloseModal);
+}
+
 <div class="flex flex-row justify-center items-center size-full text-white">
     <Card class="lg:static transition-transform duration-500 z-10">
-        <CardHeader Title="Invite Your Friends Here" Subtext="Ain't a community if you're alone" OnCloseRequested="@((Action<object?>)CloseModal)"/>
+        <CardHeader Title="Invite Your Friends Here" Subtext="Ain't a community if you're alone" OnCloseRequested="closeDelegate"/>
         
         <CardContent class="flex flex-col pb-1">
             <p class="mb-2">Send this community invitation URL to your friend and start the chat:</p>
         
             <div class="relative">
                 <input type="text" class="h-12 input-field pr-22 w-full" value="@InvitationUrl" readonly>
-                <button class="absolute top-1 bottom-1 right-1 w-20 button-primary py-0!" @onclick="EventUtils.AsNonRenderingEventHandler(HandleCopyInvitationUrl)">Copy</button>
+                <button class="absolute top-1 bottom-1 right-1 w-20 button-primary py-0!" @onclick="closeDelegate">Copy</button>
             </div>
         </CardContent>
     </Card>

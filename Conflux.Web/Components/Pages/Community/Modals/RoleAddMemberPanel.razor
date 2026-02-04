@@ -1,4 +1,5 @@
 ﻿@using Conflux.Application.Dto
+@using Conflux.Web.Helpers
 @using Microsoft.EntityFrameworkCore
 
 @inherits Conflux.Web.Components.Shared.Modals.BaseModal
@@ -6,10 +7,14 @@
 @inject IContentService ContentService
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 
+@{
+    Action closeDelegate = EventUtils.AsNonRenderingEventHandler(CloseModal);
+}
+
 <div class="flex flex-row justify-center items-center size-full text-white">
     <EditForm Model="Model" FormName="AddMember" onkeydown="return event.keyCode !== 13;" OnValidSubmit="HandleFormSubmit">
         <Card class="absolute inset-3 md:w-1/2 md:mx-auto lg:w-1/3">
-            <CardHeader Title="Add Member" Subtext="Authorize somebody to be in charge while you're gone." OnCloseRequested="@((Action<object?>)CloseModal)"/>
+            <CardHeader Title="Add Member" Subtext="Authorize somebody to be in charge while you're gone." OnCloseRequested="closeDelegate"/>
 
             <CardContent class="flex flex-col">
                 <SearchField @bind-Value="_nameSearch" @bind-Value:after="HandleSearch" class="flex-none mt-1"/>
@@ -38,7 +43,7 @@
             </CardContent>
             
             <CardFooter class="flex flex-row justify-end gap-2">
-                <button type="button" class="button-danger w-24" @onclick="@((Action<object?>)CloseModal)">Cancel</button>
+                <button type="button" class="button-danger w-24" @onclick="closeDelegate">Cancel</button>
                 <button type="submit" class="button-primary w-24">Apply</button>
             </CardFooter>
         </Card>

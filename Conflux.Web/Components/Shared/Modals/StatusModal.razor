@@ -1,4 +1,5 @@
-﻿@using Microsoft.EntityFrameworkCore
+﻿@using Conflux.Web.Helpers
+@using Microsoft.EntityFrameworkCore
 @using System.ComponentModel.DataAnnotations
 @using System.Security.Claims
 
@@ -7,9 +8,13 @@
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject NavigationManager NavigationManager
 
+@{
+    Action closeDelegate = EventUtils.AsNonRenderingEventHandler(CloseModal);
+}
+
 <EditForm EditContext="_statusEditContext" FormName="Status" method="post" class="flex flex-row justify-center items-center size-full text-white">
     <Card>
-        <CardHeader Title="Status" Subtext="Thinking about what to think..." OnCloseRequested="@((Action<object?>)CloseModal)"/>
+        <CardHeader Title="Status" Subtext="Thinking about what to think..." @onclick="closeDelegate"/>
                 
         <CardContent class="pb-3">
             <DataAnnotationsValidator/>
@@ -32,9 +37,9 @@
         </CardContent>
                 
         <CardFooter class="border-t-0 flex flex-row justify-end gap-3">
-            <button class="button-danger w-24" @onclick="@((Action<object?>)CloseModal)">Cancel</button>
+            <button type="button" class="button-danger w-24" @onclick="closeDelegate">Cancel</button>
             
-            <ProcessingStateButton @bind-IsProcessing="_isProcessingStatus" class="button-primary w-24" ProcessingCssClass="flex flex-row justify-center items-center" @onclick="UpdateStatus">
+            <ProcessingStateButton type="button" @bind-IsProcessing="_isProcessingStatus" class="button-primary w-24" ProcessingCssClass="flex flex-row justify-center items-center" @onclick="UpdateStatus">
                 <ChildContent>
                     Apply
                 </ChildContent>

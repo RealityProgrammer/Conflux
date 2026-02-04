@@ -1,6 +1,7 @@
 ﻿@using Conflux.Application.Dto
 @using Conflux.Web.Components.Pages.Community
 @using Conflux.Domain.Events
+@using Conflux.Web.Helpers
 @using Conflux.Web.Services
 @using System.Security.Claims
 
@@ -13,7 +14,7 @@
 
 <div class="flex flex-row justify-center items-center size-full text-white">
     <CascadingValue Value="_memberInformation">
-        <CommunityControlPanel CommunityId="CommunityId" OnCloseRequest="@((Action<object?>)CloseModal)"/>
+        <CommunityControlPanel CommunityId="CommunityId" OnCloseRequest="EventUtils.AsNonRenderingEventHandler(CloseModal)"/>
     </CascadingValue>
 </div>
 

@@ -1,15 +1,20 @@
-﻿@using System.Security.Claims
+﻿@using Conflux.Web.Helpers
+@using System.Security.Claims
 
 @inherits BaseModal
 
 @inject ICommunityService CommunityService
 @inject NavigationManager NavigationManager
 
+@{
+    Action closeDelegate = EventUtils.AsNonRenderingEventHandler(CloseModal);
+}
+
 <div class="flex flex-row justify-center items-center size-full text-white px-4">
     @switch (_state) {
         case State.TemplateSelection:
             <Card class="z-10 overflow-hidden">
-                <CardHeader Title="Create Your Own Paradise" Subtext="A community will need a place to stay. Make your own paradise and start chatting." OnCloseRequested="@((Action<object?>)CloseModal)"/>
+                <CardHeader Title="Create Your Own Paradise" Subtext="A community will need a place to stay. Make your own paradise and start chatting." @onclick="closeDelegate"/>
 
                 <CardContent class="pb-3">
                     <button class="border border-gray-600 bg-black/5 hover:bg-black/2 active:bg-black/8 w-full p-3 rounded-lg shadow-lg cursor-pointer" @onclick="() => _state = State.InputInfo">
@@ -21,7 +26,7 @@
             
         case State.InputInfo:
             <Card class="z-10 overflow-hidden">
-                <CardHeader Title="Community Information" Subtext="Give your new home a name, a face and a new life." OnCloseRequested="@((Action<object?>)CloseModal)"/>
+                <CardHeader Title="Community Information" Subtext="Give your new home a name, a face and a new life." @onclick="closeDelegate"/>
 
                 <CardContent class="pb-3">
                     <CreateCommunityForm OnRequestCreateCommunity="HandleCreateCommunity"/>

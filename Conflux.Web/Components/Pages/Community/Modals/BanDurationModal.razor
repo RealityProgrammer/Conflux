@@ -1,15 +1,21 @@
-﻿@using Humanizer
+﻿@using Conflux.Web.Helpers
+@using Humanizer
 @using System.ComponentModel.DataAnnotations
 @using System.Diagnostics
+@using Conflux.Web.Components.Shared.Modals
 
-@inherits Conflux.Web.Components.Shared.Modals.BaseModal
+@inherits BaseModal
+
+@{
+    Action closeDelegate = EventUtils.AsNonRenderingEventHandler(CloseModal);
+}
 
 <EditForm EditContext="_editContext" OnSubmit="OnSubmit" class="size-full">
     <DataAnnotationsValidator/>
     
     <div class="flex flex-row justify-center items-center size-full text-white">
         <Card>
-            <CardHeader Title="Ban User" OnCloseRequested="@((Action<object?>)CloseModal)"/>
+            <CardHeader Title="Ban User" OnCloseRequested="closeDelegate"/>
 
             <CardContent class="pb-3">
                 <p>Are you sure you want to ban this user? This action cannot be reverted.</p>
@@ -34,7 +40,7 @@
             </CardContent>
 
             <CardFooter class="flex flex-row justify-end gap-2">
-                <button type="button" class="button-primary w-24" @onclick="@((Action<object?>)CloseModal)">Cancel</button>
+                <button type="button" class="button-primary w-24" @onclick="closeDelegate">Cancel</button>
 
                 <ProcessingStateButton type="submit" IsProcessing="_isProcessing" class="button-danger w-24" ProcessingCssClass="flex flex-row justify-center items-center">
                     <ChildContent>

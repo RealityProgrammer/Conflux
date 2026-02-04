@@ -1,16 +1,21 @@
 ﻿@using Conflux.Web.Helpers
+
 @inherits BaseModal
+
+@{
+    Action closeDelegate = EventUtils.AsNonRenderingEventHandler(CloseModal);
+}
 
 <div class="flex flex-row justify-center items-center size-full text-white">
     <Card>
-        <CardHeader Title="@Title" OnCloseRequested="@((Action<object?>)CloseModal)"/>
+        <CardHeader Title="@Title" @onclick="closeDelegate"/>
 
         <CardContent class="pb-3">
             @Body
         </CardContent>
         
         <CardFooter class="flex flex-row justify-end gap-2">
-            <button type="button" class="button-primary w-24" @onclick="EventUtils.AsNonRenderingEventHandler(CloseModal)">Ok</button>
+            <button type="button" class="button-primary w-24" @onclick="closeDelegate">Ok</button>
         </CardFooter>
     </Card>
 </div>
