@@ -633,6 +633,7 @@
             InvokeAsync(async () => {
                 if (_addingMembersVirtualizeReference != null) {
                     await _addingMembersVirtualizeReference.RefreshDataAsync();
+                    StateHasChanged();
                 }
             });
         }

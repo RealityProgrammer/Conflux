@@ -87,8 +87,9 @@
         }
 
         var members = await query
-            .Select(x => new MemberDisplayDTO(x.Id, x.UserId, x.User.DisplayName, x.User.AvatarProfilePath))
-            .OrderBy(x => x.DisplayName)
+            .Include(m => m.User)
+            .OrderBy(m => m.User.DisplayName)
+            .Select(m => new MemberDisplayDTO(m.Id, m.UserId, m.User.DisplayName, m.User.AvatarProfilePath))
             .Skip(request.StartIndex)
             .Take(request.Count)
             .ToListAsync();
