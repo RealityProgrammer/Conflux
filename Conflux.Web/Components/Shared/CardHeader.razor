@@ -12,7 +12,7 @@
     </div>
     
     @if (OnCloseRequested.HasDelegate) {
-        <button class="ml-2 group cursor-pointer" @onclick="EventUtils.AsNonRenderingEventHandler(OnCloseRequested)">
+        <button type="button" class="ml-2 group cursor-pointer" @onclick="EventUtils.AsNonRenderingEventHandler(OnCloseRequested)">
             <Cross class="size-4 fill-gray-300 group-hover:fill-white" Size="CrossSize.Large"/>
         </button>
     }
