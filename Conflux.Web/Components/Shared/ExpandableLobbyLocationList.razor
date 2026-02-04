@@ -1,5 +1,4 @@
 ﻿@using Conflux.Domain.Extensions
-@using Conflux.Web.Components.Shared.Icons
 @using Conflux.Web.Components.Shared.Modals
 @using Conflux.Web.Services
 @using Conflux.Web.Services.Implementations
@@ -13,7 +12,6 @@
 @inject IContentService ContentService
 @inject ModalService ModalService
 @inject ApplicationRedirectManager RedirectManager
-@inject NavigationManager NavigationManager
 
 <section class="z-1000 absolute top-0 inset-x-0 h-16 bg-(--bg-color-1) shadow-lg transition-all duration-500 @(_isDrawerExpanded ? "translate-y-0" : "-translate-y-full")">
     <div class="flex flex-row justify-center items-center gap-2 h-full p-2">
