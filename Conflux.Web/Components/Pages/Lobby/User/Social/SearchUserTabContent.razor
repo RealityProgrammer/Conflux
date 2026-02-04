@@ -16,7 +16,6 @@
 @inject IFriendshipService FriendshipService
 @inject IFriendshipEventDispatcher FriendshipEventDispatcher
 @inject IContentService ContentService
-@inject ApplicationRedirectManager RedirectManager
 
 <div class="flex-none px-3 outline-none border rounded-lg bg-gray-700/60 border-gray-600 focus-within:ring-2 focus-within:ring-indigo-600 transition duration-300 flex flex-row items-center">
     <Search class="size-4 fill-white flex-none mr-2"/>
@@ -121,20 +120,9 @@
 
     private Virtualize<SearchDTO> _virtualizeContainer = null!;
 
-    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
-    private Guid _userId;
+    [CascadingParameter(Name = "SessionUserId")] private Guid UserId { get; set; }
 
     private ConcurrentDictionary<Guid, FriendRequestProcessingAction> _processingFriendRequests = [];
-
-    protected override async Task OnParametersSetAsync() {
-        var authState = await AuthenticationState;
-
-        if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id ||
-            !Guid.TryParse(id, out _userId))
-        {
-            RedirectManager.To("/").Execute();
-        }
-    }
 
     protected override void OnAfterRender(bool firstRender) {
         if (firstRender) {
@@ -167,7 +155,7 @@
             // TODO: Filter blocked users.
             await using var dbContext = await DbContextFactory.CreateDbContextAsync();
             var query = dbContext.Users
-                .Where(u => u.IsProfileSetup && u.EmailConfirmed && u.Id != _userId && (u.NormalizedUserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(u.DisplayName, $"%{_normalizedNameSearch}%")))
+                .Where(u => u.IsProfileSetup && u.EmailConfirmed && u.Id != UserId && (u.NormalizedUserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(u.DisplayName, $"%{_normalizedNameSearch}%")))
                 .OrderBy(u => u.CreatedAt);
 
             int totalCount = await query.CountAsync();
@@ -182,10 +170,10 @@
                 .Select(user => new {
                     User = user,
                     FriendRequest = user.SentFriendRequests
-                        .Where(fr => fr.ReceiverId == _userId)
+                        .Where(fr => fr.ReceiverId == UserId)
                         .Concat(
                             user.ReceivedFriendRequests
-                                .Where(fr => fr.SenderId == _userId)
+                                .Where(fr => fr.SenderId == UserId)
                             )
                         .FirstOrDefault(),
                 })
@@ -196,7 +184,7 @@
                     x.User.AvatarProfilePath,
                     x.FriendRequest == null ? FriendStatus.Stranger
                     : x.FriendRequest.Status == FriendRequestStatus.Accepted ? FriendStatus.Friend
-                    : x.FriendRequest.Status == FriendRequestStatus.Pending ? x.FriendRequest.SenderId == _userId ? FriendStatus.OutcomingPending : FriendStatus.IncomingPending
+                    : x.FriendRequest.Status == FriendRequestStatus.Pending ? x.FriendRequest.SenderId == UserId ? FriendStatus.OutcomingPending : FriendStatus.IncomingPending
                     : FriendStatus.Stranger,
                     x.FriendRequest == null ? null : x.FriendRequest.Id
                 ))
@@ -213,7 +201,7 @@
         if (_processingFriendRequests.TryAdd(item.UserId, FriendRequestProcessingAction.Sending)) {
             try {
                 Guid receiverId = item.UserId;
-                var sendStatus = (await FriendshipService.SendFriendRequestAsync(_userId, receiverId)).Status;
+                var sendStatus = (await FriendshipService.SendFriendRequestAsync(UserId, receiverId)).Status;
 
                 switch (sendStatus) {
                     case IFriendshipService.SendingStatus.Success:
@@ -229,7 +217,7 @@
                         break;
                         
                     case IFriendshipService.SendingStatus.Failed:
-                        Logger.LogWarning("Failed to send friend request from user {f} to {r}.", _userId, receiverId);
+                        Logger.LogWarning("Failed to send friend request from user {f} to {r}.", UserId, receiverId);
                         break;
                         
                     case IFriendshipService.SendingStatus.Friended:
@@ -257,7 +245,7 @@
                 Guid receiverId = item.UserId;
 
                 if (!await FriendshipService.CancelFriendRequestAsync(friendRequestId)) {
-                    Logger.LogWarning("Failed to cancel friend request from user {f} to {r}.", _userId, receiverId);
+                    Logger.LogWarning("Failed to cancel friend request from user {f} to {r}.", UserId, receiverId);
                 }
                 
                 item.FriendStatus = FriendStatus.Stranger;
@@ -280,7 +268,7 @@
         if (_processingFriendRequests.TryAdd(item.UserId, FriendRequestProcessingAction.Rejecting)) {
             try {
                 if (!await FriendshipService.RejectFriendRequestAsync(friendRequestId)) {
-                    Logger.LogWarning("Failed to reject friend request from user {f} to {r}.", item.UserId, _userId);
+                    Logger.LogWarning("Failed to reject friend request from user {f} to {r}.", item.UserId, UserId);
                 }
                 
                 item.FriendStatus = FriendStatus.Stranger;
@@ -303,7 +291,7 @@
         if (_processingFriendRequests.TryAdd(item.UserId, FriendRequestProcessingAction.Accepting)) {
             try {
                 if (!await FriendshipService.AcceptFriendRequestAsync(friendRequestId)) {
-                    Logger.LogWarning("Failed to accept friend request from user {f} to {r}.", item.UserId, _userId);
+                    Logger.LogWarning("Failed to accept friend request from user {f} to {r}.", item.UserId, UserId);
                 }
                 
                 item.FriendStatus = FriendStatus.Friend;

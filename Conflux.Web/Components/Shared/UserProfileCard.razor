@@ -4,7 +4,7 @@
 
 @inject IContentService ContentService
 @inject IUserService UserService
-@inject ApplicationRedirectManager RedirectManager
+@inject NavigationManager NavigationManager
 
 <div class="h-14 p-1.5 flex flex-row justify-center items-center @_cssClass">
     @if (_isLoading) {
@@ -52,7 +52,7 @@
         if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id ||
             !Guid.TryParse(id, out _userId))
         {
-            RedirectManager.To("/").Execute();
+            NavigationManager.NavigateTo("/", true);
         }
     }
 

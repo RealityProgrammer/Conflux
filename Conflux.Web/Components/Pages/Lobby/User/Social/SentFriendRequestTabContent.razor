@@ -15,7 +15,6 @@
 @inject IFriendshipEventDispatcher FriendshipEventDispatcher
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject IContentService ContentService
-@inject ApplicationRedirectManager RedirectManager
 
 <div class="flex-none px-3 outline-none border rounded-lg bg-gray-700/60 border-gray-600 focus-within:ring-2 focus-within:ring-indigo-600 transition duration-300 flex flex-row items-center">
     <Search class="size-4 fill-white flex-none mr-2"/>
@@ -70,20 +69,9 @@
 
     private Virtualize<FriendRequest> _virtualizeContainer = null!;
 
-    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
-    private Guid _userId;
+    [CascadingParameter(Name = "SessionUserId")] private Guid UserId { get; set; }
 
     private readonly ConcurrentDictionary<FriendRequest, byte> _cancellingRequests = [];
-    
-    protected override async Task OnParametersSetAsync() {
-        var authState = await AuthenticationState;
-
-        if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id ||
-            !Guid.TryParse(id, out _userId))
-        {
-            RedirectManager.To("/").Execute();
-        }
-    }
 
     protected override void OnAfterRender(bool firstRender) {
         if (firstRender) {
@@ -110,7 +98,7 @@
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
         
         IQueryable<FriendRequest> query = dbContext.FriendRequests
-            .Where(x => x.Status == FriendRequestStatus.Pending && x.SenderId == _userId)
+            .Where(x => x.Status == FriendRequestStatus.Pending && x.SenderId == UserId)
             .Include(r => r.Receiver);
 
         if (!string.IsNullOrEmpty(_normalizedNameSearch)) {

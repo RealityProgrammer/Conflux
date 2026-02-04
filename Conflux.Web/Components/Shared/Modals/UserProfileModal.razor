@@ -14,7 +14,7 @@
 @inject IFriendshipService FriendshipService
 @inject IFriendshipEventDispatcher FriendshipEventDispatcher
 @inject IConversationService ConversationService
-@inject ApplicationRedirectManager RedirectManager
+@inject NavigationManager NavigationManager
 
 <div class="flex flex-row justify-center items-center size-full text-white p-0 md:p-8">
     <Card class="absolute inset-0 md:static md:h-full md:w-4/5 lg:w-3/5 rounded-none! md:rounded-xl!">
@@ -248,7 +248,7 @@
         if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id ||
             !Guid.TryParse(id, out _authUserId))
         {
-            RedirectManager.To("/").Execute();
+            NavigationManager.NavigateTo("/", true);
         }
     }
 
@@ -422,7 +422,7 @@
         }
 
         var conversation = await ConversationService.GetOrCreateDirectConversationAsync(requestId);
-        RedirectManager.To($"/lobby/messages/{conversation.Id}").Execute();
+        NavigationManager.NavigateTo($"/lobby/messages/{conversation.Id}");
         CloseModal();
     }
 

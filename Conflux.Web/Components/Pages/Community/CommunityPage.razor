@@ -12,7 +12,7 @@
 @inject ICommunityService CommunityService
 @inject ICommunityEventDispatcher CommunityEventDispatcher
 @inject IUserNotificationService UserNotificationService
-@inject ApplicationRedirectManager RedirectManager
+@inject NavigationManager NavigationManager
 
 @implements IAsyncDisposable
 
@@ -66,10 +66,8 @@
     protected override async Task OnParametersSetAsync() {
         var authState = await AuthenticationState;
         
-        if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id ||
-            !Guid.TryParse(id, out _userId))
-        {
-            RedirectManager.To("/").Execute();
+        if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id || !Guid.TryParse(id, out _userId)) {
+            NavigationManager.NavigateTo("/", forceLoad: true);
         }
     }
 

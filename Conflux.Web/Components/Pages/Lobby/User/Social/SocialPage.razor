@@ -1,5 +1,9 @@
 ﻿@page "/lobby/social"
 
+@using System.Security.Claims
+
+@inject NavigationManager NavigationManager
+
 <TabContainer class="h-full px-4 py-4 flex flex-col text-white" ButtonContainerCssClass="flex-none border-b border-b-gray-600 pb-2 flex flex-row justify-between" ContentContainerCssClass="min-h-0 flex-1 mt-3" @bind-ActiveId="_activeTabId">
     <Buttons Context="_">
         <h1 class="text-2xl font-bold">Social</h1>
@@ -38,28 +42,41 @@
     </Buttons>
         
     <Contents Context="_">
-        <TabContent TabId="friends" class="h-full flex flex-col">
-            <FriendsTabContent/>
-        </TabContent>
-        
-        <TabContent TabId="sent_requests" class="h-full flex flex-col">
-            <SentFriendRequestTabContent/>
-        </TabContent>
-        
-        <TabContent TabId="received_requests" class="h-full flex flex-col">
-            <ReceivedFriendRequestTabContent/>
-        </TabContent>
-        
-        <TabContent TabId="blocked" class="h-full flex flex-col">
-            TODO
-        </TabContent>
-        
-        <TabContent TabId="search" class="h-full flex flex-col">
-            <SearchUserTabContent/>
-        </TabContent>
+        <CascadingValue Value="_userId" Name="SessionUserId">
+            <TabContent TabId="friends" class="h-full flex flex-col">
+                <FriendsTabContent/>
+            </TabContent>
+
+            <TabContent TabId="sent_requests" class="h-full flex flex-col">
+                <SentFriendRequestTabContent/>
+            </TabContent>
+
+            <TabContent TabId="received_requests" class="h-full flex flex-col">
+                <ReceivedFriendRequestTabContent/>
+            </TabContent>
+
+            <TabContent TabId="blocked" class="h-full flex flex-col">
+                TODO
+            </TabContent>
+
+            <TabContent TabId="search" class="h-full flex flex-col">
+                <SearchUserTabContent/>
+            </TabContent>
+        </CascadingValue>
     </Contents>
 </TabContainer>
 
 @code {
     private string _activeTabId = "friends";
+    
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+    private Guid _userId;
+    
+    protected override async Task OnParametersSetAsync() {
+        var authState = await AuthenticationState;
+        
+        if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id || !Guid.TryParse(id, out _userId)) {
+            NavigationManager.NavigateTo("/");
+        }
+    }
 }

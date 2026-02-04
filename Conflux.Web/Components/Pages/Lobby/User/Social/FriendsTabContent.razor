@@ -1,11 +1,9 @@
 ﻿@using Conflux.Domain.Events
 @using Conflux.Web.Components.Shared.Modals
 @using Conflux.Web.Helpers
-@using Conflux.Web.Services
 @using Conflux.Web.Services.Implementations
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
-@using System.Diagnostics
 @using System.Security.Claims
 
 @implements IDisposable
@@ -16,7 +14,7 @@
 @inject IConversationService ConversationService
 @inject IFriendshipService FriendshipService
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
-@inject ApplicationRedirectManager RedirectManager
+@inject NavigationManager NavigationManager
 @inject ModalService ModalService
 @inject IContentService ContentService
 
@@ -71,17 +69,7 @@
 
     private Virtualize<FriendSearchResult> _virtualizeContainer = null!;
 
-    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
-    private Guid _authUserId;
-
-    protected override async Task OnParametersSetAsync() {
-        var authState = await AuthenticationState;
-        if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id ||
-            !Guid.TryParse(id, out _authUserId))
-        {
-            RedirectManager.To("/").Execute();
-        }
-    }
+    [CascadingParameter(Name = "SessionUserId")] private Guid UserId { get; set; }
     
     protected override void OnAfterRender(bool firstRender) {
         if (firstRender) {
@@ -106,14 +94,14 @@
     private async ValueTask<ItemsProviderResult<FriendSearchResult>> LoadProvider(ItemsProviderRequest request) {
         await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
             IQueryable<FriendRequest> query = dbContext.FriendRequests
-                .Where(r => r.Status == FriendRequestStatus.Accepted && (r.SenderId == _authUserId || r.ReceiverId == _authUserId))
+                .Where(r => r.Status == FriendRequestStatus.Accepted && (r.SenderId == UserId || r.ReceiverId == UserId))
                 .Include(r => r.Sender).Include(r => r.Receiver);
 
             if (!string.IsNullOrEmpty(_normalizedNameSearch)) {
                 query = query
                     .Where(r => 
-                        r.ReceiverId == _authUserId && r.Sender.UserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(r.Sender.DisplayName, $"%{_normalizedNameSearch}%") ||
-                        r.SenderId == _authUserId && r.Receiver.UserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(r.Receiver.DisplayName, $"%{_normalizedNameSearch}%")
+                        r.ReceiverId == UserId && r.Sender.UserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(r.Sender.DisplayName, $"%{_normalizedNameSearch}%") ||
+                        r.SenderId == UserId && r.Receiver.UserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(r.Receiver.DisplayName, $"%{_normalizedNameSearch}%")
                     );
             }
             
@@ -127,7 +115,7 @@
                 .OrderByDescending(r => r.CreatedAt)
                 .Skip(request.StartIndex)
                 .Take(request.Count)
-                .Join(dbContext.Users, r => r.SenderId == _authUserId ? r.ReceiverId : r.SenderId, user => user.Id, (request, user) => new FriendSearchResult {
+                .Join(dbContext.Users, r => r.SenderId == UserId ? r.ReceiverId : r.SenderId, user => user.Id, (request, user) => new FriendSearchResult {
                     FriendRequestId = request.Id,
                     UserName = user.UserName!,
                     DisplayName = user.DisplayName,
@@ -147,7 +135,7 @@
             return;
         }
 
-        RedirectManager.To($"/lobby/messages/{conversation.Id}").Execute();
+        NavigationManager.NavigateTo($"/lobby/messages/{conversation.Id}");
     }
 
     private static readonly RenderFragment _unfriendConfirmationBody =

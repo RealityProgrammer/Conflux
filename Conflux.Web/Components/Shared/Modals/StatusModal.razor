@@ -1,12 +1,11 @@
-﻿@using Conflux.Web.Services
-@using Microsoft.EntityFrameworkCore
+﻿@using Microsoft.EntityFrameworkCore
 @using System.ComponentModel.DataAnnotations
 @using System.Security.Claims
 
 @inherits BaseModal
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
-@inject ApplicationRedirectManager RedirectManager
+@inject NavigationManager NavigationManager
 
 <EditForm EditContext="_statusEditContext" FormName="Status" method="post" class="flex flex-row justify-center items-center size-full text-white">
     <Card>
@@ -68,10 +67,8 @@
     protected override async Task OnParametersSetAsync() {
         var authState = await AuthenticationState;
 
-        if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id ||
-            !Guid.TryParse(id, out _userId))
-        {
-            RedirectManager.To("/").Execute();
+        if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id || !Guid.TryParse(id, out _userId)) {
+            NavigationManager.NavigateTo("/", true);
         }
         
         _statusTextField = FieldIdentifier.Create(() => StatusModel!.StatusText);

@@ -132,7 +132,6 @@ builder.Services
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient<CloudflareTurnServerClient>();
 
-builder.Services.AddScoped<ApplicationRedirectManager>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IFriendshipService, FriendshipService>();
 builder.Services.AddScoped<IFriendshipEventDispatcher, FriendshipEventDispatcher>();

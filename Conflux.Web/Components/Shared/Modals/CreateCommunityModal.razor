@@ -1,10 +1,9 @@
-﻿@using Conflux.Web.Services
-@using System.Security.Claims
+﻿@using System.Security.Claims
 
 @inherits BaseModal
 
 @inject ICommunityService CommunityService
-@inject ApplicationRedirectManager RedirectManager
+@inject NavigationManager NavigationManager
 
 <div class="flex flex-row justify-center items-center size-full text-white px-4">
     @switch (_state) {
@@ -41,10 +40,8 @@
     protected override async Task OnParametersSetAsync() {
         var authState = await AuthenticationState;
 
-        if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id ||
-            !Guid.TryParse(id, out _userId))
-        {
-            RedirectManager.To("/").Execute();
+        if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id || !Guid.TryParse(id, out _userId)) {
+            NavigationManager.NavigateTo("/", true);
         }
     }
 

@@ -9,7 +9,7 @@
 
 @inject ICommunityService CommunityService
 @inject ICommunityEventDispatcher CommunityEventDispatcher
-@inject ApplicationRedirectManager RedirectManager
+@inject NavigationManager RedirectManager
 
 <div class="flex flex-row justify-center items-center size-full text-white">
     <CascadingValue Value="_memberInformation">
@@ -27,17 +27,16 @@
 
     private Guid _userId;
 
+    protected override async Task OnParametersSetAsync() {
+        var authState = await AuthenticationState;
+
+        if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id || !Guid.TryParse(id, out _userId)) {
+            RedirectManager.NavigateTo("/");
+        }
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
-            var authState = await AuthenticationState;
-
-            if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id ||
-                !Guid.TryParse(id, out _userId))
-            {
-                RedirectManager.To("/").Execute();
-                return;
-            }
-
             var memberInfo = await CommunityService.GetMemberInformationAsync(CommunityId, _userId);
 
             if (memberInfo == null) {

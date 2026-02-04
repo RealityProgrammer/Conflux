@@ -1,7 +1,7 @@
 ﻿@using Conflux.Domain.Enums
-@using Conflux.Web.Services
 @using Microsoft.AspNetCore.Components.Sections
 @using Microsoft.EntityFrameworkCore
+@using System.Diagnostics
 @using System.Security.Claims
 
 @inherits LayoutComponentBase
@@ -12,7 +12,6 @@
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject IContentService ContentService
-@inject ApplicationRedirectManager RedirectManager
 @inject IConversationService ConversationService
 @inject IUserNotificationService UserNotificationService
 
@@ -64,9 +63,10 @@
     protected override async Task OnInitializedAsync() {
         var authState = await AuthenticationState;
 
-        if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id || !Guid.TryParse(id, out _userId)) {
-            RedirectManager.To("/").Execute();
-        }
+        string? nameIdentifier = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        Debug.Assert(!string.IsNullOrEmpty(nameIdentifier));
+
+        _userId = Guid.Parse(nameIdentifier);
     }
 
     protected override void OnAfterRender(bool firstRender) {

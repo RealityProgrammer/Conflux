@@ -10,7 +10,7 @@
 @inject IContentService ContentService
 @inject ICommunityService CommunityService
 @inject ISnackbarService SnackbarService
-@inject ApplicationRedirectManager RedirectManager
+@inject NavigationManager NavigationManager
 
 <div class="-z-1 w-dvw h-dvh bg-size-[250%_100%] bg-linear-to-r from-[#8f4edf] to-[#e977aa] animate-[animated-gradient_10s_ease_infinite] flex flex-row justify-center items-center text-white">
     <Card>
@@ -86,10 +86,8 @@
         
         var authState = await AuthenticationState;
 
-        if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id ||
-            !Guid.TryParse(id, out _userId))
-        {
-            RedirectManager.To("/").Execute();
+        if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id || !Guid.TryParse(id, out _userId)) {
+            NavigationManager.NavigateTo("/", true);
         }
     }
 
@@ -136,7 +134,7 @@
             bool success = await CommunityService.JoinCommunityAsync(_userId, _communityId, InvitationId);
 
             if (success) {
-                RedirectManager.To($"/community/{_communityId}").Execute();
+                NavigationManager.NavigateTo($"/community/{_communityId}");
             } else {
                 SnackbarService.Create(new() {
                     Duration = TimeSpan.FromSeconds(5),

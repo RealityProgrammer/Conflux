@@ -1,7 +1,5 @@
 ﻿@page "/setup-profile"
-@using Conflux.Web.Components.Shared
-@using Conflux.Web.Components.Shared.Icons
-@using Conflux.Web.Services
+
 @using Microsoft.AspNetCore.Identity
 @using System.ComponentModel.DataAnnotations
 
@@ -9,8 +7,7 @@
 
 @implements IAsyncDisposable
 
-@inject IUserService UserService
-@inject ApplicationRedirectManager RedirectManager
+@inject NavigationManager NavigationManager
 @inject UserManager<ApplicationUser> UserManager
 @inject IContentService ContentService
 @inject IJSRuntime JavascriptRuntime
@@ -235,7 +232,7 @@
             
             _user = (await UserManager.GetUserAsync(authState.User))!;
             if (_user == null!) {
-                RedirectManager.To("/").Execute();
+                NavigationManager.NavigateTo("/", true);
                 return;
             }
 

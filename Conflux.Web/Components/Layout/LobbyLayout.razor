@@ -10,8 +10,6 @@
 
 @inject IFriendshipEventDispatcher FriendshipEventDispatcher
 @inject IUserNotificationService UserNotificationService
-@inject ApplicationRedirectManager RedirectManager
-@inject IUserCallService UserCallService
 
 <RedirectToProfileSetup/>
 
@@ -28,14 +26,6 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
-            var authState = await AuthenticationState;
-
-            if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id || 
-                !Guid.TryParse(id, out var userId)) {
-                RedirectManager.To("/").Execute();
-                return;
-            }
-            
             await FriendshipEventDispatcher.Connect();
             await UserNotificationService.Connect();
         }

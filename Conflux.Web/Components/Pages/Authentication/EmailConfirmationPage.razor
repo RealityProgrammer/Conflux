@@ -1,12 +1,11 @@
-﻿@using Conflux.Web.Services
-@using Microsoft.AspNetCore.Identity
+﻿@using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
 @using System.Text
 
 @page "/auth/confirm-email"
 
 @inject UserManager<ApplicationUser> UserManager
-@inject ApplicationRedirectManager RedirectManager
+@inject NavigationManager NavigationManager
 
 <div class="h-dvh w-dvw bg-gray-800 grid grid-cols-1 px-4 md:px-0 md:grid-cols-4 lg:grid-cols-3">
     <div class="col-start-1 col-span-1 md:col-start-2 md:col-span-2 lg:col-start-2 lg:col-span-1">
@@ -42,8 +41,8 @@
 </div>
 
 @code {
-    [SupplyParameterFromQuery(Name = "userId")] public string? UserId { get; set; }
-    [SupplyParameterFromQuery(Name = "code")] public string? Code { get; set; }
+    [SupplyParameterFromQuery(Name = "UserId")] private string? UserId { get; set; }
+    [SupplyParameterFromQuery(Name = "Code")] private string? Code { get; set; }
     
     private ApplicationUser? _user;
 
@@ -55,14 +54,14 @@
 
     protected override async Task OnInitializedAsync() {
         if (UserId == null || Code == null) {
-            RedirectManager.To("/").Execute();
+            NavigationManager.NavigateTo("/", true);
             return;
         }
         
         _user = await UserManager.FindByIdAsync(UserId);
         
         if (_user == null || await UserManager.IsEmailConfirmedAsync(_user)) {
-            RedirectManager.To("/").Execute();
+            NavigationManager.NavigateTo("/", true);
             return;
         }
         
@@ -76,7 +75,7 @@
             await Task.Yield();
             await Task.Delay(3000);
             
-            RedirectManager.To("/").Execute();
+            NavigationManager.NavigateTo("/", true);
         }
     }
 

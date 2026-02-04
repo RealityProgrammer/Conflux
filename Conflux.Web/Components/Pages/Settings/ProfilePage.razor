@@ -12,7 +12,7 @@
 @inject IWebHostEnvironment Environment
 @inject IViteManifest ViteManifest
 @inject IViteDevServerStatus Vite
-@inject ApplicationRedirectManager RedirectManager
+@inject NavigationManager RedirectManager
 @inject UserManager<ApplicationUser> UserManager
 @inject IJSRuntime JSRuntime
 
@@ -59,7 +59,7 @@
 @code {
     private ApplicationUser? _user;
 
-    private ProfileInputModel Model { get; set; } = new() {
+    private ProfileInputModel Model { get; } = new() {
         DisplayName = string.Empty,
     };
 
@@ -68,14 +68,14 @@
     private string _tabActiveId = "preview";
     private string? _avatarPreviewUrl;
     
+    // TODO: Do these parameters logic inside OnParametersSetAsync.
     protected override async Task OnInitializedAsync() {
-        ClaimsPrincipal claimsPrincipal = (await AuthenticationState).User;
-        _user = await UserManager.GetUserAsync(claimsPrincipal);
+        _user = await UserManager.GetUserAsync((await AuthenticationState).User);
         
         if (_user == null) {
             // How did we get here? Pretty sure [Authorize] at _Imports.razor should redirect to login if there is no
             // current user.
-            RedirectManager.To("/auth/login").Execute();
+            RedirectManager.NavigateTo("/auth/login", true);
             return;
         }
 

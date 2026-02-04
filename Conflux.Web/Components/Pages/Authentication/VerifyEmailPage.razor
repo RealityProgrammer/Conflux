@@ -1,12 +1,11 @@
 @page "/auth/verify-email"
 
-@using Conflux.Web.Services
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
 @using System.Diagnostics
 @using System.Text
 
-@inject ApplicationRedirectManager RedirectManager
+@inject NavigationManager NavigationManager
 @inject IJSRuntime JavascriptRuntime
 @inject UserManager<ApplicationUser> UserManager
 
@@ -46,7 +45,7 @@
 </div>
 
 @code {
-    [SupplyParameterFromQuery(Name = "userId")] public string? UserId { get; set; }
+    [SupplyParameterFromQuery(Name = "UserId")] public string? UserId { get; set; }
 
     public bool ShowConfirmationButton { get; private set; }
 
@@ -54,15 +53,14 @@
 
     protected override async Task OnInitializedAsync() {
         if (UserId == null) {
-            RedirectManager.To("/").Execute();
+            NavigationManager.NavigateTo("/", forceLoad: true);
             return;
         }
         
         _user = await UserManager.FindByIdAsync(UserId);
 
         if (_user == null || await UserManager.IsEmailConfirmedAsync(_user)) {
-            RedirectManager.To("/").Execute();
-            return;
+            NavigationManager.NavigateTo("/", forceLoad: true);
         }
     }
 
@@ -77,6 +75,10 @@
         string confirmationCode = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(await UserManager.GenerateEmailConfirmationTokenAsync(_user)));
         
         // TODO: Put the confirmation code into email as an url to other page and send it away.
-        RedirectManager.To("/auth/confirm-email").WithQuery("userId", UserId).WithQuery("code", confirmationCode).Execute();
+        string destination = NavigationManager.GetUriWithQueryParameters("/auth/confirm-email", new Dictionary<string, object?> {
+            ["UserId"] = UserId,
+            ["Code"] = confirmationCode,
+        });
+        NavigationManager.NavigateTo(destination);
     }
 }

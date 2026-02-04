@@ -9,7 +9,7 @@
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject IContentService ContentService
-@inject ApplicationRedirectManager RedirectManager
+@inject NavigationManager NavigationManager
 @inject ModalService ModalService
 
 @switch (_state) {
@@ -59,10 +59,8 @@
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
             var authState = await AuthenticationState;
-            if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id ||
-                !Guid.TryParse(id, out var userId))
-            {
-                RedirectManager.To("/").Execute();
+            if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id || !Guid.TryParse(id, out var userId)) {
+                NavigationManager.NavigateTo("/", true);
                 return;
             }
             

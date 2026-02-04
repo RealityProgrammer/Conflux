@@ -14,8 +14,7 @@
 @inject UserManager<ApplicationUser> UserManager
 @inject IUserStore<ApplicationUser> UserStore
 @inject ILogger<RegisterPage> Logger
-@inject ApplicationRedirectManager RedirectManager
-@* @inject AuthenticationStateProvider AuthStateProvider *@
+@inject NavigationManager NavigationManager
 
 <div class="fixed bg-fixed inset-0 morph-gradient-bg">
     <svg xmlns="http://www.w3.org/2000/svg" class="size-0">
@@ -174,7 +173,7 @@
     protected override async Task OnInitializedAsync() {
         // If already login, kick the user out.
         if (await AuthenticationState is { User.Identity.IsAuthenticated: true }) {
-            RedirectManager.To("/").Execute();
+            NavigationManager.NavigateTo("/");
             return;
         }
 
@@ -224,10 +223,7 @@
         }
         
         Model = new(); // Clear out form fields
-        RedirectManager.To("/auth/login").WithCookie("Application.RegisterResult", JsonSerializer.Serialize(new {
-            Status = "Success",
-            Message = "Register successful. Please login.",
-        }, JsonSerializerOptions.Web), HttpContext).Execute();
+        NavigationManager.NavigateTo("/auth/login");
     }
 
     private sealed class InputModel {
