@@ -150,17 +150,13 @@
     
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
-            var authState = await AuthenticationState;
-
-            if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id || !Guid.TryParse(id, out var userId)) {
-                NavigationManager.NavigateTo("/", true);
-                return;
-            }
-            
             _module = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/Pages/HomePage.js");
             await _module.InvokeVoidAsync("initParticlesBackground", _particlesBackground);
+            
+            var authState = await AuthenticationState;
 
-            await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
+            if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is { } id && Guid.TryParse(id, out var userId)) {
+                await using var dbContext = await DbContextFactory.CreateDbContextAsync();
                 var userData = await dbContext.Users
                     .Where(u => u.Id == userId)
                     .Select(u => new { u.AvatarProfilePath, u.DisplayName })
