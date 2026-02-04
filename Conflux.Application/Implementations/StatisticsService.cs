@@ -1,4 +1,6 @@
-﻿using Conflux.Application.Abstracts;
+﻿// ReSharper disable AccessToDisposedClosure
+
+using Conflux.Application.Abstracts;
 using Conflux.Application.Dto;
 using Conflux.Domain;
 using Microsoft.EntityFrameworkCore;
@@ -12,8 +14,11 @@ public sealed class StatisticsService(
     public async Task<UserStatisticsDTO> GetUserStatistics() {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
 
-        int userCount = await dbContext.Users.CountAsync();
-
-        return new(userCount);
+        // Get number of users, ignore users with roles.
+        int userCount = await dbContext.Users
+            .Where(user => !dbContext.UserRoles.Any(userRole => userRole.UserId == user.Id))
+            .CountAsync();
+        
+        return new(userCount, 0, 0);
     }
 }

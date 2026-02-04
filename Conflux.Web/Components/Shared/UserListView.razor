@@ -1,0 +1,56 @@
+﻿@using Conflux.Application.Dto
+
+@inject IUserService UserService
+@inject IContentService ContentService
+
+<div class="flex flex-col @_cssClass" @attributes="AdditionalAttributes">
+    <header class="flex flex-row justify-center items-center gap-1 flex-none">
+        <p class="size-xl font-bold flex-1">Users</p>
+        
+        <SearchField @bind-Value="_searchField" @bind-Value:after="AfterModifySearchField" class="flex-1"/>
+    </header>
+    
+    <section class="flex-1 border border-gray-600 rounded-lg p-1 mt-1 overflow-y-auto scrollbar-hide flex flex-col gap-1">
+        <Virtualize @ref="_virtualize" ItemsProvider="VirtualizeProvider">
+            <ItemContent Context="item">
+                <UserCard AvatarSrc="@(string.IsNullOrEmpty(item.AvatarPath) ? null : ContentService.GetAssetPath(item.AvatarPath))"
+                          DisplayName="@item.DisplayName"
+                          UserName="@item.UserName"
+                          UserId="@item.UserId"
+                          class="h-10"/>
+            </ItemContent>
+        </Virtualize>
+    </section>
+</div>
+
+@code {
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+    private string? _cssClass;
+
+    private string _searchField = string.Empty;
+
+    private Virtualize<UserDisplayDTO> _virtualize = null!;
+
+    protected override void OnParametersSet() {
+        if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
+            _cssClass = Convert.ToString(obj);
+        }
+        
+        AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "class").ToDictionary();
+    }
+
+    private async ValueTask<ItemsProviderResult<UserDisplayDTO>> VirtualizeProvider(ItemsProviderRequest request) {
+        var page = await UserService.PaginateUserDisplayAsync(
+            query => query.OrderBy(u => u.DisplayName),
+                query => query,
+            request.StartIndex,
+            request.Count);
+        
+        return new(page.Page, page.TotalCount);
+    }
+
+    private async Task AfterModifySearchField() {
+        await _virtualize.RefreshDataAsync();
+        StateHasChanged();
+    }
+}

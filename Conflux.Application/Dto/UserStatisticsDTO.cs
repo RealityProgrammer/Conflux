@@ -1,3 +1,3 @@
 ﻿namespace Conflux.Application.Dto;
 
-public readonly record struct UserStatisticsDTO(int UserCount);
+public readonly record struct UserStatisticsDTO(int UserCount, int Online, int Banned);

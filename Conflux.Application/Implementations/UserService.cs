@@ -73,4 +73,32 @@ public class UserService(
             .Cast<UserDisplayDTO?>()
             .FirstOrDefaultAsync();
     }
+
+    public async Task<(int TotalCount, IReadOnlyList<UserDisplayDTO> Page)> PaginateUserDisplayAsync(
+        Func<IQueryable<ApplicationUser>, IOrderedQueryable<ApplicationUser>> orderQueryProvider,
+        Func<IQueryable<ApplicationUser>, IQueryable<ApplicationUser>> filterQueryProvider,
+        int start, 
+        int count
+    ) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        
+        int userCount = await dbContext.Users.CountAsync();
+
+        if (userCount == 0) {
+            return (0, []);
+        }
+
+        var queryStatement = filterQueryProvider(orderQueryProvider(dbContext.Users))
+            .Skip(start)
+            .Take(count)
+            .Select(u => new UserDisplayDTO(u.Id, u.DisplayName, u.UserName, u.AvatarProfilePath));
+        
+        List<UserDisplayDTO> page = await filterQueryProvider(orderQueryProvider(dbContext.Users))
+            .Skip(start)
+            .Take(count)
+            .Select(u => new UserDisplayDTO(u.Id, u.DisplayName, u.UserName, u.AvatarProfilePath))
+            .ToListAsync();
+        
+        return (userCount, page);
+    }
 }
