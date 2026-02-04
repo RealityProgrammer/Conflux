@@ -1,7 +1,10 @@
 ﻿@using Conflux.Application.Dto
+@using Conflux.Web.Components.Shared.Modals
+@using Conflux.Web.Services.Implementations
 
 @inject IUserService UserService
 @inject IContentService ContentService
+@inject ModalService ModalService
 
 <div class="flex flex-col @_cssClass" @attributes="AdditionalAttributes">
     <header class="flex flex-row justify-center items-center gap-1 flex-none">
@@ -10,13 +13,14 @@
         <SearchField @bind-Value="_searchField" @bind-Value:after="AfterModifySearchField" class="flex-1"/>
     </header>
     
-    <section class="flex-1 border border-gray-600 rounded-lg p-1 mt-1 overflow-y-auto scrollbar-hide flex flex-col gap-1">
+    <section class="flex-1 border border-gray-600 rounded-lg px-1 mt-1 overflow-y-auto scrollbar-hide space-y-1">
         <Virtualize @ref="_virtualize" ItemsProvider="VirtualizeProvider">
             <ItemContent Context="item">
                 <UserCard AvatarSrc="@(string.IsNullOrEmpty(item.AvatarPath) ? null : ContentService.GetAssetPath(item.AvatarPath))"
                           DisplayName="@item.DisplayName"
                           UserName="@item.UserName"
                           UserId="@item.UserId"
+                          OnClick="HandleUserCardClick"
                           class="h-10"/>
             </ItemContent>
         </Virtualize>
@@ -47,6 +51,13 @@
             request.Count);
         
         return new(page.Page, page.TotalCount);
+    }
+
+    private async Task HandleUserCardClick(UserCard card) {
+        ModalService.Open<UserProfileModal>(parameters: new Dictionary<string, object?> {
+            [nameof(UserProfileModal.UserId)] = card.UserId,
+            [nameof(UserProfileModal.MemberId)] = null,
+        });
     }
 
     private async Task AfterModifySearchField() {
