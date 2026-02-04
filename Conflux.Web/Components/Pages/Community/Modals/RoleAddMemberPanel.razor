@@ -49,6 +49,8 @@
     [Parameter, EditorRequired] public required Guid CommunityId { get; set; }
     [Parameter] public IEnumerable<Guid>? AddedMembers { get; set; }
     
+    [Parameter] public EventCallback<HashSet<Guid>> OnApply { get; set; }
+    
     private string _nameSearch = string.Empty;
     [SupplyParameterFromForm] private InputModel? Model { get; set; }
 
@@ -97,8 +99,12 @@
         return new(members, count);
     }
 
-    private void HandleFormSubmit() {
-        CloseModal(Model!.MemberIds);
+    private async Task HandleFormSubmit() {
+        if (OnApply.HasDelegate) {
+            await OnApply.InvokeAsync(Model!.MemberIds);
+        }
+        
+        CloseModal();
     }
     
     private sealed class InputModel {

@@ -426,8 +426,6 @@
             CommunityEventDispatcher.OnRoleRenamed += OnRoleRenamed;
             CommunityEventDispatcher.OnRoleDeleted += OnRoleDeleted;
 
-            ModalService.OnModalChanged += OnAddMemberPanelClosed;
-
             _state = State.Success;
             StateHasChanged();
         }
@@ -605,6 +603,7 @@
         ModalService.Open<RoleAddMemberPanel>(name: "Community.ControlPanel.Roles.AddMember", parameters: new Dictionary<string, object?> {
             [nameof(RoleAddMemberPanel.CommunityId)] = CommunityId,
             [nameof(RoleAddMemberPanel.AddedMembers)] = Model!.AddRoles,
+            [nameof(RoleAddMemberPanel.OnApply)] = EventCallback.Factory.Create<HashSet<Guid>>(this, OnRoleMemberAdded),
         });
     }
 
@@ -625,17 +624,17 @@
         });
     }
 
-    private void OnAddMemberPanelClosed(ModalChangedEventArgs args) {
-        if (args is { Type: ModalChangedEventType.Closed, Instance.Name: "Community.ControlPanel.Roles.AddMember", ReturnValue: HashSet<Guid> { Count: > 0 } members }) {
-            Model!.AddRoles = members;
-            _editContext.NotifyFieldChanged(_addRolesField);
-            
-            InvokeAsync(async () => {
-                if (_addingMembersVirtualizeReference != null) {
-                    await _addingMembersVirtualizeReference.RefreshDataAsync();
-                    StateHasChanged();
-                }
-            });
+    private async Task OnRoleMemberAdded(HashSet<Guid> addedMembers) {
+        if (addedMembers.Count == 0) {
+            return;
+        }
+        
+        Model!.AddRoles = addedMembers;
+        _editContext.NotifyFieldChanged(_addRolesField);
+        
+        if (_addingMembersVirtualizeReference != null) {
+            await _addingMembersVirtualizeReference.RefreshDataAsync();
+            StateHasChanged();
         }
     }
 
@@ -705,8 +704,6 @@
     }
 
     public void Dispose() {
-        ModalService.OnModalChanged -= OnAddMemberPanelClosed;
-        
         CommunityEventDispatcher.OnRoleCreated -= OnRoleCreated;
         CommunityEventDispatcher.OnMemberRoleChanged -= OnMemberRoleChanged;
         CommunityEventDispatcher.OnRoleRenamed -= OnRoleRenamed;
