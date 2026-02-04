@@ -15,7 +15,7 @@ public class RedirectToProfileSetup : ComponentBase {
 
         if (user.Identity is { IsAuthenticated: true }) {
             if (!await UserService.IsProfileSetup(user)) {
-                Navigation.NavigateTo("/setup-profile");
+                Navigation.NavigateTo("/setup-profile", true);
             }
         }
     }
