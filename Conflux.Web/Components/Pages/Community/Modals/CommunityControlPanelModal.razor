@@ -31,7 +31,7 @@
         var authState = await AuthenticationState;
 
         if (authState.User.FindFirstValue(ClaimTypes.NameIdentifier) is not { } id || !Guid.TryParse(id, out _userId)) {
-            RedirectManager.NavigateTo("/");
+            RedirectManager.NavigateTo("/", true);
         }
     }
 

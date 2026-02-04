@@ -173,7 +173,7 @@
     protected override async Task OnInitializedAsync() {
         // If already login, kick the user out.
         if (await AuthenticationState is { User.Identity.IsAuthenticated: true }) {
-            NavigationManager.NavigateTo("/");
+            NavigationManager.NavigateTo("/", true);
             return;
         }
 
