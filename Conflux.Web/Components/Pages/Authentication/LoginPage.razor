@@ -1,6 +1,5 @@
 ﻿@page "/auth/login"
 
-@using Conflux.Web.Services
 @using Microsoft.AspNetCore.Identity
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Components.Sections
@@ -13,8 +12,6 @@
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
 @inject NavigationManager NavigationManager
-@inject ILogger<LoginPage> Logger
-@inject IUserService UserService
 
 <div class="fixed bg-fixed inset-0 morph-gradient-bg">
     <svg xmlns="http://www.w3.org/2000/svg" class="size-0">
@@ -119,8 +116,6 @@
 </SectionContent>
 
 @code {
-    [Parameter] public EventCallback<ApplicationUser> OnLoggedIn { get; set; }
-    
     private EditContext _editContext = null!;
     [SupplyParameterFromForm(FormName = "Login")] private InputModel Model { get; set; } = null!;
     private string? _errorMessage;
@@ -129,15 +124,25 @@
 
     [SupplyParameterFromQuery(Name = "ReturnUrl")] private string? ReturnUrl { get; set; }
 
-    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
-
-    protected override async Task OnInitializedAsync() {
-        // If already login, kick the user out.
-        if (await AuthenticationState is { User.Identity.IsAuthenticated: true }) {
+    // [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+    //
+    // protected override async Task OnInitializedAsync() {
+    //     // If already login, kick the user out.
+    //     if (await AuthenticationState is { User.Identity.IsAuthenticated: true }) {
+    //         NavigationManager.NavigateTo("/", true);
+    //         return;
+    //     }
+    //
+    //     Model ??= new();
+    //     _editContext = new(Model);
+    // }
+    
+    protected override void OnInitialized() {
+        if (HttpContext.User.Identity?.IsAuthenticated ?? false) {
             NavigationManager.NavigateTo("/", true);
             return;
         }
-
+    
         Model ??= new();
         _editContext = new(Model);
     }

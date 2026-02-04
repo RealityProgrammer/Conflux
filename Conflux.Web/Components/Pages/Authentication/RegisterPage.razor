@@ -1,9 +1,7 @@
 ﻿@page "/auth/register"
 
-@using Conflux.Web.Services
 @using Microsoft.AspNetCore.Identity
 @using System.ComponentModel.DataAnnotations
-@using System.Text.Json
 @using Microsoft.AspNetCore.Components.Sections
 
 @attribute [ExcludeFromInteractiveRouting]
@@ -168,11 +166,9 @@
     private FieldIdentifier _emailField, _passwordField, _confirmationPasswordField, _acceptTermsField;
 
     [CascadingParameter] public HttpContext HttpContext { get; set; } = null!;
-    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
 
-    protected override async Task OnInitializedAsync() {
-        // If already login, kick the user out.
-        if (await AuthenticationState is { User.Identity.IsAuthenticated: true }) {
+    protected override void OnInitialized() {
+        if (HttpContext.User.Identity?.IsAuthenticated ?? false) {
             NavigationManager.NavigateTo("/", true);
             return;
         }
