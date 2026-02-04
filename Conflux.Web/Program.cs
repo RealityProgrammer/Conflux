@@ -116,6 +116,7 @@ builder.Services
     .AddIdentityCore<ApplicationUser>(options => {
         options.SignIn.RequireConfirmedAccount = false;
         options.User.RequireUniqueEmail = true;
+        options.ClaimsIdentity.RoleClaimType = ClaimTypes.Role;
     })
     .AddRoles<IdentityRole<Guid>>()
     .AddRoleManager<RoleManager<IdentityRole<Guid>>>()
