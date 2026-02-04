@@ -1,0 +1,24 @@
+﻿@using Microsoft.AspNetCore.Components.Sections
+@inherits LayoutComponentBase
+
+@layout SidebarLobbyLayout
+
+<SectionContent SectionName="lobby-sidebar">
+    <div class="flex flex-col gap-2 p-2">
+        <NavLink href="/admin/people" class="@("flex flex-row justify-start items-center px-4 py-2 rounded-lg w-full gap-3 flex-none cursor-pointer bg-transparent hover:bg-white/15 active:bg-black/15")" ActiveClass="bg-white/20" Match="NavLinkMatch.Prefix">
+            <People class="size-6 flex-none fill-white"/>
+
+            <p class="block select-none">People</p>
+        </NavLink>
+        
+        <NavLink href="/admin/reports" class="@("flex flex-row justify-start items-center px-4 py-2 rounded-lg w-full gap-3 flex-none cursor-pointer bg-transparent hover:bg-white/15 active:bg-black/15")" ActiveClass="bg-white/20" Match="NavLinkMatch.Prefix">
+            <Flag class="size-6 flex-none fill-white"/>
+
+            <p class="block select-none">Reports</p>
+        </NavLink>
+    </div>
+</SectionContent>
+
+<section class="col-span-10 bg-gray-700 h-full overflow-y-auto flex-1 text-white p-2">
+    @Body
+</section>
