@@ -144,7 +144,7 @@ builder.Services.AddSingleton<MarkdownPipeline>(services => {
     return pipeline;
 });
 builder.Services.AddScoped<ProfileSanitizingService>();
-builder.Services.AddScoped<IContentService, ContentService>();
+builder.Services.AddSingleton<IContentService, ContentService>();
 builder.Services.AddScoped<IConversationService, ConversationService>();
 builder.Services.AddScoped<IConversationEventDispatcher, ConversationEventDispatcher>();
 builder.Services.AddScoped<ISnackbarService, SnackbarService>();
@@ -157,6 +157,7 @@ builder.Services.AddScoped<IWebUserNotificationService, UserNotificationService>
 builder.Services.AddScoped<IUserNotificationService>(provider => provider.GetRequiredService<IWebUserNotificationService>());
 builder.Services.AddSingleton<ICallService, CallService>();
 builder.Services.AddScoped<IUserCallService, UserCallService>();
+builder.Services.AddSingleton<IStatisticsService, StatisticsService>();
     
 // SignalR related services.
 builder.Services.AddSignalR(options => {

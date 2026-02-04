@@ -1,4 +1,7 @@
 ﻿@page "/admin/people"
+@using Conflux.Application.Dto
+
+@inject IStatisticsService StatisticsService
 
 <h1 class="text-2xl font-semibold">User Management</h1>
 
@@ -9,7 +12,11 @@
         <CardHeader Title="Total"/>
         
         <CardContent>
-            <p class="text-right text-lg">???</p>
+            @if (_isLoading) {
+                <p class="text-right text-lg animate-pulse select-none">Loading...</p>
+            } else {
+                <p class="text-right text-xl">@_userStatistics.UserCount</p>
+            }
         </CardContent>
     </Card>
     
@@ -31,5 +38,15 @@
 </div>
 
 @code {
+    private bool _isLoading = true;
+    private UserStatisticsDTO _userStatistics;
     
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            _userStatistics = await StatisticsService.GetUserStatistics();
+            _isLoading = false;
+            
+            StateHasChanged();
+        }
+    }
 }
