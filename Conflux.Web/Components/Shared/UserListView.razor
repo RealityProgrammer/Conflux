@@ -53,7 +53,7 @@
         return new(page.Page, page.TotalCount);
     }
 
-    private async Task HandleUserCardClick(UserCard card) {
+    private void HandleUserCardClick(UserCard card) {
         ModalService.Open<UserProfileModal>(parameters: new Dictionary<string, object?> {
             [nameof(UserProfileModal.UserId)] = card.UserId,
             [nameof(UserProfileModal.MemberId)] = null,

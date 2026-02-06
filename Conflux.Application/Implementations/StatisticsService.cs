@@ -14,10 +14,8 @@ public sealed class StatisticsService(
     public async Task<UserStatisticsDTO> GetUserStatistics() {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
 
-        // Get number of users, ignore users with roles.
-        int userCount = await dbContext.Users
-            .Where(user => !dbContext.UserRoles.Any(userRole => userRole.UserId == user.Id))
-            .CountAsync();
+        // Get number of users.
+        int userCount = await dbContext.Users.CountAsync();
         
         return new(userCount, 0, 0);
     }

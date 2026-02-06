@@ -8,7 +8,7 @@ const MEDIA_STREAM_CONSTRAINTS: MediaStreamConstraints = {
         facingMode: "user",
         frameRate: 24,
     },
-    audio: true,    // TODO: Audio
+    audio: true,
 };
 
 class CallScreen {
