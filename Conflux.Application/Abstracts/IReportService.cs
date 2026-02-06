@@ -5,7 +5,7 @@ using Conflux.Domain.Enums;
 namespace Conflux.Application.Abstracts;
 
 public interface IReportService {
-    Task<bool> ReportMessageAsync(Guid messageId, string? extraMessage, ReportReasons[] reasons, Guid reporterId);
+    Task<bool> ReportMessageAsync(Guid messageId, string? extraMessage, ReportReasons[] reasons, Guid reporterUserId);
 
     Task<ReportCountStatistics?> GetReportCountStatisticsAsync(Guid communityId);
     

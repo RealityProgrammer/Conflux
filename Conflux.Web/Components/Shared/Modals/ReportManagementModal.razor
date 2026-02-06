@@ -300,7 +300,7 @@
         var reportDisplay = (await ReportService.GetReportDisplayAsync(reportId))!.Value;
         
         _selectedReportDisplay = reportDisplay;
-        _reporterDisplay = (await CommunityService.GetMemberDisplayAsync(CommunityId, reportDisplay.ReporterId))!.Value;
+        _reporterDisplay = (await CommunityService.GetMemberDisplayAsync(CommunityId, reportDisplay.ReporterUserId))!.Value;
         _reportResolverDisplay = reportDisplay.ResolverId.HasValue ? await CommunityService.GetMemberDisplayAsync(reportDisplay.ResolverId.Value) : null;
     }
 

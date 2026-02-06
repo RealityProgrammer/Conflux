@@ -9,7 +9,7 @@ public record struct ReportDisplayDTO(
     string? SenderAvatar, 
     string? OriginalBody, 
     List<MessageAttachment> OriginalAttachments, 
-    Guid ReporterId, 
+    Guid ReporterUserId, 
     DateTime CreatedAt, 
     ReportReasons[] Reasons,
     string? ExtraMessage,

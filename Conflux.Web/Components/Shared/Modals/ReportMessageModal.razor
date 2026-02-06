@@ -133,7 +133,7 @@
 
 @code {
     [Parameter] public Guid MessageId { get; set; }
-    [Parameter] public Guid ReporterId { get; set; }
+    [Parameter] public Guid ReporterUserId { get; set; }
 
     private Status _status;
     private MessageDisplayDTO _messageDisplay;
@@ -200,7 +200,7 @@
                 reasons[index] = ReportReasons.Other;
             }
 
-            bool success = await ReportService.ReportMessageAsync(MessageId, Model.ExtraMessage, reasons, ReporterId);
+            bool success = await ReportService.ReportMessageAsync(MessageId, Model.ExtraMessage, reasons, ReporterUserId);
 
             if (success) {
                 ModalService.Open<OperationSuccessModal>(parameters: new Dictionary<string, object?> {

@@ -11,7 +11,7 @@ public class ReportService(
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     ICommunityService communityService
 ) : IReportService {
-    public async Task<bool> ReportMessageAsync(Guid messageId, string? extraMessage, ReportReasons[] reasons, Guid reporterId) {
+    public async Task<bool> ReportMessageAsync(Guid messageId, string? extraMessage, ReportReasons[] reasons, Guid reporterUserId) {
         if (reasons.Length == 0) {
             return false;
         }
@@ -32,7 +32,7 @@ public class ReportService(
             ExtraMessage = extraMessage,
             Status = ReportStatus.InProgress,
             Reasons = reasons,
-            ReporterId = reporterId,
+            ReporterUserId = reporterUserId,
             OriginalMessageBody = messageData.Body,
             OriginalMessageAttachments = messageData.Attachments,
             CreatedAt = DateTime.UtcNow,
@@ -210,7 +210,7 @@ public class ReportService(
             .Include(r => r.Message)
             .ThenInclude(m => m.Sender)
             .Include(r => r.Reporter)
-            .Select(r => new ReportDisplayDTO(r.Id, r.Message.Sender.DisplayName, r.Message.Sender.AvatarProfilePath, r.OriginalMessageBody, r.OriginalMessageAttachments, r.ReporterId, r.CreatedAt, r.Reasons, r.ExtraMessage, r.Status, r.ResolverId, r.ResolvedAt, r.BanDuration))
+            .Select(r => new ReportDisplayDTO(r.Id, r.Message.Sender.DisplayName, r.Message.Sender.AvatarProfilePath, r.OriginalMessageBody, r.OriginalMessageAttachments, r.ReporterUserId, r.CreatedAt, r.Reasons, r.ExtraMessage, r.Status, r.ResolverId, r.ResolvedAt, r.BanDuration))
             .Cast<ReportDisplayDTO?>()
             .FirstOrDefaultAsync();
     }

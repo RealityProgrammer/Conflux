@@ -153,7 +153,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
             entity.HasOne(report => report.Reporter)
                 .WithMany()
-                .HasForeignKey(report => report.ReporterId)
+                .HasForeignKey(report => report.ReporterUserId)
                 .HasPrincipalKey(user => user.Id)
                 .OnDelete(DeleteBehavior.Cascade);
 

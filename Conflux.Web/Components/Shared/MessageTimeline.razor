@@ -660,7 +660,7 @@
 
         ModalService.Open<ReportMessageModal>(parameters: new Dictionary<string, object?> {
             [nameof(ReportMessageModal.MessageId)] = _extraActionTargetMessage.MessageId,
-            [nameof(ReportMessageModal.ReporterId)] = MemberInformation!.Value.MemberId,
+            [nameof(ReportMessageModal.ReporterUserId)] = UserId,
         });
 
         _showExtraActionPopover = false;
