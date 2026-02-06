@@ -1,0 +1,520 @@
+﻿@using Conflux.Application.Dto
+@using Conflux.Domain.Events
+@using Conflux.Domain.Extensions
+@using Microsoft.EntityFrameworkCore
+
+@implements IDisposable
+
+@inject IContentService ContentService
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IFriendshipService FriendshipService
+@inject IFriendshipEventDispatcher FriendshipEventDispatcher
+@inject IConversationService ConversationService
+@inject NavigationManager NavigationManager
+
+@switch (_state) {
+    case State.Loading:
+        <CardContent class="h-full flex justify-center items-center flex-1 my-0! pb-2">
+            <Spinner class="size-16 fill-white"/>
+        </CardContent>
+        break;
+
+    case State.Invalid:
+        <CardContent class="h-full flex justify-center items-center flex-1 my-0! pb-2">
+            <p class="text-gray-400 text-sm">Nobody here...</p>
+        </CardContent>
+        break;
+        
+    case State.Success:
+        <CardContent class="h-full flex flex-col md:flex-row gap-2 flex-1 overflow-y-auto scrollbar-hide md:overflow-y-hidden my-0! pb-2">
+            <section class="flex-none md:flex-1 border border-gray-600 rounded-lg bg-gray-725 shadow-md overflow-y-auto scrollbar-hide pb-2">
+                @* Banner & Avatar *@
+                <div class="relative h-32">
+                    <div class="absolute inset-0 bg-cover bg-center bg-black rounded-t-lg"></div>
+
+                    <div class="absolute -bottom-8 left-4">
+                        <div class="relative">
+                            <Avatar class="size-20 border-4 border-gray-700"
+                                    ImageSrc="@(string.IsNullOrEmpty(_userProfile.AvatarPath) ? null : ContentService.GetAssetPath(_userProfile.AvatarPath))"
+                                    ImageAlt="@($"Avatar of {_userProfile.DisplayName}")"/>
+
+                            @* TODO: Status indicator *@
+                        </div>
+                    </div>
+                </div>
+
+                @* Text informations *@
+                <div class="flex flex-col px-2 pt-10">
+                    <div>
+                        <p class="text-2xl font-bold flex flex-row items-center">
+                            @_userProfile.DisplayName
+
+                            @if (!string.IsNullOrEmpty(_userProfile.RoleName)) {
+                                <span class="ml-1 text-xs bg-gray-600 rounded-full px-1 py-0.5">@_userProfile.RoleName</span>
+                            }
+                        </p>
+
+                        <p class="text-sm">@_userProfile.UserName</p>
+                    </div>
+
+                    @if (_userProfile.Pronouns is { } pronouns) {
+                        <p class="text-sm mt-2">
+                            <span class="font-semibold">Pronouns:</span>
+
+                            @pronouns
+                        </p>
+                    }
+
+                    <p class="text-sm mt-2">
+                        <span class="font-semibold inline-block">Joined Conflux since:</span> @_userProfile.UserCreatedAt.ToString("yyyy/MM/dd")
+                    </p>
+
+                    @if (_userProfile.MemberCreatedAt is { } communityJoinedSince) {
+                        <p class="text-sm mt-1">
+                            <span class="font-semibold">Joined Community since:</span>
+
+                            @communityJoinedSince.ToString("yyyy/MM/dd")
+                        </p>
+                    }
+                </div>
+
+                @* Actions *@
+                @if (InspectingUserId != SessionUserId) {
+                    <div class="flex flex-row justify-around mt-2 bg-gray-650 mx-2 p-2 rounded-lg shadow-md flex-wrap">
+                        @switch (_userProfile.FriendRequestAction) {
+                            case FriendRequestAction.Add:
+                                <div class="flex flex-col items-center">
+                                    <ProcessingStateButton @bind-IsProcessing="_isProcessingFriendRequest" class="flex-none rounded-full cursor-pointer hover:bg-white/25 active:bg-black/15 p-2 shadow-md border border-gray-600" ProcessingCssClass="flex flex-row justify-center items-center" @onclick="HandleSendFriendRequest">
+                                        <ChildContent>
+                                            <Person Addition="PersonAddition.Add" class="size-6 fill-white"/>
+                                        </ChildContent>
+
+                                        <ProcessingContent>
+                                            <Spinner class="size-6 fill-white"/>
+                                        </ProcessingContent>
+                                    </ProcessingStateButton>
+
+                                    <p class="text-xs mt-1">Add Friend</p>
+                                </div>
+                                break;
+
+                            case FriendRequestAction.Cancel:
+                                <div class="flex flex-col items-center">
+                                    <button class="flex-none rounded-full cursor-pointer hover:bg-white/25 active:bg-black/15 p-2 shadow-md border border-gray-600" @onclick="HandleCancelFriendRequest">
+                                        <Cross Size="CrossSize.Normal" class="size-6 fill-white"/>
+                                    </button>
+
+                                    <p class="text-xs mt-1">Cancel Request</p>
+                                </div>
+                                break;
+
+                            case FriendRequestAction.RejectOrAccept:
+                                <div class="flex flex-col items-center">
+                                    <button class="flex-none rounded-full cursor-pointer hover:bg-white/25 active:bg-black/15 p-2 shadow-md border border-gray-600" @onclick="HandleRejectFriendRequest">
+                                        <Cross Size="CrossSize.Normal" class="size-6 fill-white"/>
+                                    </button>
+
+                                    <p class="text-xs mt-1">Reject Request</p>
+                                </div>
+
+                                <div class="flex flex-col items-center">
+                                    <button class="flex-none rounded-full cursor-pointer hover:bg-white/25 active:bg-black/15 p-2 shadow-md border border-gray-600" @onclick="HandleAcceptFriendRequest">
+                                        <Person Addition="PersonAddition.Check" class="size-6 fill-white"/>
+                                    </button>
+
+                                    <p class="text-xs mt-1">Accept Request</p>
+                                </div>
+                                break;
+
+                            case FriendRequestAction.Unfriend:
+                                <div class="flex flex-col items-center">
+                                    <button class="flex-none rounded-full cursor-pointer hover:bg-white/25 active:bg-black/15 p-2 shadow-md border border-gray-600" @onclick="HandleUnfriend">
+                                        <Person Addition="PersonAddition.X" class="size-6 fill-white"/>
+                                    </button>
+
+                                    <p class="text-xs mt-1">Unfriend</p>
+                                </div>
+
+                                <div class="flex flex-col items-center">
+                                    <button class="flex-none rounded-full cursor-pointer hover:bg-white/25 active:bg-black/15 p-2 shadow-md border border-gray-600" @onclick="HandleAccessConversation">
+                                        <SpeechBubble ArrowDirection="ChatArrowDirection.Right" Content="ChatContent.Text" class="size-6 fill-white"/>
+                                    </button>
+
+                                    <p class="text-xs mt-1">Message</p>
+                                </div>
+                                break;
+                        }
+                    </div>
+                }
+            </section>
+
+            <section class="flex-none md:flex-1 flex flex-col gap-2">
+                @if (SessionUserId != InspectingUserId) {
+                    <div class="flex flex-col md:flex-1 overflow-y-hidden border border-gray-600 rounded-lg shadow-md bg-gray-725 p-2">
+                        <h1 class="text-xl font-bold flex-none">Mutual</h1>
+
+                        <div class="h-64 md:h-0 md:flex-1">
+                            <TabContainer @bind-ActiveId:get="_mutualActiveTabId" @bind-ActiveId:set="@(value => SetMutualTabId(value!))" class="flex-1 flex flex-col text-white size-full" ButtonContainerCssClass="flex-none border-b border-b-gray-600 pb-2 flex flex-row justify-around gap-1" ContentContainerCssClass="min-h-0 flex-1 mt-2 overflow-y-auto scrollbar-hide">
+                                <Buttons>
+                                    <TabButton TabId="Friends" class="flex-1 x-3 py-1 text-white bg-transparent hover:bg-gray-400/40 active:bg-gray-700/40 rounded-lg cursor-pointer" ActiveCssClass="bg-gray-600/70! cursor-default!">Friends</TabButton>
+                                    <TabButton TabId="Communities" class="flex-1 px-3 py-1 text-white bg-transparent hover:bg-gray-400/40 active:bg-gray-700/40 rounded-lg cursor-pointer" ActiveCssClass="bg-gray-600/70! cursor-default!">Communities</TabButton>
+                                </Buttons>
+
+                                <Contents>
+                                    <TabContent TabId="Friends" RenderStrategy="RenderStrategy.Conditional" class="size-full">
+                                        @if (_mutualFriends == null) {
+                                            <div class="size-full flex justify-center items-center">
+                                                <Spinner class="fill-white size-8"/>
+                                            </div>
+                                        } else {
+                                            <Virtualize Items="_mutualFriends">
+                                                <ItemContent Context="item">
+                                                    <UserCard DisplayName="@item.DisplayName"
+                                                              UserName="@item.UserName"
+                                                              UserId="@item.UserId"
+                                                              AvatarSrc="@(string.IsNullOrEmpty(item.AvatarPath) ? null : ContentService.GetAssetPath(item.AvatarPath))"
+                                                              class="h-10"/>
+                                                </ItemContent>
+
+                                                <EmptyContent>
+                                                    <div class="size-full flex justify-center items-center">
+                                                        <p class="text-gray-400 text-sm">No mutual friend :(</p>
+                                                    </div>
+                                                </EmptyContent>
+                                            </Virtualize>
+                                        }
+                                    </TabContent>
+
+                                    <TabContent TabId="Communities" RenderStrategy="RenderStrategy.Conditional" class="size-full">
+                                        @if (_mutualCommunities == null) {
+                                            <div class="size-full flex justify-center items-center">
+                                                <Spinner class="fill-white size-8"/>
+                                            </div>
+                                        } else {
+                                            <Virtualize Items="_mutualCommunities">
+                                                <ItemContent Context="item">
+                                                    <CommunityCard Name="@item.CommunityName"
+                                                                   CommunityId="@item.Id"
+                                                                   AvatarSrc="@(string.IsNullOrEmpty(item.AvatarPath) ? null : ContentService.GetAssetPath(item.AvatarPath))"
+                                                                   class="h-10"/>
+                                                </ItemContent>
+
+                                                <EmptyContent>
+                                                    <div class="size-full flex justify-center items-center">
+                                                        <p class="text-gray-400 text-sm">No mutual community :(</p>
+                                                    </div>
+                                                </EmptyContent>
+                                            </Virtualize>
+                                        }
+                                    </TabContent>
+                                </Contents>
+                            </TabContainer>
+                        </div>
+                    </div>
+                }
+
+                <div class="flex flex-col md:flex-1 overflow-y-hidden border border-gray-600 rounded-lg shadow-md bg-gray-725 p-2">
+                    <h1 class="text-xl font-bold flex-none">Connections</h1>
+
+                    <div class="h-64 md:h-0 md:flex-1 flex flex-row justify-center items-center">
+                        <p class="text-sm text-gray-400">Coming soon...</p>
+                    </div>
+                </div>
+            </section>
+        </CardContent>
+        break;
+}
+
+
+@code {
+    [Parameter, EditorRequired] public required Guid InspectingUserId { get; set; }
+    [Parameter] public Guid? InspectingMemberId { get; set; }
+    [Parameter, EditorRequired] public required EventCallback OnCloseRequested { get; set; }
+    
+    [CascadingParameter(Name = "SessionUserId")] private Guid SessionUserId { get; set; }
+
+    private UserProfileDTO _userProfile;
+    
+    private string _mutualActiveTabId = "Friends";
+    private ICollection<UserDisplayDTO>? _mutualFriends;
+    private ICollection<MutualCommunityDTO>? _mutualCommunities;
+
+    private State _state;
+
+    private bool _isProcessingFriendRequest;
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+            _userProfile = await dbContext.Users
+                .Where(u => u.Id == InspectingUserId)
+                .Select(u => new UserProfileDTO(u.DisplayName, u.UserName!, null, u.AvatarProfilePath, u.Bio, u.Pronouns, DateOnly.FromDateTime(u.CreatedAt), null, null, FriendRequestAction.Add, null))
+                .FirstAsync();
+
+            var friendRequestData = await dbContext.FriendRequests
+                .Where(r => (r.SenderId == SessionUserId && r.ReceiverId == InspectingUserId) || (r.SenderId == InspectingUserId && r.ReceiverId == SessionUserId))
+                .Select(r => new {
+                    Action = r.Status == FriendRequestStatus.Accepted ?
+                        FriendRequestAction.Unfriend :
+                        r.Status == FriendRequestStatus.Pending ?
+                            r.SenderId == SessionUserId ?
+                                FriendRequestAction.Cancel :
+                                FriendRequestAction.RejectOrAccept
+                        : FriendRequestAction.Add,
+                    r.Id,
+                }).FirstOrDefaultAsync();
+
+            if (friendRequestData != null) {
+                _userProfile.FriendRequestAction = friendRequestData.Action;
+                _userProfile.FriendRequestId = friendRequestData.Id;
+            }
+
+            if (InspectingMemberId != null) {
+                var memberData = await dbContext.CommunityMembers
+                    .IncludeBanned()
+                    .Where(m => m.Id == InspectingMemberId)
+                    .Include(m => m.Role)
+                    .Select(m => new {
+                        RoleName = m.Role == null ? null : m.Role.Name,
+                        CreatedAt = DateOnly.FromDateTime(m.CreatedAt)
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (memberData != null) {
+                    _userProfile.RoleName = memberData.RoleName;
+                    _userProfile.MemberCreatedAt = memberData.CreatedAt;
+                }
+            }
+            
+            _state = string.IsNullOrEmpty(_userProfile.DisplayName) ? State.Invalid : State.Success;
+
+            _mutualFriends = await CollectMutualFriends();
+
+            FriendshipEventDispatcher.OnFriendRequestReceived += OnFriendRequestReceived;
+            FriendshipEventDispatcher.OnFriendRequestCanceled += OnFriendRequestCanceled;
+            FriendshipEventDispatcher.OnFriendRequestRejected += OnFriendRequestRejected;
+            FriendshipEventDispatcher.OnFriendRequestAccepted += OnFriendRequestAccepted;
+            FriendshipEventDispatcher.OnUnfriended += OnUnfriended;
+
+            StateHasChanged();
+        }
+    }
+    
+    private async Task SetMutualTabId(string value) {
+        _mutualActiveTabId = value;
+
+        @switch (value) {
+            case "Friends":
+                _mutualFriends ??= await CollectMutualFriends();
+                break;
+
+            case "Communities":
+                _mutualCommunities ??= await CollectMutualCommunities();
+                break;
+        }
+    }
+    
+    private async Task<ICollection<UserDisplayDTO>> CollectMutualFriends() {
+        if (SessionUserId == InspectingUserId) return [];
+
+        await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        return await dbContext.FriendRequests
+            .Where(x => x.Status == FriendRequestStatus.Accepted && (x.SenderId == SessionUserId || x.ReceiverId == SessionUserId))
+            .Select(x => x.SenderId == SessionUserId ? x.Receiver : x.Sender)
+            // TODO: Could we replace these with IntersectBy?
+            // I'm 30min away from going home from a 8-5 and i don't want to think more about this
+            .Join(
+                dbContext.FriendRequests
+                    .Where(x => x.Status == FriendRequestStatus.Accepted && (x.SenderId == InspectingUserId || x.ReceiverId == InspectingUserId))
+                    .Select(x => x.SenderId == InspectingUserId ? x.Receiver : x.Sender),
+                x => x.Id,
+                x => x.Id,
+                (user1Friend, user2Friend) => user1Friend
+            )
+            .Select(x => new UserDisplayDTO(x.Id, x.DisplayName, x.UserName, x.AvatarProfilePath))
+            .ToListAsync();
+    }
+
+    private async Task<ICollection<MutualCommunityDTO>> CollectMutualCommunities() {
+        if (SessionUserId == InspectingUserId) return [];
+
+        await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        return await dbContext.CommunityMembers
+            .IncludeBanned()
+            .Where(x => x.UserId == SessionUserId)
+            .Join(
+                dbContext.CommunityMembers
+                    .IncludeBanned()
+                    .Where(x => x.UserId == InspectingUserId),
+                x => x.CommunityId,
+                x => x.CommunityId,
+                (member1, member2) => member1.Community
+            )
+            .Select(c => new MutualCommunityDTO(c.Id, c.Name, c.AvatarPath))
+            .ToListAsync();
+    }
+    
+    private async Task HandleSendFriendRequest() {
+        _isProcessingFriendRequest = true;
+
+        try {
+            var result = await FriendshipService.SendFriendRequestAsync(SessionUserId, InspectingUserId);
+            
+            switch (result.Status) {
+                case IFriendshipService.SendingStatus.Friended:
+                    _userProfile.FriendRequestAction = FriendRequestAction.Unfriend;
+                    _userProfile.FriendRequestId = result.RequestId;
+                    break;
+
+                case IFriendshipService.SendingStatus.Success or IFriendshipService.SendingStatus.OutcomingPending:
+                    _userProfile.FriendRequestAction = FriendRequestAction.Cancel;
+                    _userProfile.FriendRequestId = result.RequestId;
+                    break;
+
+                case IFriendshipService.SendingStatus.IncomingPending:
+                    _userProfile.FriendRequestAction = FriendRequestAction.RejectOrAccept;
+                    _userProfile.FriendRequestId = result.RequestId;
+                    break;
+            }
+        } finally {
+            _isProcessingFriendRequest = false;
+        }
+    }
+
+    private async Task HandleCancelFriendRequest() {
+        if (_userProfile.FriendRequestId is not { } requestId) {
+            return;
+        }
+        
+        _isProcessingFriendRequest = true;
+
+        try {
+            await FriendshipService.CancelFriendRequestAsync(requestId);
+            _userProfile.FriendRequestAction = FriendRequestAction.Add;
+        } finally {
+            _isProcessingFriendRequest = false;
+        }
+    }
+
+    private async Task HandleRejectFriendRequest() {
+        if (_userProfile.FriendRequestId is not { } requestId) {
+            return;
+        }
+        
+        _isProcessingFriendRequest = true;
+
+        try {
+            await FriendshipService.RejectFriendRequestAsync(requestId);
+            _userProfile.FriendRequestAction = FriendRequestAction.Add;
+        } finally {
+            _isProcessingFriendRequest = false;
+        }
+    }
+
+    private async Task HandleAcceptFriendRequest() {
+        if (_userProfile.FriendRequestId is not { } requestId) {
+            return;
+        }
+        
+        _isProcessingFriendRequest = true;
+
+        try {
+            await FriendshipService.AcceptFriendRequestAsync(requestId);
+            _userProfile.FriendRequestAction = FriendRequestAction.Unfriend;
+        } finally {
+            _isProcessingFriendRequest = false;
+        }
+    }
+
+    private async Task HandleUnfriend() {
+        if (_userProfile.FriendRequestId is not { } requestId) {
+            return;
+        }
+        
+        _isProcessingFriendRequest = true;
+
+        try {
+            await FriendshipService.UnfriendAsync(requestId);
+            _userProfile.FriendRequestAction = FriendRequestAction.Add;
+        } finally {
+            _isProcessingFriendRequest = false;
+        }
+    }
+
+    private async Task HandleAccessConversation() {
+        if (_userProfile.FriendRequestId is not { } requestId || _userProfile.FriendRequestAction != FriendRequestAction.Unfriend) {
+            return;
+        }
+
+        var conversation = await ConversationService.GetOrCreateDirectConversationAsync(requestId);
+        NavigationManager.NavigateTo($"/lobby/messages/{conversation.Id}");
+
+        await OnCloseRequested.InvokeAsync();
+    }
+    
+    private void OnFriendRequestReceived(FriendRequestReceivedEventArgs args) {
+        if (args.SenderId == InspectingUserId) {
+            _userProfile.FriendRequestAction = FriendRequestAction.RejectOrAccept;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void OnFriendRequestCanceled(FriendRequestCanceledEventArgs args) {
+        if (args.ReceiverId == SessionUserId) {
+            _userProfile.FriendRequestAction = FriendRequestAction.Add;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void OnFriendRequestRejected(FriendRequestRejectedEventArgs args) {
+        if (args.SenderId == SessionUserId) {
+            _userProfile.FriendRequestAction = FriendRequestAction.Add;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void OnFriendRequestAccepted(FriendRequestAcceptedEventArgs args) {
+        if (args.SenderId == SessionUserId) {
+            _userProfile.FriendRequestAction = FriendRequestAction.Unfriend;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void OnUnfriended(UnfriendedEventArgs args) {
+        if (args.User1 == InspectingUserId || args.User2 == InspectingUserId) {
+            _userProfile.FriendRequestAction = FriendRequestAction.Add;
+            InvokeAsync(StateHasChanged);
+        }
+    }
+    
+    public void Dispose() {
+        FriendshipEventDispatcher.OnFriendRequestReceived -= OnFriendRequestReceived;
+        FriendshipEventDispatcher.OnFriendRequestCanceled -= OnFriendRequestCanceled;
+        FriendshipEventDispatcher.OnFriendRequestRejected -= OnFriendRequestRejected;
+        FriendshipEventDispatcher.OnFriendRequestAccepted -= OnFriendRequestAccepted;
+        FriendshipEventDispatcher.OnUnfriended -= OnUnfriended;
+    }
+    
+    private enum State {
+        Loading,
+        Invalid,
+        Success,
+    }
+    
+    private readonly record struct MutualCommunityDTO(Guid Id, string CommunityName, string? AvatarPath);
+    
+    private enum FriendRequestAction {
+        Add,
+        Cancel,
+        RejectOrAccept,
+        Unfriend,
+    }
+
+    private record struct UserProfileDTO(string DisplayName, string UserName, string? BannerPath, string? AvatarPath, string? Bio, string? Pronouns, DateOnly UserCreatedAt, DateOnly? MemberCreatedAt, string? RoleName, FriendRequestAction FriendRequestAction, Guid? FriendRequestId);
+}

@@ -1,0 +1,148 @@
+﻿@using Conflux.Application.Dto
+@using Conflux.Web.Helpers
+@using Conflux.Web.Services.Implementations
+@using Microsoft.EntityFrameworkCore
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IContentService ContentService
+@inject ModalService ModalService
+@inject ILogger<UserManagementContent> Logger
+
+<CardContent class="h-full flex flex-col md:flex-row gap-2 flex-1 overflow-y-auto scrollbar-hide md:overflow-y-hidden my-0! pb-2">
+    <section class="flex flex-col md:flex-1 overflow-y-hidden border border-gray-600 rounded-lg shadow-md bg-gray-725 p-2">
+        <header class="text-xl font-semibold">Engagement</header>
+                                
+        <div class="h-64 md:h-0 md:flex-1">
+            <TabContainer @bind-ActiveId:get="_engagementActiveTabId" @bind-ActiveId:set="@(value => SetEngagementActiveTabId(value!))" class="flex-1 flex flex-col text-white size-full" ButtonContainerCssClass="flex-none border-b border-b-gray-600 pb-2 flex flex-row justify-around gap-1" ContentContainerCssClass="min-h-0 flex-1 mt-2 overflow-y-auto scrollbar-hide">
+                <Buttons>
+                    <TabButton TabId="Friends" class="flex-1 x-3 py-1 text-white bg-transparent hover:bg-gray-400/40 active:bg-gray-700/40 rounded-lg cursor-pointer" ActiveCssClass="bg-gray-600/70! cursor-default!">Friends</TabButton>
+                    <TabButton TabId="Communities" class="flex-1 px-3 py-1 text-white bg-transparent hover:bg-gray-400/40 active:bg-gray-700/40 rounded-lg cursor-pointer" ActiveCssClass="bg-gray-600/70! cursor-default!">Communities</TabButton>
+                </Buttons>
+
+                <Contents>
+                    <TabContent TabId="Friends" RenderStrategy="RenderStrategy.Conditional" class="size-full overflow-y-auto scrollbar-hide">
+                        <Virtualize ItemsProvider="EngagedFriendProvider">
+                            <ItemContent Context="item">
+                                <UserCard DisplayName="@item.DisplayName"
+                                          UserName="@item.UserName"
+                                          UserId="@item.UserId"
+                                          AvatarSrc="@(string.IsNullOrEmpty(item.AvatarPath) ? null : ContentService.GetAssetPath(item.AvatarPath))"
+                                          class="h-10"
+                                          OnClick="EventUtils.AsNonRenderingEventHandler<UserCard>(OpenMemberProfileModal)"/>
+                            </ItemContent>
+                        
+                            <EmptyContent>
+                                <div class="size-full flex justify-center items-center">
+                                    <p class="text-gray-400 text-sm">No friend :(</p>
+                                </div>
+                            </EmptyContent>
+                        </Virtualize>
+                    </TabContent>
+
+                    <TabContent TabId="Communities" RenderStrategy="RenderStrategy.Conditional" class="size-full">
+                        <Virtualize ItemsProvider="EngagedCommunityProvider">
+                            <ItemContent Context="item">
+                                <CommunityCard Name="@item.Name"
+                                               CommunityId="@item.CommunityId"
+                                               AvatarSrc="@(string.IsNullOrEmpty(item.AvatarPath) ? null : ContentService.GetAssetPath(item.AvatarPath))"
+                                               class="h-10"/>
+                            </ItemContent>
+                        
+                            <EmptyContent>
+                                <div class="size-full flex justify-center items-center">
+                                    <p class="text-gray-400 text-sm">No friend :(</p>
+                                </div>
+                            </EmptyContent>
+                        </Virtualize>
+                    </TabContent>
+                </Contents>
+            </TabContainer>
+        </div>
+    </section>
+                            
+    <section class="flex-none md:flex-1 border border-gray-600 rounded-lg bg-gray-725 shadow-md overflow-y-auto scrollbar-hide p-2">
+        <header class="text-xl font-semibold">Extra Information</header>
+                                
+        <section class="mt-2">
+            <p class="break-after-all wrap-anywhere"><span class="font-bold">User ID</span>: @InspectingUserId</p>
+                                    
+            @if (InspectingMemberId is { } memberId) {
+                <p class="break-after-all wrap-anywhere"><span class="font-bold">Member ID</span>: @memberId</p>
+            }
+        </section>
+    </section>
+</CardContent>
+
+@code {
+    [Parameter, EditorRequired] public required Guid InspectingUserId { get; set; }
+    [Parameter] public Guid? InspectingMemberId { get; set; }
+    
+    private string _engagementActiveTabId = "Friends";
+    
+    private void SetEngagementActiveTabId(string value) {
+        _engagementActiveTabId = value;
+    }
+
+    private async ValueTask<ItemsProviderResult<UserDisplayDTO>> EngagedFriendProvider(ItemsProviderRequest request) {
+        await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        var query = dbContext.FriendRequests
+            .Where(r => r.Status == FriendRequestStatus.Accepted && (r.SenderId == InspectingUserId || r.ReceiverId == InspectingUserId));
+        
+        var totalCount = await query.CountAsync();
+
+        if (totalCount == 0) {
+            return new([], 0);
+        }
+
+        var page = await query
+            .Join(
+                dbContext.Users,
+                r => r.SenderId == InspectingUserId ? r.ReceiverId : r.SenderId,
+                user => user.Id,
+                (r, user) => user
+            )
+            .OrderBy(u => u.DisplayName)
+            .Skip(request.StartIndex)
+            .Take(request.Count)
+            .Select(u => new UserDisplayDTO(u.Id, u.DisplayName, u.UserName, u.AvatarProfilePath))
+            .ToListAsync();
+
+        return new(page, totalCount);
+    }
+    
+    private async ValueTask<ItemsProviderResult<CommunityDisplayDTO>> EngagedCommunityProvider(ItemsProviderRequest request) {
+        await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        var query = dbContext.CommunityMembers
+            .Where(r => r.UserId == InspectingUserId);
+        
+        var totalCount = await query.CountAsync();
+
+        if (totalCount == 0) {
+            return new([], 0);
+        }
+
+        var page = await query
+            .OrderBy(m => m.CreatedAt)
+            .Include(m => m.Community)
+            .Skip(request.StartIndex)
+            .Take(request.Count)
+            .Select(m => m.Community)
+            .Select(m => new CommunityDisplayDTO(m.Id, m.Name, m.AvatarPath))
+            .ToListAsync();
+
+        return new(page, totalCount);
+    }
+    
+    private void OpenMemberProfileModal(UserCard userCard) {
+        ModalService.Open<UserProfileModal>(parameters: new Dictionary<string, object?> {
+            [nameof(UserProfileModal.InspectingUserId)] = userCard.UserId,
+            [nameof(UserProfileModal.InspectingMemberId)] = userCard.MemberId,
+        });
+    }
+
+    private readonly record struct CommunityDisplayDTO(Guid CommunityId, string Name, string? AvatarPath);
+}

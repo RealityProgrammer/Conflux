@@ -11,7 +11,8 @@ public sealed partial class FriendshipService(
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     IFriendshipEventDispatcher eventDispatcher,
     ILogger<FriendshipService> logger
-) : IFriendshipService {
+) : IFriendshipService
+{
     public async Task<IFriendshipService.SendingResult> SendFriendRequestAsync(Guid senderId, Guid receiverId) {
         if (senderId == receiverId) {
             return new(IFriendshipService.SendingStatus.Failed, null);

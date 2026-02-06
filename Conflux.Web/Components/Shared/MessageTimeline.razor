@@ -566,8 +566,8 @@
         }
 
         ModalService.Open<UserProfileModal>(parameters: new Dictionary<string, object?> {
-            [nameof(UserProfileModal.UserId)] = userId,
-            [nameof(UserProfileModal.MemberId)] = memberId,
+            [nameof(UserProfileModal.InspectingUserId)] = userId,
+            [nameof(UserProfileModal.InspectingMemberId)] = memberId,
         });
     }
 

@@ -55,8 +55,8 @@
 
     private void HandleUserCardClick(UserCard card) {
         ModalService.Open<UserProfileModal>(parameters: new Dictionary<string, object?> {
-            [nameof(UserProfileModal.UserId)] = card.UserId,
-            [nameof(UserProfileModal.MemberId)] = null,
+            [nameof(UserProfileModal.InspectingUserId)] = card.UserId,
+            [nameof(UserProfileModal.InspectingMemberId)] = null,
         });
     }
 

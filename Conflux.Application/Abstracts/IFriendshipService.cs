@@ -1,4 +1,6 @@
-﻿namespace Conflux.Application.Abstracts;
+﻿using Conflux.Domain.Entities;
+
+namespace Conflux.Application.Abstracts;
 
 public interface IFriendshipService {
     Task<SendingResult> SendFriendRequestAsync(Guid senderId, Guid receiverId);
