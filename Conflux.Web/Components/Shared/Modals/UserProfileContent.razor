@@ -251,7 +251,7 @@
             _userProfile = await dbContext.Users
                 .Where(u => u.Id == InspectingUserId)
                 .Select(u => new UserProfileDTO(u.DisplayName, u.UserName!, null, u.AvatarProfilePath, u.Bio, u.Pronouns, DateOnly.FromDateTime(u.CreatedAt), null, null, FriendRequestAction.Add, null))
-                .FirstAsync();
+                .SingleAsync();
 
             var friendRequestData = await dbContext.FriendRequests
                 .Where(r => (r.SenderId == SessionUserId && r.ReceiverId == InspectingUserId) || (r.SenderId == InspectingUserId && r.ReceiverId == SessionUserId))

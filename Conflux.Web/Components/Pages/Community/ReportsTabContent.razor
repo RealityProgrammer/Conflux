@@ -105,13 +105,17 @@
             <ChildContent>
                 <div class="block lg:flex lg:flex-row lg:gap-2 mt-2">
                     <section class="lg:flex-1 h-128 border border-gray-600 rounded-md overflow-y-auto p-1 scrollbar-hide overscroll-y-contain">
+                        @{ Guid selectedMemberId = _selectedMemberInfo?.MemberId ?? Guid.Empty; }
+                        
                         <Virtualize ItemsProvider="GetReportedMembers">
                             <ItemContent Context="item">
+                                @{ string cssClass = item.MemberId == selectedMemberId ? "h-10 bg-white/8" : "h-10"; }
+
                                 <UserCard AvatarSrc="@(string.IsNullOrEmpty(item.AvatarPath) ? null : ContentService.GetAssetPath(item.AvatarPath))"
                                           DisplayName="@item.DisplayName"
                                           UserId="@item.UserId"
                                           MemberId="@item.MemberId"
-                                          class="h-10"
+                                          class="@cssClass"
                                           OnClick="HandleReportedMemberSelection"/>
                             </ItemContent>
                         </Virtualize>

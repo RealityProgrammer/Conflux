@@ -4,12 +4,14 @@ using Conflux.Domain;
 using Conflux.Domain.Entities;
 using Conflux.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Conflux.Application.Implementations;
 
 public class ReportService(
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
-    ICommunityService communityService
+    ICommunityService communityService,
+    ILogger<ReportService> logger
 ) : IReportService {
     public async Task<bool> ReportMessageAsync(Guid messageId, string? extraMessage, ReportReasons[] reasons, Guid reporterUserId) {
         if (reasons.Length == 0) {
@@ -64,27 +66,55 @@ public class ReportService(
                 ThisYear: g.Count(x => x.CreatedAt >= startOfYear),
                 Resolved: g.Count(x => x.Status != ReportStatus.InProgress)
             ))
-            .FirstOrDefaultAsync();
+            .SingleOrDefaultAsync();
 
         return statistics;
+    }
+
+    public async Task<(int Count, List<UserDisplayDTO> Page)> PaginateReportedUsersAsync(int startIndex, int count) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        var reportedUserIds = dbContext.MessageReports
+            .Include(r => r.Message)
+            .ThenInclude(m => m.Conversation)
+            .Where(r => r.Message.Conversation.CommunityChannelId == null)
+            .Select(r => r.Message.SenderId)
+            .Distinct();
+
+        int reportedUsersCount = await reportedUserIds.CountAsync();
+
+        if (reportedUsersCount == 0) {
+            return (0, []);
+        }
+
+        var users = await reportedUserIds
+            .Join(dbContext.Users, id => id, user => user.Id, (id, user) => user)
+            .OrderBy(u => u.DisplayName)
+            .Skip(startIndex)
+            .Take(count)
+            .Select(u => new UserDisplayDTO(u.Id, u.DisplayName, u.UserName, u.AvatarProfilePath))
+            .ToListAsync();
+
+        return (reportedUsersCount, users);
     }
 
     public async Task<(int Count, List<MemberDisplayDTO> Page)> PaginateReportedMembersAsync(Guid communityId, int startIndex, int count) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
-        var reportedUsers = QueryMessageReportsFromCommunity(dbContext, communityId)
+        var reportedMemberIds = QueryMessageReportsFromCommunity(dbContext, communityId)
             .Select(r => r.Message.SenderId)
             .Distinct();
         
-        int reportedUsersCount = await reportedUsers.CountAsync();
+        int reportedMembersCount = await reportedMemberIds.CountAsync();
 
-        if (reportedUsersCount == 0) {
+        if (reportedMembersCount == 0) {
             return (0, []);
         }
 
-        var members = await dbContext.CommunityMembers
-            .Where(member => reportedUsers.Contains(member.UserId))
+        var members = await reportedMemberIds
+            .Join(dbContext.CommunityMembers, id => id, member => member.Id, (id, member) => member)
             .Include(member => member.User)
             .OrderBy(member => member.User.DisplayName)
             .Skip(startIndex)
@@ -92,7 +122,7 @@ public class ReportService(
             .Select(member => new MemberDisplayDTO(member.Id, member.User.Id, member.User.DisplayName, member.User.AvatarProfilePath))
             .ToListAsync();
 
-        return (reportedUsersCount, members);
+        return (reportedMembersCount, members);
     }
 
     public async Task<MemberReportStatistics?> GetMemberReportStatisticsAsync(Guid communityId, Guid memberId) {
@@ -115,7 +145,7 @@ public class ReportService(
                 TotalReportCount: g.Count(),
                 ResolvedReportCount: g.Count(r => r.Status != ReportStatus.InProgress)
             ))
-            .FirstOrDefaultAsync();
+            .SingleOrDefaultAsync();
 
         return stats;
     }
@@ -192,7 +222,7 @@ public class ReportService(
                         }),
                 }
             )
-            .FirstOrDefaultAsync();
+            .SingleOrDefaultAsync();
 
         if (result == null) {
             return null;

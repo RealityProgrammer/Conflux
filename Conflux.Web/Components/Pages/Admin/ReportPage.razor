@@ -1,6 +1,172 @@
 ﻿@page "/admin/reports"
+@using Conflux.Application.Dto
 
-<header class="flex-none ml-2">
-    <h1 class="text-xl font-bold">Reports</h1>
-    <p class="text-sm text-gray-400">The naughty list</p>
-</header>
+@inject IStatisticsService StatisticsService
+@inject IReportService ReportService
+@inject IContentService ContentService
+
+<h1 class="text-2xl font-semibold">Report Management</h1>
+
+<h2 class="text-lg mt-2">Report metrics</h2>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2 mt-2">
+    <Card class="border border-gray-600 shadow-md">
+        <CardHeader Title="Total"/>
+        
+        <CardContent>
+            @if (_isLoading) {
+                <p class="text-right text-lg animate-pulse select-none">Loading...</p>
+            } else {
+                <p class="text-right text-xl">@_reportStatistics.TotalReportCount</p>
+            }
+        </CardContent>
+    </Card>
+    
+    <Card class="border border-gray-600 shadow-md">
+        <CardHeader Title="Unresolved"/>
+        
+        <CardContent>
+            @if (_isLoading) {
+                <p class="text-right text-lg animate-pulse select-none">Loading...</p>
+            } else {
+                <p class="text-right text-xl">@_reportStatistics.UnresolvedReportCount</p>
+            }
+        </CardContent>
+    </Card>
+</div>
+
+<h2 class="text-lg mt-2">Reports</h2>
+
+<div class="mt-2 grid grid-cols-1 lg:grid-cols-4 gap-1 h-auto lg:h-192 lg:max-h-192">
+    <div class="flex flex-col gap-1 overflow-y-hidden h-160 lg:h-full">
+        <section class="flex-1 flex flex-col overflow-y-hidden">
+            <header class="flex-none">Reported Users</header>
+            
+            <div class="flex-1 border border-gray-600 rounded-md bg-gray-725 mt-1 p-1 overflow-y-auto scrollbar-hide h-full flex flex-col overscroll-y-auto">
+                <Virtualize ItemsProvider="ReportedUsersProvider">
+                    <ItemContent Context="item">
+                        <UserCard UserId="item.UserId"
+                                  MemberId="@null"
+                                  DisplayName="@item.DisplayName"
+                                  UserName="@item.UserName"
+                                  AvatarSrc="@(string.IsNullOrEmpty(item.AvatarPath) ? null : ContentService.GetAssetPath(item.AvatarPath))"
+                                  class="h-10"
+                                  OnClick="() => SelectReportedUser(item.UserId)"/>
+                    </ItemContent>
+                </Virtualize>
+            </div>
+        </section>
+        
+        <section class="flex-1 flex flex-col overflow-y-hidden">
+            <header class="flex-none">Reported Messages</header>
+            
+            <div class="flex-1 border border-gray-600 rounded-md bg-gray-725 mt-1 p-1 overflow-y-auto scrollbar-hide h-full flex flex-col gap-1 overscroll-y-auto">
+                @if (_selectedReportedUserId == null) {
+                    <div class="size-full flex justify-center items-center">
+                        <p class="text-gray-400 text-sm">Select an user to see their reported messages</p>
+                    </div>
+                } else {
+                    <Virtualize ItemsProvider="ReportedMessagesProvider">
+                        <ItemContent Context="item">
+                            
+                        </ItemContent>
+                        
+                        <EmptyContent>
+                            <div class="size-full flex justify-center items-center">
+                                <p class="text-gray-400 text-sm">Nothing here</p>
+                            </div>
+                        </EmptyContent>
+                    </Virtualize>
+                }
+            </div>
+        </section>
+        
+        <section class="flex-1 flex flex-col overflow-y-hidden">
+            <header class="flex-none">Reports</header>
+            
+            <div class="flex-1 border border-gray-600 rounded-md bg-gray-725 mt-1 p-1 overflow-y-auto scrollbar-hide h-full flex flex-col gap-1 overscroll-y-auto">
+                @if (_selectedReportedUserId == null) {
+                    <div class="size-full flex justify-center items-center">
+                        <p class="text-gray-400 text-sm">Select a message to see it's report entries</p>
+                    </div>
+                } else {
+                    <Virtualize ItemsProvider="ReportsProvider">
+                        <ItemContent Context="item">
+                            
+                        </ItemContent>
+                        
+                        <EmptyContent>
+                            <div class="size-full flex justify-center items-center">
+                                <p class="text-gray-400 text-sm">Nothing here</p>
+                            </div>
+                        </EmptyContent>
+                    </Virtualize>
+                }
+            </div>
+        </section>
+    </div>
+    
+    <div class="col-span-1 lg:col-span-3 flex flex-col overflow-y-hidden h-128 lg:h-full">
+        <header class="flex-none">Details</header>
+        
+        <div class="flex-1 border border-gray-600 rounded-md bg-gray-725 mt-1 p-1 overflow-y-auto scrollbar-hide overscroll-y-auto">
+            @if (_selectedReportedUserId is { } selectedReportedUserId) {
+                <p>@selectedReportedUserId</p>
+            }
+            
+            @if (_selectedReportedMessageId is { } selectedReportedMessageId) {
+                <p>@selectedReportedMessageId</p>
+            }
+            
+            @if (_selectedReportId is { } selectedReportId) {
+                <p>selectedReportId</p>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool _isLoading = true;
+    private ReportStatisticsDTO _reportStatistics;
+
+    private Guid? _selectedReportedUserId;
+    private Guid? _selectedReportedMessageId;
+    private Guid? _selectedReportId;
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            _reportStatistics = await StatisticsService.GetReportStatistics();
+            _isLoading = false;
+
+            StateHasChanged();
+        }
+    }
+
+    private async ValueTask<ItemsProviderResult<UserDisplayDTO>> ReportedUsersProvider(ItemsProviderRequest request) {
+        (var count, var page) = await ReportService.PaginateReportedUsersAsync(request.StartIndex, request.Count);
+
+        return new(page, count);
+    }
+
+    private void SelectReportedUser(Guid id) {
+        _selectedReportedUserId = id;
+        _selectedReportedMessageId = _selectedReportId = null;
+    }
+    
+    private async ValueTask<ItemsProviderResult<Guid>> ReportedMessagesProvider(ItemsProviderRequest request) {
+        return new([], 0);
+    }
+
+    private void SelectReportedMessage(Guid id) {
+        _selectedReportedMessageId = id;
+        _selectedReportId = null;
+    }
+
+    private async ValueTask<ItemsProviderResult<Guid>> ReportsProvider(ItemsProviderRequest request) {
+        return new([], 0);
+    }
+
+    private void SelectReport(Guid id) {
+        _selectedReportId = id;
+    }
+}
