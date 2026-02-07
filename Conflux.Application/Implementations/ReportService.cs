@@ -150,7 +150,7 @@ public class ReportService(
         return stats;
     }
 
-    public async Task<List<ReportedMessageDTO>> GetMemberReportedMessagesAsync(Guid memberId) {
+    public async Task<List<Guid>> GetMemberReportedMessageIdentitiesAsync(Guid memberId) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
@@ -158,7 +158,7 @@ public class ReportService(
             .Where(member => member.Id == memberId)
             .Select(member => new { member.UserId, member.CommunityId })
             .FirstOrDefaultAsync();
-
+        
         if (extractedIds == null) {
             return [];
         }
@@ -166,16 +166,21 @@ public class ReportService(
         var reports = await QueryMessageReportsFromCommunity(dbContext, extractedIds.CommunityId)
             .Include(r => r.Message)
             .Where(r => r.Message.SenderId == extractedIds.UserId)
-            .Select(r => new ReportedMessageDTO() {
-                CreatedAt = r.CreatedAt,
-                Id = r.Id,
-                MessageId = r.MessageId,
-            })
-            .GroupBy(r => r.MessageId)
-            .Select(g => new { g.Key, Candidate = g.OrderByDescending(x => x.CreatedAt).FirstOrDefault() })
+            .Select(r => r.MessageId)
+            .OrderBy(g => g)
             .ToListAsync();
-        
-        return reports.Select(r => r.Candidate).OrderByDescending(c => c.CreatedAt).ToList();
+
+        return reports;
+    }
+
+    public async Task<List<Guid>> GetUserReportedMessageIdentitiesAsync(Guid userId) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        return await dbContext.MessageReports
+            .Where(m => m.Message.Conversation.CommunityChannelId == null && m.Message.SenderId == userId)
+            .Select(r => r.MessageId)
+            .ToListAsync();
     }
 
     public async Task<List<MessageReport>> GetMessageReportsAsync(Guid messageId) {
@@ -319,7 +324,8 @@ public class ReportService(
     }
 
     private static IQueryable<MessageReport> QueryMessageReportsFromCommunity(ApplicationDbContext context, Guid communityId) {
-        return context.MessageReports.Include(r => r.Message)
+        return context.MessageReports
+            .Include(r => r.Message)
             .ThenInclude(m => m.Conversation)
             .ThenInclude(c => c.CommunityChannel!)
             .ThenInclude(c => c.ChannelCategory)

@@ -30,9 +30,9 @@
                             <section class="flex-1 border border-gray-600 rounded-md mt-1 p-1 overflow-y-auto scrollbar-hide h-full flex flex-col gap-1">
                                 @{ Guid selectedMessageId = _selectedMessageId ?? Guid.Empty; }
                                 
-                                @foreach (var message in _reportedMessages!) {
-                                    <button class="p-2 button-nav-menu @(message.MessageId == selectedMessageId ? "bg-white/8" : string.Empty)" @onclick="() => SelectMessage(message.MessageId)">
-                                        <p class="text-center w-full text-sm">@message.MessageId</p>
+                                @foreach (var messageId in _reportedMessageIds!) {
+                                    <button class="p-2 button-nav-menu @(messageId == selectedMessageId ? "bg-white/8" : string.Empty)" @onclick="() => SelectMessage(messageId)">
+                                        <p class="text-center w-full text-sm">@messageId</p>
                                     </button>
                                 }
                             </section>
@@ -261,7 +261,7 @@
     [Parameter, EditorRequired] public required RolePermissions Permissions { get; set; }
     
     private bool _isLoading = true;
-    private List<ReportedMessageDTO>? _reportedMessages;
+    private List<Guid>? _reportedMessageIds;
     private MemberReportStatistics _memberStats;
 
     private List<MessageReport>? _messageReports;
@@ -277,7 +277,7 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
-            _reportedMessages = await ReportService.GetMemberReportedMessagesAsync(ReportedMemberId);
+            _reportedMessageIds = await ReportService.GetMemberReportedMessageIdentitiesAsync(ReportedMemberId);
             _memberStats = (await ReportService.GetMemberReportStatisticsAsync(ReportedMemberId))!.Value;
             
             _isLoading = false;

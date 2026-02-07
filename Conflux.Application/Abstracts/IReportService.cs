@@ -11,7 +11,8 @@ public interface IReportService {
     
     Task<MemberReportStatistics?> GetMemberReportStatisticsAsync(Guid memberId);
     
-    Task<List<ReportedMessageDTO>> GetMemberReportedMessagesAsync(Guid memberId);
+    Task<List<Guid>> GetMemberReportedMessageIdentitiesAsync(Guid memberId);
+    Task<List<Guid>> GetUserReportedMessageIdentitiesAsync(Guid userId);
 
     Task<List<MessageReport>> GetMessageReportsAsync(Guid messageId);
     
