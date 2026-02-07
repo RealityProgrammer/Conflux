@@ -9,9 +9,9 @@ public interface IReportService {
 
     Task<ReportCountStatistics?> GetReportCountStatisticsAsync(Guid communityId);
     
-    Task<MemberReportStatistics?> GetMemberReportStatisticsAsync(Guid communityId, Guid memberId);
+    Task<MemberReportStatistics?> GetMemberReportStatisticsAsync(Guid memberId);
     
-    Task<List<ReportedMessageDTO>> GetMemberReportedMessagesAsync(Guid communityId, Guid memberId);
+    Task<List<ReportedMessageDTO>> GetMemberReportedMessagesAsync(Guid memberId);
 
     Task<List<MessageReport>> GetMessageReportsAsync(Guid messageId);
     

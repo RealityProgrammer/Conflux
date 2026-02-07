@@ -277,8 +277,8 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
-            _reportedMessages = await ReportService.GetMemberReportedMessagesAsync(CommunityId, ReportedMemberId);
-            _memberStats = (await ReportService.GetMemberReportStatisticsAsync(CommunityId, ReportedMemberId))!.Value;
+            _reportedMessages = await ReportService.GetMemberReportedMessagesAsync(ReportedMemberId);
+            _memberStats = (await ReportService.GetMemberReportStatisticsAsync(ReportedMemberId))!.Value;
             
             _isLoading = false;
             StateHasChanged();

@@ -225,7 +225,7 @@
 
     private async Task HandleReportedMemberSelection(UserCard card) {
         _selectedMemberInfo = new(card.MemberId!.Value, card.UserId);
-        _selectedMemberStatistics = await ReportService.GetMemberReportStatisticsAsync(CommunityId, card.MemberId!.Value);
+        _selectedMemberStatistics = await ReportService.GetMemberReportStatisticsAsync(card.MemberId!.Value);
     }
 
     private void OpenReportManagementModal() {

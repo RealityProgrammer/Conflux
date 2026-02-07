@@ -125,21 +125,21 @@ public class ReportService(
         return (reportedMembersCount, members);
     }
 
-    public async Task<MemberReportStatistics?> GetMemberReportStatisticsAsync(Guid communityId, Guid memberId) {
+    public async Task<MemberReportStatistics?> GetMemberReportStatisticsAsync(Guid memberId) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
-        var userId = await dbContext.CommunityMembers
-            .Where(member => member.Id == memberId && member.CommunityId == communityId)
-            .Select(member => member.UserId)
+        var extractedIds = await dbContext.CommunityMembers
+            .Where(member => member.Id == memberId)
+            .Select(member => new { member.UserId, member.CommunityId })
             .FirstOrDefaultAsync();
 
-        if (userId == Guid.Empty) {
+        if (extractedIds == null) {
             return null;
         }
 
         var stats = await dbContext.MessageReports
-            .Where(r => r.Message.SenderId == userId && r.Message.Conversation.CommunityChannel!.ChannelCategory.CommunityId == communityId)
+            .Where(r => r.Message.SenderId == extractedIds.UserId && r.Message.Conversation.CommunityChannel!.ChannelCategory.CommunityId == extractedIds.CommunityId)
             .GroupBy(r => 1)
             .Select(g => new MemberReportStatistics(
                 TotalReportCount: g.Count(),
@@ -150,36 +150,22 @@ public class ReportService(
         return stats;
     }
 
-    public async Task<List<ReportedMessageDTO>> GetMemberReportedMessagesAsync(Guid communityId, Guid memberId) {
+    public async Task<List<ReportedMessageDTO>> GetMemberReportedMessagesAsync(Guid memberId) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
-        var userId = await dbContext.CommunityMembers
-            .Where(member => member.Id == memberId && member.CommunityId == communityId)
-            .Select(member => member.UserId)
+        var extractedIds = await dbContext.CommunityMembers
+            .Where(member => member.Id == memberId)
+            .Select(member => new { member.UserId, member.CommunityId })
             .FirstOrDefaultAsync();
 
-        if (userId == Guid.Empty) {
+        if (extractedIds == null) {
             return [];
         }
-        
-        // This cannot be compiled by EntityFramework for some reason...
-        // var reports = await QueryMessageReportsFromCommunity(dbContext, communityId)
-        //     .Where(r => r.MessageSenderId == userId)
-        //     .Select(r => new MessageReportListingElementDTO {
-        //         CreatedAt = r.CreatedAt,
-        //         Id = r.Id,
-        //         MessageId = r.MessageId,
-        //     })
-        //     .GroupBy(r => r.MessageId, (_, g) => g.OrderByDescending(x => x.CreatedAt).First())
-        //     .OrderByDescending(c => c.CreatedAt)
-        //     .ToListAsync();
-        //
-        // return reports;
 
-        var reports = await QueryMessageReportsFromCommunity(dbContext, communityId)
+        var reports = await QueryMessageReportsFromCommunity(dbContext, extractedIds.CommunityId)
             .Include(r => r.Message)
-            .Where(r => r.Message.SenderId == userId)
+            .Where(r => r.Message.SenderId == extractedIds.UserId)
             .Select(r => new ReportedMessageDTO() {
                 CreatedAt = r.CreatedAt,
                 Id = r.Id,
