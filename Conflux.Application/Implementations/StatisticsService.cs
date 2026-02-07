@@ -34,4 +34,70 @@ public sealed class StatisticsService(
             .Select(g => new ReportStatisticsDTO(g.Count(), g.Count(r => r.Status != ReportStatus.InProgress)))
             .SingleAsync();
     }
+    
+    public async Task<ReportCountStatistics?> GetReportCountStatisticsAsync(Guid communityId) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+        
+        var now = DateTime.UtcNow;
+        var today = now.Date;
+        var startOfMonth = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var startOfYear = new DateTime(now.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        var statistics = await dbContext.MessageReports
+            .Where(c => c.Message.Conversation.CommunityChannel!.ChannelCategory.CommunityId == communityId)
+            .Select(r => new { r.CreatedAt, r.Status })
+            .GroupBy(r => 1)
+            .Select(g => new ReportCountStatistics(
+                Total: g.Count(),
+                Today: g.Count(x => x.CreatedAt >= today),
+                ThisMonth: g.Count(x => x.CreatedAt >= startOfMonth),
+                ThisYear: g.Count(x => x.CreatedAt >= startOfYear),
+                Resolved: g.Count(x => x.Status != ReportStatus.InProgress)
+            ))
+            .SingleOrDefaultAsync();
+
+        return statistics;
+    }
+    
+    public async Task<UserReportStatistics?> GetUserReportStatistics(Guid userId) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        var stats = await dbContext.MessageReports
+            .Where(r => r.Message.SenderId == userId && r.Message.Conversation.CommunityChannelId == null)
+            .GroupBy(r => 1)
+            .Select(g => new UserReportStatistics(
+                TotalReportCount: g.Count(),
+                ResolvedReportCount: g.Count(r => r.Status != ReportStatus.InProgress)
+            ))
+            .SingleOrDefaultAsync();
+
+        return stats;
+    }
+
+    public async Task<UserReportStatistics?> GetMemberReportStatisticsAsync(Guid memberId) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        var extractedIds = await dbContext.CommunityMembers
+            .Where(member => member.Id == memberId)
+            .Select(member => new { member.UserId, member.CommunityId })
+            .FirstOrDefaultAsync();
+
+        if (extractedIds == null) {
+            return null;
+        }
+
+        var stats = await dbContext.MessageReports
+            .Where(r => r.Message.SenderId == extractedIds.UserId && r.Message.Conversation.CommunityChannel!.ChannelCategory.CommunityId == extractedIds.CommunityId)
+            .GroupBy(r => 1)
+            .Select(g => new UserReportStatistics(
+                TotalReportCount: g.Count(),
+                ResolvedReportCount: g.Count(r => r.Status != ReportStatus.InProgress)
+            ))
+            .SingleOrDefaultAsync();
+
+        return stats;
+    }
 }

@@ -6,6 +6,7 @@
 @inject IReportService ReportService
 @inject IContentService ContentService
 @inject ModalService ModalService
+@inject IStatisticsService StatisticsService
 
 <div class="flex flex-col h-full gap-1 overflow-y-auto">
     <header class="flex-none ml-2">
@@ -127,13 +128,7 @@
                                 <p class="text-sm text-gray-400">Select a User to view their history.</p>
                             </div>
                         } else {
-                            if (_selectedMemberStatistics == null) {
-                                <div class="size-full flex flex-row justify-center items-center">
-                                    <p class="text-sm text-gray-400">Failed to fetch member report history.</p>
-                                </div>
-                            } else {
-                                var memberStats = _selectedMemberStatistics.Value;
-
+                            if (_selectedMemberReportStatistics is { } memberStats) {
                                 <h1 class="text-2xl font-bold">Report Information</h1>
                                 
                                 <section class="mt-2">
@@ -166,13 +161,13 @@
                                     </div>
                                 </section>
                                 
-                                <section class="mt-2">
-                                    <h2 class="text-xl font-semibold">Reported Messages</h2>
-                                    
-                                    <div class="mt-2 flex flex-row justify-center items-center">
-                                        <button class="button-primary" @onclick="EventUtils.AsNonRenderingEventHandler(OpenReportManagementModal)">Open Report Management</button>
-                                    </div>
-                                </section>
+                                <div class="mt-4 flex flex-row justify-center items-center">
+                                    <button class="button-primary" @onclick="EventUtils.AsNonRenderingEventHandler(OpenReportManagementModal)">Open Report Management</button>
+                                </div>
+                            } else {
+                                <div class="size-full flex flex-row justify-center items-center">
+                                    <p class="text-sm text-gray-400">Failed to fetch member report history.</p>
+                                </div>
                             }
                         }
                     </section>
@@ -192,7 +187,7 @@
     private bool _reportsCollapsible;
 
     private SelectedMemberInfo? _selectedMemberInfo;
-    private MemberReportStatistics? _selectedMemberStatistics;
+    private UserReportStatistics? _selectedMemberReportStatistics;
     
     [CascadingParameter] private MemberInformationDTO? MemberInformation { get; set; }
     private MemberInformationDTO _memberInformation;
@@ -207,7 +202,7 @@
 
     private async Task SetStatisticsCollapsible(bool value) {
         if (value && _countStatistics == null) {
-            _countStatistics = await ReportService.GetReportCountStatisticsAsync(CommunityId);
+            _countStatistics = await StatisticsService.GetReportCountStatisticsAsync(CommunityId);
         }
 
         _statisticCollapsible = value;
@@ -225,7 +220,7 @@
 
     private async Task HandleReportedMemberSelection(UserCard card) {
         _selectedMemberInfo = new(card.MemberId!.Value, card.UserId);
-        _selectedMemberStatistics = await ReportService.GetMemberReportStatisticsAsync(card.MemberId!.Value);
+        _selectedMemberReportStatistics = await StatisticsService.GetMemberReportStatisticsAsync(card.MemberId!.Value);
     }
 
     private void OpenReportManagementModal() {

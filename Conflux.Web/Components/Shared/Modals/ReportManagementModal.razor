@@ -11,6 +11,7 @@
 @inject IConversationService ConversationService
 @inject ICommunityService CommunityService
 @inject IContentService ContentService
+@inject IStatisticsService StatisticsService
 
 <div class="flex flex-row justify-center items-center size-full text-white">
     <Card class="absolute inset-0 rounded-none! lg:inset-6 lg:rounded-xl!">
@@ -262,7 +263,7 @@
     
     private bool _isLoading = true;
     private List<Guid>? _reportedMessageIds;
-    private MemberReportStatistics _memberStats;
+    private UserReportStatistics _memberStats;
 
     private List<MessageReport>? _messageReports;
 
@@ -278,7 +279,7 @@
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
             _reportedMessageIds = await ReportService.GetMemberReportedMessageIdentitiesAsync(ReportedMemberId);
-            _memberStats = (await ReportService.GetMemberReportStatisticsAsync(ReportedMemberId))!.Value;
+            _memberStats = (await StatisticsService.GetMemberReportStatisticsAsync(ReportedMemberId))!.Value;
             
             _isLoading = false;
             StateHasChanged();
