@@ -1,14 +1,8 @@
 ﻿namespace Conflux.Domain.Entities;
 
-public enum ConversationType {
-    DirectMessage,
-    TextChannel,
-}
-
 public class Conversation : ICreatedAtColumn {
     public Guid Id { get; set; }
     
-    public ConversationType Type { get; set; }
     public DateTime CreatedAt { get; set; }
     
     public DateTime? LatestMessageTime { get; set; }

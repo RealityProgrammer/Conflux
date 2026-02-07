@@ -22,7 +22,7 @@ public sealed class ConversationService(
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
 
         Conversation? conversation = await dbContext.Conversations
-            .Where(c => c.Type == ConversationType.DirectMessage && c.FriendRequestId == friendRequestId)
+            .Where(c => c.FriendRequestId == friendRequestId)
             .FirstOrDefaultAsync();
 
         if (conversation != null) {
@@ -30,7 +30,6 @@ public sealed class ConversationService(
         }
 
         conversation = new() {
-            Type = ConversationType.DirectMessage,
             FriendRequestId = friendRequestId,
             CreatedAt = DateTime.UtcNow,
         };
@@ -97,7 +96,7 @@ public sealed class ConversationService(
             
             // Notify the other user if the conversation is direct conversation.
             Guid? otherUserIdOnDirectConversation = await dbContext.Conversations
-                .Where(c => c.Id == conversationId && c.Type == ConversationType.DirectMessage && c.FriendRequestId != null)
+                .Where(c => c.Id == conversationId && c.FriendRequestId != null)
                 .Include(c => c.FriendRequest!)
                 .Select(c => c.FriendRequest!.SenderId == senderUserId ? c.FriendRequest!.ReceiverId : c.FriendRequest!.SenderId)
                 .Cast<Guid?>()

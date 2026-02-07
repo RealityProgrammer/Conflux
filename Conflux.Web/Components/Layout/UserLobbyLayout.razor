@@ -81,7 +81,7 @@
             dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
             var query = dbContext.Conversations
-                .Where(x => x.Type == ConversationType.DirectMessage && (x.FriendRequest!.SenderId == _userId || x.FriendRequest.ReceiverId == _userId));
+                .Where(x => x.FriendRequestId != null && (x.FriendRequest!.SenderId == _userId || x.FriendRequest.ReceiverId == _userId));
 
             int totalCount = await query.CountAsync();
 

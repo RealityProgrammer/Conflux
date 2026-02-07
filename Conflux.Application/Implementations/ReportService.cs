@@ -102,27 +102,32 @@ public class ReportService(
     public async Task<(int Count, List<MemberDisplayDTO> Page)> PaginateReportedMembersAsync(Guid communityId, int startIndex, int count) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-
-        var reportedMemberIds = QueryMessageReportsFromCommunity(dbContext, communityId)
+        
+        var reportedUserIds = QueryMessageReportsFromCommunity(dbContext, communityId)
             .Select(r => r.Message.SenderId)
             .Distinct();
         
-        int reportedMembersCount = await reportedMemberIds.CountAsync();
-
+        int reportedMembersCount = await reportedUserIds.CountAsync();
+        
         if (reportedMembersCount == 0) {
             return (0, []);
         }
 
-        var members = await reportedMemberIds
-            .Join(dbContext.CommunityMembers, id => id, member => member.Id, (id, member) => member)
-            .Include(member => member.User)
-            .OrderBy(member => member.User.DisplayName)
+        var users = await reportedUserIds
+            .Join(
+                dbContext.CommunityMembers.Where(m => m.CommunityId == communityId), 
+                id => id,
+                member => member.UserId,
+                (id, member) => member
+            )
+            .Include(m => m.User)
+            .OrderBy(m => m.User.DisplayName)
             .Skip(startIndex)
             .Take(count)
-            .Select(member => new MemberDisplayDTO(member.Id, member.User.Id, member.User.DisplayName, member.User.AvatarProfilePath))
+            .Select(m => new MemberDisplayDTO(m.Id, m.UserId, m.User.DisplayName, m.User.AvatarProfilePath))
             .ToListAsync();
 
-        return (reportedMembersCount, members);
+        return (reportedMembersCount, users);
     }
 
     public async Task<MemberReportStatistics?> GetMemberReportStatisticsAsync(Guid memberId) {
@@ -167,6 +172,7 @@ public class ReportService(
             .Include(r => r.Message)
             .Where(r => r.Message.SenderId == extractedIds.UserId)
             .Select(r => r.MessageId)
+            .Distinct()
             .OrderBy(g => g)
             .ToListAsync();
 
