@@ -37,7 +37,7 @@
 
     private IJSObjectReference? _module;
     private IJSObjectReference? _deviceDropdown;
-    private DotNetObjectReference<MediaDeviceSelectionDropdown> _selfReference;
+    private DotNetObjectReference<MediaDeviceSelectionDropdown> _selfReference = null!;
 
     private DeviceInfo[]? _deviceInfos;
     private bool _isPermissionDenied;

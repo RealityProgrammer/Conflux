@@ -18,7 +18,7 @@ internal sealed class CloudflareTurnServerClient(HttpClient httpClient, IConfigu
 
             var content = await response.Content.ReadFromJsonAsync<CloudflareIceServerConfigurationResult>();
             return content?.IceServers ?? [];
-        } catch (HttpRequestException e) {
+        } catch (HttpRequestException) {
             return [];
         }
     }

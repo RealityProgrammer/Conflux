@@ -295,8 +295,8 @@
         _selectedReportDisplay = reportDisplay;
 
         if (CommunityId is { } communityId) {
-            (_reporterMemberId, _reporterUserDisplay) = (await CommunityService.GetMemberDisplayAsync(communityId, reportDisplay.ReporterUserId))!.Value;
-            (_reportResolverMemberId, _reportResolverUserDisplay) = reportDisplay.ResolverUserId is { } resolverId ? (await CommunityService.GetMemberDisplayAsync(communityId, resolverId))!.Value : default;
+            (_reporterMemberId!, _reporterUserDisplay) = (await CommunityService.GetMemberDisplayAsync(communityId, reportDisplay.ReporterUserId))!.Value;
+            (_reportResolverMemberId!, _reportResolverUserDisplay!) = reportDisplay.ResolverUserId is { } resolverId ? (await CommunityService.GetMemberDisplayAsync(communityId, resolverId))!.Value : default;
         } else {
             _reporterUserDisplay = (await UserService.GetUserDisplayAsync(reportDisplay.ReporterUserId))!.Value;
             _reportResolverUserDisplay = reportDisplay.ResolverUserId is { } resolverId ? (await UserService.GetUserDisplayAsync(resolverId))!.Value : null;
@@ -331,7 +331,7 @@
             _selectedReportDisplay = reportDisplay;
 
             if (CommunityId is { } communityId) {
-                (_reportResolverMemberId, _reportResolverUserDisplay) = reportDisplay.ResolverUserId is { } resolverId ? (await CommunityService.GetMemberDisplayAsync(communityId, resolverId))!.Value : default;
+                (_reportResolverMemberId!, _reportResolverUserDisplay!) = reportDisplay.ResolverUserId is { } resolverId ? (await CommunityService.GetMemberDisplayAsync(communityId, resolverId))!.Value : default;
             } else {
                 _reportResolverUserDisplay = reportDisplay.ResolverUserId is { } resolverId ? (await UserService.GetUserDisplayAsync(resolverId))!.Value : null;
             }
@@ -364,7 +364,7 @@
             _selectedReportDisplay = reportDisplay;
             
             if (CommunityId is { } communityId) {
-                (_reportResolverMemberId, _reportResolverUserDisplay) = reportDisplay.ResolverUserId is { } resolverId ? (await CommunityService.GetMemberDisplayAsync(communityId, resolverId))!.Value : default;
+                (_reportResolverMemberId!, _reportResolverUserDisplay!) = reportDisplay.ResolverUserId is { } resolverId ? (await CommunityService.GetMemberDisplayAsync(communityId, resolverId))!.Value : default;
             } else {
                 _reportResolverUserDisplay = reportDisplay.ResolverUserId is { } resolverId ? (await UserService.GetUserDisplayAsync(resolverId))!.Value : null;
             }
@@ -393,7 +393,7 @@
             _selectedReportDisplay = reportDisplay;
             
             if (CommunityId is { } communityId) {
-                (_reportResolverMemberId, _reportResolverUserDisplay) = reportDisplay.ResolverUserId is { } resolverId ? (await CommunityService.GetMemberDisplayAsync(communityId, resolverId))!.Value : default;
+                (_reportResolverMemberId!, _reportResolverUserDisplay!) = reportDisplay.ResolverUserId is { } resolverId ? (await CommunityService.GetMemberDisplayAsync(communityId, resolverId))!.Value : default;
             } else {
                 _reportResolverUserDisplay = reportDisplay.ResolverUserId is { } resolverId ? (await UserService.GetUserDisplayAsync(resolverId))!.Value : null;
             }
