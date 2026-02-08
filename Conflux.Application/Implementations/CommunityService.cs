@@ -207,7 +207,7 @@ public class CommunityService(
             .IncludeBanned()
             .Where(x => x.Id == memberId)
             .Include(x => x.User)
-            .Select(x => new MemberDisplayDTO(x.Id, x.UserId, x.User.DisplayName, x.User.AvatarProfilePath))
+            .Select(x => new MemberDisplayDTO(x.Id, new(x.UserId, x.User.DisplayName, x.User.UserName, x.User.AvatarProfilePath)))
             .Cast<MemberDisplayDTO?>()
             .FirstOrDefaultAsync();
     }
@@ -220,7 +220,7 @@ public class CommunityService(
             .IncludeBanned()
             .Where(x => x.CommunityId == communityId && x.UserId == userId)
             .Include(x => x.User)
-            .Select(x => new MemberDisplayDTO(x.Id, x.UserId, x.User.DisplayName, x.User.AvatarProfilePath))
+            .Select(x => new MemberDisplayDTO(x.Id, new(x.UserId, x.User.DisplayName, x.User.UserName, x.User.AvatarProfilePath)))
             .Cast<MemberDisplayDTO?>()
             .FirstOrDefaultAsync();
     }
@@ -306,7 +306,7 @@ public class CommunityService(
             .Where(m => m.Id == memberId)
             .Include(m => m.Role)
             .Select(m => 
-                new MemberInformationDTO(m.Id, m.Role == null ? 
+                new MemberInformationDTO(m.Id, m.UserId, m.Role == null ? 
                     new RolePermissionsWithId(null, RolePermissions.Default) : 
                     new(m.RoleId, new(m.Role.ChannelPermissions, m.Role.RolePermissions, m.Role.AccessPermissions, m.Role.ManagementPermissions)), m.UnbanAt))
             .Cast<MemberInformationDTO?>()
@@ -322,7 +322,7 @@ public class CommunityService(
             .Where(m => m.CommunityId == communityId && m.UserId == userId)
             .Include(m => m.Role)
             .Select(m => 
-                new MemberInformationDTO(m.Id, m.Role == null ? 
+                new MemberInformationDTO(m.Id, m.UserId, m.Role == null ? 
                     new RolePermissionsWithId(null, RolePermissions.Default) : 
                     new(m.RoleId, new(m.Role.ChannelPermissions, m.Role.RolePermissions, m.Role.AccessPermissions, m.Role.ManagementPermissions)), m.UnbanAt))
             .Cast<MemberInformationDTO?>()

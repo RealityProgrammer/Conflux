@@ -226,9 +226,9 @@
                                         }
 
                                         <div class="p-1 flex flex-row items-center rounded-md @backgroundCssClass">
-                                            <Avatar ImageSrc="@(string.IsNullOrEmpty(item.AvatarPath) ? null : ContentService.GetAssetPath(item.AvatarPath))" ImageAlt="@($"Avatar of {item.DisplayName}")" class="size-9 mr-1"/>
+                                            <Avatar ImageSrc="@(string.IsNullOrEmpty(item.UserDisplay.AvatarPath) ? null : ContentService.GetAssetPath(item.UserDisplay.AvatarPath))" ImageAlt="@($"Avatar of {item.UserDisplay.DisplayName}")" class="size-9 mr-1"/>
 
-                                            <p class="flex-1">@item.DisplayName</p>
+                                            <p class="flex-1">@item.UserDisplay.DisplayName</p>
 
                                             <AuthorizeView Policy="UpdateCommunityMemberRole" Resource="rolePermissions">
                                                 <Authorized>
@@ -273,9 +273,9 @@
                                             <Virtualize ItemsProvider="AddingMembersItemProvider" @ref="_addingMembersVirtualizeReference">
                                                 <ItemContent Context="item">
                                                     <div class="p-1 flex flex-row items-center rounded-md">
-                                                        <Avatar ImageSrc="@(string.IsNullOrEmpty(item.AvatarPath) ? null : ContentService.GetAssetPath(item.AvatarPath))" ImageAlt="@($"Avatar of {item.DisplayName}")" class="size-9 mr-1"/>
+                                                        <Avatar ImageSrc="@(string.IsNullOrEmpty(item.UserDisplay.AvatarPath) ? null : ContentService.GetAssetPath(item.UserDisplay.AvatarPath))" ImageAlt="@($"Avatar of {item.UserDisplay.DisplayName}")" class="size-9 mr-1"/>
 
-                                                        <p class="flex-1">@item.DisplayName</p>
+                                                        <p class="flex-1">@item.UserDisplay.DisplayName</p>
 
                                                         <button type="button" class="p-1.5 bg-transparent hover:bg-white/15 rounded-full cursor-pointer" @onclick="@(_ => RemoveFromAppendingCollection(item.MemberId))">
                                                             <Cross class="flex-none size-4 fill-white" Size="CrossSize.Large"/>
@@ -569,7 +569,7 @@
             .OrderBy(x => x.User.DisplayName)
             .Skip(request.StartIndex)
             .Take(request.Count)
-            .Select(m => new MemberDisplayDTO(m.Id, m.UserId, m.User.DisplayName, m.User.AvatarProfilePath))
+            .Select(m => new MemberDisplayDTO(m.Id, new(m.UserId, m.User.DisplayName, m.User.UserName, m.User.AvatarProfilePath)))
             .ToListAsync();
 
         return new(members, count);
@@ -593,7 +593,7 @@
             .OrderBy(x => x.User.DisplayName)
             .Skip(request.StartIndex)
             .Take(request.Count)
-            .Select(m => new MemberDisplayDTO(m.Id, m.UserId, m.User.DisplayName, m.User.AvatarProfilePath))
+            .Select(m => new MemberDisplayDTO(m.Id, new(m.UserId, m.User.DisplayName, m.User.UserName, m.User.AvatarProfilePath)))
             .ToListAsync();
 
         return new(members, count);

@@ -21,10 +21,11 @@ public interface IReportService {
     Task<(int TotalCount, List<Guid>)> PaginateReportIdsAsync(Guid messageId, int startIndex, int count);
     
     Task<(int Count, List<MemberDisplayDTO> Page)> PaginateReportedMembersAsync(Guid communityId, int startIndex, int count);
-
-    Task<bool> ResolveReportByDismissAsync(Guid reportId, Guid resolverMemberId);
+    Task<(int Count, List<Guid>)> PaginateMemberReportedMessageIdsAsync(Guid memberId, int startIndex, int count);
     
-    Task<bool> ResolveReportByWarningAsync(Guid reportId, Guid resolverMemberId);
+    Task<bool> ResolveReportByDismissAsync(Guid reportId, Guid resolverUserId);
     
-    Task<bool> ResolveReportByBanningAsync(Guid reportId, Guid resolverMemberId, TimeSpan banDuration);
+    Task<bool> ResolveReportByWarningAsync(Guid reportId, Guid resolverUserId);
+    
+    Task<bool> ResolveReportByBanningAsync(Guid reportId, Guid resolverUserId, TimeSpan banDuration);
 }

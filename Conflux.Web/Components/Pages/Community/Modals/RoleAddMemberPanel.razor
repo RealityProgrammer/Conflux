@@ -23,9 +23,9 @@
                     <Virtualize @ref="_virtualize" ItemsProvider="MemberSearchProvider">
                         <ItemContent Context="item">
                             <label class="p-1.5 flex flex-row items-center bg-transparent hover:bg-white/8 rounded-md active:scale-95 transition-transform duration-200 ease-in-out pointer-events-auto group">
-                                <Avatar ImageSrc="@(string.IsNullOrEmpty(item.AvatarPath) ? null : ContentService.GetAssetPath(item.AvatarPath))" ImageAlt="@($"Avatar of {item.DisplayName}")" class="size-9 mr-1"/>
+                                <Avatar ImageSrc="@(string.IsNullOrEmpty(item.UserDisplay.AvatarPath) ? null : ContentService.GetAssetPath(item.UserDisplay.AvatarPath))" ImageAlt="@($"Avatar of {item.UserDisplay.DisplayName}")" class="size-9 mr-1"/>
 
-                                <p class="flex-1">@item.DisplayName</p>
+                                <p class="flex-1">@item.UserDisplay.DisplayName</p>
 
                                 <Check class="flex-none size-5 fill-white hidden group-has-checked:block" Variation="CheckVariation.Large"/>
 
@@ -96,7 +96,7 @@
         var members = await query
             .Include(m => m.User)
             .OrderBy(m => m.User.DisplayName)
-            .Select(m => new MemberDisplayDTO(m.Id, m.UserId, m.User.DisplayName, m.User.AvatarProfilePath))
+            .Select(m => new MemberDisplayDTO(m.Id, new(m.UserId, m.User.DisplayName, m.User.UserName, m.User.AvatarProfilePath)))
             .Skip(request.StartIndex)
             .Take(request.Count)
             .ToListAsync();

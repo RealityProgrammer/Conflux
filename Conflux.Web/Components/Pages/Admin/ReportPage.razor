@@ -3,11 +3,13 @@
 @using Conflux.Web.Components.Shared.Modals
 @using Conflux.Web.Helpers
 @using Conflux.Web.Services.Implementations
+@using System.Security.Claims
 
 @inject IStatisticsService StatisticsService
 @inject IReportService ReportService
 @inject IContentService ContentService
 @inject ModalService ModalService
+@inject IAuthorizationService AuthorizationService
 
 <h1 class="text-2xl font-semibold">Report Management</h1>
 
@@ -217,7 +219,15 @@
 
     private Guid? _selectedReportedUserId;
     private UserReportStatistics? _selectedUserReportStatistics;
-    
+
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; }
+    private Guid _userId;
+
+    protected override async Task OnParametersSetAsync() {
+        var authState = await AuthenticationState;
+        _userId = Guid.Parse(authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
             _reportStatistics = await StatisticsService.GetReportStatistics();
@@ -239,44 +249,20 @@
     }
     
     private void OpenReportManagementModal() {
-        if (_selectedReportedUserId is not { } memberInfo) {
-            return;
+        ModalService.Open<ReportManagementModal>(parameters: new Dictionary<string, object?> {
+            [nameof(ReportManagementModal.CommunityId)] = null,
+            [nameof(ReportManagementModal.ReportedMessageIdsProvider)] = new ItemsProviderDelegate<Guid>(ReportedMessageIdsProvider),
+            [nameof(ReportManagementModal.ResolverUserId)] = _userId,
+        });
+        return;
+
+        async ValueTask<ItemsProviderResult<Guid>> ReportedMessageIdsProvider(ItemsProviderRequest request) {
+            if (_selectedReportedUserId is not { } userId) {
+                return new([], 0);
+            }
+
+            (var totalCount, var page) = await ReportService.PaginateUserReportedMessageIdsAsync(userId, request.StartIndex, request.Count);
+            return new(page, totalCount);
         }
-        
-        // ModalService.Open<ReportManagementModal>(parameters: new Dictionary<string, object?> {
-        //     [nameof(ReportManagementModal.CommunityId)] = CommunityId,
-        //     [nameof(ReportManagementModal.ReportedMemberId)] = memberInfo.MemberId,
-        //     [nameof(ReportManagementModal.ResolvingMemberId)] = _memberInformation.MemberId,
-        //     [nameof(ReportManagementModal.Permissions)] = _memberInformation.Role.Permissions,
-        // });
     }
-    
-    // private async ValueTask<ItemsProviderResult<Guid>> ReportedMessagesProvider(ItemsProviderRequest request) {
-    //     if (_selectedReportedUserId is not { } userId) {
-    //         return new([], 0);
-    //     }
-    //     
-    //     (var count, var page) = await ReportService.PaginateUserReportedMessageIdsAsync(userId, request.StartIndex, request.Count);
-    //
-    //     return new(page, count);
-    // }
-    //
-    // private void SelectReportedMessage(Guid id) {
-    //     _selectedReportedMessageId = id;
-    //     _selectedReportId = null;
-    // }
-    //
-    // private async ValueTask<ItemsProviderResult<Guid>> ReportsProvider(ItemsProviderRequest request) {
-    //     if (_selectedReportedMessageId is not { } messageId) {
-    //         return new([], 0);
-    //     }
-    //     
-    //     (var count, var page) = await ReportService.PaginateReportIdsAsync(messageId, request.StartIndex, request.Count);
-    //
-    //     return new(page, count);
-    // }
-    //
-    // private void SelectReport(Guid id) {
-    //     _selectedReportId = id;
-    // }
 }

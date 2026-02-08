@@ -14,7 +14,7 @@ public record struct ReportDisplayDTO(
     ReportReasons[] Reasons,
     string? ExtraMessage,
     ReportStatus Status,
-    Guid? ResolverId,
+    Guid? ResolverUserId,
     DateTime? ResolvedAt,
     TimeSpan? BanDuration
 );

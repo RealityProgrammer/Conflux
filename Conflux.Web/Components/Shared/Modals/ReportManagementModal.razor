@@ -1,9 +1,8 @@
 ﻿@using Conflux.Application.Dto
-@using Conflux.Web.Components.Pages.Community.Modals
 @using Conflux.Domain.Enums
+@using Conflux.Web.Components.Pages.Community.Modals
 @using Conflux.Web.Helpers
 @using Humanizer
-@using Microsoft.EntityFrameworkCore
 
 @inherits BaseModal
 
@@ -11,260 +10,255 @@
 @inject IConversationService ConversationService
 @inject ICommunityService CommunityService
 @inject IContentService ContentService
-@inject IStatisticsService StatisticsService
+@inject IUserService UserService
 
 <div class="flex flex-row justify-center items-center size-full text-white">
     <Card class="absolute inset-0 rounded-none! lg:inset-6 lg:rounded-xl!">
         <CardHeader Title="Report Management" OnCloseRequested="EventUtils.AsNonRenderingEventHandler(CloseModal)" class="border-b border-b-gray-600" />
     
         <CardContent class="p-0">
-            @if (_isLoading) {
-                <div class="size-full flex flex-row justify-center items-center">
-                    <Spinner class="size-12 fill-white"/>
-                </div>
-            } else {
-                <div class="flex flex-col lg:flex-row gap-2 lg:h-full">
-                    <div class="flex flex-col gap-2 h-128 lg:h-full lg:flex-1">
-                        <section class="flex-1 flex flex-col overflow-y-hidden">
-                            <header class="flex-none">Messages</header>
+            <div class="flex flex-col lg:flex-row gap-2 lg:h-full">
+                <div class="flex flex-col gap-2 h-128 lg:h-full lg:flex-1">
+                    <section class="flex-1 flex flex-col overflow-y-hidden">
+                        <header class="flex-none">Messages</header>
+                        
+                        <section class="flex-1 border border-gray-600 rounded-md mt-1 p-1 overflow-y-auto scrollbar-hide h-full flex flex-col">
+                            @{ Guid selectedMessageId = _selectedMessageId ?? Guid.Empty; }
                             
-                            <section class="flex-1 border border-gray-600 rounded-md mt-1 p-1 overflow-y-auto scrollbar-hide h-full flex flex-col gap-1">
-                                @{ Guid selectedMessageId = _selectedMessageId ?? Guid.Empty; }
-                                
-                                @foreach (var messageId in _reportedMessageIds!) {
+                            <Virtualize ItemsProvider="ReportedMessageIdsProvider">
+                                <ItemContent Context="messageId">
                                     <button class="p-2 button-nav-menu @(messageId == selectedMessageId ? "bg-white/8" : string.Empty)" @onclick="() => SelectMessage(messageId)">
                                         <p class="text-center w-full text-sm">@messageId</p>
                                     </button>
-                                }
-                            </section>
+                                </ItemContent>
+                            </Virtualize>
                         </section>
+                    </section>
 
-                        <section class="flex-1 flex flex-col overflow-y-hidden">
-                            <header class="flex-none">Reports</header>
-                            
-                            <section class="flex-1 border border-gray-600 rounded-md mt-1 p-1 overflow-y-auto scrollbar-hide h-full flex flex-col gap-1">
-                                @if (_messageReports == null) {
-                                    <div class="size-full flex flex-row justify-center items-center">
-                                        <p class="text-sm text-gray-400">Select a message to see reports.</p>
-                                    </div>
-                                } else {
-                                    Guid selectedReportId = _selectedReportId ?? Guid.Empty;
-                                    
-                                    @foreach (var report in _messageReports) {
-                                        <button class="p-2 button-nav-menu @(report.Id == selectedReportId ? "bg-white/8" : string.Empty)" @onclick="() => SelectReport(report.Id)">
-                                            <span class="text-center w-full text-sm">@report.Id</span>
-                                        </button>
-                                    }
-                                }
-                            </section>
-                        </section>
-                    </div>
-                    
-                    <section class="h-128 lg:h-full lg:flex-3 flex flex-col overflow-y-hidden">
-                        <header class="flex-none">Details</header>
+                    <section class="flex-1 flex flex-col overflow-y-hidden">
+                        <header class="flex-none">Reports</header>
                         
-                        <section class="flex-1 border border-gray-600 rounded-md mt-1 p-2 overflow-y-auto scrollbar-hide">
-                            @if (_selectedMessageId != null || _selectedReportId != null) {
-                                if (_selectedMessageId != null) {
-                                    <p class="text-xl">Current message state:</p>
-                                    
-                                    @if (_selectedMessageDisplay == null) {
-                                        <div class="h-32 flex flex-row justify-center items-center">
-                                            <Spinner class="size-8 fill-white"/>
-                                        </div>
-                                    } else {
-                                        <MessageDisplay Display="_selectedMessageDisplay.Value" class="mt-1 p-2 border border-gray-600 rounded-md max-h-32 overflow-y-auto"/>
-                                        
-                                        <p class="mt-1">Statistic:</p>
-                                        
-                                        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mt-2 gap-2">
-                                            <div class="flex flex-row justify-between items-center p-2 rounded-md border border-gray-600">
-                                                <p class="flex-1">Report Count</p>
-                                                <p class="flex-none">@_messageStatistics.ReportCount</p>
-                                            </div>
-                                            
-                                            @if (_messageStatistics.ReasonCounts.TryGetValue(ReportReasons.Spam, out var reasonCount)) {
-                                                <div class="flex flex-row justify-between items-center p-2 rounded-md border border-gray-600">
-                                                    <p class="flex-1">Spam</p>
-                                                    <p class="flex-none">@reasonCount (@(((float)reasonCount / _messageStatistics.ReportCount).ToString("P2")))</p>
-                                                </div>
-                                            }
-                                            
-                                            @if (_messageStatistics.ReasonCounts.TryGetValue(ReportReasons.Harassment, out reasonCount)) {
-                                                <div class="flex flex-row justify-between items-center p-2 rounded-md border border-gray-600">
-                                                    <p class="flex-1">Harassment</p>
-                                                    <p class="flex-none">@reasonCount (@(((float)reasonCount / _messageStatistics.ReportCount).ToString("P2")))</p>
-                                                </div>
-                                            }
-                                            
-                                            @if (_messageStatistics.ReasonCounts.TryGetValue(ReportReasons.Misinformation, out reasonCount)) {
-                                                <div class="flex flex-row justify-between items-center p-2 rounded-md border border-gray-600">
-                                                    <p class="flex-1">Misinformation</p>
-                                                    <p class="flex-none">@reasonCount (@(((float)reasonCount / _messageStatistics.ReportCount).ToString("P2")))</p>
-                                                </div>
-                                            }
-                                            
-                                            @if (_messageStatistics.ReasonCounts.TryGetValue(ReportReasons.Violence, out reasonCount)) {
-                                                <div class="flex flex-row justify-between items-center p-2 rounded-md border border-gray-600">
-                                                    <p class="flex-1">Violence</p>
-                                                    <p class="flex-none">@reasonCount (@(((float)reasonCount / _messageStatistics.ReportCount).ToString("P2")))</p>
-                                                </div>
-                                            }
-                                            
-                                            @if (_messageStatistics.ReasonCounts.TryGetValue(ReportReasons.ExposingInformation, out reasonCount)) {
-                                                <div class="flex flex-row justify-between items-center p-2 rounded-md border border-gray-600">
-                                                    <p class="flex-1">Exposing Private Information</p>
-                                                    <p class="flex-none">@reasonCount (@(((float)reasonCount / _messageStatistics.ReportCount).ToString("P2")))</p>
-                                                </div>
-                                            }
-                                            
-                                            @if (_messageStatistics.ReasonCounts.TryGetValue(ReportReasons.Other, out reasonCount)) {
-                                                <div class="flex flex-row justify-between items-center p-2 rounded-md border border-gray-600">
-                                                    <p class="flex-1">Others</p>
-                                                    <p class="flex-none">@reasonCount (@(((float)reasonCount / _messageStatistics.ReportCount).ToString("P2")))</p>
-                                                </div>
-                                            }
-                                        </section>
-                                    }
-                                }
-
-                                if (_selectedReportId != null) {
-                                    <p class="mt-2 text-xl">Report State:</p>
-                                    
-                                    @if (_selectedReportDisplay == null) {
-                                        <div class="h-32 flex flex-row justify-center items-center">
-                                            <Spinner class="size-8 fill-white"/>
-                                        </div>
-                                    } else {
-                                        var reportDisplay = _selectedReportDisplay.Value;
-                                        
-                                        <MessageDisplay Display="@(new MessageDisplayDTO(reportDisplay.SenderDisplayName, reportDisplay.SenderAvatar, reportDisplay.OriginalBody, reportDisplay.OriginalAttachments))"
-                                                        class="mt-1 p-2 border border-gray-600 rounded-md max-h-32 overflow-y-auto"/>
-                                        
-                                        <div class="flex flex-col gap-1 mt-2">
-                                            <div class="flex-none flex flex-row items-center">
-                                                <p class="flex-1">Report at:</p>
-                                                
-                                                <p class="flex-2">@reportDisplay.CreatedAt.ToString("yyyy/MM/dd HH:mm:ss")</p>
-                                            </div>
-                                            
-                                            <div class="flex-none flex flex-row items-center">
-                                                <p class="flex-1">Reporter:</p>
-
-                                                <UserCard UserId="@_reporterDisplay.UserId"
-                                                          MemberId="@_reporterDisplay.MemberId"
-                                                          AvatarSrc="@(string.IsNullOrEmpty(_reporterDisplay.AvatarPath) ? null : ContentService.GetAssetPath(_reporterDisplay.AvatarPath))"
-                                                          DisplayName="@_reporterDisplay.DisplayName"
-                                                          class="h-10 flex-2"
-                                                          OnClick="EventUtils.AsNonRenderingEventHandler<UserCard>(OpenMemberProfileModal)"/>
-                                            </div>
-                                            
-                                            <div class="flex-none flex flex-row items-center">
-                                                <p class="flex-1">Reasons:</p>
-                                                
-                                                <p class="flex-2">@string.Join(", ", reportDisplay.Reasons)</p>
-                                            </div>
-                                            
-                                            @if (!string.IsNullOrEmpty(reportDisplay.ExtraMessage)) {
-                                                <div class="flex-none flex flex-row items-center">
-                                                    <p class="flex-1">Extra Message:</p>
-
-                                                    <p class="flex-2 border border-gray-600 p-2 wrap-break-word rounded-md">@reportDisplay.ExtraMessage</p>
-                                                </div>
-                                            }
-                                            
-                                            <div class="flex-none flex flex-row items-center">
-                                                <p class="flex-1">Status:</p>
-                                                
-                                                <div class="flex-2">
-                                                    @switch (reportDisplay.Status) {
-                                                        case ReportStatus.InProgress:
-                                                            <p class="animate-pulse inline-block">In Progress</p>
-                                                            <Spinner class="size-5 fill-white ml-2 inline-block"/>
-                                                            break;
-                                                            
-                                                        case ReportStatus.Banned:
-                                                            <p class="text-red-500 inline-block">Banned</p>
-                                                            break;
-                                                            
-                                                        case ReportStatus.Dismissed:
-                                                            <p class="inline-block">Dismissed</p>
-                                                            break;
-                                                            
-                                                        case ReportStatus.Warned:
-                                                            <p class="text-yellow-300 inline-block">Warned</p>
-                                                            break;
-                                                    }
-                                                </div>
-                                            </div>
-                                            
-                                            @if (reportDisplay.Status == ReportStatus.Banned && reportDisplay.BanDuration is { } banDuration) {
-                                                <div class="flex-none flex flex-row items-center">
-                                                    <p class="flex-1">Ban Duration:</p>
-
-                                                    <div class="flex-2">
-                                                        <p class="inline-block">@banDuration.Humanize(precision: 5)</p>
-                                                    </div>
-                                                </div>
-                                            }
-
-                                            @if (_reportResolverDisplay is { } resolverDisplay && reportDisplay.ResolvedAt is { } resolvedAt) {
-                                                <div class="flex-none flex flex-row items-center">
-                                                    <p class="flex-1">Resolved By:</p>
-
-                                                    <UserCard UserId="@resolverDisplay.UserId"
-                                                              MemberId="@resolverDisplay.MemberId"
-                                                              AvatarSrc="@(string.IsNullOrEmpty(_reporterDisplay.AvatarPath) ? null : ContentService.GetAssetPath(_reporterDisplay.AvatarPath))"
-                                                              DisplayName="@resolverDisplay.DisplayName"
-                                                              class="h-10 flex-2"
-                                                              OnClick="EventUtils.AsNonRenderingEventHandler<UserCard>(OpenMemberProfileModal)"/>
-                                                </div>
-                                            
-                                                <div class="flex-none flex flex-row items-center">
-                                                    <p class="flex-1">Resolved At:</p>
-
-                                                    <p class="flex-2">@resolvedAt.ToString("yyyy-MM-dd HH:mm:ss")</p>
-                                                </div>
-                                            }
-                                        </div>
-                                        
-                                        <AuthorizeView Policy="ManageCommunityReports" Resource="Permissions">
-                                            <Authorized Context="_">
-                                                <p class="mt-2 text-xl">Actions:</p>
-                                                
-                                                <div class="grid grid-cols-2 gap-2 mt-2">
-                                                    <button class="button-primary" disabled="@(_reportResolverDisplay.HasValue)" @onclick="EventUtils.AsNonRenderingEventHandler(HandleResolveReportByDismiss)">Dismiss Report</button>
-                                                    <button class="button-warning" disabled="@(_reportResolverDisplay.HasValue)" @onclick="EventUtils.AsNonRenderingEventHandler(HandleResolveReportByWarning)">Warn User</button>
-                                                    <button class="button-danger col-span-2" disabled="@(_reportResolverDisplay.HasValue)" @onclick="EventUtils.AsNonRenderingEventHandler(HandleResolveReportByBanning)">Ban User</button>
-                                                </div>
-                                            </Authorized>
-                                        </AuthorizeView>
-                                    }
-                                }
-                            } else {
+                        <section class="flex-1 border border-gray-600 rounded-md mt-1 p-1 overflow-y-auto scrollbar-hide h-full flex flex-col gap-1">
+                            @if (_messageReports == null) {
                                 <div class="size-full flex flex-row justify-center items-center">
-                                    <p class="text-sm text-gray-400">Select something to see details.</p>
+                                    <p class="text-sm text-gray-400">Select a message to see reports.</p>
                                 </div>
+                            } else {
+                                Guid selectedReportId = _selectedReportId ?? Guid.Empty;
+                                
+                                @foreach (var report in _messageReports) {
+                                    <button class="p-2 button-nav-menu @(report.Id == selectedReportId ? "bg-white/8" : string.Empty)" @onclick="() => SelectReport(report.Id)">
+                                        <span class="text-center w-full text-sm">@report.Id</span>
+                                    </button>
+                                }
                             }
                         </section>
                     </section>
                 </div>
-            }
+                
+                <section class="h-128 lg:h-full lg:flex-3 flex flex-col overflow-y-hidden">
+                    <header class="flex-none">Details</header>
+                    
+                    <section class="flex-1 border border-gray-600 rounded-md mt-1 p-2 overflow-y-auto scrollbar-hide">
+                        @if (_selectedMessageId != null || _selectedReportId != null) {
+                            if (_selectedMessageId != null) {
+                                <p class="text-xl">Message state currently</p>
+                                
+                                @if (_selectedMessageDisplay is { } selectedMessageDisplay) {
+                                    <MessageDisplay Display="selectedMessageDisplay" class="mt-1 p-2 border border-gray-600 rounded-md max-h-32 overflow-y-auto"/>
+                                    
+                                    <p class="mt-1">Statistic:</p>
+                                    
+                                    <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mt-2 gap-2">
+                                        <div class="flex flex-row justify-between items-center p-2 rounded-md border border-gray-600">
+                                            <p class="flex-1">Report Count</p>
+                                            <p class="flex-none">@_messageStatistics.ReportCount</p>
+                                        </div>
+                                        
+                                        @if (_messageStatistics.ReasonCounts.TryGetValue(ReportReasons.Spam, out var reasonCount)) {
+                                            <div class="flex flex-row justify-between items-center p-2 rounded-md border border-gray-600">
+                                                <p class="flex-1">Spam</p>
+                                                <p class="flex-none">@reasonCount (@(((float)reasonCount / _messageStatistics.ReportCount).ToString("P2")))</p>
+                                            </div>
+                                        }
+                                        
+                                        @if (_messageStatistics.ReasonCounts.TryGetValue(ReportReasons.Harassment, out reasonCount)) {
+                                            <div class="flex flex-row justify-between items-center p-2 rounded-md border border-gray-600">
+                                                <p class="flex-1">Harassment</p>
+                                                <p class="flex-none">@reasonCount (@(((float)reasonCount / _messageStatistics.ReportCount).ToString("P2")))</p>
+                                            </div>
+                                        }
+                                        
+                                        @if (_messageStatistics.ReasonCounts.TryGetValue(ReportReasons.Misinformation, out reasonCount)) {
+                                            <div class="flex flex-row justify-between items-center p-2 rounded-md border border-gray-600">
+                                                <p class="flex-1">Misinformation</p>
+                                                <p class="flex-none">@reasonCount (@(((float)reasonCount / _messageStatistics.ReportCount).ToString("P2")))</p>
+                                            </div>
+                                        }
+                                        
+                                        @if (_messageStatistics.ReasonCounts.TryGetValue(ReportReasons.Violence, out reasonCount)) {
+                                            <div class="flex flex-row justify-between items-center p-2 rounded-md border border-gray-600">
+                                                <p class="flex-1">Violence</p>
+                                                <p class="flex-none">@reasonCount (@(((float)reasonCount / _messageStatistics.ReportCount).ToString("P2")))</p>
+                                            </div>
+                                        }
+                                        
+                                        @if (_messageStatistics.ReasonCounts.TryGetValue(ReportReasons.ExposingInformation, out reasonCount)) {
+                                            <div class="flex flex-row justify-between items-center p-2 rounded-md border border-gray-600">
+                                                <p class="flex-1">Exposing Private Information</p>
+                                                <p class="flex-none">@reasonCount (@(((float)reasonCount / _messageStatistics.ReportCount).ToString("P2")))</p>
+                                            </div>
+                                        }
+                                        
+                                        @if (_messageStatistics.ReasonCounts.TryGetValue(ReportReasons.Other, out reasonCount)) {
+                                            <div class="flex flex-row justify-between items-center p-2 rounded-md border border-gray-600">
+                                                <p class="flex-1">Others</p>
+                                                <p class="flex-none">@reasonCount (@(((float)reasonCount / _messageStatistics.ReportCount).ToString("P2")))</p>
+                                            </div>
+                                        }
+                                    </section>
+                                } else {
+                                    <div class="h-32 flex flex-row justify-center items-center">
+                                        <Spinner class="size-8 fill-white"/>
+                                    </div>
+                                }
+                            }
 
+                            if (_selectedReportId != null) {
+                                <p class="mt-2 text-xl">Message state when report</p>
+                                
+                                @if (_selectedReportDisplay is { } reportDisplay) {
+                                    <MessageDisplay Display="@(new MessageDisplayDTO(reportDisplay.SenderDisplayName, reportDisplay.SenderAvatar, reportDisplay.OriginalBody, reportDisplay.OriginalAttachments))"
+                                                    class="mt-1 p-2 border border-gray-600 rounded-md max-h-32 overflow-y-auto"/>
+                                    
+                                    <div class="flex flex-col gap-1 mt-2">
+                                        <div class="flex-none flex flex-row items-center">
+                                            <p class="flex-1">Report at:</p>
+                                            
+                                            <p class="flex-2">@reportDisplay.CreatedAt.ToString("yyyy/MM/dd HH:mm:ss")</p>
+                                        </div>
+                                        
+                                        <div class="flex-none flex flex-row items-center">
+                                            <p class="flex-1">Reporter:</p>
+
+                                            <UserCard UserId="_reporterUserDisplay.UserId"
+                                                      MemberId="_reporterMemberId"
+                                                      AvatarSrc="@(_reporterUserDisplay.AvatarPath)"
+                                                      DisplayName="@_reporterUserDisplay.DisplayName"
+                                                      UserName="@_reporterUserDisplay.UserName"
+                                                      class="h-10 flex-2"
+                                                      OnClick="EventUtils.AsNonRenderingEventHandler<UserCard>(OpenMemberProfileModal)"/>
+                                        </div>
+                                        
+                                        <div class="flex-none flex flex-row items-center">
+                                            <p class="flex-1">Reasons:</p>
+                                            
+                                            <p class="flex-2">@string.Join(", ", reportDisplay.Reasons)</p>
+                                        </div>
+                                        
+                                        @if (!string.IsNullOrEmpty(reportDisplay.ExtraMessage)) {
+                                            <div class="flex-none flex flex-row items-center">
+                                                <p class="flex-1">Extra Message:</p>
+
+                                                <p class="flex-2 border border-gray-600 p-2 wrap-break-word rounded-md">@reportDisplay.ExtraMessage</p>
+                                            </div>
+                                        }
+                                        
+                                        <div class="flex-none flex flex-row items-center">
+                                            <p class="flex-1">Status:</p>
+                                            
+                                            <div class="flex-2">
+                                                @switch (reportDisplay.Status) {
+                                                    case ReportStatus.InProgress:
+                                                        <p class="animate-pulse inline-block">In Progress</p>
+                                                        <Spinner class="size-5 fill-white ml-2 inline-block"/>
+                                                        break;
+                                                        
+                                                    case ReportStatus.Banned:
+                                                        <p class="text-red-500 inline-block">Banned</p>
+                                                        break;
+                                                        
+                                                    case ReportStatus.Dismissed:
+                                                        <p class="inline-block">Dismissed</p>
+                                                        break;
+                                                        
+                                                    case ReportStatus.Warned:
+                                                        <p class="text-yellow-300 inline-block">Warned</p>
+                                                        break;
+                                                }
+                                            </div>
+                                        </div>
+                                        
+                                        @if (reportDisplay.Status == ReportStatus.Banned && reportDisplay.BanDuration is { } banDuration) {
+                                            <div class="flex-none flex flex-row items-center">
+                                                <p class="flex-1">Ban Duration:</p>
+
+                                                <div class="flex-2">
+                                                    <p class="inline-block">@banDuration.Humanize(precision: 5)</p>
+                                                </div>
+                                            </div>
+                                        }
+
+                                        @if (_reportResolverUserDisplay is { } resolverDisplay && reportDisplay.ResolvedAt is { } resolvedAt) {
+                                            <div class="flex-none flex flex-row items-center">
+                                                <p class="flex-1">Resolved By:</p>
+                                        
+                                                <UserCard UserId="@resolverDisplay.UserId"
+                                                          MemberId="@_reportResolverMemberId"
+                                                          AvatarSrc="@(string.IsNullOrEmpty(resolverDisplay.AvatarPath) ? null : ContentService.GetAssetPath(resolverDisplay.AvatarPath))"
+                                                          DisplayName="@resolverDisplay.DisplayName"
+                                                          class="h-10 flex-2"
+                                                          OnClick="EventUtils.AsNonRenderingEventHandler<UserCard>(OpenMemberProfileModal)"/>
+                                            </div>
+                                        
+                                            <div class="flex-none flex flex-row items-center">
+                                                <p class="flex-1">Resolved At:</p>
+                                        
+                                                <p class="flex-2">@resolvedAt.ToString("yyyy-MM-dd HH:mm:ss")</p>
+                                            </div>
+                                        }
+                                    </div>
+                                    
+                                    @if (reportDisplay.Status == ReportStatus.InProgress) {
+                                        <p class="mt-2 text-xl">Actions:</p>
+
+                                        <div class="grid grid-cols-2 gap-2 mt-2">
+                                            <button class="button-primary" @onclick="EventUtils.AsNonRenderingEventHandler(HandleResolveReportByDismiss)">
+                                                Dismiss Report
+                                            </button>
+                                            
+                                            <button class="button-warning" @onclick="EventUtils.AsNonRenderingEventHandler(HandleResolveReportByWarning)">
+                                                Warn User
+                                            </button>
+                                            
+                                            <button class="button-danger col-span-2" @onclick="EventUtils.AsNonRenderingEventHandler(HandleResolveReportByBanning)">
+                                                Ban User
+                                            </button>
+                                        </div>
+                                    }
+                                } else {
+                                <div class="h-32 flex flex-row justify-center items-center">
+                                        <Spinner class="size-8 fill-white"/>
+                                    </div>
+                                }
+                            }
+                        } else {
+                            <div class="size-full flex flex-row justify-center items-center">
+                                <p class="text-sm text-gray-400">Select something to see details.</p>
+                            </div>
+                        }
+                    </section>
+                </section>
+            </div>
         </CardContent>
     </Card>
 </div>
 
 @code {
-    [Parameter, EditorRequired] public required Guid CommunityId { get; set; }
-    [Parameter, EditorRequired] public required Guid ReportedMemberId { get; set; }
-    [Parameter, EditorRequired] public required Guid ResolvingMemberId { get; set; }
-    [Parameter, EditorRequired] public required RolePermissions Permissions { get; set; }
+    [Parameter, EditorRequired] public required Guid? CommunityId { get; set; }
+    [Parameter, EditorRequired] public required ItemsProviderDelegate<Guid> ReportedMessageIdsProvider { get; set; }
+    [Parameter, EditorRequired] public required Guid? ResolverUserId { get; set; }
     
-    private bool _isLoading = true;
-    private List<Guid>? _reportedMessageIds;
-    private UserReportStatistics _memberStats;
-
     private List<MessageReport>? _messageReports;
 
     private Guid? _selectedMessageId;
@@ -272,20 +266,14 @@
 
     private MessageDisplayDTO? _selectedMessageDisplay;
     private ReportDisplayDTO? _selectedReportDisplay;
-    private MemberDisplayDTO _reporterDisplay;
-    private MemberDisplayDTO? _reportResolverDisplay;
     private MessageReportStatistics _messageStatistics;
 
-    protected override async Task OnAfterRenderAsync(bool firstRender) {
-        if (firstRender) {
-            _reportedMessageIds = await ReportService.GetMemberReportedMessageIdentitiesAsync(ReportedMemberId);
-            _memberStats = (await StatisticsService.GetMemberReportStatisticsAsync(ReportedMemberId))!.Value;
-            
-            _isLoading = false;
-            StateHasChanged();
-        }
-    }
+    private UserDisplayDTO _reporterUserDisplay;
+    private Guid? _reporterMemberId;
 
+    private UserDisplayDTO? _reportResolverUserDisplay;
+    private Guid? _reportResolverMemberId;
+    
     private async Task SelectMessage(Guid messageId) {
         _selectedMessageId = messageId;
         _selectedReportId = null;
@@ -305,75 +293,110 @@
         var reportDisplay = (await ReportService.GetReportDisplayAsync(reportId))!.Value;
         
         _selectedReportDisplay = reportDisplay;
-        _reporterDisplay = (await CommunityService.GetMemberDisplayAsync(CommunityId, reportDisplay.ReporterUserId))!.Value;
-        _reportResolverDisplay = reportDisplay.ResolverId.HasValue ? await CommunityService.GetMemberDisplayAsync(reportDisplay.ResolverId.Value) : null;
+
+        if (CommunityId is { } communityId) {
+            (_reporterMemberId, _reporterUserDisplay) = (await CommunityService.GetMemberDisplayAsync(communityId, reportDisplay.ReporterUserId))!.Value;
+            (_reportResolverMemberId, _reportResolverUserDisplay) = reportDisplay.ResolverUserId is { } resolverId ? (await CommunityService.GetMemberDisplayAsync(communityId, resolverId))!.Value : default;
+        } else {
+            _reporterUserDisplay = (await UserService.GetUserDisplayAsync(reportDisplay.ReporterUserId))!.Value;
+            _reportResolverUserDisplay = reportDisplay.ResolverUserId is { } resolverId ? (await UserService.GetUserDisplayAsync(resolverId))!.Value : null;
+        }
+        
+        _reporterUserDisplay.AvatarPath = string.IsNullOrEmpty(_reporterUserDisplay.AvatarPath) ? null : ContentService.GetAssetPath(_reporterUserDisplay.AvatarPath);
     }
 
     private static readonly RenderFragment _reportDismissModalBody =
         @<p>Are you sure you want to dismiss this report?<br/>This action cannot be reverted.</p>;
-
+    
     private void HandleResolveReportByDismiss() {
         if (_selectedReportId is not { } reportId) {
             return;
         }
-
+    
         ModalService.Open<OperationConfirmModal>(parameters: new Dictionary<string, object?> {
             [nameof(OperationConfirmModal.Title)] = "Dismiss Report",
             [nameof(OperationConfirmModal.Body)] = _reportDismissModalBody,
             [nameof(OperationConfirmModal.OnConfirm)] = EventCallback.Factory.Create(this, OnConfirm),
         });
         return;
-        
+    
         async Task OnConfirm() {
-            await ReportService.ResolveReportByDismissAsync(reportId, ResolvingMemberId);
-            var reportDisplay = (await ReportService.GetReportDisplayAsync(reportId))!.Value;
+            if (ResolverUserId is not { } resolverUserId) {
+                return;
+            }
             
+            await ReportService.ResolveReportByDismissAsync(reportId, resolverUserId);
+            var reportDisplay = (await ReportService.GetReportDisplayAsync(reportId))!.Value;
+    
             _selectedReportDisplay = reportDisplay;
-            _reportResolverDisplay = reportDisplay.ResolverId.HasValue ? await CommunityService.GetMemberDisplayAsync(reportDisplay.ResolverId.Value) : null;
+
+            if (CommunityId is { } communityId) {
+                (_reportResolverMemberId, _reportResolverUserDisplay) = reportDisplay.ResolverUserId is { } resolverId ? (await CommunityService.GetMemberDisplayAsync(communityId, resolverId))!.Value : default;
+            } else {
+                _reportResolverUserDisplay = reportDisplay.ResolverUserId is { } resolverId ? (await UserService.GetUserDisplayAsync(resolverId))!.Value : null;
+            }
         }
     }
     
     private static readonly RenderFragment _reportWarnModalBody =
         @<p>Are you sure you want to flag this report as an user warn?<br/>This action cannot be reverted.</p>;
-
+    
     private void HandleResolveReportByWarning() {
         if (_selectedReportId is not { } reportId) {
             return;
         }
-
+    
         ModalService.Open<OperationConfirmModal>(parameters: new Dictionary<string, object?> {
             [nameof(OperationConfirmModal.Title)] = "Warn User",
             [nameof(OperationConfirmModal.Body)] = _reportWarnModalBody,
             [nameof(OperationConfirmModal.OnConfirm)] = EventCallback.Factory.Create(this, OnConfirm),
         });
         return;
-
+    
         async Task OnConfirm() {
-            await ReportService.ResolveReportByWarningAsync(reportId, ResolvingMemberId);
+            if (ResolverUserId is not { } resolverUserId) {
+                return;
+            }
+            
+            await ReportService.ResolveReportByWarningAsync(reportId, resolverUserId);
             var reportDisplay = (await ReportService.GetReportDisplayAsync(reportId))!.Value;
-
+    
             _selectedReportDisplay = reportDisplay;
-            _reportResolverDisplay = reportDisplay.ResolverId.HasValue ? await CommunityService.GetMemberDisplayAsync(reportDisplay.ResolverId.Value) : null;
+            
+            if (CommunityId is { } communityId) {
+                (_reportResolverMemberId, _reportResolverUserDisplay) = reportDisplay.ResolverUserId is { } resolverId ? (await CommunityService.GetMemberDisplayAsync(communityId, resolverId))!.Value : default;
+            } else {
+                _reportResolverUserDisplay = reportDisplay.ResolverUserId is { } resolverId ? (await UserService.GetUserDisplayAsync(resolverId))!.Value : null;
+            }
         }
     }
-
+    
     private void HandleResolveReportByBanning() {
         if (_selectedReportId is not { } reportId) {
             return;
         }
-        
+    
         ModalService.Open<BanDurationModal>(parameters: new Dictionary<string, object?> {
             [nameof(BanDurationModal.OnConfirm)] = EventCallback.Factory.Create<TimeSpan>(this, OnConfirm),
         });
-        
+    
         return;
-
+    
         async Task OnConfirm(TimeSpan duration) {
-            await ReportService.ResolveReportByBanningAsync(reportId, ResolvingMemberId, duration);
+            if (ResolverUserId is not { } resolverUserId) {
+                return;
+            }
+            
+            await ReportService.ResolveReportByBanningAsync(reportId, resolverUserId, duration);
             var reportDisplay = (await ReportService.GetReportDisplayAsync(reportId))!.Value;
-
+    
             _selectedReportDisplay = reportDisplay;
-            _reportResolverDisplay = reportDisplay.ResolverId.HasValue ? await CommunityService.GetMemberDisplayAsync(reportDisplay.ResolverId.Value) : null;
+            
+            if (CommunityId is { } communityId) {
+                (_reportResolverMemberId, _reportResolverUserDisplay) = reportDisplay.ResolverUserId is { } resolverId ? (await CommunityService.GetMemberDisplayAsync(communityId, resolverId))!.Value : default;
+            } else {
+                _reportResolverUserDisplay = reportDisplay.ResolverUserId is { } resolverId ? (await UserService.GetUserDisplayAsync(resolverId))!.Value : null;
+            }
         }
     }
 

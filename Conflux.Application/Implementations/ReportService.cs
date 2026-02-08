@@ -147,10 +147,44 @@ public class ReportService(
             .OrderBy(m => m.User.DisplayName)
             .Skip(startIndex)
             .Take(count)
-            .Select(m => new MemberDisplayDTO(m.Id, m.UserId, m.User.DisplayName, m.User.AvatarProfilePath))
+            .Select(m => new MemberDisplayDTO(m.Id, new(m.UserId, m.User.DisplayName, m.User.UserName, m.User.AvatarProfilePath)))
             .ToListAsync();
 
         return (reportedMembersCount, users);
+    }
+
+    public async Task<(int Count, List<Guid>)> PaginateMemberReportedMessageIdsAsync(Guid memberId, int startIndex, int count) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        var extractedIds = await dbContext.CommunityMembers
+            .Where(member => member.Id == memberId)
+            .Select(member => new { member.UserId, member.CommunityId })
+            .FirstOrDefaultAsync();
+        
+        if (extractedIds == null) {
+            return (0, []);
+        }
+
+        var query = QueryMessageReportsFromCommunity(dbContext, extractedIds.CommunityId)
+            .Include(r => r.Message)
+            .Where(r => r.Message.SenderId == extractedIds.UserId)
+            .Select(r => r.MessageId)
+            .Distinct();
+            
+        int totalCount = await query.CountAsync();
+
+        if (totalCount == 0) {
+            return (0, []);
+        }
+        
+        var page = await query
+            .OrderBy(g => g)
+            .Skip(startIndex)
+            .Take(count)
+            .ToListAsync();
+
+        return (totalCount, page);
     }
 
     public async Task<List<Guid>> GetMemberReportedMessageIdentitiesAsync(Guid memberId) {
@@ -235,12 +269,12 @@ public class ReportService(
             .Include(r => r.Message)
             .ThenInclude(m => m.Sender)
             .Include(r => r.Reporter)
-            .Select(r => new ReportDisplayDTO(r.Id, r.Message.Sender.DisplayName, r.Message.Sender.AvatarProfilePath, r.OriginalMessageBody, r.OriginalMessageAttachments, r.ReporterUserId, r.CreatedAt, r.Reasons, r.ExtraMessage, r.Status, r.ResolverId, r.ResolvedAt, r.BanDuration))
+            .Select(r => new ReportDisplayDTO(r.Id, r.Message.Sender.DisplayName, r.Message.Sender.AvatarProfilePath, r.OriginalMessageBody, r.OriginalMessageAttachments, r.ReporterUserId, r.CreatedAt, r.Reasons, r.ExtraMessage, r.Status, r.ResolverUserId, r.ResolvedAt, r.BanDuration))
             .Cast<ReportDisplayDTO?>()
             .FirstOrDefaultAsync();
     }
 
-    public async Task<bool> ResolveReportByDismissAsync(Guid reportId, Guid resolverMemberId) {
+    public async Task<bool> ResolveReportByDismissAsync(Guid reportId, Guid resolverUserId) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
         
@@ -250,14 +284,14 @@ public class ReportService(
             .Where(r => r.Id == reportId && r.Status == ReportStatus.InProgress)
             .ExecuteUpdateAsync(builder => {
                 builder.SetProperty(r => r.Status, ReportStatus.Dismissed);
-                builder.SetProperty(r => r.ResolverId, resolverMemberId);
+                builder.SetProperty(r => r.ResolverUserId, resolverUserId);
                 builder.SetProperty(r => r.ResolvedAt, utcNow);
             });
 
         return affected > 0;
     }
     
-    public async Task<bool> ResolveReportByWarningAsync(Guid reportId, Guid resolverMemberId) {
+    public async Task<bool> ResolveReportByWarningAsync(Guid reportId, Guid resolverUserId) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
         
@@ -267,14 +301,14 @@ public class ReportService(
             .Where(r => r.Id == reportId && r.Status == ReportStatus.InProgress)
             .ExecuteUpdateAsync(builder => {
                 builder.SetProperty(r => r.Status, ReportStatus.Warned);
-                builder.SetProperty(r => r.ResolverId, resolverMemberId);
+                builder.SetProperty(r => r.ResolverUserId, resolverUserId);
                 builder.SetProperty(r => r.ResolvedAt, utcNow);
             });
 
         return affected > 0;
     }
     
-    public async Task<bool> ResolveReportByBanningAsync(Guid reportId, Guid resolverMemberId, TimeSpan banDuration) {
+    public async Task<bool> ResolveReportByBanningAsync(Guid reportId, Guid resolverUserId, TimeSpan banDuration) {
         if (banDuration < TimeSpan.Zero) {
             return false;
         }
@@ -307,7 +341,7 @@ public class ReportService(
             .Where(r => r.Id == reportId && r.Status == ReportStatus.InProgress)
             .ExecuteUpdateAsync(builder => {
                 builder.SetProperty(r => r.Status, ReportStatus.Banned);
-                builder.SetProperty(r => r.ResolverId, resolverMemberId);
+                builder.SetProperty(r => r.ResolverUserId, resolverUserId);
                 builder.SetProperty(r => r.ResolvedAt, utcNow);
                 builder.SetProperty(r => r.BanDuration, banDuration);
             });

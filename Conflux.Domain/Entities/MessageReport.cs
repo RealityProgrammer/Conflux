@@ -20,8 +20,8 @@ public class MessageReport : ICreatedAtColumn {
     public Guid ReporterUserId { get; set; }
     public ApplicationUser Reporter { get; set; } = null!;
 
-    public Guid? ResolverId { get; set; }
-    public CommunityMember? Resolver { get; set; }
+    public Guid? ResolverUserId { get; set; }
+    public ApplicationUser? ResolverUser { get; set; }
     
     public DateTime? ResolvedAt { get; set; }
     

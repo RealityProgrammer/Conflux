@@ -1,12 +1,15 @@
 ﻿@using Conflux.Application.Dto
+@using Conflux.Web.Authorization
 @using Conflux.Web.Components.Shared.Modals
 @using Conflux.Web.Helpers
 @using Conflux.Web.Services.Implementations
+@using Microsoft.AspNetCore.Components.Rendering
 
 @inject IReportService ReportService
 @inject IContentService ContentService
 @inject ModalService ModalService
 @inject IStatisticsService StatisticsService
+@inject IAuthorizationService AuthorizationService
 
 <div class="flex flex-col h-full gap-1 overflow-y-auto">
     <header class="flex-none ml-2">
@@ -112,9 +115,9 @@
                             <ItemContent Context="item">
                                 @{ string cssClass = item.MemberId == selectedMemberId ? "h-10 bg-white/8" : "h-10"; }
 
-                                <UserCard AvatarSrc="@(string.IsNullOrEmpty(item.AvatarPath) ? null : ContentService.GetAssetPath(item.AvatarPath))"
-                                          DisplayName="@item.DisplayName"
-                                          UserId="@item.UserId"
+                                <UserCard AvatarSrc="@(string.IsNullOrEmpty(item.UserDisplay.AvatarPath) ? null : ContentService.GetAssetPath(item.UserDisplay.AvatarPath))"
+                                          DisplayName="@item.UserDisplay.DisplayName"
+                                          UserId="@item.UserDisplay.UserId"
                                           MemberId="@item.MemberId"
                                           class="@cssClass"
                                           OnClick="HandleReportedMemberSelection"/>
@@ -192,12 +195,18 @@
     [CascadingParameter] private MemberInformationDTO? MemberInformation { get; set; }
     private MemberInformationDTO _memberInformation;
 
-    protected override void OnParametersSet() {
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+    private bool _canResolveReport;
+
+    protected override async Task OnParametersSetAsync() {
         if (MemberInformation == null) {
             throw new InvalidOperationException($"Cascading parameter type '{typeof(MemberInformationDTO).FullName}' MemberInformation need to be set.");
         }
 
         _memberInformation = MemberInformation.Value;
+
+        var authState = await AuthenticationState;
+        _canResolveReport = (await AuthorizationService.AuthorizeAsync(authState.User, _memberInformation.Role.Permissions, new ManageCommunityReportsRequirement())).Succeeded;
     }
 
     private async Task SetStatisticsCollapsible(bool value) {
@@ -223,17 +232,35 @@
         _selectedMemberReportStatistics = await StatisticsService.GetMemberReportStatisticsAsync(card.MemberId!.Value);
     }
 
+    private RenderFragment ReportActionsFragment => (__builder) => {
+        <AuthorizeView Policy="ManageCommunityReports" Resource="_memberInformation.Role.Permissions">
+            <Authorized>
+                <div class="mt-4 grid grid-cols-2 gap-2">
+                    <button class="button-primary">Dismiss</button>
+                    <button class="button-warning">Warning</button>
+                    <button class="col-span-2 button-danger">Ban</button>
+                </div>
+            </Authorized>
+        </AuthorizeView>
+    };
+
     private void OpenReportManagementModal() {
-        if (_selectedMemberInfo is not { } memberInfo) {
-            return;
-        }
-        
         ModalService.Open<ReportManagementModal>(parameters: new Dictionary<string, object?> {
             [nameof(ReportManagementModal.CommunityId)] = CommunityId,
-            [nameof(ReportManagementModal.ReportedMemberId)] = memberInfo.MemberId,
-            [nameof(ReportManagementModal.ResolvingMemberId)] = _memberInformation.MemberId,
-            [nameof(ReportManagementModal.Permissions)] = _memberInformation.Role.Permissions,
+            [nameof(ReportManagementModal.ReportedMessageIdsProvider)] = new ItemsProviderDelegate<Guid>(ReportedMessageIdsProvider),
+            [nameof(ReportManagementModal.ResolverUserId)] = _canResolveReport ? _memberInformation.UserId : null,
         });
+        return;
+
+        async ValueTask<ItemsProviderResult<Guid>> ReportedMessageIdsProvider(ItemsProviderRequest request) {
+            if (_selectedMemberInfo is not { } memberInfo) {
+                return new([], 0);
+            }
+
+            (var totalCount, var page) = await ReportService.PaginateMemberReportedMessageIdsAsync(memberInfo.MemberId, request.StartIndex, request.Count);
+
+            return new(page, totalCount);
+        }
     }
 
     private enum ReportCountTimeTarget {

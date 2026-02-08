@@ -2,6 +2,7 @@
 
 public readonly record struct MemberInformationDTO(
     Guid MemberId,
+    Guid UserId,
     RolePermissionsWithId Role,
     DateTime? UnbanAt
 ) {

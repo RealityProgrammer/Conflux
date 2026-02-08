@@ -157,10 +157,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasPrincipalKey(user => user.Id)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne(report => report.Resolver)
+            entity.HasOne(report => report.ResolverUser)
                 .WithMany()
-                .HasForeignKey(report => report.ResolverId)
-                .HasPrincipalKey(member => member.Id)
+                .HasForeignKey(report => report.ResolverUserId)
+                .HasPrincipalKey(user => user.Id)
                 .OnDelete(DeleteBehavior.SetNull);
             
             entity.ComplexCollection(x => x.OriginalMessageAttachments, action => action.ToJson());

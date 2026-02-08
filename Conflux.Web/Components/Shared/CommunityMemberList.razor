@@ -11,9 +11,9 @@
 <div class="flex flex-col gap-1 @_cssClass" @attributes="AdditionalAttributes">
     <Virtualize @ref="_virtualize" OverscanCount="OverscanCount" ItemsProvider="MembersProvider">
         <ItemContent Context="item">
-            <UserCard DisplayName="@item.DisplayName" 
-                      AvatarSrc="@(string.IsNullOrEmpty(item.AvatarPath) ? null : ContentService.GetAssetPath(item.AvatarPath))"
-                      UserId="@item.UserId"
+            <UserCard DisplayName="@item.UserDisplay.DisplayName" 
+                      AvatarSrc="@(string.IsNullOrEmpty(item.UserDisplay.AvatarPath) ? null : ContentService.GetAssetPath(item.UserDisplay.AvatarPath))"
+                      UserId="@item.UserDisplay.UserId"
                       MemberId="item.MemberId"
                       OnClick="HandleOnCardClick"
                       class="h-10"/>
@@ -66,7 +66,7 @@
             .OrderByDescending(x => x.CreatedAt)
             .Skip(request.StartIndex)
             .Take(request.Count)
-            .Select(m => new MemberDisplayDTO(m.Id, m.UserId, m.User.DisplayName, m.User.AvatarProfilePath))
+            .Select(m => new MemberDisplayDTO(m.Id, new(m.UserId, m.User.DisplayName, m.User.UserName, m.User.AvatarProfilePath)))
             .ToListAsync();
 
         return new(results, totalCount);
