@@ -24,7 +24,7 @@ public class CommunityService(
 
         Community community = new() {
             Name = name,
-            CreatorId = creatorId,
+            CreatorUserId = creatorId,
             AvatarPath = null,
             CreatedAt = DateTime.UtcNow,
         };

@@ -78,7 +78,7 @@ public sealed class ConversationService(
             // Register the message to database.
             ChatMessage message = new() {
                 ConversationId = conversationId,
-                SenderId = senderUserId,
+                SenderUserId = senderUserId,
                 Body = body,
                 ReplyMessageId = replyMessageId,
                 Attachments = attachmentPaths,
@@ -98,7 +98,7 @@ public sealed class ConversationService(
             Guid? otherUserIdOnDirectConversation = await dbContext.Conversations
                 .Where(c => c.Id == conversationId && c.FriendRequestId != null)
                 .Include(c => c.FriendRequest!)
-                .Select(c => c.FriendRequest!.SenderId == senderUserId ? c.FriendRequest!.ReceiverId : c.FriendRequest!.SenderId)
+                .Select(c => c.FriendRequest!.SenderUserId == senderUserId ? c.FriendRequest!.ReceiverUserId : c.FriendRequest!.SenderUserId)
                 .Cast<Guid?>()
                 .FirstOrDefaultAsync(cancellationToken);
 
@@ -202,7 +202,7 @@ public sealed class ConversationService(
 
             // Get the conversation ID and check exists at the same time.
             Guid conversationId = await dbContext.ChatMessages
-                .Where(m => m.Id == messageId && m.SenderId == senderUserId && m.DeletedAt == null && m.Body != body)
+                .Where(m => m.Id == messageId && m.SenderUserId == senderUserId && m.DeletedAt == null && m.Body != body)
                 .Select(m => m.ConversationId)
                 .FirstOrDefaultAsync();
 
@@ -211,7 +211,7 @@ public sealed class ConversationService(
             DateTime utcNow = DateTime.UtcNow;
             
             int rowsAffected = await dbContext.ChatMessages
-                .Where(m => m.Id == messageId && m.SenderId == senderUserId && m.DeletedAt == null)
+                .Where(m => m.Id == messageId && m.SenderUserId == senderUserId && m.DeletedAt == null)
                 .ExecuteUpdateAsync(builder => {
                     builder.SetProperty(m => m.Body, body);
                     builder.SetProperty(m => m.LastModifiedAt, utcNow);
@@ -250,7 +250,7 @@ public sealed class ConversationService(
                 .Take(take)
                 .Include(m => m.Sender)
                 .Include(m => m.ReplyMessage)
-                .Select(m => new IConversationService.RenderingMessageDTO(m.Id, m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt, m.LastModifiedAt != null, m.ReplyMessage != null ? m.ReplyMessageId : null, m.Attachments))
+                .Select(m => new IConversationService.RenderingMessageDTO(m.Id, m.SenderUserId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt, m.LastModifiedAt != null, m.ReplyMessage != null ? m.ReplyMessageId : null, m.Attachments))
                 .Reverse()
                 .ToListAsync();
 
@@ -276,7 +276,7 @@ public sealed class ConversationService(
                 .Where(m => m.CreatedAt > beforeTimestamp)
                 .Take(take)
                 .Include(m => m.Sender)
-                .Select(m => new IConversationService.RenderingMessageDTO(m.Id, m.SenderId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt, m.LastModifiedAt != null, m.ReplyMessage != null ? m.DeletedAt != null ? m.ReplyMessageId : Guid.Empty : null, m.Attachments))
+                .Select(m => new IConversationService.RenderingMessageDTO(m.Id, m.SenderUserId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt, m.LastModifiedAt != null, m.ReplyMessage != null ? m.DeletedAt != null ? m.ReplyMessageId : Guid.Empty : null, m.Attachments))
                 .ToListAsync();
 
             List<Guid> replyMessageIds = messages.Where(m => m.ReplyMessageId.HasValue).Select(m => m.ReplyMessageId!.Value).ToList();

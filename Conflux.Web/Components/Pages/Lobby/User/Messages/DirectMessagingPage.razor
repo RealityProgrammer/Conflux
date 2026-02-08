@@ -145,7 +145,7 @@
             await using var dbContext = await DbContextFactory.CreateDbContextAsync();
             var otherUser = await dbContext.Conversations
                 .Where(c => c.Id == ConversationId)
-                .Select(c => c.FriendRequest!.SenderId == _userId ? c.FriendRequest.ReceiverId : c.FriendRequest.SenderId)
+                .Select(c => c.FriendRequest!.SenderUserId == _userId ? c.FriendRequest.ReceiverUserId : c.FriendRequest.SenderUserId)
                 .Join(dbContext.Users, id => id, u => u.Id, (id, u) => new OtherUserDTO {
                     UserId = u.Id,
                     UserName = u.UserName!,

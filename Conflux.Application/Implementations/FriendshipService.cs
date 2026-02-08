@@ -21,8 +21,9 @@ public sealed partial class FriendshipService(
         await using var database = await dbContextFactory.CreateDbContextAsync();
         var requestData = await database.FriendRequests
             .AsNoTracking()
-            .Where(r => (r.SenderId == senderId && r.ReceiverId == receiverId) || (r.SenderId == receiverId && r.ReceiverId == senderId))
-            .Select(x => new { x.Id, x.Status, x.SenderId })
+            .Where(r => (r.SenderUserId == senderId && r.ReceiverUserId == receiverId) || (r.SenderUserId == receiverId && r.ReceiverUserId == senderId))
+            .Select(x => new { x.Id, x.Status,
+                SenderId = x.SenderUserId })
             .FirstOrDefaultAsync();
 
         // Determine whether exists a friend request between 2 user ids, order doesn't matter.
@@ -33,11 +34,11 @@ public sealed partial class FriendshipService(
 
                     int numUpdatedRows = await database.FriendRequests
                         .AsNoTracking()
-                        .Where(r => (r.SenderId == senderId && r.ReceiverId == receiverId) || (r.SenderId == receiverId && r.ReceiverId == senderId))
+                        .Where(r => (r.SenderUserId == senderId && r.ReceiverUserId == receiverId) || (r.SenderUserId == receiverId && r.ReceiverUserId == senderId))
                         .ExecuteUpdateAsync(builder => {
                             builder
-                                .SetProperty(r => r.SenderId, senderId)
-                                .SetProperty(r => r.ReceiverId, receiverId)
+                                .SetProperty(r => r.SenderUserId, senderId)
+                                .SetProperty(r => r.ReceiverUserId, receiverId)
                                 .SetProperty(r => r.CreatedAt, DateTime.UtcNow)
                                 .SetProperty(r => r.ResponseAt, (DateTime?)null)
                                 .SetProperty(r => r.Status, FriendRequestStatus.Pending);
@@ -71,8 +72,8 @@ public sealed partial class FriendshipService(
         }
 
         FriendRequest newRequest = new() {
-            SenderId = senderId,
-            ReceiverId = receiverId,
+            SenderUserId = senderId,
+            ReceiverUserId = receiverId,
             Status = FriendRequestStatus.Pending,
             CreatedAt = DateTime.UtcNow,
         };
@@ -94,7 +95,7 @@ public sealed partial class FriendshipService(
 
         var receiverId = await database.FriendRequests
             .Where(r => r.Status == FriendRequestStatus.Pending && r.Id == friendRequestId)
-            .Select(r => r.ReceiverId)
+            .Select(r => r.ReceiverUserId)
             .FirstOrDefaultAsync();
 
         if (receiverId == Guid.Empty) {
@@ -124,7 +125,7 @@ public sealed partial class FriendshipService(
         
         var senderId = await database.FriendRequests
             .Where(r => r.Status == FriendRequestStatus.Pending && r.Id == friendRequestId)
-            .Select(r => r.SenderId)
+            .Select(r => r.SenderUserId)
             .FirstOrDefaultAsync();
 
         if (senderId == Guid.Empty) {
@@ -154,7 +155,7 @@ public sealed partial class FriendshipService(
         
         var senderId = await database.FriendRequests
             .Where(r => r.Status == FriendRequestStatus.Pending && r.Id == friendRequestId)
-            .Select(r => r.SenderId)
+            .Select(r => r.SenderUserId)
             .FirstOrDefaultAsync();
 
         if (senderId == Guid.Empty) {
@@ -184,7 +185,9 @@ public sealed partial class FriendshipService(
         
         var userIds = await database.FriendRequests
             .Where(r => r.Status == FriendRequestStatus.Accepted && r.Id == friendRequestId)
-            .Select(r => new { r.SenderId, r.ReceiverId })
+            .Select(r => new {
+                SenderId = r.SenderUserId,
+                ReceiverId = r.ReceiverUserId })
             .FirstOrDefaultAsync();
 
         if (userIds == null) {

@@ -88,7 +88,7 @@
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
         var query = dbContext.FriendRequests
-            .Where(r => r.Status == FriendRequestStatus.Accepted && (r.SenderId == InspectingUserId || r.ReceiverId == InspectingUserId));
+            .Where(r => r.Status == FriendRequestStatus.Accepted && (r.SenderUserId == InspectingUserId || r.ReceiverUserId == InspectingUserId));
         
         var totalCount = await query.CountAsync();
 
@@ -99,7 +99,7 @@
         var page = await query
             .Join(
                 dbContext.Users,
-                r => r.SenderId == InspectingUserId ? r.ReceiverId : r.SenderId,
+                r => r.SenderUserId == InspectingUserId ? r.ReceiverUserId : r.SenderUserId,
                 user => user.Id,
                 (r, user) => user
             )

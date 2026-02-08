@@ -25,7 +25,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity
                 .HasMany(user => user.SentFriendRequests)
                 .WithOne(request => request.Sender)
-                .HasForeignKey(request => request.SenderId)
+                .HasForeignKey(request => request.SenderUserId)
                 .HasPrincipalKey(user => user.Id)
                 .OnDelete(DeleteBehavior.Cascade)
                 .IsRequired();
@@ -33,14 +33,16 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity
                 .HasMany(user => user.ReceivedFriendRequests)
                 .WithOne(request => request.Receiver)
-                .HasForeignKey(request => request.ReceiverId)
+                .HasForeignKey(request => request.ReceiverUserId)
                 .HasPrincipalKey(user => user.Id)
                 .OnDelete(DeleteBehavior.Cascade)
                 .IsRequired();
         }).Entity<FriendRequest>(entity => {
             entity.HasKey(request => request.Id);
             
-            entity.HasIndex(request => new { request.SenderId, request.ReceiverId }).IsUnique();
+            entity.HasIndex(request => new {
+                SenderId = request.SenderUserId,
+                ReceiverId = request.ReceiverUserId }).IsUnique();
         });
 
         builder.Entity<Conversation>(entity => {
@@ -68,7 +70,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             
             entity.HasOne(message => message.Sender)
                 .WithMany()
-                .HasForeignKey(message => message.SenderId)
+                .HasForeignKey(message => message.SenderUserId)
                 .OnDelete(DeleteBehavior.Cascade);
             
             entity.HasOne(message => message.ReplyMessage)
@@ -89,7 +91,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
             entity.HasOne(community => community.Creator)
                 .WithMany(user => user.CreatedCommunities)
-                .HasForeignKey(community => community.CreatorId)
+                .HasForeignKey(community => community.CreatorUserId)
                 .HasPrincipalKey(user => user.Id)
                 .IsRequired();
 

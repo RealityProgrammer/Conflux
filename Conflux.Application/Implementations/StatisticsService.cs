@@ -65,7 +65,7 @@ public sealed class StatisticsService(
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
         var stats = await dbContext.MessageReports
-            .Where(r => r.Message.SenderId == userId && r.Message.Conversation.CommunityChannelId == null)
+            .Where(r => r.Message.SenderUserId == userId && r.Message.Conversation.CommunityChannelId == null)
             .GroupBy(r => 1)
             .Select(g => new UserReportStatistics(
                 TotalReportCount: g.Count(),
@@ -90,7 +90,7 @@ public sealed class StatisticsService(
         }
 
         var stats = await dbContext.MessageReports
-            .Where(r => r.Message.SenderId == extractedIds.UserId && r.Message.Conversation.CommunityChannel!.ChannelCategory.CommunityId == extractedIds.CommunityId)
+            .Where(r => r.Message.SenderUserId == extractedIds.UserId && r.Message.Conversation.CommunityChannel!.ChannelCategory.CommunityId == extractedIds.CommunityId)
             .GroupBy(r => 1)
             .Select(g => new UserReportStatistics(
                 TotalReportCount: g.Count(),

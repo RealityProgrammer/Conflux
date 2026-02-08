@@ -94,14 +94,14 @@
     private async ValueTask<ItemsProviderResult<FriendSearchResult>> LoadProvider(ItemsProviderRequest request) {
         await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
             IQueryable<FriendRequest> query = dbContext.FriendRequests
-                .Where(r => r.Status == FriendRequestStatus.Accepted && (r.SenderId == UserId || r.ReceiverId == UserId))
+                .Where(r => r.Status == FriendRequestStatus.Accepted && (r.SenderUserId == UserId || r.ReceiverUserId == UserId))
                 .Include(r => r.Sender).Include(r => r.Receiver);
 
             if (!string.IsNullOrEmpty(_normalizedNameSearch)) {
                 query = query
                     .Where(r => 
-                        r.ReceiverId == UserId && r.Sender.UserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(r.Sender.DisplayName, $"%{_normalizedNameSearch}%") ||
-                        r.SenderId == UserId && r.Receiver.UserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(r.Receiver.DisplayName, $"%{_normalizedNameSearch}%")
+                        r.ReceiverUserId == UserId && r.Sender.UserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(r.Sender.DisplayName, $"%{_normalizedNameSearch}%") ||
+                        r.SenderUserId == UserId && r.Receiver.UserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(r.Receiver.DisplayName, $"%{_normalizedNameSearch}%")
                     );
             }
             
@@ -115,7 +115,7 @@
                 .OrderByDescending(r => r.CreatedAt)
                 .Skip(request.StartIndex)
                 .Take(request.Count)
-                .Join(dbContext.Users, r => r.SenderId == UserId ? r.ReceiverId : r.SenderId, user => user.Id, (request, user) => new FriendSearchResult {
+                .Join(dbContext.Users, r => r.SenderUserId == UserId ? r.ReceiverUserId : r.SenderUserId, user => user.Id, (request, user) => new FriendSearchResult {
                     FriendRequestId = request.Id,
                     UserName = user.UserName!,
                     DisplayName = user.DisplayName,

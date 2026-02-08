@@ -170,10 +170,10 @@
                 .Select(user => new {
                     User = user,
                     FriendRequest = user.SentFriendRequests
-                        .Where(fr => fr.ReceiverId == UserId)
+                        .Where(fr => fr.ReceiverUserId == UserId)
                         .Concat(
                             user.ReceivedFriendRequests
-                                .Where(fr => fr.SenderId == UserId)
+                                .Where(fr => fr.SenderUserId == UserId)
                             )
                         .FirstOrDefault(),
                 })
@@ -184,7 +184,7 @@
                     x.User.AvatarProfilePath,
                     x.FriendRequest == null ? FriendStatus.Stranger
                     : x.FriendRequest.Status == FriendRequestStatus.Accepted ? FriendStatus.Friend
-                    : x.FriendRequest.Status == FriendRequestStatus.Pending ? x.FriendRequest.SenderId == UserId ? FriendStatus.OutcomingPending : FriendStatus.IncomingPending
+                    : x.FriendRequest.Status == FriendRequestStatus.Pending ? x.FriendRequest.SenderUserId == UserId ? FriendStatus.OutcomingPending : FriendStatus.IncomingPending
                     : FriendStatus.Stranger,
                     x.FriendRequest == null ? null : x.FriendRequest.Id
                 ))

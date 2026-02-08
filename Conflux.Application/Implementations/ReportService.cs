@@ -22,7 +22,8 @@ public class ReportService(
 
         var messageData = await dbContext.ChatMessages
             .Where(m => m.Id == messageId)
-            .Select(m => new { m.SenderId, m.Body, m.Attachments })
+            .Select(m => new {
+                SenderId = m.SenderUserId, m.Body, m.Attachments })
             .FirstOrDefaultAsync();
 
         if (messageData == null) {
@@ -55,7 +56,7 @@ public class ReportService(
             .Include(r => r.Message)
             .ThenInclude(m => m.Conversation)
             .Where(r => r.Message.Conversation.CommunityChannelId == null)
-            .Select(r => r.Message.SenderId)
+            .Select(r => r.Message.SenderUserId)
             .Distinct();
 
         int reportedUsersCount = await reportedUserIds.CountAsync();
@@ -82,7 +83,7 @@ public class ReportService(
         var query = dbContext.MessageReports
             .Include(r => r.Message)
             .ThenInclude(m => m.Conversation)
-            .Where(r => r.Message.Conversation.CommunityChannelId == null && r.Message.SenderId == userId)
+            .Where(r => r.Message.Conversation.CommunityChannelId == null && r.Message.SenderUserId == userId)
             .Select(r => r.MessageId);
 
         var totalCount = await query.CountAsync();
@@ -127,7 +128,7 @@ public class ReportService(
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
         
         var reportedUserIds = QueryMessageReportsFromCommunity(dbContext, communityId)
-            .Select(r => r.Message.SenderId)
+            .Select(r => r.Message.SenderUserId)
             .Distinct();
         
         int reportedMembersCount = await reportedUserIds.CountAsync();
@@ -168,7 +169,7 @@ public class ReportService(
 
         var query = QueryMessageReportsFromCommunity(dbContext, extractedIds.CommunityId)
             .Include(r => r.Message)
-            .Where(r => r.Message.SenderId == extractedIds.UserId)
+            .Where(r => r.Message.SenderUserId == extractedIds.UserId)
             .Select(r => r.MessageId)
             .Distinct();
             
@@ -202,7 +203,7 @@ public class ReportService(
 
         var reports = await QueryMessageReportsFromCommunity(dbContext, extractedIds.CommunityId)
             .Include(r => r.Message)
-            .Where(r => r.Message.SenderId == extractedIds.UserId)
+            .Where(r => r.Message.SenderUserId == extractedIds.UserId)
             .Select(r => r.MessageId)
             .Distinct()
             .OrderBy(g => g)
@@ -216,7 +217,7 @@ public class ReportService(
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
         return await dbContext.MessageReports
-            .Where(m => m.Message.Conversation.CommunityChannelId == null && m.Message.SenderId == userId)
+            .Where(m => m.Message.Conversation.CommunityChannelId == null && m.Message.SenderUserId == userId)
             .Select(r => r.MessageId)
             .ToListAsync();
     }
@@ -325,7 +326,7 @@ public class ReportService(
             .Include(r => r.Message)
             .Select(r => new {
                 r.Message.Conversation.CommunityChannel!.ChannelCategory.CommunityId,
-                r.Message.SenderId,
+                SenderId = r.Message.SenderUserId,
             })
             .FirstOrDefaultAsync();
 

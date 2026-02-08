@@ -98,7 +98,7 @@
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
         
         IQueryable<FriendRequest> query = dbContext.FriendRequests
-            .Where(x => x.Status == FriendRequestStatus.Pending && x.SenderId == UserId)
+            .Where(x => x.Status == FriendRequestStatus.Pending && x.SenderUserId == UserId)
             .Include(r => r.Receiver);
 
         if (!string.IsNullOrEmpty(_normalizedNameSearch)) {

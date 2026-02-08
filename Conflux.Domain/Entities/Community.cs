@@ -9,7 +9,7 @@ public class Community : ICreatedAtColumn {
     [MaxLength(255)] public string? AvatarPath { get; set; }
     [MaxLength(255)] public string? BannerPath { get; set; }
     
-    public Guid CreatorId { get; set; }
+    public Guid CreatorUserId { get; set; }
     public ApplicationUser Creator { get; set; } = null!;
 
     public Guid InvitationId { get; set; }

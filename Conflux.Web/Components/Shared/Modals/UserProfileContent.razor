@@ -254,12 +254,12 @@
                 .SingleAsync();
 
             var friendRequestData = await dbContext.FriendRequests
-                .Where(r => (r.SenderId == SessionUserId && r.ReceiverId == InspectingUserId) || (r.SenderId == InspectingUserId && r.ReceiverId == SessionUserId))
+                .Where(r => (r.SenderUserId == SessionUserId && r.ReceiverUserId == InspectingUserId) || (r.SenderUserId == InspectingUserId && r.ReceiverUserId == SessionUserId))
                 .Select(r => new {
                     Action = r.Status == FriendRequestStatus.Accepted ?
                         FriendRequestAction.Unfriend :
                         r.Status == FriendRequestStatus.Pending ?
-                            r.SenderId == SessionUserId ?
+                            r.SenderUserId == SessionUserId ?
                                 FriendRequestAction.Cancel :
                                 FriendRequestAction.RejectOrAccept
                         : FriendRequestAction.Add,
@@ -323,14 +323,14 @@
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
         return await dbContext.FriendRequests
-            .Where(x => x.Status == FriendRequestStatus.Accepted && (x.SenderId == SessionUserId || x.ReceiverId == SessionUserId))
-            .Select(x => x.SenderId == SessionUserId ? x.Receiver : x.Sender)
+            .Where(x => x.Status == FriendRequestStatus.Accepted && (x.SenderUserId == SessionUserId || x.ReceiverUserId == SessionUserId))
+            .Select(x => x.SenderUserId == SessionUserId ? x.Receiver : x.Sender)
             // TODO: Could we replace these with IntersectBy?
             // I'm 30min away from going home from a 8-5 and i don't want to think more about this
             .Join(
                 dbContext.FriendRequests
-                    .Where(x => x.Status == FriendRequestStatus.Accepted && (x.SenderId == InspectingUserId || x.ReceiverId == InspectingUserId))
-                    .Select(x => x.SenderId == InspectingUserId ? x.Receiver : x.Sender),
+                    .Where(x => x.Status == FriendRequestStatus.Accepted && (x.SenderUserId == InspectingUserId || x.ReceiverUserId == InspectingUserId))
+                    .Select(x => x.SenderUserId == InspectingUserId ? x.Receiver : x.Sender),
                 x => x.Id,
                 x => x.Id,
                 (user1Friend, user2Friend) => user1Friend

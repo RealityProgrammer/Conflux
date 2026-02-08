@@ -113,7 +113,7 @@
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
         
         IQueryable<FriendRequest> query = dbContext.FriendRequests
-            .Where(x => x.Status == FriendRequestStatus.Pending && x.ReceiverId == UserId)
+            .Where(x => x.Status == FriendRequestStatus.Pending && x.ReceiverUserId == UserId)
             .Include(r => r.Sender);
 
         if (!string.IsNullOrEmpty(_normalizedNameSearch)) {
@@ -142,7 +142,7 @@
         if (_processingRequests.TryAdd(request, FriendRequestProcessingAction.Rejecting)) {
             try {
                 if (!await FriendshipService.RejectFriendRequestAsync(request.Id)) {
-                    Logger.LogWarning("Failed to reject friend request from user {from} to user {id}.", request.SenderId, request.ReceiverId);
+                    Logger.LogWarning("Failed to reject friend request from user {from} to user {id}.", request.SenderUserId, request.ReceiverUserId);
                 }
             } finally {
                 _processingRequests.TryRemove(request, out _);
@@ -159,7 +159,7 @@
         if (_processingRequests.TryAdd(request, FriendRequestProcessingAction.Accepting)) {
             try {
                 if (!await FriendshipService.AcceptFriendRequestAsync(request.Id)) {
-                    Logger.LogWarning("Failed to accept friend request from user {from} to user {id}.", request.SenderId, request.ReceiverId);
+                    Logger.LogWarning("Failed to accept friend request from user {from} to user {id}.", request.SenderUserId, request.ReceiverUserId);
                 }
             } finally {
                 _processingRequests.TryRemove(request, out _);
