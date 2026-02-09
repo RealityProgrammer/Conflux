@@ -1,9 +1,8 @@
 ﻿@implements IAsyncDisposable
 
 @inject IJSRuntime JavascriptRuntime
-@inject ILogger<MediaDeviceSelectionDropdown> Logger
 
-<SelectionDropdown @bind-Value="DeviceId" ContainerCssClass="@ContainerCssClass" ButtonCssClass="@ButtonCssClass" PopoverCssClass="@PopoverCssClass">
+<SelectionDropdown @bind-Value:get="DeviceId" @bind-Value:set="DeviceIdChanged" ContainerCssClass="@ContainerCssClass" ButtonCssClass="@ButtonCssClass" PopoverCssClass="@PopoverCssClass">
     <ValueDisplayContent>
         <p class="whitespace-nowrap overflow-hidden text-ellipsis">@GetDeviceLabel()</p>
     </ValueDisplayContent>
@@ -82,13 +81,13 @@
         if (string.IsNullOrEmpty(DeviceId) || _deviceInfos.Length == 0) {
             return "None";
         }
-
+        
         foreach (var device in _deviceInfos) {
             if (device.DeviceId == DeviceId) {
                 return device.Label;
             }
         }
-
+        
         return "???";
     }
 

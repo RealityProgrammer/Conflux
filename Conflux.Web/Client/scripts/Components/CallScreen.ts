@@ -53,6 +53,7 @@ class CallScreen {
             });
             
             this.localVideoElement.srcObject = this.localMediaStream;
+            this.returnCurrentDevices();
         } catch (err: unknown) {
             if (err instanceof Error) {
                 switch (err.name) {
@@ -100,6 +101,7 @@ class CallScreen {
                 });
                 
                 this.localVideoElement.srcObject = this.localMediaStream;
+                this.returnCurrentDevices();
             } catch (err: unknown) {
                 if (err instanceof Error) {
                     switch (err.name) {
@@ -131,6 +133,27 @@ class CallScreen {
         } catch (error) {
             window.reportError(error);
         }
+    };
+
+    returnCurrentDevices = async () => {
+        if (!this.localMediaStream) {
+            return;
+        }
+        
+        // Get audio input device
+        const audioTrack: MediaStreamTrack | undefined = this.localMediaStream.getAudioTracks()[0];
+        const audioInputDeviceId = audioTrack?.getSettings().deviceId;
+        
+        // Get audio output device
+        const audioOutputs = (await navigator.mediaDevices.enumerateDevices()).filter(device => device.kind === 'audiooutput' && device.deviceId !== "default");
+        // just take the first one for the time being.
+        const audioOutputDeviceId = audioOutputs[0]!.deviceId;
+        
+        // Get video input device
+        const videoTrack = this.localMediaStream.getVideoTracks()[0];
+        const videoInputDeviceId = videoTrack?.getSettings().deviceId;
+        
+        await this.dotnetHelper.invokeMethodAsync("OnLocalDevicesReceived", audioInputDeviceId, audioOutputDeviceId, videoInputDeviceId);
     };
     
     handleAnswer = async (answer: RTCSessionDescriptionInit) => {
@@ -262,7 +285,7 @@ class CallScreen {
 
     private replaceTrackInStream = async (kind: 'audio' | 'video', deviceId: string) => {
         if (!this.localMediaStream) return;
-
+        
         const constraints = {
             [kind]: deviceId === 'default' ? true : { deviceId: { exact: deviceId } }
         };

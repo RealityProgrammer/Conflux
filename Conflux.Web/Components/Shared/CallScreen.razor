@@ -219,6 +219,13 @@
         }
     }
 
+    [JSInvokable]
+    public void OnLocalDevicesReceived(string audioInputDeviceId, string audioOutputDeviceId, string videoInputDeviceId) {
+        _audioInputDevice = audioInputDeviceId;
+        _audioOutputDevice = audioOutputDeviceId;
+        _videoInputDevice = videoInputDeviceId;
+    }
+
     private void OnCallAccepted(CallRoom callRoom) {
         if (!ReferenceEquals(CallRoom, callRoom)) {
             return;
@@ -284,7 +291,7 @@
             return;
         }
 
-        await _module.InvokeVoidAsync("setAudioInputDevice", deviceId);
+        await _module.InvokeVoidAsync("setAudioInputDevice", _callScreen, deviceId);
     }
 
     private async Task SetAudioOutputDevice(string deviceId) {
@@ -292,15 +299,16 @@
             return;
         }
         
-        await _module.InvokeVoidAsync("setAudioOutputDevice", deviceId);
+        await _module.InvokeVoidAsync("setAudioOutputDevice", _callScreen, deviceId);
     }
     
-    private async Task SetVideoInputDevice(string deviceId) {
+    private async Task SetVideoInputDevice(string value) {
         if (_module == null) {
             return;
         }
 
-        await _module.InvokeVoidAsync("SetVideoInputDevice", deviceId);
+        _videoInputDevice = value;
+        await _module.InvokeVoidAsync("setVideoInputDevice", _callScreen, _videoInputDevice);
     }
 
     public async ValueTask DisposeAsync() {

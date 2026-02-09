@@ -103,13 +103,14 @@
                 if (_disposer != null) {
                     await _module.InvokeVoidAsync("unregister", _disposer);
                     await _disposer.DisposeAsync();
-                    
+
                     _disposer = null;
                 }
-                
+
                 await _module.DisposeAsync();
 
             } catch (JSDisconnectedException) {
+            } catch (TaskCanceledException) {
             }
         }
     }
