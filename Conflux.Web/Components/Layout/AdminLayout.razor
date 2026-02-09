@@ -11,6 +11,12 @@
             <p class="block select-none">People</p>
         </NavLink>
         
+        <NavLink href="/admin/conversations" class="@("flex flex-row justify-start items-center px-4 py-2 rounded-lg w-full gap-3 flex-none cursor-pointer bg-transparent hover:bg-white/15 active:bg-black/15")" ActiveClass="bg-white/20" Match="NavLinkMatch.Prefix">
+            <SpeechBubble Content="ChatContent.Text" ArrowDirection="ChatArrowDirection.Right" class="size-6 flex-none fill-white"/>
+
+            <p class="block select-none">Conversations</p>
+        </NavLink>
+        
         <NavLink href="/admin/reports" class="@("flex flex-row justify-start items-center px-4 py-2 rounded-lg w-full gap-3 flex-none cursor-pointer bg-transparent hover:bg-white/15 active:bg-black/15")" ActiveClass="bg-white/20" Match="NavLinkMatch.Prefix">
             <Flag class="size-6 flex-none fill-white"/>
 

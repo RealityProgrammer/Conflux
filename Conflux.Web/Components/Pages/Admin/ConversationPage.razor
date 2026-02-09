@@ -1,0 +1,60 @@
+﻿@page "/admin/conversations"
+@using Conflux.Application.Dto
+
+@inject IStatisticsService StatisticsService
+
+<h1 class="text-2xl font-semibold">Conversation Management</h1>
+
+<h2 class="text-lg mt-2">Conversation metrics</h2>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2 mt-2">
+    <Card class="border border-gray-600 shadow-md">
+        <CardHeader Title="Total"/>
+        
+        <CardContent>
+            @if (_isLoading) {
+                <p class="text-right text-lg animate-pulse select-none">Loading...</p>
+            } else {
+                <p class="text-right text-xl">@(_conversationStatistics.DirectConversationCount + _conversationStatistics.CommunityConversationCount)</p>
+            }
+        </CardContent>
+    </Card>
+    
+    <Card class="border border-gray-600 shadow-md">
+        <CardHeader Title="Direct"/>
+        
+        <CardContent>
+            @if (_isLoading) {
+                <p class="text-right text-lg animate-pulse select-none">Loading...</p>
+            } else {
+                <p class="text-right text-xl">@_conversationStatistics.DirectConversationCount</p>
+            }
+        </CardContent>
+    </Card>
+    
+    <Card class="border border-gray-600 shadow-md">
+        <CardHeader Title="Community"/>
+        
+        <CardContent>
+            @if (_isLoading) {
+                <p class="text-right text-lg animate-pulse select-none">Loading...</p>
+            } else {
+                <p class="text-right text-xl">@_conversationStatistics.CommunityConversationCount</p>
+            }
+        </CardContent>
+    </Card>
+</div>
+
+@code {
+    private bool _isLoading = true;
+    private ConversationStatisticsDTO _conversationStatistics;
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            _conversationStatistics = await StatisticsService.GetConversationStatistics();
+            _isLoading = false;
+            
+            StateHasChanged();
+        }
+    }
+}

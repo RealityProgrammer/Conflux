@@ -34,6 +34,16 @@ public sealed class StatisticsService(
             .Select(g => new ReportStatisticsDTO(g.Count(), g.Count(r => r.Status != ReportStatus.InProgress)))
             .SingleAsync();
     }
+
+    public async Task<ConversationStatisticsDTO> GetConversationStatistics() {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        return await dbContext.Conversations
+            .GroupBy(r => 1)
+            .Select(g => new ConversationStatisticsDTO(g.Count(c => c.FriendRequestId != null), g.Count(c => c.CommunityChannelId != null)))
+            .SingleAsync();
+    }
     
     public async Task<ReportCountStatistics?> GetReportCountStatisticsAsync(Guid communityId) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
