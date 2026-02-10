@@ -15,7 +15,7 @@ public sealed class StatisticsService(
     public async Task<UserStatisticsDTO> GetUserStatistics() {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-
+        
         // Get number of users.
         int userCount = await dbContext.Users.CountAsync();
         
@@ -31,7 +31,15 @@ public sealed class StatisticsService(
             .ThenInclude(m => m.Conversation)
             .Where(r => r.Message.Conversation.CommunityChannelId == null)
             .GroupBy(r => 1)
-            .Select(g => new ReportStatisticsDTO(g.Count(), g.Count(r => r.Status != ReportStatus.InProgress)))
+            .Select(g => 
+                new ReportStatisticsDTO(
+                    TotalReportCount: g.Count(),
+                    UnresolvedReportCount: g.Count(r => r.Status == ReportStatus.InProgress),
+                    GlobalDismissCount: g.Count(r => r.Status == ReportStatus.Dismissed),
+                    GlobalWarnCount: g.Count(r => r.Status == ReportStatus.Warned),
+                    GlobalBanCount: g.Count(r => r.Status == ReportStatus.Banned)
+                )
+            )
             .SingleAsync();
     }
 
@@ -39,10 +47,16 @@ public sealed class StatisticsService(
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
-        return await dbContext.Conversations
+        ConversationStatisticsDTO output = default;
+
+        var conversationInfo = await dbContext.Conversations
             .GroupBy(r => 1)
-            .Select(g => new ConversationStatisticsDTO(g.Count(c => c.FriendRequestId != null), g.Count(c => c.CommunityChannelId != null)))
+            .Select(g => new ValueTuple<int, int>(g.Count(c => c.FriendRequestId != null), g.Count(c => c.CommunityChannelId != null)))
             .SingleAsync();
+
+        var messageInfo = await dbContext.ChatMessages.CountAsync();
+
+        return new(conversationInfo.Item1, conversationInfo.Item2, messageInfo);
     }
     
     public async Task<ReportCountStatistics?> GetReportCountStatisticsAsync(Guid communityId) {
@@ -79,7 +93,8 @@ public sealed class StatisticsService(
             .GroupBy(r => 1)
             .Select(g => new UserReportStatistics(
                 TotalReportCount: g.Count(),
-                ResolvedReportCount: g.Count(r => r.Status != ReportStatus.InProgress)
+                ResolvedReportCount: g.Count(r => r.Status != ReportStatus.InProgress),
+                WarnCount: g.Count(r => r.Status == ReportStatus.Warned)
             ))
             .SingleOrDefaultAsync();
 
@@ -104,7 +119,8 @@ public sealed class StatisticsService(
             .GroupBy(r => 1)
             .Select(g => new UserReportStatistics(
                 TotalReportCount: g.Count(),
-                ResolvedReportCount: g.Count(r => r.Status != ReportStatus.InProgress)
+                ResolvedReportCount: g.Count(r => r.Status != ReportStatus.InProgress),
+                WarnCount: g.Count(r => r.Status == ReportStatus.Warned)
             ))
             .SingleOrDefaultAsync();
 

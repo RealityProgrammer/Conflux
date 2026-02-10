@@ -45,6 +45,22 @@
     </Card>
 </div>
 
+<h2 class="text-lg mt-2">Message metrics</h2>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2 mt-2">
+    <Card class="border border-gray-600 shadow-md">
+        <CardHeader Title="Global Count"/>
+        
+        <CardContent>
+            @if (_isLoading) {
+                <p class="text-right text-lg animate-pulse select-none">Loading...</p>
+            } else {
+                <p class="text-right text-xl">@(_conversationStatistics.GlobalMessageCount)</p>
+            }
+        </CardContent>
+    </Card>
+</div>
+
 @code {
     private bool _isLoading = true;
     private ConversationStatisticsDTO _conversationStatistics;

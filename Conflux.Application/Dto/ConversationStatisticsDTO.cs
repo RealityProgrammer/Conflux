@@ -2,5 +2,6 @@
 
 public readonly record struct ConversationStatisticsDTO(
     int DirectConversationCount,
-    int CommunityConversationCount
+    int CommunityConversationCount,
+    int GlobalMessageCount
 );

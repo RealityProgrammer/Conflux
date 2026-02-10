@@ -1,7 +1,4 @@
 ﻿@using Conflux.Web.Components.Guards
-@using Conflux.Web.Services
-@using Conflux.Web.Services.Abstracts
-@using System.Security.Claims
 
 @inherits LayoutComponentBase
 @layout MainLayout
@@ -10,6 +7,8 @@
 
 @inject IFriendshipEventDispatcher FriendshipEventDispatcher
 @inject IUserNotificationService UserNotificationService
+
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 
 <RedirectToProfileSetup/>
 
