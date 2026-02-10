@@ -1,7 +1,9 @@
 ﻿@using Conflux.Application.Dto
 @using Conflux.Domain.Events
 @using Conflux.Domain.Extensions
+@using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
 
 @implements IDisposable
 
@@ -11,6 +13,7 @@
 @inject IFriendshipEventDispatcher FriendshipEventDispatcher
 @inject IConversationService ConversationService
 @inject NavigationManager NavigationManager
+@inject IUserService UserService
 
 @switch (_state) {
     case State.Loading:
@@ -232,6 +235,8 @@
     [Parameter, EditorRequired] public required EventCallback OnCloseRequested { get; set; }
     
     [CascadingParameter(Name = "SessionUserId")] private Guid SessionUserId { get; set; }
+    
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; }
 
     private UserProfileDTO _userProfile;
     
@@ -242,6 +247,8 @@
     private State _state;
 
     private bool _isProcessingFriendRequest;
+
+    private IList<string> _userRoles;
     
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
@@ -291,6 +298,10 @@
             _state = string.IsNullOrEmpty(_userProfile.DisplayName) ? State.Invalid : State.Success;
 
             _mutualFriends = await CollectMutualFriends();
+
+            // if (await UserService.IsInRoles(SessionUserId, ["Admin", "Moderator", "SystemDeveloper"])) {
+            //     _userRoles = await UserService.GetRolesAsync(SessionUserId);
+            // }
 
             FriendshipEventDispatcher.OnFriendRequestReceived += OnFriendRequestReceived;
             FriendshipEventDispatcher.OnFriendRequestCanceled += OnFriendRequestCanceled;
@@ -438,7 +449,7 @@
         }
         
         _isProcessingFriendRequest = true;
-
+        
         try {
             await FriendshipService.UnfriendAsync(requestId);
             _userProfile.FriendRequestAction = FriendRequestAction.Add;

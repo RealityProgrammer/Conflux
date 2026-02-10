@@ -89,6 +89,12 @@ builder.Services.AddAuthorizationBuilder()
     })
     .AddPolicy("BanCommunityMember", policy => {
         policy.Requirements.Add(new BanCommunityMemberRequirement());
+    })
+    .AddPolicy("AccessAdministratorPage", policy => {
+        policy.RequireRole("Moderator", "Admin", "SystemDeveloper");
+    })
+    .AddPolicy("AccessUserProfileInformation", policy => {
+        policy.RequireRole("Moderator", "Admin", "SystemDeveloper");
     });
 
 builder.Services.AddSingleton<IAuthorizationHandler, CreateCommunityChannelCategoryAuthorizationHandler>();
@@ -319,12 +325,26 @@ async Task CreateFakeUsers(UserManager<ApplicationUser> userManager) {
     if (!await userManager.Users.AnyAsync(u => userManager.NormalizeEmail("sysdev@example.com") == u.NormalizedEmail)) {
         await userManager.CreateAsync(new() {
             Email = "sysdev@example.com",
-            UserName = $"System Developer",
-            DisplayName = $"System Developer",
+            UserName = $"SystemDeveloper",
+            DisplayName = $"SystemDeveloper",
             EmailConfirmed = true,
             IsProfileSetup = true,
         }, "Password1!");
 
         await userManager.AddToRoleAsync(await userManager.Users.Where(u => u.Email == "sysdev@example.com").FirstAsync(), "SystemDeveloper");
+    }
+
+    if (!await userManager.Users.AnyAsync(u => userManager.NormalizeEmail("sysdev2@example.com") == u.NormalizedEmail)) {
+        var result = await userManager.CreateAsync(new() {
+            Email = "sysdev2@example.com",
+            UserName = $"SystemDeveloper2",
+            DisplayName = $"SystemDeveloper2",
+            EmailConfirmed = true,
+            IsProfileSetup = true,
+        }, "Password1!");
+        
+        await userManager.AddToRoleAsync(await userManager.Users.Where(u => u.Email == "sysdev2@example.com").FirstAsync(), "Admin");
+        await userManager.AddToRoleAsync(await userManager.Users.Where(u => u.Email == "sysdev2@example.com").FirstAsync(), "Moderator");
+        await userManager.AddToRoleAsync(await userManager.Users.Where(u => u.Email == "sysdev2@example.com").FirstAsync(), "SystemDeveloper");
     }
 }

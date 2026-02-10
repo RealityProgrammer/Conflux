@@ -63,7 +63,7 @@ public class UserService(
     public Task<IList<string>> GetRolesAsync(ApplicationUser user) {
         return userManager.GetRolesAsync(user);
     }
-
+    
     public async Task<UserDisplayDTO?> GetUserDisplayAsync(Guid userId) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         
