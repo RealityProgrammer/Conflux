@@ -2,4 +2,4 @@
 
 @layout AdminLayout
 
-@attribute [Authorize(Roles = "Moderator,Admin,SystemDeveloper")]
+@attribute [Authorize(Policy = "AccessAdministratorPage")]

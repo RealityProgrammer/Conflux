@@ -95,6 +95,9 @@ builder.Services.AddAuthorizationBuilder()
     })
     .AddPolicy("AccessUserProfileInformation", policy => {
         policy.RequireRole("Moderator", "Admin", "SystemDeveloper");
+    })
+    .AddPolicy("ReadUserSystemRole", policy => {
+        policy.RequireRole("Moderator", "Admin", "SystemDeveloper");
     });
 
 builder.Services.AddSingleton<IAuthorizationHandler, CreateCommunityChannelCategoryAuthorizationHandler>();

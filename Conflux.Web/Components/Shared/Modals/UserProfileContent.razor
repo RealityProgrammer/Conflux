@@ -1,6 +1,8 @@
 ﻿@using Conflux.Application.Dto
+@using Conflux.Application.Implementations
 @using Conflux.Domain.Events
 @using Conflux.Domain.Extensions
+@using Microsoft.AspNetCore.Authorization.Infrastructure
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
 @using System.Security.Claims
@@ -13,6 +15,7 @@
 @inject IFriendshipEventDispatcher FriendshipEventDispatcher
 @inject IConversationService ConversationService
 @inject NavigationManager NavigationManager
+@inject IAuthorizationService AuthorizationService
 @inject IUserService UserService
 
 @switch (_state) {
@@ -49,11 +52,15 @@
                 @* Text informations *@
                 <div class="flex flex-col px-2 pt-10">
                     <div>
-                        <p class="text-2xl font-bold flex flex-row items-center">
+                        <p class="text-2xl font-bold flex flex-row items-center gap-1 flex-wrap">
                             @_userProfile.DisplayName
 
                             @if (!string.IsNullOrEmpty(_userProfile.RoleName)) {
-                                <span class="ml-1 text-xs bg-gray-600 rounded-full px-1 py-0.5">@_userProfile.RoleName</span>
+                                <span class="text-xs bg-gray-600 rounded-full px-1 py-0.5">@_userProfile.RoleName</span>
+                            }
+                            
+                            @foreach (var roleName in _inspectingUserRoleNames ?? Array.Empty<string>()) {
+                                <span class="text-xs bg-blue-500 rounded-full px-1 py-0.5">@roleName</span>
                             }
                         </p>
 
@@ -235,8 +242,8 @@
     [Parameter, EditorRequired] public required EventCallback OnCloseRequested { get; set; }
     
     [CascadingParameter(Name = "SessionUserId")] private Guid SessionUserId { get; set; }
-    
-    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; }
+
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
 
     private UserProfileDTO _userProfile;
     
@@ -248,7 +255,7 @@
 
     private bool _isProcessingFriendRequest;
 
-    private IList<string> _userRoles;
+    private IList<string>? _inspectingUserRoleNames;
     
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
@@ -299,9 +306,9 @@
 
             _mutualFriends = await CollectMutualFriends();
 
-            // if (await UserService.IsInRoles(SessionUserId, ["Admin", "Moderator", "SystemDeveloper"])) {
-            //     _userRoles = await UserService.GetRolesAsync(SessionUserId);
-            // }
+            if ((await AuthorizationService.AuthorizeAsync((await AuthenticationState).User, null, "ReadUserSystemRole")).Succeeded) {
+                _inspectingUserRoleNames = await UserService.GetRolesAsync(InspectingUserId);
+            }
 
             FriendshipEventDispatcher.OnFriendRequestReceived += OnFriendRequestReceived;
             FriendshipEventDispatcher.OnFriendRequestCanceled += OnFriendRequestCanceled;

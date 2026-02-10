@@ -18,7 +18,7 @@ public interface IUserService {
 
     Task<IdentityResult> AssignRoleAsync(ApplicationUser user, string roleName);
     Task<IdentityResult> RemoveRoleAsync(ApplicationUser user, string roleName);
-    Task<IList<string>> GetRolesAsync(ApplicationUser user);
+    Task<IList<string>> GetRolesAsync(Guid userId);
     
     Task<UserDisplayDTO?> GetUserDisplayAsync(Guid userId);
 

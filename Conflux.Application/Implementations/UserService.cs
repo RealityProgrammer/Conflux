@@ -60,12 +60,22 @@ public class UserService(
         return userManager.RemoveFromRoleAsync(user, roleName);
     }
 
-    public Task<IList<string>> GetRolesAsync(ApplicationUser user) {
-        return userManager.GetRolesAsync(user);
+    public async Task<IList<string>> GetRolesAsync(Guid userId) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+        
+        return await dbContext.UserRoles
+            .Where(ur => ur.UserId == userId)
+            .Join(dbContext.Roles, 
+                ur => ur.RoleId, 
+                r => r.Id, 
+                (ur, r) => r.Name!)
+            .ToListAsync();
     }
     
     public async Task<UserDisplayDTO?> GetUserDisplayAsync(Guid userId) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
         
         return await dbContext.Users
             .Where(u => u.Id == userId)
