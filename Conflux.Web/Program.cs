@@ -46,7 +46,7 @@ builder.Services.AddAuthentication(options => {
     cookieBuilder.ApplicationCookie!.Configure(options => {
         options.LoginPath = "/auth/login";
         options.LogoutPath = "/auth/logout";
-        options.AccessDeniedPath = "/auth/denied";
+        options.AccessDeniedPath = "/denied";
     });
 });
 
@@ -298,7 +298,7 @@ async Task CreateFakeUsers(UserManager<ApplicationUser> userManager) {
             UserName = $"Admin User",
             DisplayName = $"Admin User",
             EmailConfirmed = true,
-            IsProfileSetup = false,
+            IsProfileSetup = true,
         }, "Password1!");
 
         await userManager.AddToRoleAsync(await userManager.Users.Where(u => u.Email == "admin@example.com").FirstAsync(), "Admin");
@@ -310,7 +310,7 @@ async Task CreateFakeUsers(UserManager<ApplicationUser> userManager) {
             UserName = $"Moderator User",
             DisplayName = $"Moderator User",
             EmailConfirmed = true,
-            IsProfileSetup = false,
+            IsProfileSetup = true,
         }, "Password1!");
 
         await userManager.AddToRoleAsync(await userManager.Users.Where(u => u.Email == "moderator@example.com").FirstAsync(), "Moderator");
@@ -322,7 +322,7 @@ async Task CreateFakeUsers(UserManager<ApplicationUser> userManager) {
             UserName = $"System Developer",
             DisplayName = $"System Developer",
             EmailConfirmed = true,
-            IsProfileSetup = false,
+            IsProfileSetup = true,
         }, "Password1!");
 
         await userManager.AddToRoleAsync(await userManager.Users.Where(u => u.Email == "sysdev@example.com").FirstAsync(), "SystemDeveloper");

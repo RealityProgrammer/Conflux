@@ -1,0 +1,159 @@
+﻿@using Conflux.Web.Components.Shared.Modals
+@using Conflux.Web.Helpers
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@using System.ComponentModel.DataAnnotations
+
+@inherits Conflux.Web.Components.Shared.Modals.BaseModal
+
+@inject UserManager<ApplicationUser> UserManager
+@inject ILogger<UserCreationModal> Logger
+@inject RoleManager<IdentityRole<Guid>> RoleManager
+
+@{
+    Action closeDelegate = EventUtils.AsNonRenderingEventHandler(CloseModal);
+}
+
+<div class="flex flex-row justify-center items-center size-full text-white">
+    <Card class="w-4/5 sm:w-3/4 md:w-1/2 lg:w-1/3">
+        <CardHeader Title="Create User" @onclick="closeDelegate"/>
+        
+        <CardContent class="pb-1">
+            <EditForm FormName="UserCreate" EditContext="_editContext" OnSubmit="Submit">
+                <DataAnnotationsValidator/>
+                
+                <div class="relative">
+                    <label class="input-label">Email</label>
+                    @{
+                        string classes = $"w-full h-11 mt-2 input-field {(_editContext.IsValid(_emailField) ? string.Empty : "border-red-700")}";
+                    }
+
+                    <InputText type="text" @bind-Value="Model!.Email" placeholder="Enter Email" class="@classes"/>
+
+                    <ValidationMessage For="() => Model.Email" class="text-red-500 text-sm"/>
+                </div>
+                        
+                <div class="mt-4">
+                    <label class="input-label">Password</label>
+
+                    @{ string inputCssClass = $"w-full h-11 input-field {(_editContext.IsValid(_passwordField) ? string.Empty : "border-red-700!")}"; }
+
+                    <InputText type="password" @bind-Value="Model!.Password" placeholder="Enter Password" class="@inputCssClass"/>
+                            
+                    <ValidationMessage For="() => Model.Password" class="text-red-500 text-sm"/>
+                </div>
+                
+                <div class="mt-4">
+                    <label class="input-label">Role</label>
+
+                    <SelectionDropdown TValue="string" @bind-Value="Model!.Role" ButtonCssClass="h-11 input-field w-full" PopoverCssClass="w-full flex-none">
+                        <ChildContent>
+                            <SelectionOption TValue="string?" class="px-1.5 py-1.5 text-left button-nav-menu" Value="@null">None</SelectionOption>
+                            
+                            @foreach (var roleName in _roleNames) {
+                                <SelectionOption TValue="string" class="px-1.5 py-1.5 text-left button-nav-menu" Value="roleName">@roleName</SelectionOption>
+                            }
+                        </ChildContent>
+                    </SelectionDropdown>
+                            
+                    <ValidationMessage For="() => Model.Password" class="text-red-500 text-sm"/>
+                </div>
+                
+                <div class="mt-2 flex flex-row justify-end gap-2">
+                    <button type="button" class="button-danger w-24" @onclick="closeDelegate">Cancel</button>
+                    <button type="submit" class="button-primary w-24">Apply</button>
+                </div>
+            </EditForm>
+        </CardContent>
+    </Card>
+</div>
+
+@code {
+    [SupplyParameterFromForm(FormName = "UserCreate")] private InputModel? Model { get; set; }
+    private EditContext _editContext = null!;
+    private ValidationMessageStore _messageStore = null!;
+
+    private FieldIdentifier _emailField, _passwordField, _roleField;
+
+    private List<string> _roleNames = [];
+
+    protected override void OnInitialized() {
+        base.OnInitialized();
+
+        Model ??= new();
+        _editContext = new(Model);
+        _messageStore = new(_editContext);
+
+        _emailField = FieldIdentifier.Create(() => Model.Email);
+        _passwordField = FieldIdentifier.Create(() => Model.Password);
+        _roleField = FieldIdentifier.Create(() => Model.Role);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            _roleNames = await RoleManager.Roles.Select(r => r.Name!).ToListAsync();
+        }
+    }
+
+    private async Task Submit() {
+        if (!_editContext.Validate()) {
+            return;
+        }
+
+        string name = Model!.Email[..Model.Email.IndexOf('@')];
+
+        var result = await UserManager.CreateAsync(new ApplicationUser {
+            Email = Model.Email,
+            IsProfileSetup = false,
+            DisplayName = name,
+            UserName = name,
+            CreatedAt = DateTime.UtcNow,
+        }, Model.Password);
+
+        if (result.Succeeded) {
+            if (Model.Role is { } roleName) {
+                await UserManager.AddToRoleAsync(await UserManager.Users.Where(u => u.Email == Model.Email).SingleAsync(), roleName);
+            }
+            
+            CloseModal();
+
+            ModalService.Open<OperationSuccessModal>(parameters: new Dictionary<string, object?> {
+                [nameof(OperationSuccessModal.Title)] = "User Created Successfully",
+            });
+        } else {
+            IdentityError error = result.Errors.First();
+        
+            switch (error.Code) {
+                case nameof(IdentityErrorDescriber.DuplicateEmail):
+                    _messageStore.Add(_emailField, error.Description);
+                    break;
+                
+                case nameof(IdentityErrorDescriber.PasswordRequiresDigit) or 
+                    nameof(IdentityErrorDescriber.PasswordRequiresLower) or
+                    nameof(IdentityErrorDescriber.PasswordRequiresUpper) or
+                    nameof(IdentityErrorDescriber.PasswordRequiresNonAlphanumeric) or
+                    nameof(IdentityErrorDescriber.PasswordRequiresUniqueChars):
+                    _messageStore.Add(_passwordField, error.Description);
+                    break;
+                
+                default:
+                    Logger.LogError("Unhandled identity error: {code} - {desc}", error.Code, error.Description);
+                    break;
+            }
+        }
+    }
+
+    private sealed class InputModel {
+        [Required(ErrorMessage = "Email is required.")]
+        [StringLength(320, ErrorMessage = "Email cannot be longer than {1} characters.")]
+        [EmailAddress(ErrorMessage = "A valid email is required.")]
+        public string Email { get; set; } = string.Empty;
+        
+        [Required(ErrorMessage = "Password is required.")]
+        [DataType(DataType.Password)]
+        [MinLength(8, ErrorMessage = "Password must be longer or equal to {1} characters.")]
+        public string Password { get; set; } = string.Empty;
+        
+        public string? Role { get; set; }
+    }
+}

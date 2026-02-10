@@ -1,5 +1,7 @@
 ﻿@using Conflux.Application.Dto
+@using Conflux.Web.Components.Pages.Admin.Modals
 @using Conflux.Web.Components.Shared.Modals
+@using Conflux.Web.Helpers
 @using Conflux.Web.Services.Implementations
 
 @inject IUserService UserService
@@ -11,6 +13,12 @@
         <p class="size-xl font-bold flex-1">Users</p>
         
         <SearchField @bind-Value="_searchField" @bind-Value:after="AfterModifySearchField" class="flex-1"/>
+        
+        <AuthorizeView Roles="Admin, SystemDeveloper">
+            <Authorized>
+                <button class="button-primary basis-28 p-2!" @onclick="EventUtils.AsNonRenderingEventHandler(OpenUserCreationModal)">Create</button>
+            </Authorized>
+        </AuthorizeView>
     </header>
     
     <section class="flex-1 border border-gray-600 rounded-lg px-1 mt-1 overflow-y-auto scrollbar-hide space-y-1">
@@ -51,6 +59,10 @@
             request.Count);
         
         return new(page.Page, page.TotalCount);
+    }
+
+    private void OpenUserCreationModal() {
+        ModalService.Open<UserCreationModal>();
     }
 
     private void HandleUserCardClick(UserCard card) {

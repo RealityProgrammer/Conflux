@@ -1,3 +1,5 @@
 ﻿@using Conflux.Web.Components.Layout
 
 @layout AdminLayout
+
+@attribute [Authorize(Roles = "Moderator,Admin,SystemDeveloper")]
