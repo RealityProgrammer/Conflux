@@ -33,7 +33,6 @@ public class ModerationService(
         dbContext.Add(new MessageReport {
             MessageId = messageId,
             ExtraMessage = extraMessage,
-            Status = ReportStatus.InProgress,
             Reasons = reasons,
             ReporterUserId = reporterUserId,
             OriginalMessageBody = messageData.Body,
@@ -114,7 +113,7 @@ public class ModerationService(
         }
 
         var page = await query
-            .OrderBy(r => r.Status == ReportStatus.InProgress ? 1 : 0)
+            .OrderBy(r => r.ModerationRecordId == null ? 1 : 0)
             .Skip(startIndex)
             .Take(count)
             .Select(r => r.Id)
@@ -236,7 +235,7 @@ public class ModerationService(
             .Include(r => r.Message)
             .ThenInclude(m => m.Sender)
             .Include(r => r.Reporter)
-            .Select(r => new ReportDisplayDTO(r.Id, r.Message.Sender.DisplayName, r.Message.Sender.AvatarProfilePath, r.OriginalMessageBody, r.OriginalMessageAttachments, r.ReporterUserId, r.CreatedAt, r.Reasons, r.ExtraMessage, r.Status, r.ResolverUserId, r.ResolvedAt, r.BanDuration))
+            .Select(r => new ReportDisplayDTO(r.Id, r.Message.Sender.DisplayName, r.Message.Sender.AvatarProfilePath, r.OriginalMessageBody, r.OriginalMessageAttachments, r.ReporterUserId, r.CreatedAt, r.Reasons, r.ExtraMessage, r.ModerationRecordId))
             .Cast<ReportDisplayDTO?>()
             .FirstOrDefaultAsync();
     }
@@ -244,35 +243,99 @@ public class ModerationService(
     public async Task<bool> ResolveReportByDismissAsync(Guid reportId, Guid resolverUserId) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        Guid? nullableUserId = await dbContext.MessageReports
+            .Where(r => r.Id == reportId && r.ModerationRecordId == null)
+            .Select(r => r.Message.SenderUserId)
+            .Cast<Guid?>()
+            .FirstOrDefaultAsync();
+
+        if (nullableUserId is not { } userId) {
+            return false;
+        }
         
-        var utcNow = DateTime.UtcNow;
+        await using var transaction = await dbContext.Database.BeginTransactionAsync();
 
-        int affected = await dbContext.MessageReports
-            .Where(r => r.Id == reportId && r.Status == ReportStatus.InProgress)
-            .ExecuteUpdateAsync(builder => {
-                builder.SetProperty(r => r.Status, ReportStatus.Dismissed);
-                builder.SetProperty(r => r.ResolverUserId, resolverUserId);
-                builder.SetProperty(r => r.ResolvedAt, utcNow);
-            });
+        try {
+            var record = new ModerationRecord {
+                Id = Guid.NewGuid(),
+                CreatedAt = DateTime.UtcNow,
+                ResolverUserId = resolverUserId,
+                MessageReportId = reportId,
+                Action = ModerationAction.Dismiss,
+                BanDuration = null,
+                Reason = "Insert reason here.",
+                OffenderUserId = userId,
+            };
 
-        return affected > 0;
+            dbContext.ModerationRecords.Add(record);
+            await dbContext.SaveChangesAsync();
+            
+            int affected = await dbContext.MessageReports
+                .Where(r => r.Id == reportId && r.ModerationRecordId == null)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(r => r.ModerationRecordId, record.Id));
+
+            if (affected == 0) {
+                await transaction.RollbackAsync();
+                return false;
+            }
+
+            await transaction.CommitAsync();
+            return true;
+        } catch {
+            await transaction.RollbackAsync();
+            return false;
+        }
     }
     
     public async Task<bool> ResolveReportByWarningAsync(Guid reportId, Guid resolverUserId) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        Guid? nullableUserId = await dbContext.MessageReports
+            .Where(r => r.Id == reportId && r.ModerationRecordId == null)
+            .Select(r => r.Message.SenderUserId)
+            .Cast<Guid?>()
+            .FirstOrDefaultAsync();
+
+        if (nullableUserId is not { } userId) {
+            return false;
+        }
         
-        var utcNow = DateTime.UtcNow;
+        await using var transaction = await dbContext.Database.BeginTransactionAsync();
 
-        int affected = await dbContext.MessageReports
-            .Where(r => r.Id == reportId && r.Status == ReportStatus.InProgress)
-            .ExecuteUpdateAsync(builder => {
-                builder.SetProperty(r => r.Status, ReportStatus.Warned);
-                builder.SetProperty(r => r.ResolverUserId, resolverUserId);
-                builder.SetProperty(r => r.ResolvedAt, utcNow);
-            });
+        try {
+            var record = new ModerationRecord {
+                Id = Guid.NewGuid(),
+                CreatedAt = DateTime.UtcNow,
+                ResolverUserId = resolverUserId,
+                MessageReportId = reportId,
+                Action = ModerationAction.Warn,
+                BanDuration = null,
+                Reason = "Insert reason here.",
+                OffenderUserId = userId,
+            };
 
-        return affected > 0;
+            dbContext.ModerationRecords.Add(record);
+            await dbContext.SaveChangesAsync();
+            
+            int affected = await dbContext.MessageReports
+                .Where(r => r.Id == reportId && r.ModerationRecordId == null)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(r => r.ModerationRecordId, record.Id));
+
+            if (affected == 0) {
+                await transaction.RollbackAsync();
+                return false;
+            }
+
+            await transaction.CommitAsync();
+            return true;
+        } catch {
+            await transaction.RollbackAsync();
+            return false;
+        }
     }
     
     public async Task<bool> ResolveReportByBanningAsync(Guid reportId, Guid resolverUserId, TimeSpan banDuration) {
@@ -284,7 +347,7 @@ public class ModerationService(
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
         var extractedIds = await dbContext.MessageReports
-            .Where(r => r.Id == reportId && r.Status == ReportStatus.InProgress)
+            .Where(r => r.Id == reportId && r.ModerationRecordId == null)
             .Include(r => r.Message)
             .ThenInclude(r => r.Conversation)
             .ThenInclude(r => r.CommunityChannel!)
@@ -301,39 +364,83 @@ public class ModerationService(
         }
         
         await using var transaction = await dbContext.Database.BeginTransactionAsync();
-        
-        var utcNow = DateTime.UtcNow;
-        
-        int affected = await dbContext.MessageReports
-            .Where(r => r.Id == reportId && r.Status == ReportStatus.InProgress)
-            .ExecuteUpdateAsync(builder => {
-                builder.SetProperty(r => r.Status, ReportStatus.Banned);
-                builder.SetProperty(r => r.ResolverUserId, resolverUserId);
-                builder.SetProperty(r => r.ResolvedAt, utcNow);
-                builder.SetProperty(r => r.BanDuration, banDuration);
-            });
 
-        if (affected > 0) {
+        try {
+            var record = new ModerationRecord {
+                Id = Guid.NewGuid(),
+                CreatedAt = DateTime.UtcNow,
+                ResolverUserId = resolverUserId,
+                MessageReportId = reportId,
+                Action = ModerationAction.Warn,
+                BanDuration = banDuration,
+                Reason = "Insert reason here.",
+                OffenderUserId = extractedIds.SenderId,
+            };
+            
+            dbContext.ModerationRecords.Add(record);
+            await dbContext.SaveChangesAsync();
+            
+            int affected = await dbContext.MessageReports
+                .Where(r => r.Id == reportId && r.ModerationRecordId == null)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(r => r.ModerationRecordId, record.Id));
+
+            if (affected == 0) {
+                await transaction.RollbackAsync();
+                return false;
+            }
+
             var memberId = await dbContext.CommunityMembers
                 .Where(m => m.CommunityId == extractedIds.CommunityId && m.UserId == extractedIds.SenderId)
                 .Select(m => m.Id)
                 .FirstAsync();
-
+            
             if (await communityService.BanMemberAsync(dbContext, extractedIds.CommunityId, memberId, banDuration)) {
                 await transaction.CommitAsync();
                 return true;
             }
-        }
 
-        return false;
+            return false;
+        } catch {
+            await transaction.RollbackAsync();
+            return false;
+        }
     }
 
-    public async Task<bool> WarnUserAsync(Guid userId) {
-        throw new NotImplementedException();
+    public async Task<bool> WarnUserAsync(Guid userId, Guid resolverUserId) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+        
+        var record = new ModerationRecord {
+            Id = Guid.NewGuid(),
+            CreatedAt = DateTime.UtcNow,
+            ResolverUserId = resolverUserId,
+            Action = ModerationAction.Warn,
+            BanDuration = null,
+            Reason = "Insert reason here.",
+            OffenderUserId = userId,
+        };
+
+        dbContext.ModerationRecords.Add(record);
+        return await dbContext.SaveChangesAsync() > 0;
     }
     
-    public async Task<bool> BanUserAsync(Guid userId, TimeSpan duration) {
-        throw new NotImplementedException();
+    public async Task<bool> BanUserAsync(Guid userId, Guid resolverUserId, TimeSpan duration) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+        
+        var record = new ModerationRecord {
+            Id = Guid.NewGuid(),
+            CreatedAt = DateTime.UtcNow,
+            ResolverUserId = resolverUserId,
+            Action = ModerationAction.Warn,
+            BanDuration = duration,
+            Reason = "Insert reason here.",
+            OffenderUserId = userId,
+        };
+
+        dbContext.ModerationRecords.Add(record);
+        return await dbContext.SaveChangesAsync() > 0;
     }
 
     private static IQueryable<MessageReport> QueryMessageReportsFromCommunity(ApplicationDbContext context, Guid communityId) {

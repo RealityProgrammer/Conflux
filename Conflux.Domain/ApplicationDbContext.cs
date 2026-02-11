@@ -161,12 +161,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasPrincipalKey(user => user.Id)
                 .OnDelete(DeleteBehavior.Cascade);
             
-            // entity.HasOne(report => report.ResolverUser)
-            //     .WithMany()
-            //     .HasForeignKey(report => report.ResolverUserId)
-            //     .HasPrincipalKey(user => user.Id)
-            //     .OnDelete(DeleteBehavior.SetNull);
-            
             entity.ComplexCollection(x => x.OriginalMessageAttachments, action => action.ToJson());
         }).Entity<ModerationRecord>(entity => {
             entity.HasKey(x => x.Id);
@@ -180,6 +174,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .WithMany()
                 .HasForeignKey(m => m.ResolverUserId)
                 .OnDelete(DeleteBehavior.Restrict);
+            
+            entity.HasOne(m => m.OffenderUser)
+                .WithMany()
+                .HasForeignKey(m => m.OffenderUserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

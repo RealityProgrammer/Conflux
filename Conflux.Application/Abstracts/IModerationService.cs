@@ -26,6 +26,6 @@ public interface IModerationService {
     
     Task<bool> ResolveReportByBanningAsync(Guid reportId, Guid resolverUserId, TimeSpan banDuration);
 
-    Task<bool> WarnUserAsync(Guid userId);
-    Task<bool> BanUserAsync(Guid userId, TimeSpan duration);
+    Task<bool> WarnUserAsync(Guid userId, Guid resolverUserId);
+    Task<bool> BanUserAsync(Guid userId, Guid resolverUserId, TimeSpan duration);
 }
