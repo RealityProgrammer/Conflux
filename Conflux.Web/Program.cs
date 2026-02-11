@@ -161,7 +161,7 @@ builder.Services.AddScoped<ModalService>();
 builder.Services.AddScoped<ICommunityService, CommunityService>();
 builder.Services.AddScoped<ICommunityRoleService, CommunityRoleService>();
 builder.Services.AddScoped<ICommunityEventDispatcher, CommunityEventDispatcher>();
-builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<IModerationService, ModerationService>();
 builder.Services.AddScoped<IWebUserNotificationService, UserNotificationService>();
 builder.Services.AddScoped<IUserNotificationService>(provider => provider.GetRequiredService<IWebUserNotificationService>());
 builder.Services.AddSingleton<ICallService, CallService>();

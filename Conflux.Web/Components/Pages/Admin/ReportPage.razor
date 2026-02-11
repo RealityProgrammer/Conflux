@@ -7,7 +7,7 @@
 @using System.Security.Claims
 
 @inject IStatisticsService StatisticsService
-@inject IReportService ReportService
+@inject IModerationService ModerationService
 @inject IContentService ContentService
 @inject ModalService ModalService
 
@@ -186,7 +186,7 @@
     }
 
     private async ValueTask<ItemsProviderResult<UserDisplayDTO>> ReportedUsersProvider(ItemsProviderRequest request) {
-        (var count, var page) = await ReportService.PaginateReportedUsersAsync(request.StartIndex, request.Count);
+        (var count, var page) = await ModerationService.PaginateReportedUsersAsync(request.StartIndex, request.Count);
 
         return new(page, count);
     }
@@ -209,7 +209,7 @@
                 return new([], 0);
             }
 
-            (var totalCount, var page) = await ReportService.PaginateUserReportedMessageIdsAsync(userId, request.StartIndex, request.Count);
+            (var totalCount, var page) = await ModerationService.PaginateUserReportedMessageIdsAsync(userId, request.StartIndex, request.Count);
             return new(page, totalCount);
         }
     }

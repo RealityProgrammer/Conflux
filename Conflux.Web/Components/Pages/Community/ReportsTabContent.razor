@@ -5,7 +5,7 @@
 @using Conflux.Web.Services.Implementations
 @using Microsoft.AspNetCore.Components.Rendering
 
-@inject IReportService ReportService
+@inject IModerationService ModerationService
 @inject IContentService ContentService
 @inject ModalService ModalService
 @inject IStatisticsService StatisticsService
@@ -230,7 +230,7 @@
     }
 
     private async ValueTask<ItemsProviderResult<MemberDisplayDTO>> GetReportedMembers(ItemsProviderRequest request) {
-        var result = await ReportService.PaginateReportedMembersAsync(CommunityId, request.StartIndex, request.Count);
+        var result = await ModerationService.PaginateReportedMembersAsync(CommunityId, request.StartIndex, request.Count);
 
         return new(result.Page, result.Count);
     }
@@ -265,7 +265,7 @@
                 return new([], 0);
             }
 
-            (var totalCount, var page) = await ReportService.PaginateMemberReportedMessageIdsAsync(memberInfo.MemberId, request.StartIndex, request.Count);
+            (var totalCount, var page) = await ModerationService.PaginateMemberReportedMessageIdsAsync(memberInfo.MemberId, request.StartIndex, request.Count);
 
             return new(page, totalCount);
         }

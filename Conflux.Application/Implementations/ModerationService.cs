@@ -8,11 +8,11 @@ using Microsoft.Extensions.Logging;
 
 namespace Conflux.Application.Implementations;
 
-public class ReportService(
+public class ModerationService(
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     ICommunityService communityService,
-    ILogger<ReportService> logger
-) : IReportService {
+    ILogger<ModerationService> logger
+) : IModerationService {
     public async Task<bool> ReportMessageAsync(Guid messageId, string? extraMessage, ReportReasons[] reasons, Guid reporterUserId) {
         if (reasons.Length == 0) {
             return false;

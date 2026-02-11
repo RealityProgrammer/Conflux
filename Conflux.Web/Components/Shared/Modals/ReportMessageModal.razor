@@ -10,7 +10,7 @@
 
 @inject IConversationService ConversationService
 @inject IContentService ContentService
-@inject IReportService ReportService
+@inject IModerationService ModerationService
 
 <EditForm EditContext="_editContext" FormName="ReportMessage" class="size-full" OnSubmit="SubmitReport">
     <DataAnnotationsValidator/>
@@ -200,7 +200,7 @@
                 reasons[index] = ReportReasons.Other;
             }
 
-            bool success = await ReportService.ReportMessageAsync(MessageId, Model.ExtraMessage, reasons, ReporterUserId);
+            bool success = await ModerationService.ReportMessageAsync(MessageId, Model.ExtraMessage, reasons, ReporterUserId);
 
             if (success) {
                 ModalService.Open<OperationSuccessModal>(parameters: new Dictionary<string, object?> {

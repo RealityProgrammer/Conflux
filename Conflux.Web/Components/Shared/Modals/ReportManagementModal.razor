@@ -6,7 +6,7 @@
 
 @inherits BaseModal
 
-@inject IReportService ReportService
+@inject IModerationService ModerationService
 @inject IConversationService ConversationService
 @inject ICommunityService CommunityService
 @inject IContentService ContentService
@@ -278,9 +278,9 @@
         _selectedMessageId = messageId;
         _selectedReportId = null;
 
-        _messageReports = await ReportService.GetMessageReportsAsync(messageId);
+        _messageReports = await ModerationService.GetMessageReportsAsync(messageId);
         _selectedMessageDisplay = (await ConversationService.GetMessageDisplayAsync(messageId))!.Value;
-        _messageStatistics = (await ReportService.GetMessageReportReasonCounts(messageId))!.Value;
+        _messageStatistics = (await ModerationService.GetMessageReportReasonCounts(messageId))!.Value;
     }
 
     private async Task SelectReport(Guid reportId) {
@@ -290,7 +290,7 @@
         
         _selectedReportId = reportId;
         
-        var reportDisplay = (await ReportService.GetReportDisplayAsync(reportId))!.Value;
+        var reportDisplay = (await ModerationService.GetReportDisplayAsync(reportId))!.Value;
         
         _selectedReportDisplay = reportDisplay;
 
@@ -325,8 +325,8 @@
                 return;
             }
             
-            await ReportService.ResolveReportByDismissAsync(reportId, resolverUserId);
-            var reportDisplay = (await ReportService.GetReportDisplayAsync(reportId))!.Value;
+            await ModerationService.ResolveReportByDismissAsync(reportId, resolverUserId);
+            var reportDisplay = (await ModerationService.GetReportDisplayAsync(reportId))!.Value;
     
             _selectedReportDisplay = reportDisplay;
 
@@ -358,8 +358,8 @@
                 return;
             }
             
-            await ReportService.ResolveReportByWarningAsync(reportId, resolverUserId);
-            var reportDisplay = (await ReportService.GetReportDisplayAsync(reportId))!.Value;
+            await ModerationService.ResolveReportByWarningAsync(reportId, resolverUserId);
+            var reportDisplay = (await ModerationService.GetReportDisplayAsync(reportId))!.Value;
     
             _selectedReportDisplay = reportDisplay;
             
@@ -387,8 +387,8 @@
                 return;
             }
             
-            await ReportService.ResolveReportByBanningAsync(reportId, resolverUserId, duration);
-            var reportDisplay = (await ReportService.GetReportDisplayAsync(reportId))!.Value;
+            await ModerationService.ResolveReportByBanningAsync(reportId, resolverUserId, duration);
+            var reportDisplay = (await ModerationService.GetReportDisplayAsync(reportId))!.Value;
     
             _selectedReportDisplay = reportDisplay;
             
