@@ -1,6 +1,6 @@
 ﻿namespace Conflux.Domain.Entities;
 
-public class FriendRequest : ICreatedAtColumn {
+public class FriendRequest {
     public Guid Id { get; set; }
     
     public Guid SenderUserId { get; set; }

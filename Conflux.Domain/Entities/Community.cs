@@ -2,7 +2,7 @@
 
 namespace Conflux.Domain.Entities;
 
-public class Community : ICreatedAtColumn {
+public class Community {
     public Guid Id { get; set; }
     
     [MaxLength(64)] public string Name { get; set; } = null!;

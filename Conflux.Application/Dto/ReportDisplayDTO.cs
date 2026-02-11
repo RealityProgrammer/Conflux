@@ -11,7 +11,7 @@ public record struct ReportDisplayDTO(
     List<MessageAttachment> OriginalAttachments, 
     Guid ReporterUserId, 
     DateTime CreatedAt, 
-    ReportReasons[] Reasons,
+    ReportReason[] Reasons,
     string? ExtraMessage,
     ReportStatus Status,
     Guid? ResolverUserId,

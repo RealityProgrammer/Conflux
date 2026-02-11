@@ -13,7 +13,7 @@ public class ModerationService(
     ICommunityService communityService,
     ILogger<ModerationService> logger
 ) : IModerationService {
-    public async Task<bool> ReportMessageAsync(Guid messageId, string? extraMessage, ReportReasons[] reasons, Guid reporterUserId) {
+    public async Task<bool> ReportMessageAsync(Guid messageId, string? extraMessage, ReportReason[] reasons, Guid reporterUserId) {
         if (reasons.Length == 0) {
             return false;
         }

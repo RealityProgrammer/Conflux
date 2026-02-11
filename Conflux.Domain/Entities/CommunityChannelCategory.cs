@@ -2,7 +2,7 @@
 
 namespace Conflux.Domain.Entities;
 
-public class CommunityChannelCategory : ICreatedAtColumn {
+public class CommunityChannelCategory {
     public Guid Id { get; set; }
 
     [MaxLength(32)] public string Name { get; set; } = null!;

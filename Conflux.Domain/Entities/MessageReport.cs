@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Conflux.Domain.Entities;
 
-public class MessageReport : ICreatedAtColumn {
+public class MessageReport {
     public Guid Id { get; set; }
     
     public Guid MessageId { get; set; }
@@ -13,20 +13,15 @@ public class MessageReport : ICreatedAtColumn {
     [MaxLength(1024)] public string? OriginalMessageBody { get; set; }
     public List<MessageAttachment> OriginalMessageAttachments { get; set; } = null!;
     
-    [Required] public ReportReasons[] Reasons { get; set; } = null!;
+    [Required] public ReportReason[] Reasons { get; set; } = null!;
     
     [MaxLength(255)] public string? ExtraMessage { get; set; }
 
     public Guid ReporterUserId { get; set; }
     public ApplicationUser Reporter { get; set; } = null!;
-
-    public Guid? ResolverUserId { get; set; }
-    public ApplicationUser? ResolverUser { get; set; }
     
-    public DateTime? ResolvedAt { get; set; }
+    public Guid? ModerationRecordId { get; set; }
+    public ModerationRecord? ModerationRecord { get; set; }
     
-    public TimeSpan? BanDuration { get; set; }
-    
-    public ReportStatus Status { get; set; }
     public DateTime CreatedAt { get; set; }
 }

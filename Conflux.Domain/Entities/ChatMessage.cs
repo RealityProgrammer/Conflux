@@ -2,7 +2,7 @@
 
 namespace Conflux.Domain.Entities;
 
-public class ChatMessage : ICreatedAtColumn {
+public class ChatMessage {
     public Guid Id { get; set; }
     
     public Guid ConversationId { get; set; }

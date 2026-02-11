@@ -16,8 +16,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<CommunityChannel> CommunityChannels { get; set; } = null!;
     public DbSet<CommunityChannelCategory> CommunityChannelCategories { get; set; } = null!;
     public DbSet<CommunityRole> CommunityRoles { get; set; } = null!;
+    
     public DbSet<MessageReport> MessageReports { get; set; } = null!;
-
+    public DbSet<ModerationRecord> ModerationRecords { get; set; } = null!;
+    
     protected override void OnModelCreating(ModelBuilder builder) {
         base.OnModelCreating(builder);
         
@@ -158,14 +160,26 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey(report => report.ReporterUserId)
                 .HasPrincipalKey(user => user.Id)
                 .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasOne(report => report.ResolverUser)
-                .WithMany()
-                .HasForeignKey(report => report.ResolverUserId)
-                .HasPrincipalKey(user => user.Id)
-                .OnDelete(DeleteBehavior.SetNull);
+            
+            // entity.HasOne(report => report.ResolverUser)
+            //     .WithMany()
+            //     .HasForeignKey(report => report.ResolverUserId)
+            //     .HasPrincipalKey(user => user.Id)
+            //     .OnDelete(DeleteBehavior.SetNull);
             
             entity.ComplexCollection(x => x.OriginalMessageAttachments, action => action.ToJson());
+        }).Entity<ModerationRecord>(entity => {
+            entity.HasKey(x => x.Id);
+
+            entity.HasOne(m => m.MessageReport)
+                .WithOne(r => r.ModerationRecord)
+                .HasForeignKey<ModerationRecord>(m => m.MessageReportId)
+                .OnDelete(DeleteBehavior.SetNull);
+            
+            entity.HasOne(m => m.ResolverUser)
+                .WithMany()
+                .HasForeignKey(m => m.ResolverUserId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

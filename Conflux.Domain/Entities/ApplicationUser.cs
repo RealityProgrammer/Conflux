@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Conflux.Domain.Entities;
 
-public class ApplicationUser : IdentityUser<Guid>, ICreatedAtColumn {
+public class ApplicationUser : IdentityUser<Guid> {
     public bool IsProfileSetup { get; set; }
     
     [MinLength(8), MaxLength(32), Required] public required string DisplayName { get; set; }

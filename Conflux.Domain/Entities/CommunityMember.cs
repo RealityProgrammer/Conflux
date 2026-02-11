@@ -1,6 +1,6 @@
 ﻿namespace Conflux.Domain.Entities;
 
-public class CommunityMember : ICreatedAtColumn {
+public class CommunityMember {
     public Guid Id { get; set; }
     
     public Guid CommunityId { get; set; }

@@ -75,42 +75,42 @@
                                             <p class="flex-none">@_messageStatistics.ReportCount</p>
                                         </div>
                                         
-                                        @if (_messageStatistics.ReasonCounts.TryGetValue(ReportReasons.Spam, out var reasonCount)) {
+                                        @if (_messageStatistics.ReasonCounts.TryGetValue(ReportReason.Spam, out var reasonCount)) {
                                             <div class="flex flex-row justify-between items-center p-2 rounded-md border border-gray-600">
                                                 <p class="flex-1">Spam</p>
                                                 <p class="flex-none">@reasonCount (@(((float)reasonCount / _messageStatistics.ReportCount).ToString("P2")))</p>
                                             </div>
                                         }
                                         
-                                        @if (_messageStatistics.ReasonCounts.TryGetValue(ReportReasons.Harassment, out reasonCount)) {
+                                        @if (_messageStatistics.ReasonCounts.TryGetValue(ReportReason.Harassment, out reasonCount)) {
                                             <div class="flex flex-row justify-between items-center p-2 rounded-md border border-gray-600">
                                                 <p class="flex-1">Harassment</p>
                                                 <p class="flex-none">@reasonCount (@(((float)reasonCount / _messageStatistics.ReportCount).ToString("P2")))</p>
                                             </div>
                                         }
                                         
-                                        @if (_messageStatistics.ReasonCounts.TryGetValue(ReportReasons.Misinformation, out reasonCount)) {
+                                        @if (_messageStatistics.ReasonCounts.TryGetValue(ReportReason.Misinformation, out reasonCount)) {
                                             <div class="flex flex-row justify-between items-center p-2 rounded-md border border-gray-600">
                                                 <p class="flex-1">Misinformation</p>
                                                 <p class="flex-none">@reasonCount (@(((float)reasonCount / _messageStatistics.ReportCount).ToString("P2")))</p>
                                             </div>
                                         }
                                         
-                                        @if (_messageStatistics.ReasonCounts.TryGetValue(ReportReasons.Violence, out reasonCount)) {
+                                        @if (_messageStatistics.ReasonCounts.TryGetValue(ReportReason.Violence, out reasonCount)) {
                                             <div class="flex flex-row justify-between items-center p-2 rounded-md border border-gray-600">
                                                 <p class="flex-1">Violence</p>
                                                 <p class="flex-none">@reasonCount (@(((float)reasonCount / _messageStatistics.ReportCount).ToString("P2")))</p>
                                             </div>
                                         }
                                         
-                                        @if (_messageStatistics.ReasonCounts.TryGetValue(ReportReasons.ExposingInformation, out reasonCount)) {
+                                        @if (_messageStatistics.ReasonCounts.TryGetValue(ReportReason.ExposingInformation, out reasonCount)) {
                                             <div class="flex flex-row justify-between items-center p-2 rounded-md border border-gray-600">
                                                 <p class="flex-1">Exposing Private Information</p>
                                                 <p class="flex-none">@reasonCount (@(((float)reasonCount / _messageStatistics.ReportCount).ToString("P2")))</p>
                                             </div>
                                         }
                                         
-                                        @if (_messageStatistics.ReasonCounts.TryGetValue(ReportReasons.Other, out reasonCount)) {
+                                        @if (_messageStatistics.ReasonCounts.TryGetValue(ReportReason.Other, out reasonCount)) {
                                             <div class="flex flex-row justify-between items-center p-2 rounded-md border border-gray-600">
                                                 <p class="flex-1">Others</p>
                                                 <p class="flex-none">@reasonCount (@(((float)reasonCount / _messageStatistics.ReportCount).ToString("P2")))</p>

@@ -173,31 +173,31 @@
         _isProcessingSubmit = true;
 
         try {
-            ReportReasons[] reasons = new ReportReasons[BitOperations.PopCount((uint)Model!.ReasonBitfield)];
+            ReportReason[] reasons = new ReportReason[BitOperations.PopCount((uint)Model!.ReasonBitfield)];
             int index = 0;
             
             if (Model.IsSpam) {
-                reasons[index++] = ReportReasons.Spam;
+                reasons[index++] = ReportReason.Spam;
             }
             
             if (Model.IsHarassment) {
-                reasons[index++] = ReportReasons.Harassment;
+                reasons[index++] = ReportReason.Harassment;
             }
             
             if (Model.IsMisinformation) {
-                reasons[index++] = ReportReasons.Misinformation;
+                reasons[index++] = ReportReason.Misinformation;
             }
             
             if (Model.IsViolence) {
-                reasons[index++] = ReportReasons.Violence;
+                reasons[index++] = ReportReason.Violence;
             }
             
             if (Model.IsExposingInformation) {
-                reasons[index++] = ReportReasons.ExposingInformation;
+                reasons[index++] = ReportReason.ExposingInformation;
             }
             
             if (Model.IsOther) {
-                reasons[index] = ReportReasons.Other;
+                reasons[index] = ReportReason.Other;
             }
 
             bool success = await ModerationService.ReportMessageAsync(MessageId, Model.ExtraMessage, reasons, ReporterUserId);

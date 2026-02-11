@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Conflux.Domain.Entities;
 
-public class CommunityChannel : ICreatedAtColumn {
+public class CommunityChannel {
     public Guid Id { get; set; }
 
     [MaxLength(32)] public string Name { get; set; } = null!;
