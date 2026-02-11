@@ -1,15 +1,19 @@
 ﻿@using Conflux.Web.Helpers
 
 <div class="p-1 rounded-lg flex flex-row items-center hover:bg-white/15 @(OnClick.HasDelegate ? "active:bg-black/25 cursor-pointer" : string.Empty) @_cssClass" @onclick="@(EventUtils.AsNonRenderingEventHandler(HandleInvokeOnClick))">
-    <Avatar ImageSrc="@AvatarSrc" ImageAlt="@($"Avatar of {DisplayName}")" class="h-full mr-2"/>
+    <Avatar ImageSrc="@AvatarSrc" ImageAlt="@($"Avatar of {DisplayName}")" class="h-full mr-2 flex-none"/>
 
-    <div>
+    <div class="flex-1">
         <p>@DisplayName</p>
         
         @if (DisplayName != UserName) {
             <p class="text-xs">@UserName</p>
         }
     </div>
+    
+    @if (RightContent != null) {
+        @RightContent
+    }
 </div>
 
 @code {
@@ -20,6 +24,8 @@
     [Parameter] public required Guid? MemberId { get; set; }
 
     [Parameter] public EventCallback<UserCard> OnClick { get; set; }
+    
+    [Parameter] public RenderFragment? RightContent { get; set; }
     
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
     private string? _cssClass;

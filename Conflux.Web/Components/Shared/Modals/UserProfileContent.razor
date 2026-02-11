@@ -1,11 +1,7 @@
 ﻿@using Conflux.Application.Dto
-@using Conflux.Application.Implementations
 @using Conflux.Domain.Events
 @using Conflux.Domain.Extensions
-@using Microsoft.AspNetCore.Authorization.Infrastructure
-@using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
-@using System.Security.Claims
 
 @implements IDisposable
 
@@ -34,7 +30,6 @@
     case State.Success:
         <CardContent class="h-full flex flex-col md:flex-row gap-2 flex-1 overflow-y-auto scrollbar-hide md:overflow-y-hidden my-0! pb-2">
             <section class="flex-none md:flex-1 border border-gray-600 rounded-lg bg-gray-725 shadow-md overflow-y-auto scrollbar-hide pb-2">
-                @* Banner & Avatar *@
                 <div class="relative h-32">
                     <div class="absolute inset-0 bg-cover bg-center bg-black rounded-t-lg"></div>
 
@@ -49,7 +44,6 @@
                     </div>
                 </div>
 
-                @* Text informations *@
                 <div class="flex flex-col px-2 pt-10">
                     <div>
                         <p class="text-2xl font-bold flex flex-row items-center gap-1 flex-wrap">

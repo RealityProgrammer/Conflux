@@ -280,7 +280,7 @@
 
         _messageReports = await ReportService.GetMessageReportsAsync(messageId);
         _selectedMessageDisplay = (await ConversationService.GetMessageDisplayAsync(messageId))!.Value;
-        _messageStatistics = (await ReportService.GetMessageReportStatisticsAsync(messageId))!.Value;
+        _messageStatistics = (await ReportService.GetMessageReportReasonCounts(messageId))!.Value;
     }
 
     private async Task SelectReport(Guid reportId) {

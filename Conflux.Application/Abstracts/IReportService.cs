@@ -7,12 +7,9 @@ namespace Conflux.Application.Abstracts;
 public interface IReportService {
     Task<bool> ReportMessageAsync(Guid messageId, string? extraMessage, ReportReasons[] reasons, Guid reporterUserId);
 
-    Task<List<Guid>> GetMemberReportedMessageIdentitiesAsync(Guid memberId);
-    Task<List<Guid>> GetUserReportedMessageIdentitiesAsync(Guid userId);
-
     Task<List<MessageReport>> GetMessageReportsAsync(Guid messageId);
     
-    Task<MessageReportStatistics?> GetMessageReportStatisticsAsync(Guid messageId);
+    Task<MessageReportStatistics?> GetMessageReportReasonCounts(Guid messageId);
     
     Task<ReportDisplayDTO?> GetReportDisplayAsync(Guid reportId);
 
@@ -28,4 +25,7 @@ public interface IReportService {
     Task<bool> ResolveReportByWarningAsync(Guid reportId, Guid resolverUserId);
     
     Task<bool> ResolveReportByBanningAsync(Guid reportId, Guid resolverUserId, TimeSpan banDuration);
+
+    Task<bool> WarnUserAsync(Guid userId);
+    Task<bool> BanUserAsync(Guid userId, TimeSpan duration);
 }

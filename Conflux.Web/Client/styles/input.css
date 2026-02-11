@@ -194,7 +194,7 @@
     }
     
     .button-danger {
-        @apply rounded-lg bg-red-500 p-3 cursor-pointer hover:bg-red-400 active:bg-red-600 text-white disabled:bg-red-500/35 disabled:cursor-not-allowed disabled:hover:bg-red-500/35;
+        @apply rounded-lg bg-red-500 p-3 cursor-pointer hover:bg-red-400 active:bg-red-600 text-white disabled:bg-red-500/35 disabled:cursor-not-allowed disabled:hover:bg-red-500/35 w-full;
     }
     
     .button-success {

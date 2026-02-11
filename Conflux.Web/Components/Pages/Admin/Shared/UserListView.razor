@@ -7,6 +7,7 @@
 @inject IUserService UserService
 @inject IContentService ContentService
 @inject ModalService ModalService
+@inject ILogger<UserListView> Logger
 
 <div class="flex flex-col @_cssClass" @attributes="AdditionalAttributes">
     <header class="flex flex-row justify-center items-center gap-1 flex-none">
@@ -29,7 +30,7 @@
                           UserName="@item.UserName"
                           UserId="@item.UserId"
                           OnClick="HandleUserCardClick"
-                          class="h-10"/>
+                          class="h-10 group"/>
             </ItemContent>
         </Virtualize>
     </section>
@@ -49,6 +50,10 @@
         }
         
         AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "class").ToDictionary();
+    }
+
+    private void OnUserCardClick() {
+        Logger.LogInformation("Click.");
     }
 
     private async ValueTask<ItemsProviderResult<UserDisplayDTO>> VirtualizeProvider(ItemsProviderRequest request) {

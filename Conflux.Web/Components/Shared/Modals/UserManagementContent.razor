@@ -6,13 +6,14 @@
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject IContentService ContentService
 @inject ModalService ModalService
-@inject ILogger<UserManagementContent> Logger
+@inject IStatisticsService StatisticsService
+@inject IReportService ReportService
 
-<CardContent class="h-full flex flex-col md:flex-row gap-2 flex-1 overflow-y-auto scrollbar-hide md:overflow-y-hidden my-0! pb-2">
-    <section class="flex flex-col md:flex-1 overflow-y-hidden border border-gray-600 rounded-lg shadow-md bg-gray-725 p-2">
-        <header class="text-xl font-semibold">Engagement</header>
-                                
-        <div class="h-64 md:h-0 md:flex-1">
+<CardContent class="grid grid-cols-1 md:grid-cols-2 md:grid-rows-2 gap-2 flex-1 overflow-y-auto md:overflow-hidden">
+    <section class="h-64 md:h-full md:row-span-2 flex flex-col gap-1">
+        <header class="text-xl font-semibold flex-none">Engagement</header>
+        
+        <div class="flex-1 overflow-y-auto scrollbar-hide border border-gray-600 rounded-lg bg-gray-725 shadow-md p-2">
             <TabContainer @bind-ActiveId:get="_engagementActiveTabId" @bind-ActiveId:set="@(value => SetEngagementActiveTabId(value!))" class="flex-1 flex flex-col text-white size-full" ButtonContainerCssClass="flex-none border-b border-b-gray-600 pb-2 flex flex-row justify-around gap-1" ContentContainerCssClass="min-h-0 flex-1 mt-2 overflow-y-auto scrollbar-hide">
                 <Buttons>
                     <TabButton TabId="Friends" class="flex-1 x-3 py-1 text-white bg-transparent hover:bg-gray-400/40 active:bg-gray-700/40 rounded-lg cursor-pointer" ActiveCssClass="bg-gray-600/70! cursor-default!">Friends</TabButton>
@@ -30,7 +31,7 @@
                                           class="h-10"
                                           OnClick="EventUtils.AsNonRenderingEventHandler<UserCard>(OpenMemberProfileModal)"/>
                             </ItemContent>
-                        
+
                             <EmptyContent>
                                 <div class="size-full flex justify-center items-center">
                                     <p class="text-gray-400 text-sm">No friend :(</p>
@@ -47,7 +48,7 @@
                                                AvatarSrc="@(string.IsNullOrEmpty(item.AvatarPath) ? null : ContentService.GetAssetPath(item.AvatarPath))"
                                                class="h-10"/>
                             </ItemContent>
-                        
+
                             <EmptyContent>
                                 <div class="size-full flex justify-center items-center">
                                     <p class="text-gray-400 text-sm">No friend :(</p>
@@ -60,16 +61,47 @@
         </div>
     </section>
                             
-    <section class="flex-none md:flex-1 border border-gray-600 rounded-lg bg-gray-725 shadow-md overflow-y-auto scrollbar-hide p-2">
-        <header class="text-xl font-semibold">Extra Information</header>
-                                
-        <section class="mt-2">
-            <p class="break-after-all wrap-anywhere"><span class="font-bold">User ID</span>: @InspectingUserId</p>
-                                    
-            @if (InspectingMemberId is { } memberId) {
-                <p class="break-after-all wrap-anywhere"><span class="font-bold">Member ID</span>: @memberId</p>
-            }
-        </section>
+    <section class="h-64 md:h-full md:row-span-1 flex flex-col gap-1">
+        <header class="text-xl font-semibold flex-none">Extra Information</header>
+        
+        <div class="flex-1 overflow-y-auto scrollbar-hide border border-gray-600 rounded-lg bg-gray-725 shadow-md p-2">
+            <table class="w-full table-fixed border-collapse">
+                <thead>
+                <tr>
+                    <th class="w-1/3">Name</th>
+                    <th class="w-2/3">Value</th>
+                </tr>
+                </thead>
+                
+                <tbody class="text-sm">
+                <tr>
+                    <td class="text-left">User ID</td>
+                    <td class="text-right">@InspectingUserId</td>
+                </tr>
+                
+                @if (InspectingMemberId != null) {
+                    <tr>
+                        <td class="text-left">Member ID</td>
+                        <td class="text-right">@InspectingMemberId</td>
+                    </tr>
+                }
+                
+                <tr>
+                    <td class="text-left">Warn Count</td>
+                    <td class="text-right">@_userExtraInfo.WarnCount</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="h-64 md:h-full md:row-span-1 flex flex-col gap-1">
+        <header class="text-xl font-semibold flex-none">Actions</header>
+        
+        <div class="flex-1 overflow-y-auto scrollbar-hide border border-gray-600 rounded-lg bg-gray-725 shadow-md p-2">
+            <button class="button-warning" @onclick="HandleWarnUser">Warn User</button>
+            <button class="mt-2 button-danger" @onclick="HandleBanUser">Ban User</button>
+        </div>
     </section>
 </CardContent>
 
@@ -78,7 +110,8 @@
     [Parameter] public Guid? InspectingMemberId { get; set; }
     
     private string _engagementActiveTabId = "Friends";
-    
+    private UserExtraInformation _userExtraInfo;
+
     private void SetEngagementActiveTabId(string value) {
         _engagementActiveTabId = value;
     }
@@ -86,6 +119,8 @@
     private async ValueTask<ItemsProviderResult<UserDisplayDTO>> EngagedFriendProvider(ItemsProviderRequest request) {
         await using var dbContext = await DbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        _userExtraInfo = new((await StatisticsService.GetUserReportStatistics(InspectingUserId))!.Value.WarnCount);
 
         var query = dbContext.FriendRequests
             .Where(r => r.Status == FriendRequestStatus.Accepted && (r.SenderUserId == InspectingUserId || r.ReceiverUserId == InspectingUserId));
@@ -144,5 +179,27 @@
         });
     }
 
+    private static readonly RenderFragment _warnConfirmBody =
+        @<p>Are you sure you want to warn this user?</p>;
+
+    private void HandleWarnUser() {
+        ModalService.Open<OperationConfirmModal>(parameters: new Dictionary<string, object?> {
+            [nameof(OperationConfirmModal.Title)] = "Warn User",
+            [nameof(OperationConfirmModal.Body)] = _warnConfirmBody,
+            [nameof(OperationConfirmModal.OnConfirm)] = EventCallback.Factory.Create(this, OnConfirm),
+        });
+        return;
+
+        async Task OnConfirm() {
+        }
+    }
+
+    private void HandleBanUser() {
+        
+    }
+
     private readonly record struct CommunityDisplayDTO(Guid CommunityId, string Name, string? AvatarPath);
+
+    private readonly record struct UserExtraInformation(int WarnCount);
+
 }

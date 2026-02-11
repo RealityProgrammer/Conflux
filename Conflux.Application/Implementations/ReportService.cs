@@ -188,40 +188,6 @@ public class ReportService(
         return (totalCount, page);
     }
 
-    public async Task<List<Guid>> GetMemberReportedMessageIdentitiesAsync(Guid memberId) {
-        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
-        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-
-        var extractedIds = await dbContext.CommunityMembers
-            .Where(member => member.Id == memberId)
-            .Select(member => new { member.UserId, member.CommunityId })
-            .FirstOrDefaultAsync();
-        
-        if (extractedIds == null) {
-            return [];
-        }
-
-        var reports = await QueryMessageReportsFromCommunity(dbContext, extractedIds.CommunityId)
-            .Include(r => r.Message)
-            .Where(r => r.Message.SenderUserId == extractedIds.UserId)
-            .Select(r => r.MessageId)
-            .Distinct()
-            .OrderBy(g => g)
-            .ToListAsync();
-
-        return reports;
-    }
-
-    public async Task<List<Guid>> GetUserReportedMessageIdentitiesAsync(Guid userId) {
-        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
-        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-
-        return await dbContext.MessageReports
-            .Where(m => m.Message.Conversation.CommunityChannelId == null && m.Message.SenderUserId == userId)
-            .Select(r => r.MessageId)
-            .ToListAsync();
-    }
-
     public async Task<List<MessageReport>> GetMessageReportsAsync(Guid messageId) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
@@ -234,7 +200,7 @@ public class ReportService(
             .ToListAsync();
     }
 
-    public async Task<MessageReportStatistics?> GetMessageReportStatisticsAsync(Guid messageId) {
+    public async Task<MessageReportStatistics?> GetMessageReportReasonCounts(Guid messageId) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
@@ -360,6 +326,14 @@ public class ReportService(
         }
 
         return false;
+    }
+
+    public async Task<bool> WarnUserAsync(Guid userId) {
+        throw new NotImplementedException();
+    }
+    
+    public async Task<bool> BanUserAsync(Guid userId, TimeSpan duration) {
+        throw new NotImplementedException();
     }
 
     private static IQueryable<MessageReport> QueryMessageReportsFromCommunity(ApplicationDbContext context, Guid communityId) {
