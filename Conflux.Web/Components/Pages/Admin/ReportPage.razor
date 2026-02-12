@@ -35,7 +35,7 @@
             @if (_isLoading) {
                 <p class="text-right text-lg animate-pulse select-none">Loading...</p>
             } else {
-                <p class="text-right text-xl">@_reportStatistics.UnresolvedReportCount (@((_reportStatistics.UnresolvedReportCount / _reportStatistics.TotalReportCount).ToString("P2")))</p>
+                <p class="text-right text-xl">@_reportStatistics.UnresolvedReportCount (@((_reportStatistics.TotalReportCount == 0 ? 0 : _reportStatistics.UnresolvedReportCount / _reportStatistics.TotalReportCount).ToString("P2")))</p>
             }
         </CardContent>
     </Card>
@@ -47,7 +47,7 @@
             @if (_isLoading) {
                 <p class="text-right text-lg animate-pulse select-none">Loading...</p>
             } else {
-                <p class="text-right text-xl">@_reportStatistics.GlobalDismissCount (@((_reportStatistics.GlobalDismissCount / _reportStatistics.TotalReportCount).ToString("P2")))</p>
+                <p class="text-right text-xl">@_reportStatistics.GlobalDismissCount (@((_reportStatistics.TotalReportCount == 0 ? 0 : _reportStatistics.GlobalDismissCount / _reportStatistics.TotalReportCount).ToString("P2")))</p>
             }
         </CardContent>
     </Card>
@@ -59,7 +59,7 @@
             @if (_isLoading) {
                 <p class="text-right text-lg animate-pulse select-none">Loading...</p>
             } else {
-                <p class="text-right text-xl">@_reportStatistics.GlobalWarnCount (@((_reportStatistics.GlobalWarnCount / _reportStatistics.TotalReportCount).ToString("P2")))</p>
+                <p class="text-right text-xl">@_reportStatistics.GlobalWarnCount (@((_reportStatistics.TotalReportCount == 0 ? _reportStatistics.GlobalWarnCount / _reportStatistics.TotalReportCount).ToString("P2")))</p>
             }
         </CardContent>
     </Card>
@@ -71,7 +71,7 @@
             @if (_isLoading) {
                 <p class="text-right text-lg animate-pulse select-none">Loading...</p>
             } else {
-                <p class="text-right text-xl">@_reportStatistics.GlobalBanCount (@((_reportStatistics.GlobalBanCount / _reportStatistics.TotalReportCount).ToString("P2")))</p>
+                <p class="text-right text-xl">@_reportStatistics.GlobalBanCount (@((_reportStatistics.TotalReportCount == 0 ? 0 : _reportStatistics.GlobalBanCount / _reportStatistics.TotalReportCount).ToString("P2")))</p>
             }
         </CardContent>
     </Card>
