@@ -161,14 +161,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasPrincipalKey(user => user.Id)
                 .OnDelete(DeleteBehavior.Cascade);
             
+            entity.HasOne(m => m.ModerationRecord)
+                .WithOne(r => r.MessageReport)
+                .HasForeignKey<MessageReport>(m => m.ModerationRecordId)
+                .OnDelete(DeleteBehavior.SetNull);
+            
             entity.ComplexCollection(x => x.OriginalMessageAttachments, action => action.ToJson());
         }).Entity<ModerationRecord>(entity => {
             entity.HasKey(x => x.Id);
-
-            entity.HasOne(m => m.MessageReport)
-                .WithOne(r => r.ModerationRecord)
-                .HasForeignKey<ModerationRecord>(m => m.MessageReportId)
-                .OnDelete(DeleteBehavior.SetNull);
             
             entity.HasOne(m => m.ResolverUser)
                 .WithMany()

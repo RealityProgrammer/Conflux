@@ -45,7 +45,7 @@ public sealed class StatisticsService(
                     GlobalBanCount: 0
                 )
             )
-            .SingleAsync();
+            .SingleOrDefaultAsync();
     }
 
     public async Task<ConversationStatisticsDTO> GetConversationStatistics() {
@@ -57,7 +57,7 @@ public sealed class StatisticsService(
         var conversationInfo = await dbContext.Conversations
             .GroupBy(r => 1)
             .Select(g => new ValueTuple<int, int>(g.Count(c => c.FriendRequestId != null), g.Count(c => c.CommunityChannelId != null)))
-            .SingleAsync();
+            .SingleOrDefaultAsync();
 
         var messageInfo = await dbContext.ChatMessages.CountAsync();
 
