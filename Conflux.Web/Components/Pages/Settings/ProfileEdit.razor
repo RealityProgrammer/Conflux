@@ -73,7 +73,7 @@
             <label class="font-semibold">About me</label>
                             
             @{
-                classes = $"w-full h-55 mt-2 input-field {(_editContext.IsValid(_bioField) ? string.Empty : "border-red-700")}";
+                classes = $"w-full h-55 mt-2 input-field resize-none {(_editContext.IsValid(_bioField) ? string.Empty : "border-red-700")}";
             }
 
             <InputTextArea @ref="_bioElement" type="text" @bind-Value="Model.Bio" class="@classes" placeholder="Biography"/>

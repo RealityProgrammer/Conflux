@@ -21,12 +21,12 @@ public interface IModerationService {
     Task<(int Count, List<MemberDisplayDTO> Page)> PaginateReportedMembersAsync(Guid communityId, int startIndex, int count);
     Task<(int Count, List<Guid>)> PaginateMemberReportedMessageIdsAsync(Guid memberId, int startIndex, int count);
     
-    Task<bool> ResolveReportByDismissAsync(Guid reportId, Guid resolverUserId);
+    Task<bool> ResolveReportByDismissAsync(Guid reportId, Guid resolverUserId, string? reason);
     
-    Task<bool> ResolveReportByWarningAsync(Guid reportId, Guid resolverUserId);
+    Task<bool> ResolveReportByWarningAsync(Guid reportId, Guid resolverUserId, string? reason);
     
-    Task<bool> ResolveReportByBanningAsync(Guid reportId, Guid resolverUserId, TimeSpan banDuration);
+    Task<bool> ResolveReportByBanningAsync(Guid reportId, Guid resolverUserId, TimeSpan banDuration, string? reason);
 
-    Task<bool> WarnUserAsync(Guid userId, Guid resolverUserId);
-    Task<bool> BanUserAsync(Guid userId, Guid resolverUserId, TimeSpan duration);
+    Task<bool> WarnUserAsync(Guid userId, Guid resolverUserId, string? reason);
+    Task<bool> BanUserAsync(Guid userId, Guid resolverUserId, TimeSpan duration, string? reason);
 }

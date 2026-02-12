@@ -261,7 +261,7 @@ public class ModerationService(
             .FirstOrDefaultAsync();
     }
 
-    public async Task<bool> ResolveReportByDismissAsync(Guid reportId, Guid resolverUserId) {
+    public async Task<bool> ResolveReportByDismissAsync(Guid reportId, Guid resolverUserId, string? reason) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
@@ -285,7 +285,7 @@ public class ModerationService(
                 MessageReportId = reportId,
                 Action = ModerationAction.Dismiss,
                 BanDuration = null,
-                Reason = "Insert reason here.",
+                Reason = reason,
                 OffenderUserId = userId,
             };
 
@@ -310,7 +310,7 @@ public class ModerationService(
         }
     }
     
-    public async Task<bool> ResolveReportByWarningAsync(Guid reportId, Guid resolverUserId) {
+    public async Task<bool> ResolveReportByWarningAsync(Guid reportId, Guid resolverUserId, string? reason) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
@@ -334,7 +334,7 @@ public class ModerationService(
                 MessageReportId = reportId,
                 Action = ModerationAction.Warn,
                 BanDuration = null,
-                Reason = "Insert reason here.",
+                Reason = reason,
                 OffenderUserId = userId,
             };
 
@@ -359,7 +359,7 @@ public class ModerationService(
         }
     }
     
-    public async Task<bool> ResolveReportByBanningAsync(Guid reportId, Guid resolverUserId, TimeSpan banDuration) {
+    public async Task<bool> ResolveReportByBanningAsync(Guid reportId, Guid resolverUserId, TimeSpan banDuration, string? reason) {
         if (banDuration < TimeSpan.Zero) {
             return false;
         }
@@ -394,7 +394,7 @@ public class ModerationService(
                 MessageReportId = reportId,
                 Action = ModerationAction.Warn,
                 BanDuration = banDuration,
-                Reason = "Insert reason here.",
+                Reason = reason,
                 OffenderUserId = extractedIds.SenderId,
             };
             
@@ -428,7 +428,7 @@ public class ModerationService(
         }
     }
 
-    public async Task<bool> WarnUserAsync(Guid userId, Guid resolverUserId) {
+    public async Task<bool> WarnUserAsync(Guid userId, Guid resolverUserId, string? reason) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
         
@@ -438,7 +438,7 @@ public class ModerationService(
             ResolverUserId = resolverUserId,
             Action = ModerationAction.Warn,
             BanDuration = null,
-            Reason = "Insert reason here.",
+            Reason = reason,
             OffenderUserId = userId,
         };
 
@@ -446,7 +446,7 @@ public class ModerationService(
         return await dbContext.SaveChangesAsync() > 0;
     }
     
-    public async Task<bool> BanUserAsync(Guid userId, Guid resolverUserId, TimeSpan duration) {
+    public async Task<bool> BanUserAsync(Guid userId, Guid resolverUserId, TimeSpan duration, string? reason) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
         
@@ -456,7 +456,7 @@ public class ModerationService(
             ResolverUserId = resolverUserId,
             Action = ModerationAction.Warn,
             BanDuration = duration,
-            Reason = "Insert reason here.",
+            Reason = reason,
             OffenderUserId = userId,
         };
 

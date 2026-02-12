@@ -16,7 +16,7 @@
         <CardFooter class="flex flex-row justify-end gap-2">
             <button type="button" class="button-primary w-24" @onclick="closeDelegate">Cancel</button>
             
-            <ProcessingStateButton IsProcessing="_isProcessingOperation" type="button" class="button-danger w-24" ProcessingCssClass="flex flex-row justify-center items-center" @onclick="HandleConfirmDelete">
+            <ProcessingStateButton IsProcessing="_isProcessingOperation" type="button" class="button-danger w-24" ProcessingCssClass="flex flex-row justify-center items-center" @onclick="HandleConfirmation">
                 <ChildContent>
                     Confirm
                 </ChildContent>
@@ -39,7 +39,7 @@
 
     private bool _isProcessingOperation;
 
-    private async Task HandleConfirmDelete() {
+    private async Task HandleConfirmation() {
         if (OnConfirm.HasDelegate) {
             _isProcessingOperation = true;
 

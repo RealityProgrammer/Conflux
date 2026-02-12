@@ -14,7 +14,7 @@
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject IContentService ContentService
 @inject ModalService ModalService
-@inject ICommunityService CommunityService
+@inject IModerationService ModerationService
 
 @implements IAsyncDisposable
 
@@ -675,44 +675,46 @@
     private void HandleBanMember() {
         _showExtraActionPopover = false;
         
-        ModalService.Open<BanDurationModal>(parameters: new Dictionary<string, object?> {
-            [nameof(BanDurationModal.OnConfirm)] = EventCallback.Factory.Create<TimeSpan>(this, BanUser),
+        ModalService.Open<BanConfirmationModal>(parameters: new Dictionary<string, object?> {
+            [nameof(BanConfirmationModal.OnConfirm)] = EventCallback.Factory.Create<BanConfirmationModal.BanInformation>(this, BanUser),
         });
         return;
 
-        async Task BanUser(TimeSpan duration) {
+        async Task BanUser(BanConfirmationModal.BanInformation info) {
             if (_extraActionTargetMessage == null) {
                 return;
             }
             
-            await using var dbContext = await DbContextFactory.CreateDbContextAsync();
-
-            var channelId = await dbContext.Conversations
-                .Where(c => c.Id == ConversationId && c.CommunityChannelId != null)
-                .Select(c => c.CommunityChannelId)
-                .FirstOrDefaultAsync();
-
-            if (channelId != null) {
-                var communityId = await dbContext.CommunityChannels
-                    .Where(c => c.Id == channelId)
-                    .Include(c => c.ChannelCategory)
-                    .Select(c => c.ChannelCategory.CommunityId)
-                    .FirstAsync();
-
-                bool success = await CommunityService.BanMemberFromUserIdAsync(communityId, _extraActionTargetMessage.SenderUserId, duration);
-
-                if (success) {
-                    ModalService.Open<OperationSuccessModal>(parameters: new Dictionary<string, object?> {
-                        [nameof(OperationFailureModal.Title)] = "Ban Success",
-                        [nameof(OperationFailureModal.Body)] = _banSuccessBody,
-                    });
-                } else {
-                    ModalService.Open<OperationFailureModal>(parameters: new Dictionary<string, object?> {
-                        [nameof(OperationFailureModal.Title)] = "Ban Failure",
-                        [nameof(OperationFailureModal.Body)] = _banFailureBody,
-                    });
-                }
-            }
+            // TODO: Implementation.
+            
+            // await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+            //
+            // var channelId = await dbContext.Conversations
+            //     .Where(c => c.Id == ConversationId && c.CommunityChannelId != null)
+            //     .Select(c => c.CommunityChannelId)
+            //     .FirstOrDefaultAsync();
+            //
+            // if (channelId != null) {
+            //     var communityId = await dbContext.CommunityChannels
+            //         .Where(c => c.Id == channelId)
+            //         .Include(c => c.ChannelCategory)
+            //         .Select(c => c.ChannelCategory.CommunityId)
+            //         .FirstAsync();
+            //
+            //     bool success = await CommunityService.BanMemberFromUserIdAsync(communityId, _extraActionTargetMessage.SenderUserId, duration);
+            //
+            //     if (success) {
+            //         ModalService.Open<OperationSuccessModal>(parameters: new Dictionary<string, object?> {
+            //             [nameof(OperationFailureModal.Title)] = "Ban Success",
+            //             [nameof(OperationFailureModal.Body)] = _banSuccessBody,
+            //         });
+            //     } else {
+            //         ModalService.Open<OperationFailureModal>(parameters: new Dictionary<string, object?> {
+            //             [nameof(OperationFailureModal.Title)] = "Ban Failure",
+            //             [nameof(OperationFailureModal.Body)] = _banFailureBody,
+            //         });
+            //     }
+            // }
         }
     }
 

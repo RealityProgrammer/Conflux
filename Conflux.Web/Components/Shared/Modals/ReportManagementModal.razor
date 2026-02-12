@@ -313,17 +313,17 @@
             return;
         }
     
-        ModalService.Open<DismissReportConfirmationModal>(parameters: new Dictionary<string, object?> {
-            [nameof(OperationConfirmModal.OnConfirm)] = EventCallback.Factory.Create(this, OnConfirm),
+        ModalService.Open<DismissConfirmationModal>(parameters: new Dictionary<string, object?> {
+            [nameof(DismissConfirmationModal.OnConfirm)] = EventCallback.Factory.Create<string>(this, OnConfirm),
         });
         return;
     
-        async Task OnConfirm() {
+        async Task OnConfirm(string reason) {
             if (ResolverUserId is not { } resolverUserId) {
                 return;
             }
             
-            await ModerationService.ResolveReportByDismissAsync(reportId, resolverUserId);
+            await ModerationService.ResolveReportByDismissAsync(reportId, resolverUserId, reason);
             var reportDisplay = (await ModerationService.GetReportDisplayAsync(reportId))!.Value;
     
             _selectedReport = reportDisplay;
@@ -339,27 +339,22 @@
         }
     }
     
-    private static readonly RenderFragment _reportWarnModalBody =
-        @<p>Are you sure you want to flag this report as an user warn?<br/>This action cannot be reverted.</p>;
-    
     private void HandleResolveReportByWarning() {
         if (_selectedReport?.Id is not { } reportId) {
             return;
         }
     
-        ModalService.Open<OperationConfirmModal>(parameters: new Dictionary<string, object?> {
-            [nameof(OperationConfirmModal.Title)] = "Warn User",
-            [nameof(OperationConfirmModal.Body)] = _reportWarnModalBody,
-            [nameof(OperationConfirmModal.OnConfirm)] = EventCallback.Factory.Create(this, OnConfirm),
+        ModalService.Open<WarnConfirmationModal>(parameters: new Dictionary<string, object?> {
+            [nameof(WarnConfirmationModal.OnConfirm)] = EventCallback.Factory.Create<string>(this, OnConfirm),
         });
         return;
     
-        async Task OnConfirm() {
+        async Task OnConfirm(string reason) {
             if (ResolverUserId is not { } resolverUserId) {
                 return;
             }
             
-            await ModerationService.ResolveReportByWarningAsync(reportId, resolverUserId);
+            await ModerationService.ResolveReportByWarningAsync(reportId, resolverUserId, reason);
             var reportDisplay = (await ModerationService.GetReportDisplayAsync(reportId))!.Value;
     
             _selectedReport = reportDisplay;
@@ -380,18 +375,18 @@
             return;
         }
     
-        ModalService.Open<BanDurationModal>(parameters: new Dictionary<string, object?> {
-            [nameof(BanDurationModal.OnConfirm)] = EventCallback.Factory.Create<TimeSpan>(this, OnConfirm),
+        ModalService.Open<BanConfirmationModal>(parameters: new Dictionary<string, object?> {
+            [nameof(BanConfirmationModal.OnConfirm)] = EventCallback.Factory.Create<BanConfirmationModal.BanInformation>(this, OnConfirm),
         });
     
         return;
     
-        async Task OnConfirm(TimeSpan duration) {
+        async Task OnConfirm(BanConfirmationModal.BanInformation info) {
             if (ResolverUserId is not { } resolverUserId) {
                 return;
             }
             
-            await ModerationService.ResolveReportByBanningAsync(reportId, resolverUserId, duration);
+            await ModerationService.ResolveReportByBanningAsync(reportId, resolverUserId, info.Duration, info.Reason);
             var reportDisplay = (await ModerationService.GetReportDisplayAsync(reportId))!.Value;
     
             _selectedReport = reportDisplay;

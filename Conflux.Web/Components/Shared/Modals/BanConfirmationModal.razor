@@ -1,0 +1,102 @@
+﻿@using Conflux.Web.Helpers
+@using Humanizer
+@using System.ComponentModel.DataAnnotations
+@inherits BaseModal
+
+@{
+    Action closeDelegate = EventUtils.AsNonRenderingEventHandler(CloseModal);
+}
+
+<div class="flex flex-row justify-center items-center size-full text-white">
+    <Card class="w-4/5 sm:w-3/4 md:w-1/2 lg:w-1/3">
+        <CardHeader Title="Ban User/Member" Subtext="Judgement has arrived." OnCloseRequested="closeDelegate"/>
+
+        <CardContent>
+            <EditForm Model="this" OnValidSubmit="OnValidSubmit">
+                <DataAnnotationsValidator/>
+                
+                <label class="input-label">Reason</label>
+                <InputTextArea @bind-Value="_reason" class="mt-1 input-field h-44 w-full px-1.5 py-1 resize-none" maxlength="512"/>
+                
+                <label class="input-label">Ban Duration</label>
+                <InputText @ref="_durationInputText" @bind-Value="@_durationText" class="input-field h-11 w-full mt-1"/>
+
+                @* @if (_durationInputText is { Element: { } targetElement }) { *@
+                @*     <Popover TargetReference="targetElement" IsShowing="@(!_editContext.IsValid(() => Model.BanDuration))" ArrowCssClass="bg-[#ff4b6a]" Placement="bottom" Offset="8"> *@
+                @*         <ValidationMessage For="() => Model.BanDuration" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"/> *@
+                @*     </Popover> *@
+                @* } *@
+                
+                @if (string.IsNullOrEmpty(_durationText)) {
+                    <p class="text-sm text-center text-gray-400 mt-1">Undefined duration</p>
+                } else if (TryParseBanDuration(_durationText, out var output)) {
+                    <p class="text-sm text-center text-gray-400 mt-1">@output.Humanize(precision: 5)</p>
+                } else {
+                    <p class="text-sm text-center text-gray-400 mt-1">Invalid duration</p>
+                }
+                
+                <p class="text-gray-400 text-sm text-center mt-2">Are you sure you want to dismiss this report?<br/>This action cannot be reverted for the time being.</p>
+                
+                <div class="mt-2 flex flex-row justify-end gap-2">
+                    <button type="button" class="button-cancel w-24" @onclick="closeDelegate">Cancel</button>
+                    
+                    <ProcessingStateButton IsProcessing="_isProcessingOperation" type="submit" class="button-primary w-24" ProcessingCssClass="flex flex-row justify-center items-center">
+                        <ChildContent>
+                            Confirm
+                        </ChildContent>
+                                
+                        <ProcessingContent>
+                            <Spinner class="size-5 fill-white"/>
+                        </ProcessingContent>
+                    </ProcessingStateButton>
+                </div>
+            </EditForm>
+        </CardContent>
+    </Card>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public EventCallback<BanInformation> OnConfirm { get; set; }
+
+    [StringLength(32, ErrorMessage = "Reason cannot be longer than {1} characters.")] private string? _reason;
+    private string _durationText = string.Empty;
+    
+    private InputText? _durationInputText;
+    
+    private bool _isProcessingOperation;
+
+    private async Task OnValidSubmit() {
+        if (OnConfirm.HasDelegate) {
+            _isProcessingOperation = true;
+
+            try {
+                await OnConfirm.InvokeAsync(new(TimeSpan.Parse(_durationText), _reason));
+            } finally {
+                _isProcessingOperation = false;
+            }
+        }
+        
+        CloseModal();
+    }
+    
+    private static bool TryParseBanDuration(string text, out TimeSpan duration) {
+        if (text == "Infinity") {
+            duration = TimeSpan.MaxValue;
+            return true;
+        }
+
+        if (TimeSpan.TryParseExact(text, "g", null, out duration)) {
+            if (duration < TimeSpan.Zero) {
+                duration = TimeSpan.Zero;
+                return false;
+            }
+
+            return true;
+        }
+
+        duration = TimeSpan.Zero;
+        return false;
+    }
+
+    public readonly record struct BanInformation(TimeSpan Duration, string? Reason);
+}
