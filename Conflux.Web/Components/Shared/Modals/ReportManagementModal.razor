@@ -308,17 +308,12 @@
         _reporterUserDisplay.AvatarPath = string.IsNullOrEmpty(_reporterUserDisplay.AvatarPath) ? null : ContentService.GetAssetPath(_reporterUserDisplay.AvatarPath);
     }
 
-    private static readonly RenderFragment _reportDismissModalBody =
-        @<p>Are you sure you want to dismiss this report?<br/>This action cannot be reverted.</p>;
-    
     private void HandleResolveReportByDismiss() {
         if (_selectedReport?.Id is not { } reportId) {
             return;
         }
     
-        ModalService.Open<OperationConfirmModal>(parameters: new Dictionary<string, object?> {
-            [nameof(OperationConfirmModal.Title)] = "Dismiss Report",
-            [nameof(OperationConfirmModal.Body)] = _reportDismissModalBody,
+        ModalService.Open<DismissReportConfirmationModal>(parameters: new Dictionary<string, object?> {
             [nameof(OperationConfirmModal.OnConfirm)] = EventCallback.Factory.Create(this, OnConfirm),
         });
         return;

@@ -35,14 +35,9 @@ public sealed class StatisticsService(
                 new ReportStatisticsDTO(
                     TotalReportCount: g.Count(),
                     UnresolvedReportCount: g.Count(r => r.ModerationRecordId == null),
-                    // GlobalDismissCount: g.Where(r => r.ModerationRecordId != null),
-                    // GlobalWarnCount: g.Count(r => r.Status == ReportStatus.Warned),
-                    // GlobalBanCount: g.Count(r => r.Status == ReportStatus.Banned)
-                    
-                    // TODO: Implementation
-                    GlobalDismissCount: 0,
-                    GlobalWarnCount: 0,
-                    GlobalBanCount: 0
+                    GlobalDismissCount: g.Count(r => r.ModerationRecord != null && r.ModerationRecord.Action == ModerationAction.Dismiss),
+                    GlobalWarnCount: g.Count(r => r.ModerationRecord != null && r.ModerationRecord.Action == ModerationAction.Warn),
+                    GlobalBanCount: g.Count(r => r.ModerationRecord != null && r.ModerationRecord.Action == ModerationAction.Ban)
                 )
             )
             .SingleOrDefaultAsync();

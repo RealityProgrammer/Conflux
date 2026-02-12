@@ -7,10 +7,10 @@
 
 <div class="flex flex-row justify-center items-center size-full text-white">
     <Card>
-        <CardHeader Title="@Title" Subtext="@Subtitle" OnCloseRequested="closeDelegate"/>
+        <CardHeader Title="Dismiss Report" OnCloseRequested="closeDelegate"/>
 
         <CardContent class="pb-3">
-            @Body
+            <p>Are you sure you want to dismiss this report?<br/>This action cannot be reverted.</p>
         </CardContent>
         
         <CardFooter class="flex flex-row justify-end gap-2">
@@ -30,11 +30,6 @@
 </div>
 
 @code {
-    [Parameter, EditorRequired] public string Title { get; set; }
-    [Parameter] public string? Subtitle { get; set; }
-    
-    [Parameter, EditorRequired] public RenderFragment Body { get; set; }
-    
     [Parameter, EditorRequired] public EventCallback OnConfirm { get; set; }
 
     private bool _isProcessingOperation;
