@@ -9,8 +9,8 @@ public class ModerationRecord {
     public Guid OffenderUserId { get; set; }
     public ApplicationUser OffenderUser { get; set; } = null!;
     
-    public Guid? ResolverUserId { get; set; }
-    public ApplicationUser? ResolverUser { get; set; }
+    public Guid ResolverUserId { get; set; }
+    public ApplicationUser ResolverUser { get; set; } = null!;
     
     public Guid? MessageReportId { get; set; }
     public MessageReport? MessageReport { get; set; }

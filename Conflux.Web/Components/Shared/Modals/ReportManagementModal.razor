@@ -12,6 +12,10 @@
 @inject IContentService ContentService
 @inject IUserService UserService
 
+@{
+    Guid selectedReportId = _selectedReport?.Id ?? Guid.Empty;
+}
+
 <div class="flex flex-row justify-center items-center size-full text-white">
     <Card class="absolute inset-0 rounded-none! lg:inset-6 lg:rounded-xl!">
         <CardHeader Title="Report Management" OnCloseRequested="EventUtils.AsNonRenderingEventHandler(CloseModal)" class="border-b border-b-gray-600" />
@@ -44,8 +48,6 @@
                                     <p class="text-sm text-gray-400">Select a message to see reports.</p>
                                 </div>
                             } else {
-                                Guid selectedReportId = _selectedReportId ?? Guid.Empty;
-                                
                                 @foreach (var report in _messageReports) {
                                     <button class="p-2 button-nav-menu @(report.Id == selectedReportId ? "bg-white/8" : string.Empty)" @onclick="() => SelectReport(report.Id)">
                                         <span class="text-center w-full text-sm">@report.Id</span>
@@ -60,11 +62,11 @@
                     <header class="flex-none">Details</header>
                     
                     <section class="flex-1 border border-gray-600 rounded-md mt-1 p-2 overflow-y-auto scrollbar-hide">
-                        @if (_selectedMessageId != null || _selectedReportId != null) {
+                        @if (_selectedMessageId != null || selectedReportId != Guid.Empty) {
                             if (_selectedMessageId != null) {
                                 <p class="text-xl">Message state currently</p>
                                 
-                                @if (_selectedMessageDisplay is { } selectedMessageDisplay) {
+                                @if (_selectedMessage is { } selectedMessageDisplay) {
                                     <MessageDisplay Display="selectedMessageDisplay" class="mt-1 p-2 border border-gray-600 rounded-md max-h-32 overflow-y-auto"/>
                                     
                                     <p class="mt-1">Statistic:</p>
@@ -124,10 +126,10 @@
                                 }
                             }
 
-                            if (_selectedReportId != null) {
+                            if (selectedReportId != Guid.Empty) {
                                 <p class="mt-2 text-xl">Message state when report</p>
                                 
-                                @if (_selectedReportDisplay is { } reportDisplay) {
+                                @if (_selectedReport is { } reportDisplay) {
                                     <MessageDisplay Display="@(new MessageDisplayDTO(reportDisplay.SenderDisplayName, reportDisplay.SenderAvatar, reportDisplay.OriginalBody, reportDisplay.OriginalAttachments))"
                                                     class="mt-1 p-2 border border-gray-600 rounded-md max-h-32 overflow-y-auto"/>
                                     
@@ -166,60 +168,60 @@
                                         
                                         <div class="flex-none flex flex-row items-center">
                                             <p class="flex-1">Status:</p>
-                                            
+
                                             <div class="flex-2">
-                                                @switch (reportDisplay.Status) {
-                                                    case ReportStatus.InProgress:
+                                                @switch (_moderationRecordForSelectedReport?.Action) {
+                                                    case null:
                                                         <p class="animate-pulse inline-block">In Progress</p>
                                                         <Spinner class="size-5 fill-white ml-2 inline-block"/>
                                                         break;
-                                                        
-                                                    case ReportStatus.Banned:
+
+                                                    case ModerationAction.Ban:
                                                         <p class="text-red-500 inline-block">Banned</p>
                                                         break;
-                                                        
-                                                    case ReportStatus.Dismissed:
+
+                                                    case ModerationAction.Dismiss:
                                                         <p class="inline-block">Dismissed</p>
                                                         break;
-                                                        
-                                                    case ReportStatus.Warned:
+
+                                                    case ModerationAction.Warn:
                                                         <p class="text-yellow-300 inline-block">Warned</p>
                                                         break;
                                                 }
                                             </div>
                                         </div>
-                                        
-                                        @if (reportDisplay.Status == ReportStatus.Banned && reportDisplay.BanDuration is { } banDuration) {
-                                            <div class="flex-none flex flex-row items-center">
-                                                <p class="flex-1">Ban Duration:</p>
 
-                                                <div class="flex-2">
-                                                    <p class="inline-block">@banDuration.Humanize(precision: 5)</p>
+                                        @if (_moderationRecordForSelectedReport is { } moderationRecord) {
+                                            @if (moderationRecord.Action == ModerationAction.Ban && moderationRecord.BanDuration is { } banDuration) {
+                                                <div class="flex-none flex flex-row items-center">
+                                                    <p class="flex-1">Ban Duration:</p>
+
+                                                    <div class="flex-2">
+                                                        <p class="inline-block">@banDuration.Humanize(precision: 5)</p>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        }
+                                            }
 
-                                        @if (_reportResolverUserDisplay is { } resolverDisplay && reportDisplay.ResolvedAt is { } resolvedAt) {
                                             <div class="flex-none flex flex-row items-center">
                                                 <p class="flex-1">Resolved By:</p>
-                                        
-                                                <UserCard UserId="@resolverDisplay.UserId"
+
+                                                <UserCard UserId="@moderationRecord.ResolverUser.UserId"
                                                           MemberId="@_reportResolverMemberId"
-                                                          AvatarSrc="@(string.IsNullOrEmpty(resolverDisplay.AvatarPath) ? null : ContentService.GetAssetPath(resolverDisplay.AvatarPath))"
-                                                          DisplayName="@resolverDisplay.DisplayName"
+                                                          AvatarSrc="@(string.IsNullOrEmpty(moderationRecord.ResolverUser.AvatarPath) ? null : ContentService.GetAssetPath(moderationRecord.ResolverUser.AvatarPath))"
+                                                          DisplayName="@moderationRecord.ResolverUser.DisplayName"
                                                           class="h-10 flex-2"
                                                           OnClick="EventUtils.AsNonRenderingEventHandler<UserCard>(OpenMemberProfileModal)"/>
                                             </div>
-                                        
+
                                             <div class="flex-none flex flex-row items-center">
                                                 <p class="flex-1">Resolved At:</p>
-                                        
-                                                <p class="flex-2">@resolvedAt.ToString("yyyy-MM-dd HH:mm:ss")</p>
+
+                                                <p class="flex-2">@moderationRecord.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</p>
                                             </div>
                                         }
                                     </div>
                                     
-                                    @if (reportDisplay.Status == ReportStatus.InProgress) {
+                                    @if (_moderationRecordForSelectedReport == null) {
                                         <p class="mt-2 text-xl">Actions:</p>
 
                                         <div class="grid grid-cols-2 gap-2 mt-2">
@@ -262,10 +264,10 @@
     private List<MessageReport>? _messageReports;
 
     private Guid? _selectedMessageId;
-    private Guid? _selectedReportId;
 
-    private MessageDisplayDTO? _selectedMessageDisplay;
-    private ReportDisplayDTO? _selectedReportDisplay;
+    private MessageDisplayDTO? _selectedMessage;
+    private ReportDisplayDTO? _selectedReport;
+    private ModerationRecordDisplayDTO? _moderationRecordForSelectedReport;
     private MessageReportStatistics _messageStatistics;
 
     private UserDisplayDTO _reporterUserDisplay;
@@ -276,10 +278,10 @@
     
     private async Task SelectMessage(Guid messageId) {
         _selectedMessageId = messageId;
-        _selectedReportId = null;
+        _selectedReport = null;
 
         _messageReports = await ModerationService.GetMessageReportsAsync(messageId);
-        _selectedMessageDisplay = (await ConversationService.GetMessageDisplayAsync(messageId))!.Value;
+        _selectedMessage = (await ConversationService.GetMessageDisplayAsync(messageId))!.Value;
         _messageStatistics = (await ModerationService.GetMessageReportReasonCounts(messageId))!.Value;
     }
 
@@ -288,18 +290,19 @@
             return;
         }
         
-        _selectedReportId = reportId;
-        
         var reportDisplay = (await ModerationService.GetReportDisplayAsync(reportId))!.Value;
         
-        _selectedReportDisplay = reportDisplay;
+        _selectedReport = reportDisplay;
+        if (reportDisplay.ModerationRecordId is { } moderationRecordId) {
+            _moderationRecordForSelectedReport = await ModerationService.GetModerationRecordDisplayAsync(moderationRecordId);
+        }
 
         if (CommunityId is { } communityId) {
             (_reporterMemberId!, _reporterUserDisplay) = (await CommunityService.GetMemberDisplayAsync(communityId, reportDisplay.ReporterUserId))!.Value;
-            (_reportResolverMemberId!, _reportResolverUserDisplay!) = reportDisplay.ResolverUserId is { } resolverId ? (await CommunityService.GetMemberDisplayAsync(communityId, resolverId))!.Value : default;
+            (_reportResolverMemberId!, _reportResolverUserDisplay!) = _moderationRecordForSelectedReport is { } moderationRecord ? (await CommunityService.GetMemberDisplayAsync(communityId, moderationRecord.ResolverUser.UserId))!.Value : default;
         } else {
             _reporterUserDisplay = (await UserService.GetUserDisplayAsync(reportDisplay.ReporterUserId))!.Value;
-            _reportResolverUserDisplay = reportDisplay.ResolverUserId is { } resolverId ? (await UserService.GetUserDisplayAsync(resolverId))!.Value : null;
+            _reportResolverUserDisplay = _moderationRecordForSelectedReport is { } moderationRecord ? (await UserService.GetUserDisplayAsync(moderationRecord.ResolverUser.UserId))!.Value : null;
         }
         
         _reporterUserDisplay.AvatarPath = string.IsNullOrEmpty(_reporterUserDisplay.AvatarPath) ? null : ContentService.GetAssetPath(_reporterUserDisplay.AvatarPath);
@@ -309,7 +312,7 @@
         @<p>Are you sure you want to dismiss this report?<br/>This action cannot be reverted.</p>;
     
     private void HandleResolveReportByDismiss() {
-        if (_selectedReportId is not { } reportId) {
+        if (_selectedReport?.Id is not { } reportId) {
             return;
         }
     
@@ -328,12 +331,15 @@
             await ModerationService.ResolveReportByDismissAsync(reportId, resolverUserId);
             var reportDisplay = (await ModerationService.GetReportDisplayAsync(reportId))!.Value;
     
-            _selectedReportDisplay = reportDisplay;
+            _selectedReport = reportDisplay;
+            if (reportDisplay.ModerationRecordId is { } moderationRecordId) {
+                _moderationRecordForSelectedReport = await ModerationService.GetModerationRecordDisplayAsync(moderationRecordId);
+            }
 
             if (CommunityId is { } communityId) {
-                (_reportResolverMemberId!, _reportResolverUserDisplay!) = reportDisplay.ResolverUserId is { } resolverId ? (await CommunityService.GetMemberDisplayAsync(communityId, resolverId))!.Value : default;
+                (_reportResolverMemberId!, _reportResolverUserDisplay!) = _moderationRecordForSelectedReport is { } moderationRecord ? (await CommunityService.GetMemberDisplayAsync(communityId, moderationRecord.ResolverUser.UserId))!.Value : default;
             } else {
-                _reportResolverUserDisplay = reportDisplay.ResolverUserId is { } resolverId ? (await UserService.GetUserDisplayAsync(resolverId))!.Value : null;
+                _reportResolverUserDisplay = _moderationRecordForSelectedReport is { } moderationRecord ? (await UserService.GetUserDisplayAsync(moderationRecord.ResolverUser.UserId))!.Value : null;
             }
         }
     }
@@ -342,7 +348,7 @@
         @<p>Are you sure you want to flag this report as an user warn?<br/>This action cannot be reverted.</p>;
     
     private void HandleResolveReportByWarning() {
-        if (_selectedReportId is not { } reportId) {
+        if (_selectedReport?.Id is not { } reportId) {
             return;
         }
     
@@ -361,18 +367,21 @@
             await ModerationService.ResolveReportByWarningAsync(reportId, resolverUserId);
             var reportDisplay = (await ModerationService.GetReportDisplayAsync(reportId))!.Value;
     
-            _selectedReportDisplay = reportDisplay;
+            _selectedReport = reportDisplay;
+            if (reportDisplay.ModerationRecordId is { } moderationRecordId) {
+                _moderationRecordForSelectedReport = await ModerationService.GetModerationRecordDisplayAsync(moderationRecordId);
+            }
             
             if (CommunityId is { } communityId) {
-                (_reportResolverMemberId!, _reportResolverUserDisplay!) = reportDisplay.ResolverUserId is { } resolverId ? (await CommunityService.GetMemberDisplayAsync(communityId, resolverId))!.Value : default;
+                (_reportResolverMemberId!, _reportResolverUserDisplay!) = _moderationRecordForSelectedReport is { } moderationRecord ? (await CommunityService.GetMemberDisplayAsync(communityId, moderationRecord.ResolverUser.UserId))!.Value : default;
             } else {
-                _reportResolverUserDisplay = reportDisplay.ResolverUserId is { } resolverId ? (await UserService.GetUserDisplayAsync(resolverId))!.Value : null;
+                _reportResolverUserDisplay = _moderationRecordForSelectedReport is { } moderationRecord ? (await UserService.GetUserDisplayAsync(moderationRecord.ResolverUser.UserId))!.Value : null;
             }
         }
     }
     
     private void HandleResolveReportByBanning() {
-        if (_selectedReportId is not { } reportId) {
+        if (_selectedReport?.Id is not { } reportId) {
             return;
         }
     
@@ -390,12 +399,15 @@
             await ModerationService.ResolveReportByBanningAsync(reportId, resolverUserId, duration);
             var reportDisplay = (await ModerationService.GetReportDisplayAsync(reportId))!.Value;
     
-            _selectedReportDisplay = reportDisplay;
+            _selectedReport = reportDisplay;
+            if (reportDisplay.ModerationRecordId is { } moderationRecordId) {
+                _moderationRecordForSelectedReport = await ModerationService.GetModerationRecordDisplayAsync(moderationRecordId);
+            }
             
             if (CommunityId is { } communityId) {
-                (_reportResolverMemberId!, _reportResolverUserDisplay!) = reportDisplay.ResolverUserId is { } resolverId ? (await CommunityService.GetMemberDisplayAsync(communityId, resolverId))!.Value : default;
+                (_reportResolverMemberId!, _reportResolverUserDisplay!) = _moderationRecordForSelectedReport is { } moderationRecord ? (await CommunityService.GetMemberDisplayAsync(communityId, moderationRecord.ResolverUser.UserId))!.Value : default;
             } else {
-                _reportResolverUserDisplay = reportDisplay.ResolverUserId is { } resolverId ? (await UserService.GetUserDisplayAsync(resolverId))!.Value : null;
+                _reportResolverUserDisplay = _moderationRecordForSelectedReport is { } moderationRecord ? (await UserService.GetUserDisplayAsync(moderationRecord.ResolverUser.UserId))!.Value : null;
             }
         }
     }

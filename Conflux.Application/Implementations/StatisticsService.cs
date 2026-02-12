@@ -34,10 +34,15 @@ public sealed class StatisticsService(
             .Select(g => 
                 new ReportStatisticsDTO(
                     TotalReportCount: g.Count(),
-                    UnresolvedReportCount: g.Count(r => r.Status == ReportStatus.InProgress),
-                    GlobalDismissCount: g.Count(r => r.Status == ReportStatus.Dismissed),
-                    GlobalWarnCount: g.Count(r => r.Status == ReportStatus.Warned),
-                    GlobalBanCount: g.Count(r => r.Status == ReportStatus.Banned)
+                    UnresolvedReportCount: g.Count(r => r.ModerationRecordId == null),
+                    // GlobalDismissCount: g.Where(r => r.ModerationRecordId != null),
+                    // GlobalWarnCount: g.Count(r => r.Status == ReportStatus.Warned),
+                    // GlobalBanCount: g.Count(r => r.Status == ReportStatus.Banned)
+                    
+                    // TODO: Implementation
+                    GlobalDismissCount: 0,
+                    GlobalWarnCount: 0,
+                    GlobalBanCount: 0
                 )
             )
             .SingleAsync();
@@ -70,14 +75,14 @@ public sealed class StatisticsService(
 
         var statistics = await dbContext.MessageReports
             .Where(c => c.Message.Conversation.CommunityChannel!.ChannelCategory.CommunityId == communityId)
-            .Select(r => new { r.CreatedAt, r.Status })
+            .Select(r => new { r.CreatedAt, r.ModerationRecordId })
             .GroupBy(r => 1)
             .Select(g => new ReportCountStatistics(
                 Total: g.Count(),
                 Today: g.Count(x => x.CreatedAt >= today),
                 ThisMonth: g.Count(x => x.CreatedAt >= startOfMonth),
                 ThisYear: g.Count(x => x.CreatedAt >= startOfYear),
-                Resolved: g.Count(x => x.Status != ReportStatus.InProgress)
+                Resolved: g.Count(x => x.ModerationRecordId != null)
             ))
             .SingleOrDefaultAsync();
 
@@ -93,8 +98,9 @@ public sealed class StatisticsService(
             .GroupBy(r => 1)
             .Select(g => new UserReportStatistics(
                 TotalReportCount: g.Count(),
-                ResolvedReportCount: g.Count(r => r.Status != ReportStatus.InProgress),
-                WarnCount: g.Count(r => r.Status == ReportStatus.Warned)
+                ResolvedReportCount: g.Count(r => r.ModerationRecordId != null),
+                // TODO: Implementation
+                WarnCount: 0
             ))
             .SingleOrDefaultAsync();
 
@@ -119,8 +125,10 @@ public sealed class StatisticsService(
             .GroupBy(r => 1)
             .Select(g => new UserReportStatistics(
                 TotalReportCount: g.Count(),
-                ResolvedReportCount: g.Count(r => r.Status != ReportStatus.InProgress),
-                WarnCount: g.Count(r => r.Status == ReportStatus.Warned)
+                ResolvedReportCount: g.Count(r => r.ModerationRecordId != null),
+                
+                // TODO: Implementation
+                WarnCount: 0
             ))
             .SingleOrDefaultAsync();
 

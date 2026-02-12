@@ -12,6 +12,7 @@ public interface IModerationService {
     Task<MessageReportStatistics?> GetMessageReportReasonCounts(Guid messageId);
     
     Task<ReportDisplayDTO?> GetReportDisplayAsync(Guid reportId);
+    Task<ModerationRecordDisplayDTO?> GetModerationRecordDisplayAsync(Guid recordId);
 
     Task<(int TotalCount, List<UserDisplayDTO> Page)> PaginateReportedUsersAsync(int startIndex, int count);
     Task<(int TotalCount, List<Guid>)> PaginateUserReportedMessageIdsAsync(Guid userId, int startIndex, int count);

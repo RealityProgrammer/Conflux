@@ -240,6 +240,27 @@ public class ModerationService(
             .FirstOrDefaultAsync();
     }
 
+    public async Task<ModerationRecordDisplayDTO?> GetModerationRecordDisplayAsync(Guid recordId) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        return await dbContext.ModerationRecords
+            .Where(r => r.Id == recordId)
+            .Include(r => r.ResolverUser)
+            .Select(r => 
+                new ModerationRecordDisplayDTO(
+                    OffenderUserId: r.OffenderUserId, 
+                    ResolverUser: new(r.ResolverUser.Id, r.ResolverUser.DisplayName, r.ResolverUser.UserName, r.ResolverUser.AvatarProfilePath), 
+                    MessageReportId: r.MessageReportId,
+                    Action: r.Action,
+                    BanDuration: r.BanDuration,
+                    Reason: r.Reason,
+                    CreatedAt: r.CreatedAt
+                )
+            )
+            .FirstOrDefaultAsync();
+    }
+
     public async Task<bool> ResolveReportByDismissAsync(Guid reportId, Guid resolverUserId) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
