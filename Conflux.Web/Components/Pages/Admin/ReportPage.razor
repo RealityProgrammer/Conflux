@@ -59,7 +59,7 @@
             @if (_isLoading) {
                 <p class="text-right text-lg animate-pulse select-none">Loading...</p>
             } else {
-                <p class="text-right text-xl">@_reportStatistics.GlobalWarnCount (@((_reportStatistics.TotalReportCount == 0 ? _reportStatistics.GlobalWarnCount / _reportStatistics.TotalReportCount).ToString("P2")))</p>
+                <p class="text-right text-xl">@_reportStatistics.GlobalWarnCount (@((_reportStatistics.TotalReportCount == 0 ? 0 : _reportStatistics.GlobalWarnCount / _reportStatistics.TotalReportCount).ToString("P2")))</p>
             }
         </CardContent>
     </Card>
@@ -134,7 +134,7 @@
                                 <CardContent class="flex flex-row justify-between items-center px-2!">
                                     <p>Resolved Percentage</p>
                                         
-                                    <p>@((userReportStatistics.ResolvedReportCount / userReportStatistics.TotalReportCount).ToString("P2"))</p>
+                                    <p>@((userReportStatistics.TotalReportCount == 0 ? 0 : userReportStatistics.ResolvedReportCount / userReportStatistics.TotalReportCount).ToString("P2"))</p>
                                 </CardContent>
                             </Card>
                             

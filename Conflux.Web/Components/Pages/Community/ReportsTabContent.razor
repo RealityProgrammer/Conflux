@@ -92,7 +92,7 @@
                             <p>Resolved Percentage:</p>
 
                             <div class="mt-3 flex justify-end">
-                                <p class="text-3xl">@(((float)countStatistic.Resolved / countStatistic.Total).ToString("P2"))</p>
+                                <p class="text-3xl">@((countStatistic.Total == 0 ? 0 : (float)countStatistic.Resolved / countStatistic.Total).ToString("P2"))</p>
                             </div>
                         </div>
                     </section>
