@@ -11,11 +11,17 @@
         <CardHeader Title="Dismiss Report" Subtext="False report, nothing to see here..." OnCloseRequested="closeDelegate"/>
 
         <CardContent>
-            <EditForm Model="this" OnValidSubmit="OnValidSubmit">
+            <EditForm EditContext="_editContext" OnValidSubmit="OnValidSubmit">
                 <DataAnnotationsValidator/>
                 
                 <label class="input-label">Reason</label>
-                <InputTextArea @bind-Value="_reason" class="mt-1 input-field h-44 w-full px-1.5 py-1 resize-none" maxlength="512"/>
+                <InputTextArea @ref="_reasonInputTextArea" @bind-Value="Model!.Reason" class="mt-1 input-field h-44 w-full px-1.5 py-1 resize-none" maxlength="512"/>
+                
+                @if (_reasonInputTextArea is { Element: { } reasonElement }) {
+                    <Popover TargetReference="reasonElement" IsShowing="@(!_editContext!.IsValid(_reasonField))" ArrowCssClass="bg-[#ff4b6a]" Placement="bottom" Offset="8">
+                        <ValidationMessage For="() => Model.Reason" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"/>
+                    </Popover>
+                }
                 
                 <p class="text-gray-400 text-sm text-center mt-2">Are you sure you want to dismiss this report?<br/>This action cannot be reverted for the time being.</p>
                 
@@ -41,21 +47,36 @@
 @code {
     [Parameter, EditorRequired] public EventCallback<string> OnConfirm { get; set; }
 
-    [StringLength(32, ErrorMessage = "Reason cannot be longer than {1} characters.")] private string _reason = string.Empty;
+    [SupplyParameterFromForm] private InputModel? Model { get; set; }
+    private EditContext? _editContext;
 
+    private InputTextArea? _reasonInputTextArea;
+    private FieldIdentifier _reasonField;
+    
     private bool _isProcessingOperation;
+
+    protected override void OnInitialized() {
+        Model ??= new();
+        _editContext = new(Model);
+
+        _reasonField = FieldIdentifier.Create(() => Model.Reason);
+    }
 
     private async Task OnValidSubmit() {
         if (OnConfirm.HasDelegate) {
             _isProcessingOperation = true;
 
             try {
-                await OnConfirm.InvokeAsync(_reason);
+                await OnConfirm.InvokeAsync(Model!.Reason);
             } finally {
                 _isProcessingOperation = false;
             }
         }
         
         CloseModal();
+    }
+
+    private sealed class InputModel {
+        [StringLength(512, ErrorMessage = "Reason cannot be longer than {1} characters.")] public string? Reason { get; set; }
     }
 }
