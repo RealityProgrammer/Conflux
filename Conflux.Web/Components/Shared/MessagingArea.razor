@@ -4,8 +4,11 @@
 @using System.Diagnostics
 @using System.Security.Claims
 
+@implements IAsyncDisposable
+
 @inject IConversationService ConversationService
 @inject NavigationManager NavigationManager
+@inject IConversationEventDispatcher ConversationEventDispatcher
 
 <section class="min-w-0 flex flex-col @_cssClass">
     <MessageTimeline ConversationId="ConversationId" 
@@ -31,12 +34,13 @@
 
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
     private string? _cssClass;
-
-    private Guid? _replyMessageId;
-
+    
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
     private Guid _userId;
-
+    
+    private Guid? _replyMessageId;
+    private Guid _previousConversationId;
+    
     // Called automatically when URL parameter changed.
     protected override void OnParametersSet() {
         _replyMessageId = null;
@@ -55,8 +59,15 @@
         {
             NavigationManager.NavigateTo("/", true);
         }
+
+        if (_previousConversationId != ConversationId) {
+            _previousConversationId = ConversationId;
+            
+            await ConversationEventDispatcher.Disconnect(_previousConversationId);
+            await ConversationEventDispatcher.Connect(ConversationId);
+        }
     }
-    
+
     private async Task HandleMessageSend(MessageInputArea.MessageData data) {
         if (data.UploadingFiles.Count == 0) {
             // No attachment file, plain and simple.
@@ -102,5 +113,9 @@
 
     private void HandleReplyRequested(Guid messageId) {
         _replyMessageId = messageId;
+    }
+
+    public async ValueTask DisposeAsync() {
+        await ConversationEventDispatcher.Connect(ConversationId);
     }
 }

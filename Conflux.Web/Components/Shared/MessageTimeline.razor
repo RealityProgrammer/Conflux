@@ -336,7 +336,6 @@
 
     protected override void OnParametersSet() {
         if (_previousConversationId != ConversationId) {
-            ConversationEventDispatcher.Disconnect(_previousConversationId);
             _initStatus = InitializationStatus.Loading;
 
             _extraActionPopoverTargets.Clear();
@@ -389,8 +388,6 @@
         }
         
         if (_previousConversationId != ConversationId) {
-            await ConversationEventDispatcher.Connect(ConversationId);
-            
             _previousConversationId = ConversationId;
             
             await LoadInitialMessages();
@@ -891,8 +888,6 @@
         ConversationEventDispatcher.OnMessageEdited -= OnMessageEdited;
 
         _messageSemaphore?.Dispose();
-        
-        await ConversationEventDispatcher.Disconnect(ConversationId);
     }
     
     private enum InitializationStatus {
