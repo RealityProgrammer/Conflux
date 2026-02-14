@@ -1,4 +1,5 @@
 ﻿@using Conflux.Web.Helpers
+
 <div class="p-1 rounded-lg flex flex-row items-center hover:bg-white/15 @(OnClick.HasDelegate ? "active:bg-black/25 cursor-pointer" : string.Empty) @_cssClass" @onclick="@(EventUtils.AsNonRenderingEventHandler(HandleInvokeOnClick))">
     <Avatar ImageSrc="@AvatarSrc" ImageAlt="@($"Avatar of {Name}")" class="h-full mr-2"/>
     
