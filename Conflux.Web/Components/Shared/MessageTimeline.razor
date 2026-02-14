@@ -257,9 +257,13 @@
                             </Authorized>
                         </AuthorizeView>
                     }
-                    
+                }
+                
+                @if (_extraActionTargetMessage!.SenderUserId != UserId) {
                     <AuthorizeView Roles="Admin, Moderator, SystemDeveloper">
                         <Authorized>
+                            <hr class="border-t border-t-gray-600 mx-2"/>
+
                             <button class="p-2! button-nav-menu" @onclick="HandleBanUser">
                                 <Person class="size-5 fill-red-500" Addition="PersonAddition.X"/>
 
@@ -695,7 +699,6 @@
                 return;
             }
 
-            // TODO: Revision needed, this code is fucking ugly.
             await using var dbContext = await DbContextFactory.CreateDbContextAsync();
             dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
@@ -732,7 +735,34 @@
     }
 
     private void HandleBanUser() {
+        _showExtraActionPopover = false;
         
+        ModalService.Open<BanConfirmationModal>(parameters: new Dictionary<string, object?> {
+            [nameof(BanConfirmationModal.OnConfirm)] = EventCallback.Factory.Create<BanConfirmationModal.BanInformation>(this, OnConfirmation),
+        });
+        return;
+
+        async Task OnConfirmation(BanConfirmationModal.BanInformation info) {
+            if (_extraActionTargetMessage == null) {
+                return;
+            }
+
+            await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+            
+            bool success = await ModerationService.BanUserAsync(_extraActionTargetMessage.SenderUserId, UserId, info.Duration, info.Reason);
+            if (success) {
+                ModalService.Open<OperationSuccessModal>(parameters: new Dictionary<string, object?> {
+                    [nameof(OperationFailureModal.Title)] = "Ban Success",
+                    [nameof(OperationFailureModal.Body)] = _banSuccessBody,
+                });
+            } else {
+                ModalService.Open<OperationFailureModal>(parameters: new Dictionary<string, object?> {
+                    [nameof(OperationFailureModal.Title)] = "Ban Failure",
+                    [nameof(OperationFailureModal.Body)] = _banFailureBody,
+                });
+            }
+        }
     }
 
     private void OnMessageReceived(MessageReceivedEventArgs args) {
