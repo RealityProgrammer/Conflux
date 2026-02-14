@@ -132,8 +132,8 @@
 </EditForm>
 
 @code {
-    [Parameter] public Guid MessageId { get; set; }
-    [Parameter] public Guid ReporterUserId { get; set; }
+    [Parameter, EditorRequired] public required Guid MessageId { get; set; }
+    [Parameter, EditorRequired] public required Guid ReporterUserId { get; set; }
 
     private Status _status;
     private MessageDisplayDTO _messageDisplay;

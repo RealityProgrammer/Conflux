@@ -258,6 +258,16 @@
                             </Authorized>
                         </AuthorizeView>
                     }
+                    
+                    <AuthorizeView Roles="Admin, Moderator, SystemDeveloper">
+                        <Authorized>
+                            <button class="p-2! button-nav-menu" @onclick="HandleBanUser">
+                                <Person class="size-5 fill-red-500" Addition="PersonAddition.X"/>
+
+                                <span class="text-sm text-red-500">Ban User</span>
+                            </button>
+                        </Authorized>
+                    </AuthorizeView>
                 }
             </Popover>
             break;
@@ -667,55 +677,114 @@
     }
 
     private static readonly RenderFragment _banFailureBody =
-        @<p>Failed to ban member. Please try again later.</p>;
+        @<p>The ban operation wasn't successful. Please try again later.</p>;
     
     private static readonly RenderFragment _banSuccessBody =
-        @<p>Member has been banned.</p>;
+        @<p>The ban hammer has dropped, and the offender has been banished.</p>;
 
     private void HandleBanMember() {
+        if (MemberInformation == null) {
+            return;
+        }
+        
         _showExtraActionPopover = false;
         
         ModalService.Open<BanConfirmationModal>(parameters: new Dictionary<string, object?> {
-            [nameof(BanConfirmationModal.OnConfirm)] = EventCallback.Factory.Create<BanConfirmationModal.BanInformation>(this, BanUser),
+            [nameof(BanConfirmationModal.OnConfirm)] = EventCallback.Factory.Create<BanConfirmationModal.BanInformation>(this, OnConfirmation),
         });
         return;
 
-        async Task BanUser(BanConfirmationModal.BanInformation info) {
+        async Task OnConfirmation(BanConfirmationModal.BanInformation info) {
             if (_extraActionTargetMessage == null) {
                 return;
             }
+
+            // TODO: Revision needed, this code is fucking ugly.
+            await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+            var nullableMemberId = await dbContext.Conversations
+                .Where(c => c.Id == ConversationId && c.CommunityChannelId != null)
+                .Include(c => c.CommunityChannel!)
+                .ThenInclude(c => c.ChannelCategory)
+                .Join(
+                    dbContext.CommunityMembers,
+                    conversation => conversation.CommunityChannel!.ChannelCategory.CommunityId,
+                    member => member.CommunityId,
+                    (conversation, member) => member.Id
+                )
+                .Cast<Guid?>()
+                .FirstOrDefaultAsync();
+
+            if (nullableMemberId is not { } memberId) {
+                return;
+            }
             
-            // TODO: Implementation.
+            bool success = await ModerationService.BanMemberAsync(memberId, UserId, info.Duration, info.Reason);
             
-            // await using var dbContext = await DbContextFactory.CreateDbContextAsync();
-            //
-            // var channelId = await dbContext.Conversations
-            //     .Where(c => c.Id == ConversationId && c.CommunityChannelId != null)
-            //     .Select(c => c.CommunityChannelId)
+            // var nullableExtractedIds = await dbContext.Conversations
+            //     .Where(c => c.Id == ConversationId)
+            //     .Include(c => c.CommunityChannel!)
+            //     .ThenInclude(c => c.ChannelCategory)
+            //     .ThenInclude(c => c.Community)
+            //     .Select(c => new ValueTuple<Guid?, Guid?, Guid?>(
+            //         c.FriendRequestId,
+            //         c.CommunityChannel == null ? null : c.CommunityChannel.ChannelCategory.CommunityId,
+            //         null
+            //     ))
+            //     .Cast<ValueTuple<Guid?, Guid?, Guid?>?>()
             //     .FirstOrDefaultAsync();
             //
-            // if (channelId != null) {
-            //     var communityId = await dbContext.CommunityChannels
-            //         .Where(c => c.Id == channelId)
-            //         .Include(c => c.ChannelCategory)
-            //         .Select(c => c.ChannelCategory.CommunityId)
-            //         .FirstAsync();
+            // if (nullableExtractedIds is not { } extractedIds) {
+            //     ModalService.Open<OperationFailureModal>(parameters: new Dictionary<string, object?> {
+            //         [nameof(OperationFailureModal.Title)] = "Ban Failure",
+            //         [nameof(OperationFailureModal.Body)] = _banFailureBody,
+            //     });
+            //     
+            //     return;
+            // }
             //
-            //     bool success = await CommunityService.BanMemberFromUserIdAsync(communityId, _extraActionTargetMessage.SenderUserId, duration);
+            // if (extractedIds.Item2 is { } communityId) {
+            //     extractedIds.Item3 = await dbContext.CommunityMembers
+            //         .Where(m => m.UserId == _extraActionTargetMessage.SenderUserId && m.CommunityId == communityId)
+            //         .Select(m => m.Id)
+            //         .Cast<Guid?>()
+            //         .FirstOrDefaultAsync();
             //
-            //     if (success) {
-            //         ModalService.Open<OperationSuccessModal>(parameters: new Dictionary<string, object?> {
-            //             [nameof(OperationFailureModal.Title)] = "Ban Success",
-            //             [nameof(OperationFailureModal.Body)] = _banSuccessBody,
-            //         });
-            //     } else {
+            //     if (extractedIds.Item3 == null) {
             //         ModalService.Open<OperationFailureModal>(parameters: new Dictionary<string, object?> {
             //             [nameof(OperationFailureModal.Title)] = "Ban Failure",
             //             [nameof(OperationFailureModal.Body)] = _banFailureBody,
             //         });
+            //
+            //         return;
             //     }
             // }
+            //
+            // bool? success = false;
+            //
+            // if (extractedIds.Item1 != null) {
+            //     success = await ModerationService.BanUserAsync(_extraActionTargetMessage.SenderUserId, UserId, info.Duration, info.Reason);
+            // } else if (extractedIds.Item3 is { } memberId) {
+            //     success = await ModerationService.BanMemberAsync(memberId, UserId, info.Duration, info.Reason);
+            // }
+
+            if (success) {
+                ModalService.Open<OperationSuccessModal>(parameters: new Dictionary<string, object?> {
+                    [nameof(OperationFailureModal.Title)] = "Ban Success",
+                    [nameof(OperationFailureModal.Body)] = _banSuccessBody,
+                });
+            } else {
+                ModalService.Open<OperationFailureModal>(parameters: new Dictionary<string, object?> {
+                    [nameof(OperationFailureModal.Title)] = "Ban Failure",
+                    [nameof(OperationFailureModal.Body)] = _banFailureBody,
+                });
+            }
         }
+    }
+
+    private void HandleBanUser() {
+        
     }
 
     private void OnMessageReceived(MessageReceivedEventArgs args) {
