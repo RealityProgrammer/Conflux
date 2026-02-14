@@ -21,6 +21,8 @@ public interface IUserService {
     Task<IList<string>> GetRolesAsync(Guid userId);
     
     Task<UserDisplayDTO?> GetUserDisplayAsync(Guid userId);
+    
+    Task<UserBanState?> GetBanStateAsync(Guid userId);
 
     Task<(int TotalCount, IReadOnlyList<UserDisplayDTO> Page)> PaginateUserDisplayAsync(
         Func<IQueryable<ApplicationUser>, IOrderedQueryable<ApplicationUser>> orderQueryProvider,

@@ -1,4 +1,6 @@
-﻿@using Conflux.Web.Components.Guards
+﻿@using Conflux.Application.Dto
+@using Conflux.Web.Components.Guards
+@using System.Security.Claims
 
 @inherits LayoutComponentBase
 @layout MainLayout
@@ -7,24 +9,31 @@
 
 @inject IFriendshipEventDispatcher FriendshipEventDispatcher
 @inject IUserNotificationService UserNotificationService
+@inject IUserService UserService
 
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 
-<RedirectToProfileSetup/>
+<CascadingValue Value="_userBanState" Name="SessionUserBanState">
+    <RedirectToProfileSetup/>
 
-<ExpandableLobbyLocationList/>
+    <ExpandableLobbyLocationList/>
 
-<div class="h-dvh w-dvw">
-    @Body
-</div>
+    <div class="h-dvh w-dvw">
+        @Body
+    </div>
 
-<CallScreenContainer/>
+    <CallScreenContainer/>
+</CascadingValue>
 
 @code {
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+    private UserBanState _userBanState;
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
+            var authState = await AuthenticationState;
+            _userBanState = (await UserService.GetBanStateAsync(Guid.Parse(authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!)))!.Value;
+            
             await FriendshipEventDispatcher.Connect();
             await UserNotificationService.Connect();
         }

@@ -107,4 +107,15 @@ public class UserService(
         
         return (userCount, page);
     }
+
+    public async Task<UserBanState?> GetBanStateAsync(Guid userId) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+        
+        return await dbContext.Users
+            .Where(u => u.Id == userId)
+            .Select(u => new UserBanState(u.UnbanAt ?? DateTime.MinValue))
+            .Cast<UserBanState?>()
+            .FirstOrDefaultAsync();
+    }
 }
