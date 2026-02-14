@@ -1,4 +1,5 @@
-﻿@using Conflux.Domain.Enums
+﻿@using Conflux.Application.Dto
+@using Conflux.Domain.Enums
 @using Conflux.Domain.Events
 @using Microsoft.AspNetCore.Components.Sections
 @using Microsoft.EntityFrameworkCore
@@ -15,6 +16,7 @@
 @inject IContentService ContentService
 @inject IConversationService ConversationService
 @inject IUserNotificationService UserNotificationService
+@inject NavigationManager NavigationManager
 
 <SectionContent SectionName="lobby-sidebar">
     <div class="flex flex-col gap-1 p-2">
@@ -36,15 +38,13 @@
     <div class="bg-transparent pt-2 px-2 pb-1">
         <Virtualize @ref="_conversationsVirtualize" ItemsProvider="ConversationsLoadProvider" OverscanCount="8">
             <ItemContent Context="item">
-                <div class="py-0.5">
-                    <NavLink href="@($"/lobby/messages/{item.ConversationId}")" class="@("flex-none px-2 py-1.5 flex flex-row justify-start items-center bg-transparent hover:bg-white/15 active:bg-black/15 rounded-lg cursor-pointer")" ActiveClass="bg-white/5!" Match="NavLinkMatch.Prefix">
-                        <Avatar class="h-10 flex-none" ImageSrc="@(string.IsNullOrEmpty(item.FriendAvatarSrc) ? null : ContentService.GetAssetPath(item.FriendAvatarSrc))" ImageAlt="User Avatar"/>
-
-                        <div class="@("ml-2 flex flex-col justify-center")">
-                            <p>@item.FriendDisplayName</p>
-                        </div>
-                    </NavLink>
-                </div>
+                <UserCard @key="item.ConversationId"
+                          UserId="item.OtherUserDisplay.UserId"
+                          DisplayName="@item.OtherUserDisplay.DisplayName"
+                          UserName="@item.OtherUserDisplay.UserName"
+                          AvatarSrc="@(string.IsNullOrEmpty(item.OtherUserDisplay.AvatarPath) ? null : ContentService.GetAssetPath(item.OtherUserDisplay.AvatarPath))"
+                          OnClick="_ => RedirectConversation(item.ConversationId)"
+                          class="h-12"/>
             </ItemContent>
         </Virtualize>
     </div>
@@ -59,7 +59,7 @@
 
     private Guid _userId;
 
-    private Virtualize<ConversationElement> _conversationsVirtualize = null!;
+    private Virtualize<ConversationDisplayDTO> _conversationsVirtualize = null!;
 
     protected override async Task OnInitializedAsync() {
         var authState = await AuthenticationState;
@@ -77,7 +77,11 @@
         }
     }
 
-    private async ValueTask<ItemsProviderResult<ConversationElement>> ConversationsLoadProvider(ItemsProviderRequest request) {
+    private void RedirectConversation(Guid conversationId) {
+        NavigationManager.NavigateTo($"/lobby/messages/{conversationId}");
+    }
+
+    private async ValueTask<ItemsProviderResult<ConversationDisplayDTO>> ConversationsLoadProvider(ItemsProviderRequest request) {
         await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
             dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
@@ -90,16 +94,17 @@
                 return new([], 0);
             }
 
-            List<ConversationElement> elements = await query
+            List<ConversationDisplayDTO> elements = await query
                 .OrderByDescending(x => x.LatestMessageTime ?? DateTime.MinValue)
                 .Skip(request.StartIndex)
                 .Take(request.Count)
                 .Join(
                     dbContext.Users, 
-                    conversation => conversation.FriendRequest!.SenderUserId == _userId ? conversation.FriendRequest.ReceiverUserId : conversation.FriendRequest.SenderUserId, user => user.Id, (conversation, user) => new ConversationElement {
+                    conversation => conversation.FriendRequest!.SenderUserId == _userId ? conversation.FriendRequest.ReceiverUserId : conversation.FriendRequest.SenderUserId, 
+                    user => user.Id, 
+                    (conversation, user) => new ConversationDisplayDTO {
                         ConversationId = conversation.Id,
-                        FriendDisplayName = user.DisplayName,
-                        FriendAvatarSrc = user.AvatarProfilePath,
+                        OtherUserDisplay = new(user.Id, user.DisplayName, user.UserName, user.AvatarProfilePath)
                     }
                 )
                 .ToListAsync();
@@ -127,9 +132,5 @@
         UserNotificationService.OnIncomingDirectMessage -= OnIncomingDirectMessage;
     }
 
-    private sealed class ConversationElement {
-        public Guid ConversationId { get; init; }
-        public string FriendDisplayName { get; init; } = null!;
-        public string? FriendAvatarSrc { get; init; }
-    }
+    private readonly record struct ConversationDisplayDTO(Guid ConversationId, UserDisplayDTO OtherUserDisplay);
 }
