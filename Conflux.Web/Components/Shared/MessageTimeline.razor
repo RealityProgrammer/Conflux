@@ -1,7 +1,6 @@
 ﻿@using Conflux.Application.Dto
 @using Conflux.Domain.Enums
 @using Conflux.Domain.Events
-@using Conflux.Web.Components.Pages.Community.Modals
 @using Conflux.Web.Components.Shared.Modals
 @using Conflux.Web.Helpers
 @using Conflux.Web.Services.Implementations
@@ -16,7 +15,7 @@
 @inject ModalService ModalService
 @inject IModerationService ModerationService
 
-@implements IAsyncDisposable
+@implements IDisposable
 
 <div class="overflow-y-auto flex-1 @_cssClass" @ref="_scrollContainer" @attributes="AdditionalAttributes">
     @switch (_initStatus) {
@@ -882,7 +881,7 @@
         }
     }
     
-    public async ValueTask DisposeAsync() {
+    public void Dispose() {
         ConversationEventDispatcher.OnMessageReceived -= OnMessageReceived;
         ConversationEventDispatcher.OnMessageDeleted -= OnMessageDeleted;
         ConversationEventDispatcher.OnMessageEdited -= OnMessageEdited;
