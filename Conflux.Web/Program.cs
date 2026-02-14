@@ -98,6 +98,9 @@ builder.Services.AddAuthorizationBuilder()
     })
     .AddPolicy("ReadUserSystemRole", policy => {
         policy.RequireRole("Moderator", "Admin", "SystemDeveloper");
+    })
+    .AddPolicy("NotBanned", policy => {
+        policy.Requirements.Add(new UserNotBannedRequirement());
     });
 
 builder.Services.AddSingleton<IAuthorizationHandler, CreateCommunityChannelCategoryAuthorizationHandler>();
@@ -112,6 +115,7 @@ builder.Services.AddSingleton<IAuthorizationHandler, UpdateCommunityMemberRoleAu
 builder.Services.AddSingleton<IAuthorizationHandler, ManageCommunityReportsAuthorizationHandler>();
 builder.Services.AddSingleton<IAuthorizationHandler, DeleteMemberMessageAuthorizationHandler>();
 builder.Services.AddSingleton<IAuthorizationHandler, BanCommunityMemberAuthorizationHandler>();
+builder.Services.AddSingleton<IAuthorizationHandler, UserNotBannedAuthorizationHandler>();
 
 // Add database services.
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options => {
