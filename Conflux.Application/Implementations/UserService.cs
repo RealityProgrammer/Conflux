@@ -91,21 +91,17 @@ public class UserService(
         int count
     ) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        var queryStatement = filterQueryProvider(orderQueryProvider(dbContext.Users));
         
-        int userCount = await dbContext.Users.CountAsync();
+        int userCount = await queryStatement.CountAsync();
 
         if (userCount == 0) {
             return (0, []);
         }
-
-        var queryStatement = filterQueryProvider(orderQueryProvider(dbContext.Users))
-            .Skip(start)
-            .Take(count)
-            .Select(u => new UserDisplayDTO(u.Id, u.DisplayName, u.UserName, u.AvatarProfilePath));
         
-        List<UserDisplayDTO> page = await filterQueryProvider(orderQueryProvider(dbContext.Users))
-            .Skip(start)
-            .Take(count)
+        List<UserDisplayDTO> page = await queryStatement
             .Select(u => new UserDisplayDTO(u.Id, u.DisplayName, u.UserName, u.AvatarProfilePath))
             .ToListAsync();
         

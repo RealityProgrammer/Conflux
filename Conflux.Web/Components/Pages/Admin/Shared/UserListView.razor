@@ -3,6 +3,9 @@
 @using Conflux.Web.Components.Shared.Modals
 @using Conflux.Web.Helpers
 @using Conflux.Web.Services.Implementations
+@using Microsoft.EntityFrameworkCore
+
+@implements IAsyncDisposable
 
 @inject IUserService UserService
 @inject IContentService ContentService
@@ -32,6 +35,12 @@
                           OnClick="HandleUserCardClick"
                           class="h-10 group"/>
             </ItemContent>
+            
+            <EmptyContent>
+                <div class="flex flex-row justify-center items-center size-full">
+                    <p class="text-gray-400 text-sm">No one with such name...</p>
+                </div>
+            </EmptyContent>
         </Virtualize>
     </section>
 </div>
@@ -43,6 +52,11 @@
     private string _searchField = string.Empty;
 
     private Virtualize<UserDisplayDTO> _virtualize = null!;
+    private Debouncer? _debouncer = null!;
+
+    protected override void OnInitialized() {
+        _debouncer = new(OnSearchDebouncerEnd, TimeSpan.FromMilliseconds(250));
+    }
 
     protected override void OnParametersSet() {
         if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
@@ -52,14 +66,20 @@
         AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "class").ToDictionary();
     }
 
-    private void OnUserCardClick() {
-        Logger.LogInformation("Click.");
+    private async Task OnSearchDebouncerEnd(CancellationToken cancellationToken) {
+        await _virtualize.RefreshDataAsync();
+        StateHasChanged();
     }
 
     private async ValueTask<ItemsProviderResult<UserDisplayDTO>> VirtualizeProvider(ItemsProviderRequest request) {
+        string namePattern = $"%{_searchField}%";
+        
         var page = await UserService.PaginateUserDisplayAsync(
             query => query.OrderBy(u => u.DisplayName),
-                query => query,
+                query => 
+                    string.IsNullOrEmpty(_searchField) ? 
+                        query : 
+                        query.Where(u => EF.Functions.ILike(u.DisplayName, namePattern) || EF.Functions.ILike(u.UserName!, namePattern)),
             request.StartIndex,
             request.Count);
         
@@ -78,7 +98,12 @@
     }
 
     private async Task AfterModifySearchField() {
-        await _virtualize.RefreshDataAsync();
-        StateHasChanged();
+        await _debouncer!.Start();
+    }
+
+    public async ValueTask DisposeAsync() {
+        if (_debouncer != null) {
+            await _debouncer.DisposeAsync();
+        }
     }
 }
