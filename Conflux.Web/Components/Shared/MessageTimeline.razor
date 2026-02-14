@@ -238,7 +238,7 @@
                         if (_extraActionTargetMessage.SenderUserId != UserId) {
                             <AuthorizeView Policy="DeleteMemberMessage" Resource="rolePermissions">
                                 <Authorized>
-                                    <button class="p-2! button-nav-menu text-red-500"@onclick="HandleDeleteMemberMessage">
+                                    <button class="p-2! button-nav-menu text-red-500" @onclick="HandleDeleteMemberMessage">
                                         <Trashcan class="size-5 fill-red-500"/>
 
                                         <span class="text-sm">Delete Message</span>
@@ -704,7 +704,7 @@
                 .Include(c => c.CommunityChannel!)
                 .ThenInclude(c => c.ChannelCategory)
                 .Join(
-                    dbContext.CommunityMembers,
+                    dbContext.CommunityMembers.Where(r => r.UserId == _extraActionTargetMessage.SenderUserId),
                     conversation => conversation.CommunityChannel!.ChannelCategory.CommunityId,
                     member => member.CommunityId,
                     (conversation, member) => member.Id
@@ -717,54 +717,6 @@
             }
             
             bool success = await ModerationService.BanMemberAsync(memberId, UserId, info.Duration, info.Reason);
-            
-            // var nullableExtractedIds = await dbContext.Conversations
-            //     .Where(c => c.Id == ConversationId)
-            //     .Include(c => c.CommunityChannel!)
-            //     .ThenInclude(c => c.ChannelCategory)
-            //     .ThenInclude(c => c.Community)
-            //     .Select(c => new ValueTuple<Guid?, Guid?, Guid?>(
-            //         c.FriendRequestId,
-            //         c.CommunityChannel == null ? null : c.CommunityChannel.ChannelCategory.CommunityId,
-            //         null
-            //     ))
-            //     .Cast<ValueTuple<Guid?, Guid?, Guid?>?>()
-            //     .FirstOrDefaultAsync();
-            //
-            // if (nullableExtractedIds is not { } extractedIds) {
-            //     ModalService.Open<OperationFailureModal>(parameters: new Dictionary<string, object?> {
-            //         [nameof(OperationFailureModal.Title)] = "Ban Failure",
-            //         [nameof(OperationFailureModal.Body)] = _banFailureBody,
-            //     });
-            //     
-            //     return;
-            // }
-            //
-            // if (extractedIds.Item2 is { } communityId) {
-            //     extractedIds.Item3 = await dbContext.CommunityMembers
-            //         .Where(m => m.UserId == _extraActionTargetMessage.SenderUserId && m.CommunityId == communityId)
-            //         .Select(m => m.Id)
-            //         .Cast<Guid?>()
-            //         .FirstOrDefaultAsync();
-            //
-            //     if (extractedIds.Item3 == null) {
-            //         ModalService.Open<OperationFailureModal>(parameters: new Dictionary<string, object?> {
-            //             [nameof(OperationFailureModal.Title)] = "Ban Failure",
-            //             [nameof(OperationFailureModal.Body)] = _banFailureBody,
-            //         });
-            //
-            //         return;
-            //     }
-            // }
-            //
-            // bool? success = false;
-            //
-            // if (extractedIds.Item1 != null) {
-            //     success = await ModerationService.BanUserAsync(_extraActionTargetMessage.SenderUserId, UserId, info.Duration, info.Reason);
-            // } else if (extractedIds.Item3 is { } memberId) {
-            //     success = await ModerationService.BanMemberAsync(memberId, UserId, info.Duration, info.Reason);
-            // }
-
             if (success) {
                 ModalService.Open<OperationSuccessModal>(parameters: new Dictionary<string, object?> {
                     [nameof(OperationFailureModal.Title)] = "Ban Success",
