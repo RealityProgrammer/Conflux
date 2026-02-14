@@ -99,7 +99,7 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy("ReadUserSystemRole", policy => {
         policy.RequireRole("Moderator", "Admin", "SystemDeveloper");
     })
-    .AddPolicy("NotBanned", policy => {
+    .AddPolicy("UserNotBanned", policy => {
         policy.Requirements.Add(new UserNotBannedRequirement());
     });
 
