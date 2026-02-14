@@ -12,33 +12,39 @@
         <CardHeader Title="Ban User/Member" Subtext="Judgement has arrived." OnCloseRequested="closeDelegate"/>
 
         <CardContent>
-            <EditForm Model="this" OnValidSubmit="OnValidSubmit">
+            <EditForm EditContext="_editContext" OnSubmit="OnSubmit">
                 <DataAnnotationsValidator/>
                 
                 <label class="input-label">Ban Duration</label>
-                <InputText @ref="_durationInputText" @bind-Value="@_durationText" class="input-field h-11 w-full mt-1"/>
+                <InputText @ref="_durationInputText" @bind-Value="@Model!.DurationText" class="input-field h-11 w-full mt-1"/>
 
-                @* @if (_durationInputText is { Element: { } targetElement }) { *@
-                @*     <Popover TargetReference="targetElement" IsShowing="@(!_editContext.IsValid(() => Model.BanDuration))" ArrowCssClass="bg-[#ff4b6a]" Placement="bottom" Offset="8"> *@
-                @*         <ValidationMessage For="() => Model.BanDuration" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"/> *@
-                @*     </Popover> *@
-                @* } *@
+                @if (_durationInputText is { Element: { } durationElement }) {
+                    <Popover TargetReference="durationElement" IsShowing="@(!_editContext.IsValid(_banDurationField))" ArrowCssClass="bg-[#ff4b6a]" Placement="bottom" Offset="8">
+                        <ValidationMessage For="() => Model.DurationText" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"/>
+                    </Popover>
+                }
                 
-                @if (string.IsNullOrEmpty(_durationText)) {
+                @if (string.IsNullOrEmpty(Model.DurationText)) {
                     <p class="text-sm text-center text-gray-400 mt-1">Undefined duration</p>
-                } else if (TryParseBanDuration(_durationText, out var output)) {
+                } else if (TryParseBanDuration(Model.DurationText, out var output)) {
                     <p class="text-sm text-center text-gray-400 mt-1">@output.Humanize(precision: 5)</p>
                 } else {
                     <p class="text-sm text-center text-gray-400 mt-1">Invalid duration</p>
                 }
                 
                 <label class="input-label">Reason</label>
-                <InputTextArea @bind-Value="_reason" class="mt-1 input-field h-44 w-full px-1.5 py-1 resize-none" maxlength="512"/>
+                <InputTextArea @ref="_reasonInputTextArea" @bind-Value="Model.Reason" class="mt-1 input-field h-44 w-full px-1.5 py-1 resize-none" maxlength="512"/>
+                
+                @if (_reasonInputTextArea is { Element: { } reasonElement }) {
+                    <Popover TargetReference="reasonElement" IsShowing="@(!_editContext.IsValid(_reasonField))" ArrowCssClass="bg-[#ff4b6a]" Placement="bottom" Offset="8">
+                        <ValidationMessage For="() => Model.Reason" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"/>
+                    </Popover>
+                }
                 
                 <p class="text-gray-400 text-sm text-center mt-2">Are you sure you want to dismiss this report?<br/>This action cannot be reverted for the time being.</p>
                 
                 <div class="mt-2 flex flex-row justify-end gap-2">
-                    <button type="button" class="button-cancel w-24" @onclick="closeDelegate">Cancel</button>
+                    <button type="button" class="button-danger w-24" @onclick="closeDelegate">Cancel</button>
                     
                     <ProcessingStateButton IsProcessing="_isProcessingOperation" type="submit" class="button-primary w-24" ProcessingCssClass="flex flex-row justify-center items-center">
                         <ChildContent>
@@ -58,19 +64,50 @@
 @code {
     [Parameter, EditorRequired] public EventCallback<BanInformation> OnConfirm { get; set; }
 
-    [StringLength(32, ErrorMessage = "Reason cannot be longer than {1} characters.")] private string? _reason;
-    private string _durationText = string.Empty;
+    [SupplyParameterFromForm] private InputModel? Model { get; set; }
+    private EditContext _editContext = null!;
+    private ValidationMessageStore _messageStore = null!;
     
     private InputText? _durationInputText;
+    private InputTextArea? _reasonInputTextArea;
     
     private bool _isProcessingOperation;
 
-    private async Task OnValidSubmit() {
+    private FieldIdentifier _banDurationField, _reasonField;
+
+    protected override void OnInitialized() {
+        Model ??= new();
+        _editContext = new(Model);
+        _messageStore = new(_editContext);
+        
+        _editContext.OnValidationRequested += ValidateBanDuration;
+
+        _banDurationField = FieldIdentifier.Create(() => Model.DurationText);
+        _reasonField = FieldIdentifier.Create(() => Model.Reason);
+    }
+
+    private void ValidateBanDuration(object? sender, ValidationRequestedEventArgs args) {
+        _messageStore.Clear();
+
+        if (TryParseBanDuration(Model!.DurationText, out var banDuration)) {
+            if (banDuration <= TimeSpan.Zero) {
+                _messageStore.Add(_banDurationField, "Zero or Negative duration is not allowed.");
+            }
+        } else {
+            _messageStore.Add(_banDurationField, "Invalid duration.");
+        }
+    }
+
+    private async Task OnSubmit() {
+        if (!_editContext.Validate()) {
+            return;
+        }
+        
         if (OnConfirm.HasDelegate) {
             _isProcessingOperation = true;
 
             try {
-                await OnConfirm.InvokeAsync(new(TimeSpan.Parse(_durationText), _reason));
+                await OnConfirm.InvokeAsync(new(TimeSpan.Parse(Model!.DurationText), Model.Reason));
             } finally {
                 _isProcessingOperation = false;
             }
@@ -99,4 +136,9 @@
     }
 
     public readonly record struct BanInformation(TimeSpan Duration, string? Reason);
+
+    private sealed class InputModel {
+        [StringLength(512, ErrorMessage = "Reason cannot be longer than {1} characters.")] public string? Reason { get; set; }
+        public string DurationText { get; set; } = string.Empty;
+    }
 }
