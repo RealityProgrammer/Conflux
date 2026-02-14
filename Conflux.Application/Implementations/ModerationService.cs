@@ -409,7 +409,7 @@ public class ModerationService(
                 CreatedAt = DateTime.UtcNow,
                 ResolverUserId = resolverUserId,
                 MessageReportId = reportId,
-                Action = ModerationAction.Warn,
+                Action = ModerationAction.Ban,
                 BanDuration = banDuration,
                 Reason = reason,
                 OffenderUserId = extractedIds.SenderUserId,
