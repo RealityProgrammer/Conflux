@@ -17,7 +17,7 @@
             <CardHeader Title="Add Member" Subtext="Authorize somebody to be in charge while you're gone." OnCloseRequested="closeDelegate"/>
 
             <CardContent class="flex flex-col">
-                <SearchField @bind-Value="_nameSearch" @bind-Value:after="HandleSearch" class="flex-none mt-1"/>
+                <SearchField @bind-Value="_nameSearch" @bind-Value:after="HandleSearch" class="flex-none mt-1 h-10"/>
 
                 <section class="flex-1 h-full border border-gray-600 rounded-md mt-1 overflow-y-auto scrollbar-hide p-1">
                     <Virtualize @ref="_virtualize" ItemsProvider="MemberSearchProvider">

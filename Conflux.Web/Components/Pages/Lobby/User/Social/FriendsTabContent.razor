@@ -1,10 +1,10 @@
-﻿@using Conflux.Domain.Events
+﻿@using Conflux.Application.Dto
+@using Conflux.Domain.Events
 @using Conflux.Web.Components.Shared.Modals
 @using Conflux.Web.Helpers
 @using Conflux.Web.Services.Implementations
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
-@using System.Security.Claims
 
 @implements IDisposable
 
@@ -18,37 +18,30 @@
 @inject ModalService ModalService
 @inject IContentService ContentService
 
-<div class="flex-none px-3 outline-none border rounded-lg bg-gray-700/60 border-gray-600 focus-within:ring-2 focus-within:ring-indigo-600 transition duration-300 flex flex-row items-center">
-    <Search class="size-4 fill-white flex-none mr-2"/>
+<SearchField @bind-Value="_nameSearch" @bind-Value:after="StartSearchDebouncing" class="flex-none h-10"/>
 
-    <input type="text" class="flex-1 outline-none border-none w-full h-11 focus:outline-none" @bind="_nameSearch" @bind:after="HandleSearchDebouncing" maxlength="32">
-</div>
-
-<div class="flex-1 overflow-auto mt-2 border border-gray-600 rounded-lg">
-    <Virtualize @ref="_virtualizeContainer" ItemsProvider="LoadProvider" OverscanCount="3">
+<div class="flex-1 overflow-auto mt-2 border border-gray-600 rounded-lg p-1">
+    <Virtualize @ref="_virtualizeContainer" ItemsProvider="LoadProvider">
         <ChildContent Context="item">
-            <div @key="item.FriendRequestId" class="h-16 px-4 py-1 border-b border-b-gray-600 flex flex-row items-center hover:bg-gray-600/40 group">
-                <Avatar ImageSrc="@(string.IsNullOrEmpty(item.AvatarImagePath) ? null : ContentService.GetAssetPath(item.AvatarImagePath))" ImageAlt="Avatar" class="flex-none h-12 mr-2"/>
-            
-                <div class="flex-1 flex flex-col">
-                    <p class="font-semibold">@item.DisplayName</p>
-                    <p class="text-sm">@item.UserName</p>
-                </div>
-            
-                <div class="flex-none flex-row gap-1 hidden group-hover:flex">
-                    <button class="p-2 rounded-full hover:bg-gray-400/50 cursor-pointer" @onclick="@(() => HandleAccessConversation(item.FriendRequestId))">
-                        <SpeechBubble ArrowDirection="ChatArrowDirection.Right" Content="ChatContent.Text" class="size-6 fill-white"/>
-                    </button>
-                    
-                    <button class="p-2 rounded-full hover:bg-gray-400/50 cursor-pointer" @onclick="@(() => HandleUnfriend(item.FriendRequestId))">
-                        <Cross Size="CrossSize.Large" class="size-6 fill-red-500"/>
-                    </button>
+            <UserCard @key="item.FriendRequestId"
+                      UserId="item.FriendDisplay.UserId"
+                      UserName="@item.FriendDisplay.UserName"
+                      DisplayName="@item.FriendDisplay.DisplayName"
+                      AvatarSrc="@(string.IsNullOrEmpty(item.FriendDisplay.AvatarPath) ? null : ContentService.GetAssetPath(item.FriendDisplay.AvatarPath))"
+                      OnClick="card => HandleOnUserCardClick(card)"
+                      class="h-12 group">
+                <RightContent>
+                    <div class="flex-none flex-row gap-4 hidden group-hover:flex mr-3">
+                        <button class="group/button cursor-pointer" @onclick="@(() => HandleAccessConversation(item.FriendRequestId))" @onclick:stopPropagation="true">
+                            <SpeechBubble ArrowDirection="ChatArrowDirection.Right" Content="ChatContent.Text" class="size-6 fill-gray-300 group-hover/button:fill-white"/>
+                        </button>
 
-                    <button class="p-2 rounded-full hover:bg-gray-400/50 cursor-pointer">
-                        <ThreeDots class="size-6 fill-white"/>
-                    </button>
-                </div>
-            </div>
+                        <button class="group/button cursor-pointer" @onclick="@(() => HandleUnfriend(item.FriendRequestId))" @onclick:stopPropagation="true">
+                            <Cross Size="CrossSize.Large" class="size-6 fill-red-600 group-hover/button:fill-red-400"/>
+                        </button>
+                    </div>
+                </RightContent>
+            </UserCard>
         </ChildContent>
         
         <EmptyContent>
@@ -60,6 +53,8 @@
 </div>
 
 @code {
+    [CascadingParameter(Name = "SessionUserId")] private Guid UserId { get; set; }
+    
     private string _nameSearch = string.Empty;
     private string _normalizedNameSearch = string.Empty;
 
@@ -67,9 +62,7 @@
     // later searches?
     private Debouncer _searchDebouncer = null!;
 
-    private Virtualize<FriendSearchResult> _virtualizeContainer = null!;
-
-    [CascadingParameter(Name = "SessionUserId")] private Guid UserId { get; set; }
+    private Virtualize<FriendDisplayDTO> _virtualizeContainer = null!;
     
     protected override void OnAfterRender(bool firstRender) {
         if (firstRender) {
@@ -80,7 +73,7 @@
         }
     }
 
-    private async Task HandleSearchDebouncing() {
+    private async Task StartSearchDebouncing() {
         await _searchDebouncer.Start();
     }
 
@@ -91,7 +84,7 @@
         StateHasChanged();
     }
 
-    private async ValueTask<ItemsProviderResult<FriendSearchResult>> LoadProvider(ItemsProviderRequest request) {
+    private async ValueTask<ItemsProviderResult<FriendDisplayDTO>> LoadProvider(ItemsProviderRequest request) {
         await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
             IQueryable<FriendRequest> query = dbContext.FriendRequests
                 .Where(r => r.Status == FriendRequestStatus.Accepted && (r.SenderUserId == UserId || r.ReceiverUserId == UserId))
@@ -115,12 +108,12 @@
                 .OrderByDescending(r => r.CreatedAt)
                 .Skip(request.StartIndex)
                 .Take(request.Count)
-                .Join(dbContext.Users, r => r.SenderUserId == UserId ? r.ReceiverUserId : r.SenderUserId, user => user.Id, (request, user) => new FriendSearchResult {
-                    FriendRequestId = request.Id,
-                    UserName = user.UserName!,
-                    DisplayName = user.DisplayName,
-                    AvatarImagePath = user.AvatarProfilePath,
-                })
+                .Join(
+                    dbContext.Users, 
+                    r => r.SenderUserId == UserId ? r.ReceiverUserId : r.SenderUserId, 
+                    user => user.Id, 
+                    (request, user) => new FriendDisplayDTO(request.Id, new(user.Id, user.DisplayName, user.UserName, user.AvatarProfilePath))
+                )
                 .ToListAsync();
             
             return new(requests, totalCount);
@@ -143,7 +136,7 @@
 
     private void HandleUnfriend(Guid friendRequestId) {
         ModalService.Open<OperationConfirmModal>(parameters: new Dictionary<string, object?> {
-            [nameof(OperationConfirmModal.Title)] = "Confirm Unfriend?",
+            [nameof(OperationConfirmModal.Title)] = "Unfriend Confirmation",
             [nameof(OperationConfirmModal.Body)] = _unfriendConfirmationBody,
             [nameof(OperationConfirmModal.OnConfirm)] = EventCallback.Factory.Create(this, Unfriend),
         });
@@ -152,6 +145,12 @@
         async Task Unfriend() {
             await FriendshipService.UnfriendAsync(friendRequestId);
         }
+    }
+
+    private void HandleOnUserCardClick(UserCard card) {
+        ModalService.Open<UserProfileModal>(parameters: new Dictionary<string, object?> {
+            [nameof(UserProfileModal.InspectingUserId)] = card.UserId,
+        });
     }
     
     private void OnFriendAccepted(FriendRequestAcceptedEventArgs args) {
@@ -175,10 +174,6 @@
         FriendshipEventDispatcher.OnUnfriended -= OnUnfriended;
     }
 
-    private sealed class FriendSearchResult {
-        public required Guid FriendRequestId { get; set; }
-        public required string UserName { get; set; }
-        public required string DisplayName { get; set; }
-        public required string? AvatarImagePath { get; set; }
-    }
+    private readonly record struct FriendDisplayDTO(Guid FriendRequestId, UserDisplayDTO FriendDisplay);
+
 }

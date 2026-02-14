@@ -1,14 +1,13 @@
-﻿@using Conflux.Domain.Events
-@using Conflux.Web.Components.Shared.Icons
+﻿@using Conflux.Application.Dto
+@using Conflux.Domain.Events
+@using Conflux.Web.Components.Shared.Modals
 @using Conflux.Web.Helpers
-@using Conflux.Web.Services
+@using Conflux.Web.Services.Implementations
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
 @using System.Collections.Concurrent
-@using System.Diagnostics
-@using System.Security.Claims
 
-@implements IDisposable
+@implements IAsyncDisposable
 
 @inject ILogger<SearchUserTabContent> Logger
 @inject UserManager<ApplicationUser> UserManager
@@ -16,95 +15,87 @@
 @inject IFriendshipService FriendshipService
 @inject IFriendshipEventDispatcher FriendshipEventDispatcher
 @inject IContentService ContentService
+@inject ModalService ModalService
 
-<div class="flex-none px-3 outline-none border rounded-lg bg-gray-700/60 border-gray-600 focus-within:ring-2 focus-within:ring-indigo-600 transition duration-300 flex flex-row items-center">
-    <Search class="size-4 fill-white flex-none mr-2"/>
+<SearchField @bind-Value="_nameSearch" @bind-Value:after="StartSearchDebouncing" class="flex-none h-10"/>
 
-    <input type="text" class="flex-1 outline-none border-none w-full h-11 focus:outline-none" @bind="_nameSearch" @bind:after="HandleSearchDebouncing" maxlength="32">
-</div>
-
-<div class="flex-1 overflow-auto mt-2 border border-gray-600 rounded-lg">
-    <Virtualize @ref="_virtualizeContainer" ItemsProvider="LoadProvider" OverscanCount="3">
+<div class="flex-1 overflow-auto mt-2 border border-gray-600 rounded-lg p-1">
+    <Virtualize @ref="_virtualizeContainer" ItemsProvider="LoadProvider">
         <ChildContent Context="item">
-            <div @key="item.UserId" class="h-16 px-4 py-1 border-b border-b-gray-600 flex flex-row items-center hover:bg-gray-600/40 group">
-                <Avatar ImageSrc="@(string.IsNullOrEmpty(item.AvatarPath) ? null : ContentService.GetAssetPath(item.AvatarPath))" 
-                        ImageAlt="@($"Avatar of {item.DisplayName}")" 
-                        class="flex-none h-12 mr-2"/>
+            @{ var userId = item.UserDisplay.UserId; }
             
-                <div class="flex-1 flex flex-col">
-                    <p class="font-semibold">@item.DisplayName</p>
-                    <p class="text-sm">@item.UserName</p>
-                </div>
-            
-                <div class="flex-none flex-row gap-1 hidden group-hover:flex">
-                    @{
-                        FriendRequestProcessingAction action;
-                    }
-                    
-                    @switch (item.FriendStatus) {
-                        case FriendStatus.Stranger:
-                            <ProcessingStateButton IsProcessing="@(_processingFriendRequests.TryGetValue(item.UserId, out action) && action == FriendRequestProcessingAction.Sending)" class="p-2 rounded-full" NormalCssClass="hover:bg-gray-400/50 cursor-pointer" @onclick="@(() => HandleSendFriendRequest(item))">
-                                <ChildContent>
-                                    <Person Addition="PersonAddition.Add" class="size-6 fill-white"/>
-                                </ChildContent>
+            <UserCard @key="userId"
+                      UserId="userId"
+                      UserName="@item.UserDisplay.UserName"
+                      DisplayName="@item.UserDisplay.DisplayName"
+                      AvatarSrc="@(string.IsNullOrEmpty(item.UserDisplay.AvatarPath) ? null : ContentService.GetAssetPath(item.UserDisplay.AvatarPath))"
+                      OnClick="card => HandleOnUserCardClick(card)"
+                      class="h-12 group">
+                <RightContent>
+                    <div class="flex-none flex-row gap-4 hidden group-hover:flex mr-3" @onclick:stopPropagation="true">
+                        @{ FriendRequestProcessingAction action; }
 
-                                <ProcessingContent>
-                                    <Spinner class="size-6 fill-white"/>
-                                </ProcessingContent>
-                            </ProcessingStateButton>
-                            break;
-                            
-                        case FriendStatus.OutcomingPending:
-                            <ProcessingStateButton IsProcessing="@(_processingFriendRequests.TryGetValue(item.UserId, out action) && action == FriendRequestProcessingAction.Cancelling)" class="p-2 rounded-full" NormalCssClass="hover:bg-gray-400/50 cursor-pointer" @onclick="@(() => HandleCancelFriendRequest(item))">
-                                <ChildContent>
-                                    <Cross class="size-6 fill-white"/>
-                                </ChildContent>
+                        @switch (item.FriendStatus) {
+                            case FriendStatus.Stranger:
+                                <ProcessingStateButton IsProcessing="@(_processingFriendRequests.TryGetValue(userId, out action) && action == FriendRequestProcessingAction.Sending)" NormalCssClass="group/button cursor-pointer" @onclick="@(() => HandleSendFriendRequest(item))">
+                                    <ChildContent>
+                                        <Person Addition="PersonAddition.Add" class="size-6 fill-gray-300 group-hover/button:fill-white"/>
+                                    </ChildContent>
+                
+                                    <ProcessingContent>
+                                        <Spinner class="size-6 fill-white"/>
+                                    </ProcessingContent>
+                                </ProcessingStateButton>
+                                break;
 
-                                <ProcessingContent>
-                                    <Spinner class="size-6 fill-white"/>
-                                </ProcessingContent>
-                            </ProcessingStateButton>
-                            break;
-                            
-                        case FriendStatus.IncomingPending:
-                            <ProcessingStateButton IsProcessing="@(_processingFriendRequests.TryGetValue(item.UserId, out action) && action == FriendRequestProcessingAction.Accepting)" class="p-2 rounded-full" NormalCssClass="hover:bg-gray-400/50 cursor-pointer" @onclick="@(() => HandleAcceptFriendRequest(item))">
-                                <ChildContent>
+                            case FriendStatus.OutcomingPending:
+                                <ProcessingStateButton IsProcessing="@(_processingFriendRequests.TryGetValue(userId, out action) && action == FriendRequestProcessingAction.Cancelling)" NormalCssClass="group/button cursor-pointer" @onclick="@(() => HandleCancelFriendRequest(item))">
+                                    <ChildContent>
+                                        <Cross class="size-6 fill-gray-300 group-hover/button:fill-white"/>
+                                    </ChildContent>
+
+                                    <ProcessingContent>
+                                        <Spinner class="size-6 fill-white"/>
+                                    </ProcessingContent>
+                                </ProcessingStateButton>
+                                break;
+
+                            case FriendStatus.IncomingPending:
+                                <ProcessingStateButton IsProcessing="@(_processingFriendRequests.TryGetValue(userId, out action) && action == FriendRequestProcessingAction.Accepting)" NormalCssClass="group/button cursor-pointer" @onclick="@(() => HandleAcceptFriendRequest(item))">
+                                    <ChildContent>
+                                        <Person Addition="PersonAddition.Check" class="size-6 fill-green-600 group-hover/button:fill-green-400"/>
+                                    </ChildContent>
+
+                                    <ProcessingContent>
+                                        <Spinner class="size-6 fill-white"/>
+                                    </ProcessingContent>
+                                </ProcessingStateButton>
+
+                                <ProcessingStateButton IsProcessing="@(_processingFriendRequests.TryGetValue(userId, out action) && action == FriendRequestProcessingAction.Rejecting)" NormalCssClass="group/button cursor-pointer" @onclick="@(() => HandleRejectFriendRequest(item))">
+                                    <ChildContent>
+                                        <Cross class="size-6 fill-red-600 group-hover/button:fill-red-400"/>
+                                    </ChildContent>
+
+                                    <ProcessingContent>
+                                        <Spinner class="size-6 fill-white"/>
+                                    </ProcessingContent>
+                                </ProcessingStateButton>
+                                break;
+
+                            case FriendStatus.Friend:
+                                <div class="p-2 rounded-full">
                                     <Person Addition="PersonAddition.Check" class="size-6 fill-green-400"/>
-                                </ChildContent>
-
-                                <ProcessingContent>
-                                    <Spinner class="size-6 fill-white"/>
-                                </ProcessingContent>
-                            </ProcessingStateButton>
-                            
-                            <ProcessingStateButton IsProcessing="@(_processingFriendRequests.TryGetValue(item.UserId, out action) && action == FriendRequestProcessingAction.Rejecting)" class="p-2 rounded-full" NormalCssClass="hover:bg-gray-400/50 cursor-pointer" @onclick="@(() => HandleRejectFriendRequest(item))">
-                                <ChildContent>
-                                    <Cross class="size-6 fill-red-500"/>
-                                </ChildContent>
-
-                                <ProcessingContent>
-                                    <Spinner class="size-6 fill-white"/>
-                                </ProcessingContent>
-                            </ProcessingStateButton>
-                            break;
-                            
-                        case FriendStatus.Friend:
-                            <div class="p-2 rounded-full">
-                                <Person Addition="PersonAddition.Check" class="size-6 fill-green-400"/>
-                            </div>
-                            break;
-                    }
-
-                    <button class="p-2 rounded-full hover:bg-gray-400/50 cursor-pointer">
-                        <ThreeDots class="size-6 fill-white"/>
-                    </button>
-                </div>
-            </div>
+                                </div>
+                                break;
+                        }
+                    </div>
+                </RightContent>
+            </UserCard>
         </ChildContent>
         
         <EmptyContent>
             <div class="flex flex-row justify-center items-center h-full">
-                <p class="text-gray-400">Empty...</p>
+                <p class="text-gray-400">@(string.IsNullOrEmpty(_nameSearch) ? "Type something in the searchbar" : "Empty...")</p>
             </div>
         </EmptyContent>
     </Virtualize>
@@ -112,11 +103,10 @@
 
 @code {
     private string _nameSearch = string.Empty;
-    private string _normalizedNameSearch = string.Empty;
 
     // TODO: First search always have to wait before result display, can we skip that and only wait on
     // later searches?
-    private Debouncer _searchDebouncer = null!;
+    private Debouncer? _searchDebouncer;
 
     private Virtualize<SearchDTO> _virtualizeContainer = null!;
 
@@ -135,29 +125,33 @@
         }
     }
 
-    private async Task HandleSearchDebouncing() {
+    private async Task StartSearchDebouncing() {
+        if (_searchDebouncer == null) {
+            return;
+        }
+        
         await _searchDebouncer.Start();
     }
 
     private async Task OnDebounceEnd(CancellationToken token) {
-        _normalizedNameSearch = UserManager.NormalizeName(_nameSearch.Trim());
-
         await _virtualizeContainer.RefreshDataAsync();
         StateHasChanged();
     }
 
     private async ValueTask<ItemsProviderResult<SearchDTO>> LoadProvider(ItemsProviderRequest request) {
         try {
-            if (string.IsNullOrEmpty(_normalizedNameSearch)) {
+            if (string.IsNullOrEmpty(_nameSearch)) {
                 return new([], 0);
             }
+
+            string namePattern = $"%{_nameSearch}%";
             
             // TODO: Filter blocked users.
             await using var dbContext = await DbContextFactory.CreateDbContextAsync();
             var query = dbContext.Users
-                .Where(u => u.IsProfileSetup && u.EmailConfirmed && u.Id != UserId && (u.NormalizedUserName!.Contains(_normalizedNameSearch) || EF.Functions.ILike(u.DisplayName, $"%{_normalizedNameSearch}%")))
+                .Where(u => u.IsProfileSetup && u.EmailConfirmed && u.Id != UserId && (EF.Functions.ILike(u.UserName!, namePattern) || EF.Functions.ILike(u.DisplayName, namePattern)))
                 .OrderBy(u => u.CreatedAt);
-
+            
             int totalCount = await query.CountAsync();
 
             if (totalCount == 0) {
@@ -178,10 +172,7 @@
                         .FirstOrDefault(),
                 })
                 .Select(x => new SearchDTO(
-                    x.User.Id,
-                    x.User.DisplayName,
-                    x.User.UserName!,
-                    x.User.AvatarProfilePath,
+                    new(x.User.Id, x.User.DisplayName, x.User.UserName, x.User.AvatarProfilePath),
                     x.FriendRequest == null ? FriendStatus.Stranger
                     : x.FriendRequest.Status == FriendRequestStatus.Accepted ? FriendStatus.Friend
                     : x.FriendRequest.Status == FriendRequestStatus.Pending ? x.FriendRequest.SenderUserId == UserId ? FriendStatus.OutcomingPending : FriendStatus.IncomingPending
@@ -196,12 +187,19 @@
             throw;
         }
     }
+    
+    private void HandleOnUserCardClick(UserCard card) {
+        ModalService.Open<UserProfileModal>(parameters: new Dictionary<string, object?> {
+            [nameof(UserProfileModal.InspectingUserId)] = card.UserId,
+        });
+    }
 
     private async Task HandleSendFriendRequest(SearchDTO item) {
-        if (_processingFriendRequests.TryAdd(item.UserId, FriendRequestProcessingAction.Sending)) {
+        var userId = item.UserDisplay.UserId;
+        
+        if (_processingFriendRequests.TryAdd(userId, FriendRequestProcessingAction.Sending)) {
             try {
-                Guid receiverId = item.UserId;
-                var sendStatus = (await FriendshipService.SendFriendRequestAsync(UserId, receiverId)).Status;
+                var sendStatus = (await FriendshipService.SendFriendRequestAsync(UserId, userId)).Status;
 
                 switch (sendStatus) {
                     case IFriendshipService.SendingStatus.Success:
@@ -217,7 +215,7 @@
                         break;
                         
                     case IFriendshipService.SendingStatus.Failed:
-                        Logger.LogWarning("Failed to send friend request from user {f} to {r}.", UserId, receiverId);
+                        Logger.LogWarning("Failed to send friend request from user {f} to {r}.", UserId, userId);
                         break;
                         
                     case IFriendshipService.SendingStatus.Friended:
@@ -225,7 +223,7 @@
                         break;
                 }
             } finally {
-                _processingFriendRequests.TryRemove(item.UserId, out _);
+                _processingFriendRequests.TryRemove(userId, out _);
 
                 if (_processingFriendRequests.IsEmpty) {
                     await _virtualizeContainer.RefreshDataAsync();
@@ -240,17 +238,17 @@
             return;
         }
         
-        if (_processingFriendRequests.TryAdd(item.UserId, FriendRequestProcessingAction.Cancelling)) {
+        var userId = item.UserDisplay.UserId;
+        
+        if (_processingFriendRequests.TryAdd(userId, FriendRequestProcessingAction.Cancelling)) {
             try {
-                Guid receiverId = item.UserId;
-
                 if (!await FriendshipService.CancelFriendRequestAsync(friendRequestId)) {
-                    Logger.LogWarning("Failed to cancel friend request from user {f} to {r}.", UserId, receiverId);
+                    Logger.LogWarning("Failed to cancel friend request from user {f} to {r}.", UserId, userId);
                 }
                 
                 item.FriendStatus = FriendStatus.Stranger;
             } finally {
-                _processingFriendRequests.TryRemove(item.UserId, out _);
+                _processingFriendRequests.TryRemove(userId, out _);
 
                 if (_processingFriendRequests.IsEmpty) {
                     await _virtualizeContainer.RefreshDataAsync();
@@ -265,15 +263,17 @@
             return;
         }
         
-        if (_processingFriendRequests.TryAdd(item.UserId, FriendRequestProcessingAction.Rejecting)) {
+        var userId = item.UserDisplay.UserId;
+        
+        if (_processingFriendRequests.TryAdd(userId, FriendRequestProcessingAction.Rejecting)) {
             try {
                 if (!await FriendshipService.RejectFriendRequestAsync(friendRequestId)) {
-                    Logger.LogWarning("Failed to reject friend request from user {f} to {r}.", item.UserId, UserId);
+                    Logger.LogWarning("Failed to reject friend request from user {f} to {r}.", userId, UserId);
                 }
                 
                 item.FriendStatus = FriendStatus.Stranger;
             } finally {
-                _processingFriendRequests.TryRemove(item.UserId, out _);
+                _processingFriendRequests.TryRemove(userId, out _);
 
                 if (_processingFriendRequests.IsEmpty) {
                     await _virtualizeContainer.RefreshDataAsync();
@@ -287,16 +287,18 @@
         if (item.FriendRequestId is not { } friendRequestId) {
             return;
         }
+
+        var userId = item.UserDisplay.UserId;
         
-        if (_processingFriendRequests.TryAdd(item.UserId, FriendRequestProcessingAction.Accepting)) {
+        if (_processingFriendRequests.TryAdd(userId, FriendRequestProcessingAction.Accepting)) {
             try {
                 if (!await FriendshipService.AcceptFriendRequestAsync(friendRequestId)) {
-                    Logger.LogWarning("Failed to accept friend request from user {f} to {r}.", item.UserId, UserId);
+                    Logger.LogWarning("Failed to accept friend request from user {f} to {r}.", userId, UserId);
                 }
                 
                 item.FriendStatus = FriendStatus.Friend;
             } finally {
-                _processingFriendRequests.TryRemove(item.UserId, out _);
+                _processingFriendRequests.TryRemove(userId, out _);
 
                 if (_processingFriendRequests.IsEmpty) {
                     await _virtualizeContainer.RefreshDataAsync();
@@ -334,8 +336,10 @@
         });
     }
 
-    public void Dispose() {
-        _searchDebouncer.Dispose();
+    public async ValueTask DisposeAsync() {
+        if (_searchDebouncer != null) {
+            await _searchDebouncer.DisposeAsync();
+        }
         
         FriendshipEventDispatcher.OnFriendRequestReceived -= OnFriendRequestReceivedNotification;
         FriendshipEventDispatcher.OnFriendRequestCanceled -= OnFriendRequestCanceledNotification;
@@ -357,5 +361,5 @@
         Friend,
     }
 
-    private record struct SearchDTO(Guid UserId, string DisplayName, string UserName, string? AvatarPath, FriendStatus FriendStatus, Guid? FriendRequestId);
+    private record struct SearchDTO(UserDisplayDTO UserDisplay, FriendStatus FriendStatus, Guid? FriendRequestId);
 }

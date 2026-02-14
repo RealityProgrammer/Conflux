@@ -16,7 +16,7 @@
     <header class="flex flex-row justify-center items-center gap-1 flex-none">
         <p class="size-xl font-bold flex-1">Users</p>
         
-        <SearchField @bind-Value="_searchField" @bind-Value:after="AfterModifySearchField" class="flex-1"/>
+        <SearchField @bind-Value="_searchField" @bind-Value:after="AfterModifySearchField" class="flex-1 h-10"/>
         
         <AuthorizeView Roles="Admin, SystemDeveloper">
             <Authorized>
