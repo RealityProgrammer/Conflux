@@ -25,12 +25,6 @@ public interface ICommunityService {
     
     Task<MemberDisplayDTO?> GetMemberDisplayAsync(Guid memberId);
     Task<MemberDisplayDTO?> GetMemberDisplayAsync(Guid communityId, Guid userId);
-
-    Task<bool> BanMemberAsync(Guid communityId, Guid memberId, TimeSpan banDuration);
-    Task<bool> BanMemberAsync(ApplicationDbContext dbContext, Guid communityId, Guid memberId, TimeSpan banDuration);
-
-    Task<bool> BanMemberFromUserIdAsync(Guid communityId, Guid userId, TimeSpan banDuration);
-    Task<bool> BanMemberFromUserIdAsync(ApplicationDbContext dbContext, Guid communityId, Guid userId, TimeSpan banDuration);
     
     Task<MemberInformationDTO?> GetMemberInformationAsync(Guid memberId);
     Task<MemberInformationDTO?> GetMemberInformationAsync(Guid communityId, Guid userId);

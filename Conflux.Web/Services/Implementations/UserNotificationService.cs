@@ -15,6 +15,9 @@ public sealed class UserNotificationService(
     NavigationManager navigationManager,
     IHttpContextAccessor httpContextAccessor
 ) : IWebUserNotificationService, IAsyncDisposable {
+    public event Action<SystemWarnedEventArgs>? OnSystemWarned;
+    public event Action<SystemBannedEventArgs>? OnSystemBanned;
+    public event Action<CommunityWarnedEventArgs>? OnCommunityWarned;
     public event Action<CommunityBannedEventArgs>? OnCommunityBanned;
     public event Func<IncomingCallEventArgs, Task>? OnIncomingCall;
     public event Action<IncomingDirectMessageEventArgs>? OnIncomingDirectMessage;
@@ -62,6 +65,18 @@ public sealed class UserNotificationService(
                 logging.AddFilter("Microsoft.AspNetCore.Http.Connections", LogLevel.Debug);
             })
             .Build();
+        
+        _hubConnection.On<SystemWarnedEventArgs>(nameof(IUserClient.SystemWarned), args => {
+            OnSystemWarned?.Invoke(args);
+        });
+
+        _hubConnection.On<SystemBannedEventArgs>(nameof(IUserClient.SystemBanned), args => {
+            OnSystemBanned?.Invoke(args);
+        });
+        
+        _hubConnection.On<CommunityWarnedEventArgs>(nameof(IUserClient.CommunityWarned), args => {
+            OnCommunityWarned?.Invoke(args);
+        });
 
         _hubConnection.On<CommunityBannedEventArgs>(nameof(IUserClient.CommunityBanned), args => {
             OnCommunityBanned?.Invoke(args);
@@ -84,6 +99,18 @@ public sealed class UserNotificationService(
         if (_hubConnection != null) {
             await _hubConnection.DisposeAsync();
         }
+    }
+    
+    public async Task Dispatch(SystemWarnedEventArgs args) {
+        await hubContext.Clients.User(args.UserId.ToString()).SystemWarned(args);
+    }
+
+    public async Task Dispatch(SystemBannedEventArgs args) {
+        await hubContext.Clients.User(args.UserId.ToString()).SystemBanned(args);
+    }
+    
+    public async Task Dispatch(CommunityWarnedEventArgs args) {
+        await hubContext.Clients.User(args.UserId.ToString()).CommunityWarned(args);
     }
 
     public async Task Dispatch(CommunityBannedEventArgs args) {

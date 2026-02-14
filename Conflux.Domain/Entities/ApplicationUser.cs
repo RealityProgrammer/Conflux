@@ -18,6 +18,8 @@ public class ApplicationUser : IdentityUser<Guid> {
 
     [MaxLength(128)] public string? StatusText { get; set; }
     
+    public DateTime? UnbanAt { get; set; }
+    
     public ICollection<FriendRequest> SentFriendRequests { get; set; } = null!;
     public ICollection<FriendRequest> ReceivedFriendRequests { get; set; } = null!;
 

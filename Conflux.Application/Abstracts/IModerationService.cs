@@ -1,4 +1,5 @@
 ﻿using Conflux.Application.Dto;
+using Conflux.Domain;
 using Conflux.Domain.Entities;
 using Conflux.Domain.Enums;
 
@@ -22,11 +23,12 @@ public interface IModerationService {
     Task<(int Count, List<Guid>)> PaginateMemberReportedMessageIdsAsync(Guid memberId, int startIndex, int count);
     
     Task<bool> ResolveReportByDismissAsync(Guid reportId, Guid resolverUserId, string? reason);
-    
     Task<bool> ResolveReportByWarningAsync(Guid reportId, Guid resolverUserId, string? reason);
-    
     Task<bool> ResolveReportByBanningAsync(Guid reportId, Guid resolverUserId, TimeSpan banDuration, string? reason);
 
     Task<bool> WarnUserAsync(Guid userId, Guid resolverUserId, string? reason);
     Task<bool> BanUserAsync(Guid userId, Guid resolverUserId, TimeSpan duration, string? reason);
+    
+    Task<bool> WarnMemberAsync(Guid memberId, Guid resolverUserId, string? reason);
+    Task<bool> BanMemberAsync(Guid memberId, Guid resolverUserId, TimeSpan duration, string? reason);
 }

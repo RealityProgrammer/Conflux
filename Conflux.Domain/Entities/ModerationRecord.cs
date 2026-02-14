@@ -9,6 +9,9 @@ public class ModerationRecord {
     public Guid OffenderUserId { get; set; }
     public ApplicationUser OffenderUser { get; set; } = null!;
     
+    public Guid? OffenderMemberId { get; set; }
+    public CommunityMember? OffenderMember { get; set; }
+    
     public Guid ResolverUserId { get; set; }
     public ApplicationUser ResolverUser { get; set; } = null!;
     

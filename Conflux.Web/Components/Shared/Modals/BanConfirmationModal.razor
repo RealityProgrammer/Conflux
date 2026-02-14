@@ -15,9 +15,6 @@
             <EditForm Model="this" OnValidSubmit="OnValidSubmit">
                 <DataAnnotationsValidator/>
                 
-                <label class="input-label">Reason</label>
-                <InputTextArea @bind-Value="_reason" class="mt-1 input-field h-44 w-full px-1.5 py-1 resize-none" maxlength="512"/>
-                
                 <label class="input-label">Ban Duration</label>
                 <InputText @ref="_durationInputText" @bind-Value="@_durationText" class="input-field h-11 w-full mt-1"/>
 
@@ -34,6 +31,9 @@
                 } else {
                     <p class="text-sm text-center text-gray-400 mt-1">Invalid duration</p>
                 }
+                
+                <label class="input-label">Reason</label>
+                <InputTextArea @bind-Value="_reason" class="mt-1 input-field h-44 w-full px-1.5 py-1 resize-none" maxlength="512"/>
                 
                 <p class="text-gray-400 text-sm text-center mt-2">Are you sure you want to dismiss this report?<br/>This action cannot be reverted for the time being.</p>
                 

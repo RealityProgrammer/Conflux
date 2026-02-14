@@ -179,6 +179,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .WithMany()
                 .HasForeignKey(m => m.OffenderUserId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(m => m.OffenderMember)
+                .WithMany()
+                .HasForeignKey(m => m.OffenderMemberId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
