@@ -1,4 +1,5 @@
 ﻿@using Conflux.Application.Dto
+@using Conflux.Domain.Events
 @using Conflux.Web.Components.Guards
 @using System.Security.Claims
 
@@ -16,13 +17,21 @@
 <CascadingValue Value="_userBanState" Name="SessionUserBanState">
     <RedirectToProfileSetup/>
 
-    <ExpandableLobbyLocationList/>
+    <AuthorizeView Policy="UserNotBanned" Resource="_userBanState">
+        <Authorized>
+            <ExpandableLobbyLocationList/>
 
-    <div class="h-dvh w-dvw">
-        @Body
-    </div>
+            <div class="h-dvh w-dvw">
+                @Body
+            </div>
 
-    <CallScreenContainer/>
+            <CallScreenContainer/>
+        </Authorized>
+        
+        <NotAuthorized>
+            <p>Banned.</p>
+        </NotAuthorized>
+    </AuthorizeView>
 </CascadingValue>
 
 @code {
@@ -36,10 +45,23 @@
             
             await FriendshipEventDispatcher.Connect();
             await UserNotificationService.Connect();
+
+            UserNotificationService.OnSystemBanned += OnSystemBanned;
+            
+            StateHasChanged();
         }
     }
 
+    private void OnSystemBanned(SystemBannedEventArgs args) {
+        InvokeAsync(async () => {
+            var authState = await AuthenticationState;
+            _userBanState = (await UserService.GetBanStateAsync(Guid.Parse(authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!)))!.Value;
+        });
+    }
+
     public async ValueTask DisposeAsync() {
+        UserNotificationService.OnSystemBanned -= OnSystemBanned;
+        
         await FriendshipEventDispatcher.Disconnect();
         await UserNotificationService.Disconnect();
     }
