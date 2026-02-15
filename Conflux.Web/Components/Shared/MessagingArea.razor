@@ -116,6 +116,6 @@
     }
 
     public async ValueTask DisposeAsync() {
-        await ConversationEventDispatcher.Connect(ConversationId);
+        await ConversationEventDispatcher.Disconnect(ConversationId);
     }
 }
