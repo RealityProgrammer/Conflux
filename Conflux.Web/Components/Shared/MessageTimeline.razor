@@ -312,8 +312,6 @@
     private ElementReference _extraActionTargetElement;
     private bool _showExtraActionPopover;
     
-    private SemaphoreSlim? _messageSemaphore;
-    
     private DateTime _topLoadTimestamp, _bottomLoadTimestamp;
     
     // Message Delete.
@@ -332,10 +330,6 @@
     // JS Module.
     private IJSObjectReference? _module;
     private DotNetObjectReference<MessageTimeline>? _objectReference;
-
-    protected override void OnInitialized() {
-        _messageSemaphore ??= new(1, 1);
-    }
 
     protected override void OnParametersSet() {
         if (_previousConversationId != ConversationId) {
@@ -406,25 +400,19 @@
             IConversationService.RenderingMessages messages =
                 await ConversationService.LoadMessagesBeforeTimestampAsync(ConversationId, DateTime.MaxValue, LoadCount);
 
-            await _messageSemaphore!.WaitAsync();
+            _visibleMessages.AddRange(messages.VisibleMessages);
 
-            try {
-                _visibleMessages.AddRange(messages.VisibleMessages);
+            foreach (var replyMessage in messages.RepliedMessages) {
+                _replyMessages.TryAdd(replyMessage.MessageId, replyMessage);
+            }
 
-                foreach (var replyMessage in messages.RepliedMessages) {
-                    _replyMessages.TryAdd(replyMessage.MessageId, replyMessage);
-                }
+            _endBottom = _jumpToBottom = true;
 
-                _endBottom = _jumpToBottom = true;
-
-                if (messages.VisibleMessages.Count > 0) {
-                    _endTop = false;
-                    _topLoadTimestamp = messages.VisibleMessages[0].CreatedAt;
-                } else {
-                    _endTop = true;
-                }
-            } finally {
-                _messageSemaphore.Release();
+            if (messages.VisibleMessages.Count > 0) {
+                _endTop = false;
+                _topLoadTimestamp = messages.VisibleMessages[0].CreatedAt;
+            } else {
+                _endTop = true;
             }
         }
     }
@@ -432,38 +420,34 @@
     [JSInvokable]
     public async Task HandleLoadTopMessages() {
         if (_endTop) return;
-        if (Interlocked.Exchange(ref _loadingTop, true)) return;
 
-        await InvokeAsync(StateHasChanged); // Re-render to display the load spinner.
-
-        try {
-            _savedScrollPositionForTop = await _module!.InvokeAsync<ScrollInfo>("saveScrollPosition", _scrollContainer);
-
-            var messages =
-                await ConversationService.LoadMessagesBeforeTimestampAsync(ConversationId, _topLoadTimestamp, LoadCount);
-
-            if (messages.VisibleMessages.Count == 0) {
-                _endTop = true;
-            } else {
-                _endTop = false;
-                _topLoadTimestamp = messages.VisibleMessages[0].CreatedAt;
-
-                await _messageSemaphore!.WaitAsync();
-
-                try {
+        await InvokeAsync(async () => {
+            _loadingTop = true;
+            StateHasChanged();
+            
+            try {
+                _savedScrollPositionForTop = await _module!.InvokeAsync<ScrollInfo>("saveScrollPosition", _scrollContainer);
+            
+                var messages =
+                    await ConversationService.LoadMessagesBeforeTimestampAsync(ConversationId, _topLoadTimestamp, LoadCount);
+            
+                if (messages.VisibleMessages.Count == 0) {
+                    _endTop = true;
+                } else {
+                    _endTop = false;
+                    _topLoadTimestamp = messages.VisibleMessages[0].CreatedAt;
+            
                     _visibleMessages.InsertRange(0, messages.VisibleMessages);
-
+            
                     foreach (var replyMessage in messages.RepliedMessages) {
                         _replyMessages.TryAdd(replyMessage.MessageId, replyMessage);
                     }
-                } finally {
-                    _messageSemaphore.Release();
                 }
+            } finally {
+                _loadingTop = false;
+                StateHasChanged();
             }
-        } finally {
-            Interlocked.Exchange(ref _loadingTop, false);
-            await InvokeAsync(StateHasChanged);
-        }
+        });
     }
 
     [JSInvokable]
@@ -471,36 +455,33 @@
         if (_endBottom) return;
         if (Interlocked.Exchange(ref _loadingBottom, true)) return;
 
-        await InvokeAsync(StateHasChanged); // Re-render to display the load spinner.
+        await InvokeAsync(async () => {
+            _loadingBottom = true;
+            StateHasChanged();
+            
+            try {
+                _savedScrollPositionForBottom = await _module!.InvokeAsync<ScrollInfo>("saveScrollPosition", _scrollContainer);
 
-        try {
-            _savedScrollPositionForBottom = await _module!.InvokeAsync<ScrollInfo>("saveScrollPosition", _scrollContainer);
+                var messages =
+                    await ConversationService.LoadMessagesAfterTimestampAsync(ConversationId, _topLoadTimestamp, LoadCount);
 
-            var messages =
-                await ConversationService.LoadMessagesAfterTimestampAsync(ConversationId, _topLoadTimestamp, LoadCount);
+                if (messages.VisibleMessages.Count == 0) {
+                    _endBottom = true;
+                } else {
+                    _endBottom = false;
+                    _bottomLoadTimestamp = messages.VisibleMessages[^1].CreatedAt;
 
-            if (messages.VisibleMessages.Count == 0) {
-                _endBottom = true;
-            } else {
-                _endBottom = false;
-                _bottomLoadTimestamp = messages.VisibleMessages[^1].CreatedAt;
-
-                await _messageSemaphore!.WaitAsync();
-
-                try {
                     _visibleMessages.AddRange(messages.VisibleMessages);
 
                     foreach (var replyMessage in messages.RepliedMessages) {
                         _replyMessages.TryAdd(replyMessage.MessageId, replyMessage);
                     }
-                } finally {
-                    _messageSemaphore.Release();
                 }
+            } finally {
+                _loadingBottom = false;
+                await InvokeAsync(StateHasChanged);
             }
-        } finally {
-            Interlocked.Exchange(ref _loadingBottom, false);
-            await InvokeAsync(StateHasChanged);
-        }
+        });
     }
 
     private async Task HandleMessageReply(Guid id) {
@@ -803,16 +784,10 @@
                         .FirstOrDefaultAsync();
                 }
 
-                await _messageSemaphore!.WaitAsync();
+                _visibleMessages.Add(new(args.MessageId, senderData.Id, senderData.DisplayName, senderData.AvatarProfilePath, messageData.Body, messageData.CreatedAt, false, messageData.ReplyMessageId, messageData.Attachments));
 
-                try {
-                    _visibleMessages.Add(new(args.MessageId, senderData.Id, senderData.DisplayName, senderData.AvatarProfilePath, messageData.Body, messageData.CreatedAt, false, messageData.ReplyMessageId, messageData.Attachments));
-
-                    if (replyMessage != null) {
-                        _replyMessages.TryAdd(replyMessage.MessageId, replyMessage);
-                    }
-                } finally {
-                    _messageSemaphore.Release();
+                if (replyMessage != null) {
+                    _replyMessages.TryAdd(replyMessage.MessageId, replyMessage);
                 }
 
                 StateHasChanged();
@@ -822,10 +797,8 @@
 
     private void OnMessageDeleted(MessageDeletedEventArgs args) {
         if (ConversationId != args.ConversationId) return;
-
-        _messageSemaphore!.Wait();
-
-        try {
+        
+        InvokeAsync(() => {
             for (int i = 0; i < _visibleMessages.Count; i++) {
                 if (_visibleMessages[i].MessageId == args.MessageId) {
                     _visibleMessages.RemoveAt(i);
@@ -835,18 +808,14 @@
 
             _extraActionPopoverTargets.Remove(args.MessageId);
             
-            InvokeAsync(StateHasChanged);
-        } finally {
-            _messageSemaphore.Release();
-        }
+            StateHasChanged();
+        });
     }
 
     private void OnMessageEdited(MessageEditedEventArgs args) {
         if (ConversationId != args.ConversationId) return;
 
-        _messageSemaphore!.Wait();
-
-        try {
+        InvokeAsync(() => {
             for (int i = 0; i < _visibleMessages.Count; i++) {
                 if (_visibleMessages[i].MessageId == args.MessageId) {
                     _visibleMessages[i] = _visibleMessages[i] with {
@@ -856,19 +825,15 @@
                     break;
                 }
             }
-
-            InvokeAsync(StateHasChanged);
-        } finally {
-            _messageSemaphore.Release();
-        }
+            
+            StateHasChanged();
+        });
     }
     
     public void Dispose() {
         ConversationEventDispatcher.OnMessageReceived -= OnMessageReceived;
         ConversationEventDispatcher.OnMessageDeleted -= OnMessageDeleted;
         ConversationEventDispatcher.OnMessageEdited -= OnMessageEdited;
-
-        _messageSemaphore?.Dispose();
     }
     
     private enum InitializationStatus {
