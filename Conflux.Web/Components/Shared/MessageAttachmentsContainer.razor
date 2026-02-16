@@ -41,14 +41,18 @@
         </button>
     </div>
     
-    <button class="fixed left-4 top-1/2 -translate-y-1/2 bg-gray-750 p-2.5! z-202 rounded-lg group cursor-pointer border border-gray-600">
-        <Arrow Direction="ArrowDirection.Left" class="size-6 fill-gray-300 group-hover:fill-white"/>
-    </button>
-    
-    <button class="fixed right-4 top-1/2 -translate-y-1/2 bg-gray-750 p-2.5! z-202 rounded-lg group cursor-pointer border border-gray-600">
-        <Arrow Direction="ArrowDirection.Right" class="size-6 fill-gray-300 group-hover:fill-white"/>
-    </button>
-    
+    @if (_currentPreviewingAttachmentIndex > 0) {
+        <button class="fixed left-4 top-1/2 -translate-y-1/2 bg-gray-750 p-2.5! z-202 rounded-lg group cursor-pointer border border-gray-600" @onclick="ToPreviousAttachment">
+            <Arrow Direction="ArrowDirection.Left" class="size-6 fill-gray-300 group-hover:fill-white"/>
+        </button>
+    }
+
+    @if (_currentPreviewingAttachmentIndex < _attachmentCacheStates.Count - 1) {
+        <button class="fixed right-4 top-1/2 -translate-y-1/2 bg-gray-750 p-2.5! z-202 rounded-lg group cursor-pointer border border-gray-600" @onclick="ToNextAttachment">
+            <Arrow Direction="ArrowDirection.Right" class="size-6 fill-gray-300 group-hover:fill-white"/>
+        </button>
+    }
+
     <div class="fixed inset-0 z-201 flex flex-row justify-center items-center">
         @switch (attachmentCache.Attachment.Type) {
             case MessageAttachmentType.Image:
@@ -100,6 +104,14 @@
 
     private void CloseExpansion() {
         _isExpanded = false;
+    }
+
+    private void ToPreviousAttachment() {
+        _currentPreviewingAttachmentIndex -= 1;
+    }
+
+    private void ToNextAttachment() {
+        _currentPreviewingAttachmentIndex += 1;
     }
 
     private void ToggleZoom() {
