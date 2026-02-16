@@ -2,7 +2,7 @@
 
 @inject IContentService ContentService
 
-<div class="min-w-0 p-0.5 flex flex-row flex-wrap gap-1">
+<div class="min-w-0 p-0.5 flex flex-row flex-wrap gap-1 py-1">
     @foreach (var cache in _attachmentCacheStates) {
         switch (cache.Attachment.Type) {
             case MessageAttachmentType.Image:
@@ -87,7 +87,7 @@
         }
     </div>
     
-    <div class="flex flex-row justify-center items-center absolute bottom-4 left-4 right-4 z-202">
+    <div class="flex flex-row justify-center items-center fixed bottom-4 left-4 right-4 z-202">
         <p class="bg-gray-750 p-2.5 rounded-lg border border-gray-600">@attachmentCache.Attachment.Name</p>
     </div>
 }

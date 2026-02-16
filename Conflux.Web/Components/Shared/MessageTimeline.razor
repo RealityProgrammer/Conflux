@@ -139,11 +139,11 @@
                                             </button>
                                         </span>
                                     }
+                                    
+                                    @if (message.Attachments.Count > 0) {
+                                        <MessageAttachmentsContainer Attachments="message.Attachments"/>
+                                    }
                                 </div>
-                                
-                                @if (message.Attachments.Count > 0) {
-                                    <MessageAttachmentsContainer Attachments="message.Attachments"/>
-                                }
                             }
 
                             i = endIndex;

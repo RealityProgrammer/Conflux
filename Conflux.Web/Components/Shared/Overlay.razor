@@ -1,4 +1,4 @@
-﻿<div class="cursor-default absolute inset-0 transition-colors @_cssClass @(Active ? $"pointer-events-auto {ActiveCssClass}" : "pointer-events-none")" @onclick="OnClick"></div>
+﻿<div class="cursor-default fixed inset-0 transition-colors @_cssClass @(Active ? $"pointer-events-auto {ActiveCssClass}" : "pointer-events-none")" @onclick="OnClick"></div>
 
 @code {
     [Parameter] public bool Active { get; set; }
