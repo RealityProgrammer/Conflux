@@ -307,6 +307,12 @@
         
         _reporterUserDisplay.AvatarPath = string.IsNullOrEmpty(_reporterUserDisplay.AvatarPath) ? null : ContentService.GetAssetPath(_reporterUserDisplay.AvatarPath);
     }
+    
+    private static readonly RenderFragment _reportResolvedSuccessfully =
+        @<p>Report has been resolved successfully.</p>;
+
+    private static readonly RenderFragment _reportResolvedFailure =
+        @<p>Something went wrong, please try again later.</p>;
 
     private void HandleResolveReportByDismiss() {
         if (_selectedReport?.Id is not { } reportId) {
@@ -322,19 +328,31 @@
             if (ResolverUserId is not { } resolverUserId) {
                 return;
             }
-            
-            await ModerationService.ResolveReportByDismissAsync(reportId, resolverUserId, reason);
-            var reportDisplay = (await ModerationService.GetReportDisplayAsync(reportId))!.Value;
-    
-            _selectedReport = reportDisplay;
-            if (reportDisplay.ModerationRecordId is { } moderationRecordId) {
-                _moderationRecordForSelectedReport = await ModerationService.GetModerationRecordDisplayAsync(moderationRecordId);
-            }
 
-            if (CommunityId is { } communityId) {
-                (_reportResolverMemberId!, _reportResolverUserDisplay!) = _moderationRecordForSelectedReport is { } moderationRecord ? (await CommunityService.GetMemberDisplayAsync(communityId, moderationRecord.ResolverUser.UserId))!.Value : default;
+            if (await ModerationService.ResolveReportByDismissAsync(reportId, resolverUserId, reason)) {
+                var reportDisplay = (await ModerationService.GetReportDisplayAsync(reportId))!.Value;
+
+                _selectedReport = reportDisplay;
+
+                if (reportDisplay.ModerationRecordId is { } moderationRecordId) {
+                    _moderationRecordForSelectedReport = await ModerationService.GetModerationRecordDisplayAsync(moderationRecordId);
+                }
+
+                if (CommunityId is { } communityId) {
+                    (_reportResolverMemberId!, _reportResolverUserDisplay!) = _moderationRecordForSelectedReport is { } moderationRecord ? (await CommunityService.GetMemberDisplayAsync(communityId, moderationRecord.ResolverUser.UserId))!.Value : default;
+                } else {
+                    _reportResolverUserDisplay = _moderationRecordForSelectedReport is { } moderationRecord ? (await UserService.GetUserDisplayAsync(moderationRecord.ResolverUser.UserId))!.Value : null;
+                }
+                
+                ModalService.Open<OperationSuccessModal>(parameters: new Dictionary<string, object?> {
+                    [nameof(OperationSuccessModal.Title)] = "Dismiss Successfully",
+                    [nameof(OperationSuccessModal.Body)] = _reportResolvedSuccessfully,
+                });
             } else {
-                _reportResolverUserDisplay = _moderationRecordForSelectedReport is { } moderationRecord ? (await UserService.GetUserDisplayAsync(moderationRecord.ResolverUser.UserId))!.Value : null;
+                ModalService.Open<OperationFailureModal>(parameters: new Dictionary<string, object?> {
+                    [nameof(OperationFailureModal.Title)] = "Dismiss Failure",
+                    [nameof(OperationFailureModal.Body)] = _reportResolvedFailure,
+                });
             }
         }
     }
@@ -353,19 +371,31 @@
             if (ResolverUserId is not { } resolverUserId) {
                 return;
             }
-            
-            await ModerationService.ResolveReportByWarningAsync(reportId, resolverUserId, reason);
-            var reportDisplay = (await ModerationService.GetReportDisplayAsync(reportId))!.Value;
-    
-            _selectedReport = reportDisplay;
-            if (reportDisplay.ModerationRecordId is { } moderationRecordId) {
-                _moderationRecordForSelectedReport = await ModerationService.GetModerationRecordDisplayAsync(moderationRecordId);
-            }
-            
-            if (CommunityId is { } communityId) {
-                (_reportResolverMemberId!, _reportResolverUserDisplay!) = _moderationRecordForSelectedReport is { } moderationRecord ? (await CommunityService.GetMemberDisplayAsync(communityId, moderationRecord.ResolverUser.UserId))!.Value : default;
+
+            if (await ModerationService.ResolveReportByWarningAsync(reportId, resolverUserId, reason)) {
+                var reportDisplay = (await ModerationService.GetReportDisplayAsync(reportId))!.Value;
+
+                _selectedReport = reportDisplay;
+
+                if (reportDisplay.ModerationRecordId is { } moderationRecordId) {
+                    _moderationRecordForSelectedReport = await ModerationService.GetModerationRecordDisplayAsync(moderationRecordId);
+                }
+
+                if (CommunityId is { } communityId) {
+                    (_reportResolverMemberId!, _reportResolverUserDisplay!) = _moderationRecordForSelectedReport is { } moderationRecord ? (await CommunityService.GetMemberDisplayAsync(communityId, moderationRecord.ResolverUser.UserId))!.Value : default;
+                } else {
+                    _reportResolverUserDisplay = _moderationRecordForSelectedReport is { } moderationRecord ? (await UserService.GetUserDisplayAsync(moderationRecord.ResolverUser.UserId))!.Value : null;
+                }
+
+                ModalService.Open<OperationSuccessModal>(parameters: new Dictionary<string, object?> {
+                    [nameof(OperationSuccessModal.Title)] = "Warn Successfully",
+                    [nameof(OperationSuccessModal.Body)] = _reportResolvedSuccessfully,
+                });
             } else {
-                _reportResolverUserDisplay = _moderationRecordForSelectedReport is { } moderationRecord ? (await UserService.GetUserDisplayAsync(moderationRecord.ResolverUser.UserId))!.Value : null;
+                ModalService.Open<OperationFailureModal>(parameters: new Dictionary<string, object?> {
+                    [nameof(OperationFailureModal.Title)] = "Warn Failure",
+                    [nameof(OperationFailureModal.Body)] = _reportResolvedFailure,
+                });
             }
         }
     }
@@ -385,19 +415,31 @@
             if (ResolverUserId is not { } resolverUserId) {
                 return;
             }
-            
-            await ModerationService.ResolveReportByBanningAsync(reportId, resolverUserId, info.Duration, info.Reason);
-            var reportDisplay = (await ModerationService.GetReportDisplayAsync(reportId))!.Value;
-    
-            _selectedReport = reportDisplay;
-            if (reportDisplay.ModerationRecordId is { } moderationRecordId) {
-                _moderationRecordForSelectedReport = await ModerationService.GetModerationRecordDisplayAsync(moderationRecordId);
-            }
-            
-            if (CommunityId is { } communityId) {
-                (_reportResolverMemberId!, _reportResolverUserDisplay!) = _moderationRecordForSelectedReport is { } moderationRecord ? (await CommunityService.GetMemberDisplayAsync(communityId, moderationRecord.ResolverUser.UserId))!.Value : default;
+
+            if (await ModerationService.ResolveReportByBanningAsync(reportId, resolverUserId, info.Duration, info.Reason)) {
+                var reportDisplay = (await ModerationService.GetReportDisplayAsync(reportId))!.Value;
+
+                _selectedReport = reportDisplay;
+
+                if (reportDisplay.ModerationRecordId is { } moderationRecordId) {
+                    _moderationRecordForSelectedReport = await ModerationService.GetModerationRecordDisplayAsync(moderationRecordId);
+                }
+
+                if (CommunityId is { } communityId) {
+                    (_reportResolverMemberId!, _reportResolverUserDisplay!) = _moderationRecordForSelectedReport is { } moderationRecord ? (await CommunityService.GetMemberDisplayAsync(communityId, moderationRecord.ResolverUser.UserId))!.Value : default;
+                } else {
+                    _reportResolverUserDisplay = _moderationRecordForSelectedReport is { } moderationRecord ? (await UserService.GetUserDisplayAsync(moderationRecord.ResolverUser.UserId))!.Value : null;
+                }
+                
+                ModalService.Open<OperationSuccessModal>(parameters: new Dictionary<string, object?> {
+                    [nameof(OperationSuccessModal.Title)] = "Ban Successfully",
+                    [nameof(OperationSuccessModal.Body)] = _reportResolvedSuccessfully,
+                });
             } else {
-                _reportResolverUserDisplay = _moderationRecordForSelectedReport is { } moderationRecord ? (await UserService.GetUserDisplayAsync(moderationRecord.ResolverUser.UserId))!.Value : null;
+                ModalService.Open<OperationFailureModal>(parameters: new Dictionary<string, object?> {
+                    [nameof(OperationFailureModal.Title)] = "Ban Failure",
+                    [nameof(OperationFailureModal.Body)] = _reportResolvedFailure,
+                });
             }
         }
     }
