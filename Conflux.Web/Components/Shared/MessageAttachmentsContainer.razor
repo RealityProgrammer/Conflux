@@ -32,11 +32,24 @@
     <Overlay Active="true" class="bg-transparent duration-200 ease-in-out block z-200" ActiveCssClass="bg-black/80!" OnClick="CloseExpansion"/>
     
     <div class="fixed top-4 right-4 flex flex-row justify-end items-center gap-2.5 z-202">
-        <button class="bg-gray-750 p-2.5! rounded-lg group cursor-pointer border border-gray-600" @onclick="CloseExpansion">
-            <Download class="size-6 fill-gray-300 group-hover:fill-white"/>
-        </button>
+        <div class="flex-none bg-gray-750 rounded-lg border border-gray-600">
+            @if (attachmentCache.Attachment.Type == MessageAttachmentType.Image) {
+                <button class="p-2.5! group cursor-pointer" @onclick="ToggleZoom">
+                    @if (_isImageZoomed) {
+                        <ZoomOut class="size-6 fill-gray-300 group-hover:fill-white"/>
+                    } else {
+                        <ZoomIn class="size-6 fill-gray-300 group-hover:fill-white"/>
+                    }
+                </button>
+            }
+
+            <button class="p-2.5! group" @onclick="CloseExpansion">
+                <Download class="size-6 fill-gray-300 group-hover:fill-white"/>
+            </button>
+        </div>
         
-        <button class="bg-gray-750 p-3! rounded-lg group cursor-pointer border border-gray-600" @onclick="CloseExpansion">
+
+        <button class="flex-none bg-gray-750 p-3! rounded-lg group cursor-pointer border border-gray-600" @onclick="CloseExpansion">
             <Cross class="size-5 fill-gray-300 group-hover:fill-white" Size="CrossSize.Large"/>
         </button>
     </div>
@@ -56,8 +69,8 @@
     <div class="fixed inset-0 z-201 flex flex-row justify-center items-center pointer-events-none p-4 md:p-12">
         @switch (attachmentCache.Attachment.Type) {
             case MessageAttachmentType.Image:
-                <div class="pointer-events-auto @(_isZoomed ? "overflow-auto max-w-full max-h-full cursor-zoom-out" : "cursor-zoom-in")" @onclick="ToggleZoom">
-                    <img src="@attachmentCache.AssetPath" alt="@attachmentCache.Attachment.Name" class="select-none @(_isZoomed ? "max-w-none size-auto" : "max-w-full max-h-[85vh] object-contain")" />
+                <div class="pointer-events-auto @(_isImageZoomed ? "overflow-auto max-w-full max-h-full cursor-zoom-out" : "cursor-zoom-in")" @onclick="ToggleZoom">
+                    <img src="@attachmentCache.AssetPath" alt="@attachmentCache.Attachment.Name" class="select-none @(_isImageZoomed ? "max-w-none size-auto" : "max-w-full max-h-[85vh] object-contain")" />
                 </div>
                 break;
                 
@@ -87,7 +100,7 @@
     private int _currentPreviewingAttachmentIndex = 0;
     private List<AttachmentCacheState> _attachmentCacheStates = null!;
 
-    private bool _isZoomed;
+    private bool _isImageZoomed;
 
     protected override void OnInitialized() {
         _attachmentCacheStates = new(Attachments.Count);
@@ -112,16 +125,16 @@
 
     private void ToPreviousAttachment() {
         _currentPreviewingAttachmentIndex -= 1;
-        _isZoomed = false;
+        _isImageZoomed = false;
     }
 
     private void ToNextAttachment() {
         _currentPreviewingAttachmentIndex += 1;
-        _isZoomed = false;
+        _isImageZoomed = false;
     }
 
     private void ToggleZoom() {
-        _isZoomed ^= true;
+        _isImageZoomed ^= true;
     }
 
     private sealed class AttachmentCacheState {
