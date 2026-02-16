@@ -1,8 +1,6 @@
 ﻿@using Conflux.Domain.Enums
-@using Conflux.Web.Services.Implementations
 
 @inject IContentService ContentService
-@inject ModalService ModalService
 
 <div class="min-w-0 p-0.5 flex flex-row flex-wrap gap-1">
     @foreach (var cache in _attachmentCacheStates) {
@@ -42,12 +40,13 @@
                     }
                 </button>
             }
-
-            <button class="p-2.5! group" @onclick="CloseExpansion">
-                <Download class="size-6 fill-gray-300 group-hover:fill-white"/>
-            </button>
+            
+            <a href="@attachmentCache.AssetPath" download="@attachmentCache.Attachment.Name" target="_top">
+                <button class="p-2.5! group cursor-pointer">
+                    <Download class="size-6 fill-gray-300 group-hover:fill-white"/>
+                </button>
+            </a>
         </div>
-        
 
         <button class="flex-none bg-gray-750 p-3! rounded-lg group cursor-pointer border border-gray-600" @onclick="CloseExpansion">
             <Cross class="size-5 fill-gray-300 group-hover:fill-white" Size="CrossSize.Large"/>
