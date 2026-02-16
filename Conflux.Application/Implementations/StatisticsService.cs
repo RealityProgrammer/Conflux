@@ -30,6 +30,7 @@ public sealed class StatisticsService(
             .Include(r => r.Message)
             .ThenInclude(m => m.Conversation)
             .Where(r => r.Message.Conversation.CommunityChannelId == null)
+            .Include(r => r.ModerationRecord)
             .GroupBy(r => 1)
             .Select(g => 
                 new ReportStatisticsDTO(
@@ -46,8 +47,6 @@ public sealed class StatisticsService(
     public async Task<ConversationStatisticsDTO> GetConversationStatistics() {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-
-        ConversationStatisticsDTO output = default;
 
         var conversationInfo = await dbContext.Conversations
             .GroupBy(r => 1)
@@ -90,12 +89,13 @@ public sealed class StatisticsService(
 
         var stats = await dbContext.MessageReports
             .Where(r => r.Message.SenderUserId == userId && r.Message.Conversation.CommunityChannelId == null)
+            .Include(r => r.ModerationRecord)
             .GroupBy(r => 1)
             .Select(g => new UserReportStatistics(
                 TotalReportCount: g.Count(),
                 ResolvedReportCount: g.Count(r => r.ModerationRecordId != null),
-                // TODO: Implementation
-                WarnCount: 0
+                WarnCount: g.Count(r => r.ModerationRecord != null && r.ModerationRecord.Action == ModerationAction.Warn),
+                BanCount: g.Count(r => r.ModerationRecord != null && r.ModerationRecord.Action == ModerationAction.Ban)
             ))
             .SingleOrDefaultAsync();
 
@@ -117,13 +117,13 @@ public sealed class StatisticsService(
 
         var stats = await dbContext.MessageReports
             .Where(r => r.Message.SenderUserId == extractedIds.UserId && r.Message.Conversation.CommunityChannel!.ChannelCategory.CommunityId == extractedIds.CommunityId)
+            .Include(r => r.ModerationRecord)
             .GroupBy(r => 1)
             .Select(g => new UserReportStatistics(
                 TotalReportCount: g.Count(),
                 ResolvedReportCount: g.Count(r => r.ModerationRecordId != null),
-                
-                // TODO: Implementation
-                WarnCount: 0
+                WarnCount: g.Count(r => r.ModerationRecord != null && r.ModerationRecord.Action == ModerationAction.Warn),
+                BanCount: g.Count(r => r.ModerationRecord != null && r.ModerationRecord.Action == ModerationAction.Ban)
             ))
             .SingleOrDefaultAsync();
 

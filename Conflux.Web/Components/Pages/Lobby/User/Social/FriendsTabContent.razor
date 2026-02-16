@@ -58,8 +58,6 @@
     private string _nameSearch = string.Empty;
     private string _normalizedNameSearch = string.Empty;
 
-    // TODO: First search always have to wait before result display, can we skip that and only wait on
-    // later searches?
     private Debouncer _searchDebouncer = null!;
 
     private Virtualize<FriendDisplayDTO> _virtualizeContainer = null!;

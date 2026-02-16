@@ -103,8 +103,6 @@
 @code {
     private string _nameSearch = string.Empty;
 
-    // TODO: First search always have to wait before result display, can we skip that and only wait on
-    // later searches?
     private Debouncer? _searchDebouncer;
 
     private Virtualize<SearchDTO> _virtualizeContainer = null!;
