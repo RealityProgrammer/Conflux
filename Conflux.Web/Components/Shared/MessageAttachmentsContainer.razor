@@ -53,20 +53,24 @@
         </button>
     }
 
-    <div class="fixed inset-0 z-201 flex flex-row justify-center items-center">
+    <div class="fixed inset-0 z-201 flex flex-row justify-center items-center pointer-events-none p-4 md:p-12">
         @switch (attachmentCache.Attachment.Type) {
             case MessageAttachmentType.Image:
-                <div class="transition-all duration-300 ease-in-out @(_isZoomed ? "overflow-auto max-w-full max-h-full cursor-zoom-out" : "cursor-zoom-in")" @onclick="ToggleZoom">
+                <div class="pointer-events-auto @(_isZoomed ? "overflow-auto max-w-full max-h-full cursor-zoom-out" : "cursor-zoom-in")" @onclick="ToggleZoom">
                     <img src="@attachmentCache.AssetPath" alt="@attachmentCache.Attachment.Name" class="select-none @(_isZoomed ? "max-w-none size-auto" : "max-w-full max-h-[85vh] object-contain")" />
                 </div>
                 break;
                 
             case MessageAttachmentType.Audio:
-
+                <audio controls class="pointer-events-auto w-[90%] rounded-lg" @onclick:stopPropagation="true">
+                    <source src="@attachmentCache.AssetPath">
+                </audio>
                 break;
                 
             case MessageAttachmentType.Video:
-
+                <video controls class="pointer-events-auto max-w-full max-h-full" @onclick:stopPropagation="true">
+                    <source src="@attachmentCache.AssetPath">
+                </video>
                 break;
         }
     </div>
@@ -108,10 +112,12 @@
 
     private void ToPreviousAttachment() {
         _currentPreviewingAttachmentIndex -= 1;
+        _isZoomed = false;
     }
 
     private void ToNextAttachment() {
         _currentPreviewingAttachmentIndex += 1;
+        _isZoomed = false;
     }
 
     private void ToggleZoom() {
