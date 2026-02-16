@@ -1,0 +1,114 @@
+﻿@using Conflux.Domain.Enums
+@using Conflux.Web.Services.Implementations
+
+@inject IContentService ContentService
+@inject ModalService ModalService
+
+<div class="min-w-0 p-0.5 flex flex-row flex-wrap gap-1">
+    @foreach (var cache in _attachmentCacheStates) {
+        switch (cache.Attachment.Type) {
+            case MessageAttachmentType.Image:
+                <img src="@cache.AssetPath" alt="" class="max-w-3xl max-h-80 h-full rounded-lg aspect-auto cursor-pointer" @onclick="cache.OnClick">
+                break;
+
+            case MessageAttachmentType.Audio:
+                <audio controls class="w-full rounded-lg">
+                    <source src="@cache.AssetPath">
+                </audio>
+                break;
+
+            case MessageAttachmentType.Video:
+                <video controls class="max-w-3xl max-h-80 h-full aspect-auto">
+                    <source src="@cache.AssetPath">
+                </video>
+                break;
+        }
+    }
+</div>
+
+@if (_isExpanded) {
+    var attachmentCache = _attachmentCacheStates[_currentPreviewingAttachmentIndex];
+    
+    <Overlay Active="true" class="bg-transparent duration-200 ease-in-out block z-200" ActiveCssClass="bg-black/80!" OnClick="CloseExpansion"/>
+    
+    <div class="fixed top-4 right-4 flex flex-row justify-end items-center gap-2.5 z-202">
+        <button class="bg-gray-750 p-2.5! rounded-lg group cursor-pointer border border-gray-600" @onclick="CloseExpansion">
+            <Download class="size-6 fill-gray-300 group-hover:fill-white"/>
+        </button>
+        
+        <button class="bg-gray-750 p-3! rounded-lg group cursor-pointer border border-gray-600" @onclick="CloseExpansion">
+            <Cross class="size-5 fill-gray-300 group-hover:fill-white" Size="CrossSize.Large"/>
+        </button>
+    </div>
+    
+    <button class="fixed left-4 top-1/2 -translate-y-1/2 bg-gray-750 p-2.5! z-202 rounded-lg group cursor-pointer border border-gray-600">
+        <Arrow Direction="ArrowDirection.Left" class="size-6 fill-gray-300 group-hover:fill-white"/>
+    </button>
+    
+    <button class="fixed right-4 top-1/2 -translate-y-1/2 bg-gray-750 p-2.5! z-202 rounded-lg group cursor-pointer border border-gray-600">
+        <Arrow Direction="ArrowDirection.Right" class="size-6 fill-gray-300 group-hover:fill-white"/>
+    </button>
+    
+    <div class="fixed inset-0 z-201 flex flex-row justify-center items-center">
+        @switch (attachmentCache.Attachment.Type) {
+            case MessageAttachmentType.Image:
+                <div class="transition-all duration-300 ease-in-out @(_isZoomed ? "overflow-auto max-w-full max-h-full cursor-zoom-out" : "cursor-zoom-in")" @onclick="ToggleZoom">
+                    <img src="@attachmentCache.AssetPath" alt="@attachmentCache.Attachment.Name" class="select-none @(_isZoomed ? "max-w-none size-auto" : "max-w-full max-h-[85vh] object-contain")" />
+                </div>
+                break;
+                
+            case MessageAttachmentType.Audio:
+
+                break;
+                
+            case MessageAttachmentType.Video:
+
+                break;
+        }
+    </div>
+    
+    <div class="flex flex-row justify-center items-center absolute bottom-4 left-4 right-4 z-202">
+        <p class="bg-gray-750 p-2.5 rounded-lg border border-gray-600">@attachmentCache.Attachment.Name</p>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public required IReadOnlyList<MessageAttachment> Attachments { get; set; } = null!;
+    
+    private bool _isExpanded;
+    private int _currentPreviewingAttachmentIndex = 0;
+    private List<AttachmentCacheState> _attachmentCacheStates = null!;
+
+    private bool _isZoomed;
+
+    protected override void OnInitialized() {
+        _attachmentCacheStates = new(Attachments.Count);
+
+        foreach ((int index, var attachment) in Attachments.Index()) {
+            _attachmentCacheStates.Add(new() {
+                OnClick = _ => OpenExpansion(index),
+                AssetPath = ContentService.GetAssetPath(attachment.PhysicalPath),
+                Attachment = attachment,
+            });
+        }
+    }
+
+    private void OpenExpansion(int attachmentIndex) {
+        _isExpanded = true;
+        _currentPreviewingAttachmentIndex = attachmentIndex;
+    }
+
+    private void CloseExpansion() {
+        _isExpanded = false;
+    }
+
+    private void ToggleZoom() {
+        _isZoomed ^= true;
+    }
+
+    private sealed class AttachmentCacheState {
+        public required Action<MouseEventArgs> OnClick { get; init; }
+        public required string AssetPath { get; init; }
+        public required MessageAttachment Attachment { get; init; }
+    }
+}

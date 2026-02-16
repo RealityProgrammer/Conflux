@@ -139,35 +139,14 @@
                                             </button>
                                         </span>
                                     }
-
-                                    <div class="min-w-0 p-0.5 flex flex-row flex-wrap gap-1">
-                                        @foreach (MessageAttachment attachment in message.Attachments) {
-                                            string path = ContentService.GetAssetPath(attachment.PhysicalPath);
-
-                                            switch (attachment.Type) {
-                                                case MessageAttachmentType.Image:
-                                                    <img src="@path" alt="" class="max-w-3xl max-h-80 h-full rounded-lg aspect-auto">
-                                                    break;
-
-                                                case MessageAttachmentType.Audio:
-                                                    <audio controls class="w-full rounded-lg">
-                                                        <source src="@path">
-                                                    </audio>
-                                                    break;
-
-                                                case MessageAttachmentType.Video:
-                                                    <video controls class="max-w-3xl max-h-80 h-full aspect-auto">
-                                                        <source src="@path">
-                                                    </video>
-                                                    break;
-                                            }
-                                        }
-                                    </div>
                                 </div>
+                                
+                                @if (message.Attachments.Count > 0) {
+                                    <MessageAttachmentsContainer Attachments="message.Attachments"/>
+                                }
                             }
 
                             i = endIndex;
-
                         }
                     </div>
                 </div>
