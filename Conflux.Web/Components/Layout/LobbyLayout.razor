@@ -11,52 +11,65 @@
 @inject IFriendshipEventDispatcher FriendshipEventDispatcher
 @inject IUserNotificationService UserNotificationService
 @inject IUserService UserService
+@inject IAuthorizationService AuthorizationService
+@inject NavigationManager NavigationManager
 
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+@if (_isLoading) {
+    <div class="flex flex-row justify-center items-center">
+        <Spinner class="size-16 fill-white"/>
+    </div>
+    
+    return;
+}
 
 <CascadingValue Value="_userBanState" Name="SessionUserBanState">
     <RedirectToProfileSetup/>
 
-    <AuthorizeView Policy="UserNotBanned" Resource="_userBanState">
-        <Authorized>
-            <ExpandableLobbyLocationList/>
+    <ExpandableLobbyLocationList/>
 
-            <div class="h-dvh w-dvw">
-                @Body
-            </div>
+    <section class="h-dvh w-dvw bg-gray-750 text-white">
+        @Body
+    </section>
 
-            <CallScreenContainer/>
-        </Authorized>
-        
-        <NotAuthorized>
-            <p>Banned.</p>
-        </NotAuthorized>
-    </AuthorizeView>
+    <CallScreenContainer/>
 </CascadingValue>
 
 @code {
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
     private UserBanState _userBanState;
-
+    private bool _isLoading = true;
+    
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
             var authState = await AuthenticationState;
             _userBanState = (await UserService.GetBanStateAsync(Guid.Parse(authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!)))!.Value;
+
+            if (!(await AuthorizationService.AuthorizeAsync(authState.User, _userBanState, "UserNotBanned")).Succeeded) {
+                NavigationManager.NavigateTo("/banned", replace: true);
+                return;
+            }
             
             await FriendshipEventDispatcher.Connect();
             await UserNotificationService.Connect();
 
             UserNotificationService.OnSystemBanned += OnSystemBanned;
-            
+
+            _isLoading = false;
             StateHasChanged();
         }
     }
 
     private void OnSystemBanned(SystemBannedEventArgs args) {
-        InvokeAsync(async () => {
-            var authState = await AuthenticationState;
-            _userBanState = (await UserService.GetBanStateAsync(Guid.Parse(authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!)))!.Value;
-        });
+        NavigationManager.NavigateTo("/banned", replace: true);
+        
+        // InvokeAsync(async () => {
+        //     var authState = await AuthenticationState;
+        //     _userBanState = (await UserService.GetBanStateAsync(Guid.Parse(authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!)))!.Value;
+        //
+        //     StateHasChanged();
+        // });
     }
 
     public async ValueTask DisposeAsync() {

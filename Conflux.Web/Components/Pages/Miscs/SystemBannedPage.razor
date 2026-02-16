@@ -1,0 +1,89 @@
+﻿@page "/banned"
+
+@attribute [Authorize]
+
+@using Conflux.Application.Dto
+@using Conflux.Web.Components.Layout
+@using Humanizer
+@using System.Security.Claims
+
+@layout MainLayout
+
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+@inject IAuthorizationService AuthorizationService
+@inject IUserService UserService
+@inject NavigationManager NavigationManager
+
+<section class="h-dvh w-dvw bg-gray-950 text-slate-200 flex justify-center items-center overflow-hidden relative">
+    <Card class="w-11/12 sm:w-3/5 md:w-lg border-t-4 border-red-600 shadow-2xl bg-gray-900 z-10">
+        <CardHeader Title="Banished to the Wasteland" Subtext="The Council has spoken. Your journey ends here (for now)" class="text-center pt-6" />
+        
+        <CardContent class="space-y-6 p-8">
+            @if (string.IsNullOrEmpty(_latestBanDetails.Reason)) {
+                <div class="bg-red-900/20 border border-red-900/50 p-4 rounded-lg">
+                    <p class="italic text-gray-300">
+                        Seems like there is no details about the banishment...
+                    </p>
+                </div>
+            } else {
+                <div class="bg-red-900/20 border border-red-900/50 p-4 rounded-lg">
+                    <p class="text-sm font-mono text-red-400 uppercase tracking-widest mb-2">Verdict Details</p>
+                    <p class="italic text-gray-300">
+                        "@_latestBanDetails.Reason"
+                    </p>
+                </div>
+            }
+
+            <div class="space-y-3">
+                <div class="flex justify-between text-sm border-b border-gray-800 pb-2">
+                    <span class="text-gray-500 uppercase">Ban Duration</span>
+                    <span class="text-red-400 font-semibold">
+                        @_latestBanDetails.BanDuration.Humanize(precision: 5)
+                    </span>
+                </div>
+                
+                <div class="flex justify-between text-sm border-b border-gray-800 pb-2">
+                    <span class="text-gray-500 uppercase">Accumulated Duration</span>
+                    <span class="text-red-400 font-semibold">
+                        @(_latestBanDetails.BanExpiresAt == DateTime.MaxValue ? "The Heat Death of the Universe" : _latestBanDetails.BanExpiresAt.Humanize())
+                    </span>
+                </div>
+            </div>
+
+            <p class="text-center text-sm text-gray-400">
+                While you're out here, please enjoy the view of infinite tumbleweeds, sand and the vague sense of regret. If you think we've made a terrible mistake, you can shout into the void (or contact support).
+            </p>
+
+            <div class="flex justify-center pt-4">
+                <button class="px-6 py-2 bg-gray-800 hover:bg-gray-700 transition-colors rounded-md text-xs font-bold uppercase tracking-widest cursor-pointer" @onclick="GoToSupport">
+                    Appeal to the Overlords
+                </button>
+            </div>
+        </CardContent>
+    </Card>
+</section>
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+
+    private UserBanState _banState;
+    private UserBanDetails _latestBanDetails;
+    
+    protected override async Task OnParametersSetAsync() {
+        var authState = await AuthenticationState;
+        var userId = Guid.Parse(authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        
+        _banState = (await UserService.GetBanStateAsync(userId))!.Value;
+
+        if ((await AuthorizationService.AuthorizeAsync(authState.User, _banState, "UserNotBanned")).Succeeded) {
+            NavigationManager.NavigateTo("/");
+        }
+
+        _latestBanDetails = (await UserService.GetLatestBanDetails(userId))!.Value;
+    }
+
+    private void GoToSupport() {
+        NavigationManager.NavigateTo("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+    }
+}

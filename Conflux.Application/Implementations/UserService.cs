@@ -2,6 +2,7 @@
 using Conflux.Application.Dto;
 using Conflux.Domain;
 using Conflux.Domain.Entities;
+using Conflux.Domain.Enums;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
@@ -116,6 +117,20 @@ public class UserService(
             .Where(u => u.Id == userId)
             .Select(u => new UserBanState(u.UnbanAt ?? DateTime.MinValue))
             .Cast<UserBanState?>()
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<UserBanDetails?> GetLatestBanDetails(Guid userId) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        return await dbContext.ModerationRecords
+            .Where(m => m.OffenderUserId == userId && m.Action == ModerationAction.Ban)
+            .OrderByDescending(m => m.CreatedAt)
+            .Take(1)
+            .Include(m => m.OffenderUser)
+            .Select(m => new UserBanDetails(m.Reason, m.BanDuration!.Value, m.OffenderUser.UnbanAt!.Value))
+            .Cast<UserBanDetails?>()
             .FirstOrDefaultAsync();
     }
 }

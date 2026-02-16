@@ -109,6 +109,8 @@
     [Parameter, EditorRequired] public required Guid InspectingUserId { get; set; }
     [Parameter] public Guid? InspectingMemberId { get; set; }
     
+    [CascadingParameter(Name = "SessionUserId")] private Guid SessionUserId { get; set; }
+    
     private string _engagementActiveTabId = "Friends";
     private UserExtraInformation _userExtraInfo;
 
@@ -179,27 +181,61 @@
         });
     }
 
-    private static readonly RenderFragment _warnConfirmBody =
-        @<p>Are you sure you want to warn this user?</p>;
+    private static readonly RenderFragment _warnSuccessfullyBody =
+        @<p>User has been warned.</p>;
 
+    private static readonly RenderFragment _warnFailureBody =
+        @<p>Something went wrong, please try again later.</p>;
+    
     private void HandleWarnUser() {
-        ModalService.Open<OperationConfirmModal>(parameters: new Dictionary<string, object?> {
-            [nameof(OperationConfirmModal.Title)] = "Warn User",
-            [nameof(OperationConfirmModal.Body)] = _warnConfirmBody,
-            [nameof(OperationConfirmModal.OnConfirm)] = EventCallback.Factory.Create(this, OnConfirm),
+        ModalService.Open<WarnConfirmationModal>(parameters: new Dictionary<string, object?> {
+            [nameof(WarnConfirmationModal.OnConfirm)] = EventCallback.Factory.Create<string>(this, OnConfirm),
         });
         return;
 
-        async Task OnConfirm() {
+        async Task OnConfirm(string? reason) {
+            if (await ModerationService.WarnUserAsync(InspectingUserId, SessionUserId, reason)) {
+                ModalService.Open<OperationSuccessModal>(parameters: new Dictionary<string, object?> {
+                    [nameof(OperationSuccessModal.Title)] = "Warn Successfully",
+                    [nameof(OperationSuccessModal.Body)] = _warnSuccessfullyBody,
+                });
+            } else {
+                ModalService.Open<OperationFailureModal>(parameters: new Dictionary<string, object?> {
+                    [nameof(OperationFailureModal.Title)] = "Warn Failed",
+                    [nameof(OperationSuccessModal.Body)] = _warnFailureBody,
+                });
+            }
         }
     }
+    
+    private static readonly RenderFragment _banSuccessfullyBody =
+        @<p>User has been banned.</p>;
+
+    private static readonly RenderFragment _banFailureBody =
+        @<p>Something went wrong, please try again later.</p>;
 
     private void HandleBanUser() {
-        
+        ModalService.Open<BanConfirmationModal>(parameters: new Dictionary<string, object?> {
+            [nameof(BanConfirmationModal.OnConfirm)] = EventCallback.Factory.Create<BanConfirmationModal.BanInformation>(this, OnConfirm),
+        });
+        return;
+
+        async Task OnConfirm(BanConfirmationModal.BanInformation info) {
+            if (await ModerationService.BanUserAsync(InspectingUserId, SessionUserId, info.Duration, info.Reason)) {
+                ModalService.Open<OperationSuccessModal>(parameters: new Dictionary<string, object?> {
+                    [nameof(OperationSuccessModal.Title)] = "Ban Successfully",
+                    [nameof(OperationSuccessModal.Body)] = _banSuccessfullyBody,
+                });
+            } else {
+                ModalService.Open<OperationFailureModal>(parameters: new Dictionary<string, object?> {
+                    [nameof(OperationFailureModal.Title)] = "Ban Failed",
+                    [nameof(OperationSuccessModal.Body)] = _banFailureBody,
+                });
+            }
+        }
     }
 
     private readonly record struct CommunityDisplayDTO(Guid CommunityId, string Name, string? AvatarPath);
 
     private readonly record struct UserExtraInformation(int WarnCount);
-
 }

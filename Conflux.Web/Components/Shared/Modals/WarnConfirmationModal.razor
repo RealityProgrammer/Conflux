@@ -45,7 +45,7 @@
 </div>
 
 @code {
-    [Parameter, EditorRequired] public EventCallback<string> OnConfirm { get; set; }
+    [Parameter, EditorRequired] public EventCallback<string?> OnConfirm { get; set; }
 
     [SupplyParameterFromForm] private InputModel? Model { get; set; }
     private EditContext? _editContext;
