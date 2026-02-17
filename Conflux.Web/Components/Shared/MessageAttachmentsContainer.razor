@@ -55,13 +55,13 @@
     
     @if (_currentPreviewingAttachmentIndex > 0) {
         <button class="fixed left-4 top-1/2 -translate-y-1/2 bg-gray-750 p-2.5! z-202 rounded-lg group cursor-pointer border border-gray-600" @onclick="ToPreviousAttachment">
-            <Arrow Direction="ArrowDirection.Left" class="size-6 fill-gray-300 group-hover:fill-white"/>
+            <Arrow Variations="ArrowVariations.Left" class="size-6 fill-gray-300 group-hover:fill-white"/>
         </button>
     }
 
     @if (_currentPreviewingAttachmentIndex < _attachmentCacheStates.Count - 1) {
         <button class="fixed right-4 top-1/2 -translate-y-1/2 bg-gray-750 p-2.5! z-202 rounded-lg group cursor-pointer border border-gray-600" @onclick="ToNextAttachment">
-            <Arrow Direction="ArrowDirection.Right" class="size-6 fill-gray-300 group-hover:fill-white"/>
+            <Arrow Variations="ArrowVariations.Right" class="size-6 fill-gray-300 group-hover:fill-white"/>
         </button>
     }
 

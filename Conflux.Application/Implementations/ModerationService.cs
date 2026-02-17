@@ -49,13 +49,17 @@ public class ModerationService(
         return false;
     }
 
-    public async Task<(int TotalCount, List<UserDisplayDTO> Page)> PaginateReportedUsersAsync(int startIndex, int count) {
+    public async Task<(int TotalCount, List<UserDisplayDTO> Page)> PaginateReportedUsersAsync(Func<IQueryable<MessageReport>, IQueryable<MessageReport>> filterQueryProvider, int startIndex, int count) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
-        var reportedUserIds = dbContext.MessageReports
-            .Include(r => r.Message)
-            .ThenInclude(m => m.Conversation)
+        var reportedUserIds = filterQueryProvider(
+                dbContext.MessageReports
+                    .Include(r => r.Message)
+                    .ThenInclude(m => m.Conversation)
+                    .Include(r => r.Message)
+                    .ThenInclude(m => m.Sender)
+            )
             .Where(r => r.Message.Conversation.CommunityChannelId == null)
             .Select(r => r.Message.SenderUserId)
             .Distinct();

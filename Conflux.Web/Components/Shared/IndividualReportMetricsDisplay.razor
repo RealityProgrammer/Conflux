@@ -1,0 +1,47 @@
+﻿@using Conflux.Application.Dto
+
+<div class="mt-2 grid grid-cols-2 md:grid-cols-3 gap-2">
+    <Card class="border border-gray-600 shadow-md">
+        <CardContent class="flex flex-row justify-between items-center px-2!">
+            <p>Report Count</p>
+                                                
+            <p>@Stats.TotalReportCount</p>
+        </CardContent>
+    </Card>
+                                        
+    <Card class="border border-gray-600 shadow-md">
+        <CardContent class="flex flex-row justify-between items-center px-2!">
+            <p>Resolved Count</p>
+                                                
+            <p>@Stats.ResolvedReportCount</p>
+        </CardContent>
+    </Card>
+                                            
+    <Card class="border border-gray-600 shadow-md">
+        <CardContent class="flex flex-row justify-between items-center px-2!">
+            <p>Resolved Percentage</p>
+                                                    
+            <p>@((Stats.TotalReportCount == 0 ? 0 : Stats.ResolvedReportCount / Stats.TotalReportCount).ToString("P2"))</p>
+        </CardContent>
+    </Card>
+                                        
+    <Card class="border border-gray-600 shadow-md">
+        <CardContent class="flex flex-row justify-between items-center px-2!">
+            <p>Warn Count</p>
+                                                    
+            <p>@Stats.WarnCount</p>
+        </CardContent>
+    </Card>
+                                        
+    <Card class="border border-gray-600 shadow-md">
+        <CardContent class="flex flex-row justify-between items-center px-2!">
+            <p>Ban Count</p>
+                                                    
+            <p>@Stats.BanCount</p>
+        </CardContent>
+    </Card>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public required UserReportStatistics Stats { get; set; }
+}

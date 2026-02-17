@@ -137,47 +137,7 @@
                                 <section class="mt-2">
                                     <h2 class="text-xl font-semibold">Metrics</h2>
                                     
-                                    <div class="mt-2 grid grid-cols-2 md:grid-cols-3 gap-2">
-                                        <Card class="border border-gray-600 shadow-md">
-                                            <CardContent class="flex flex-row justify-between items-center px-2!">
-                                                <p>Report Count</p>
-                                                
-                                                <p>@memberStats.TotalReportCount</p>
-                                            </CardContent>
-                                        </Card>
-                                        
-                                        <Card class="border border-gray-600 shadow-md">
-                                            <CardContent class="flex flex-row justify-between items-center px-2!">
-                                                <p>Resolved Count</p>
-                                                
-                                                <p>@memberStats.ResolvedReportCount</p>
-                                            </CardContent>
-                                        </Card>
-                                            
-                                        <Card class="border border-gray-600 shadow-md">
-                                            <CardContent class="flex flex-row justify-between items-center px-2!">
-                                                <p>Resolved Percentage</p>
-                                                    
-                                                <p>@((memberStats.ResolvedReportCount / memberStats.TotalReportCount).ToString("P2"))</p>
-                                            </CardContent>
-                                        </Card>
-                                        
-                                        <Card class="border border-gray-600 shadow-md">
-                                            <CardContent class="flex flex-row justify-between items-center px-2!">
-                                                <p>Warn Count</p>
-                                                    
-                                                <p>@memberStats.WarnCount</p>
-                                            </CardContent>
-                                        </Card>
-                                        
-                                        <Card class="border border-gray-600 shadow-md">
-                                            <CardContent class="flex flex-row justify-between items-center px-2!">
-                                                <p>Ban Count</p>
-                                                    
-                                                <p>@memberStats.BanCount</p>
-                                            </CardContent>
-                                        </Card>
-                                    </div>
+                                    <IndividualReportMetricsDisplay Stats="memberStats"/>
                                 </section>
                                 
                                 <div class="mt-4 flex flex-row justify-center items-center">

@@ -4,6 +4,7 @@
 @using Conflux.Web.Components.Shared.Modals
 @using Conflux.Web.Helpers
 @using Conflux.Web.Services.Implementations
+@using Microsoft.EntityFrameworkCore
 @using System.Security.Claims
 
 @inject IStatisticsService StatisticsService
@@ -81,20 +82,26 @@
     <section class="h-64 lg:h-full flex flex-col gap-1 overflow-y-hidden">
         <h3 class="flex-none">Reported Users</h3>
         
-        <div class="flex-1 border border-gray-600 rounded-md bg-gray-725 p-1 overflow-y-auto scrollbar-hide h-full overscroll-y-auto">
-            <Virtualize ItemsProvider="ReportedUsersProvider">
-                <ItemContent Context="item">
-                    @{ string cssClass = item.UserId == _selectedReportedUserId ? "h-10 bg-white/8" : "h-10"; }
+        <div class="flex-1 border border-gray-600 rounded-md bg-gray-725 px-1 py-1 overflow-y-hidden flex flex-col">
+            <SearchField @bind-Value="_reportedUserSearchName" @bind-Value:after="StartSearchReportedUserDebouncer" class="h-10 flex-none"/>
             
-                    <UserCard UserId="item.UserId"
-                              MemberId="@null"
-                              DisplayName="@item.DisplayName"
-                              UserName="@item.UserName"
-                              AvatarSrc="@(string.IsNullOrEmpty(item.AvatarPath) ? null : ContentService.GetAssetPath(item.AvatarPath))"
-                              class="@cssClass"
-                              OnClick="() => SelectReportedUser(item.UserId)"/>
-                </ItemContent>
-            </Virtualize>
+            <hr class="border-t border-t-gray-600 my-1.5 flex-none"/>
+            
+            <div class="flex-1 overflow-y-auto scrollbar-hide overscroll-y-auto">
+                <Virtualize @ref="_reportedUsersVirtualizer" ItemsProvider="ReportedUsersProvider">
+                    <ItemContent Context="item">
+                        @{ string cssClass = item.UserId == _selectedReportedUserId ? "h-10 bg-white/8" : "h-10"; }
+                
+                        <UserCard UserId="item.UserId"
+                                  MemberId="@null"
+                                  DisplayName="@item.DisplayName"
+                                  UserName="@item.UserName"
+                                  AvatarSrc="@(string.IsNullOrEmpty(item.AvatarPath) ? null : ContentService.GetAssetPath(item.AvatarPath))"
+                                  class="@cssClass"
+                                  OnClick="() => SelectReportedUser(item.UserId)"/>
+                    </ItemContent>
+                </Virtualize>
+            </div>
         </div>
     </section>
     
@@ -113,47 +120,7 @@
                     <section class="mt-2">
                         <h2 class="text-xl font-semibold">Metrics</h2>
                         
-                        <div class="mt-2 grid grid-cols-2 md:grid-cols-3 gap-2">
-                            <Card class="border border-gray-600 shadow-md">
-                                <CardContent class="flex flex-row justify-between items-center px-2!">
-                                    <p>Report Count</p>
-                                    
-                                    <p>@userReportStatistics.TotalReportCount</p>
-                                </CardContent>
-                            </Card>
-                            
-                            <Card class="border border-gray-600 shadow-md">
-                                <CardContent class="flex flex-row justify-between items-center px-2!">
-                                    <p>Resolved Count</p>
-                                    
-                                    <p>@userReportStatistics.ResolvedReportCount</p>
-                                </CardContent>
-                            </Card>
-                                
-                            <Card class="border border-gray-600 shadow-md">
-                                <CardContent class="flex flex-row justify-between items-center px-2!">
-                                    <p>Resolved Percentage</p>
-                                        
-                                    <p>@((userReportStatistics.TotalReportCount == 0 ? 0 : userReportStatistics.ResolvedReportCount / userReportStatistics.TotalReportCount).ToString("P2"))</p>
-                                </CardContent>
-                            </Card>
-                            
-                            <Card class="border border-gray-600 shadow-md">
-                                <CardContent class="flex flex-row justify-between items-center px-2!">
-                                    <p>Warn Count</p>
-                                                    
-                                    <p>@userReportStatistics.WarnCount</p>
-                                </CardContent>
-                            </Card>
-                            
-                            <Card class="border border-gray-600 shadow-md">
-                                <CardContent class="flex flex-row justify-between items-center px-2!">
-                                    <p>Ban Count</p>
-                                                    
-                                    <p>@userReportStatistics.BanCount</p>
-                                </CardContent>
-                            </Card>
-                        </div>
+                        <IndividualReportMetricsDisplay Stats="userReportStatistics"/>
                     </section>
                     
                     <div class="mt-4 flex flex-row justify-center items-center" @onclick="EventUtils.AsNonRenderingEventHandler(OpenReportManagementModal)">
@@ -179,6 +146,10 @@
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
     private Guid _userId;
 
+    private string _reportedUserSearchName = string.Empty;
+    private Virtualize<UserDisplayDTO> _reportedUsersVirtualizer = null!;
+    private Debouncer _reportedUserSearchDebouncer = null!;
+
     protected override async Task OnParametersSetAsync() {
         var authState = await AuthenticationState;
         _userId = Guid.Parse(authState.User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -186,6 +157,8 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
+            _reportedUserSearchDebouncer = new(OnDebounceEnd, TimeSpan.FromMilliseconds(250));
+            
             _reportStatistics = await StatisticsService.GetReportStatistics();
             _isLoading = false;
 
@@ -193,8 +166,33 @@
         }
     }
 
+    private async Task StartSearchReportedUserDebouncer() {
+        await _reportedUserSearchDebouncer.Start();
+    }
+
+    private async Task OnDebounceEnd(CancellationToken token) {
+        await InvokeAsync(async () => {
+            await _reportedUsersVirtualizer.RefreshDataAsync();
+            StateHasChanged();
+        });
+    }
+
     private async ValueTask<ItemsProviderResult<UserDisplayDTO>> ReportedUsersProvider(ItemsProviderRequest request) {
-        (var count, var page) = await ModerationService.PaginateReportedUsersAsync(request.StartIndex, request.Count);
+        (var count, var page) = await ModerationService.PaginateReportedUsersAsync(
+            query => {
+                if (string.IsNullOrEmpty(_reportedUserSearchName)) {
+                    return query;
+                }
+
+                string namePattern = $"%{_reportedUserSearchName}%";
+                
+                return query.Where(r => 
+                    EF.Functions.ILike(r.Message.Sender.DisplayName, namePattern) || EF.Functions.ILike(r.Message.Sender.UserName!, namePattern)
+                );
+            },
+            request.StartIndex,
+            request.Count
+        );
 
         return new(page, count);
     }

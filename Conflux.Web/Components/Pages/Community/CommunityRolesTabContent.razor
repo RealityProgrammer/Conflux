@@ -67,7 +67,7 @@
                                 </Popover>
                             }
 
-                            <ProcessingStateButton @bind-IsProcessing="_isCreatingRole" class="button-primary w-20 px-2" ProcessingCssClass="flex flex-row justify-center" @onclick="HandleCreateRole">
+                            <ProcessingStateButton @bind-IsProcessing="_isCreatingRole" class="button-primary w-20 p-2!" ProcessingCssClass="flex flex-row justify-center" @onclick="HandleCreateRole">
                                 <ChildContent>
                                     Create
                                 </ChildContent>
@@ -213,35 +213,37 @@
                 <ChildContent>
                     <div class="mt-2 flex flex-col md:flex-row gap-2">
                         <section class="flex-1">
-                            <p>Members with Role:</p>
+                            <p>Members with Role</p>
 
                             <div class="mt-1 border border-gray-600 bg-gray-725 shadow-md rounded-lg h-128 p-1 overflow-y-auto scrollbar-hide flex flex-col">
                                 <Virtualize ItemsProvider="RoleMembersProvider" @ref="_roleMembersVirtualizeReference">
                                     <ItemContent Context="item">
                                         @{
                                             bool isBeingRemoved = Model!.RemoveRoles.Contains(item.MemberId);
-                                            string backgroundCssClass = isBeingRemoved ? "bg-red-500/45 hover:bg-[#BA4659]" : "bg-transparent hover:bg-white/8";
+                                            string cardCssClass = isBeingRemoved ? "h-12 bg-red-500/50 hover:bg-red-500/41!" : "h-12";
                                         }
-
-                                        <div class="p-1 flex flex-row items-center rounded-md @backgroundCssClass">
-                                            <Avatar ImageSrc="@(string.IsNullOrEmpty(item.UserDisplay.AvatarPath) ? null : ContentService.GetAssetPath(item.UserDisplay.AvatarPath))" ImageAlt="@($"Avatar of {item.UserDisplay.DisplayName}")" class="size-9 mr-1"/>
-
-                                            <p class="flex-1">@item.UserDisplay.DisplayName</p>
-
-                                            <AuthorizeView Policy="UpdateCommunityMemberRole" Resource="rolePermissions">
-                                                <Authorized>
-                                                    @if (isBeingRemoved) {
-                                                        <button type="button" class="p-1.5 bg-transparent hover:bg-white/15 rounded-full cursor-pointer" @onclick="@(_ => UndoMemberRoleRemove(item.MemberId))">
-                                                            <Cross class="size-4 fill-white" Size="CrossSize.Large"/>
-                                                        </button>
-                                                    } else {
-                                                        <button type="button" class="p-1.5 bg-transparent hover:bg-white/15 rounded-full cursor-pointer" @onclick="@(_ => ApplyMemberRoleRemove(item.MemberId))">
-                                                            <Cross class="size-4 fill-white" Size="CrossSize.Large"/>
-                                                        </button>
-                                                    }
-                                                </Authorized>
-                                            </AuthorizeView>
-                                        </div>
+                                        
+                                        <UserCard UserId="@item.UserDisplay.UserId"
+                                                  DisplayName="@item.UserDisplay.DisplayName"
+                                                  UserName="@item.UserDisplay.UserName"
+                                                  AvatarSrc="@(string.IsNullOrEmpty(item.UserDisplay.AvatarPath) ? null : ContentService.GetAssetPath(item.UserDisplay.AvatarPath))"
+                                                  class="@cardCssClass">
+                                            <RightContent>
+                                                <AuthorizeView Policy="UpdateCommunityMemberRole" Resource="rolePermissions">
+                                                    <Authorized>
+                                                        @if (isBeingRemoved) {
+                                                            <button type="button" class="group cursor-pointer mr-2" @onclick="@(_ => UndoMemberRoleRemove(item.MemberId))" @onclick:stopPropagation="true">
+                                                                <Arrow Variations="ArrowVariations.Repeat" class="size-4 fill-gray-300 group-hover:fill-white"/>
+                                                            </button>
+                                                        } else {
+                                                            <button type="button" class="group cursor-pointer mr-2" @onclick="@(_ => ApplyMemberRoleRemove(item.MemberId))" @onclick:stopPropagation="true">
+                                                                <Cross class="size-4 fill-gray-300 group-hover:fill-white" Size="CrossSize.Large"/>
+                                                            </button>
+                                                        }
+                                                    </Authorized>
+                                                </AuthorizeView>
+                                            </RightContent>
+                                        </UserCard>
                                     </ItemContent>
 
                                     <EmptyContent>
@@ -256,13 +258,13 @@
                         <AuthorizeView Policy="UpdateCommunityMemberRole" Resource="rolePermissions">
                             <Authorized>
                                 <section class="flex-1">
-                                    <p>Appending members:</p>
+                                    <p>Appending members</p>
 
                                     <div class="mt-1 border border-gray-600 bg-gray-725 shadow-md rounded-lg h-128 p-1 pt-0 flex flex-col">
                                         <header class="flex-none flex flex-row items-center mt-1">
-                                            <SearchField @bind-Value="_roleMembersSearchString" class="mr-1 h-10"/>
+                                            <SearchField @bind-Value="_roleMembersSearchString" class="flex-1 mr-1 h-10"/>
 
-                                            <button type="button" class="button-primary flex-none" @onclick="HandleOpenAddMemberDialog">
+                                            <button type="button" class="button-primary flex-none py-2!" @onclick="HandleOpenAddMemberDialog">
                                                 Add Member
                                             </button>
                                         </header>
@@ -270,15 +272,17 @@
                                         <div class="mt-1 overflow-y-auto scrollbar-hide">
                                             <Virtualize ItemsProvider="AddingMembersItemProvider" @ref="_addingMembersVirtualizeReference">
                                                 <ItemContent Context="item">
-                                                    <div class="p-1 flex flex-row items-center rounded-md">
-                                                        <Avatar ImageSrc="@(string.IsNullOrEmpty(item.UserDisplay.AvatarPath) ? null : ContentService.GetAssetPath(item.UserDisplay.AvatarPath))" ImageAlt="@($"Avatar of {item.UserDisplay.DisplayName}")" class="size-9 mr-1"/>
-
-                                                        <p class="flex-1">@item.UserDisplay.DisplayName</p>
-
-                                                        <button type="button" class="p-1.5 bg-transparent hover:bg-white/15 rounded-full cursor-pointer" @onclick="@(_ => RemoveFromAppendingCollection(item.MemberId))">
-                                                            <Cross class="flex-none size-4 fill-white" Size="CrossSize.Large"/>
-                                                        </button>
-                                                    </div>
+                                                    <UserCard UserId="@item.UserDisplay.UserId"
+                                                              DisplayName="@item.UserDisplay.DisplayName"
+                                                              UserName="@item.UserDisplay.UserName"
+                                                              AvatarSrc="@(string.IsNullOrEmpty(item.UserDisplay.AvatarPath) ? null : ContentService.GetAssetPath(item.UserDisplay.AvatarPath))"
+                                                              class="h-12">
+                                                        <RightContent>
+                                                            <button type="button" class="group cursor-pointer mr-2" @onclick="@(_ => RemoveFromAppendingCollection(item.MemberId))" @onclick:stopPropagation="true">
+                                                                <Cross class="size-4 fill-gray-300 group-hover:fill-white" Size="CrossSize.Large"/>
+                                                            </button>
+                                                        </RightContent>
+                                                    </UserCard>
                                                 </ItemContent>
                                             </Virtualize>
                                         </div>
@@ -653,6 +657,10 @@
         if (Model!.AddRoles.Remove(memberId)) {
             if (_addingMembersVirtualizeReference != null) {
                 await _addingMembersVirtualizeReference.RefreshDataAsync();
+            }
+            
+            if (Model.AddRoles.Count == 0) {
+                _editContext.MarkAsUnmodified(_addRolesField);
             }
         }
     }

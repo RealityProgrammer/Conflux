@@ -17,18 +17,22 @@
             <CardHeader Title="Add Member" Subtext="Authorize somebody to be in charge while you're gone." OnCloseRequested="closeDelegate"/>
 
             <CardContent class="flex flex-col">
-                <SearchField @bind-Value="_nameSearch" @bind-Value:after="HandleSearch" class="flex-none mt-1 h-10"/>
+                <SearchField @bind-Value="_nameSearch" @bind-Value:after="HandleSearchDebouncer" class="flex-none mt-1 h-10"/>
 
                 <section class="flex-1 h-full border border-gray-600 rounded-md mt-1 overflow-y-auto scrollbar-hide p-1">
                     <Virtualize @ref="_virtualize" ItemsProvider="MemberSearchProvider">
                         <ItemContent Context="item">
-                            <label class="p-1.5 flex flex-row items-center bg-transparent hover:bg-white/8 rounded-md active:scale-95 transition-transform duration-200 ease-in-out pointer-events-auto group">
-                                <Avatar ImageSrc="@(string.IsNullOrEmpty(item.UserDisplay.AvatarPath) ? null : ContentService.GetAssetPath(item.UserDisplay.AvatarPath))" ImageAlt="@($"Avatar of {item.UserDisplay.DisplayName}")" class="size-9 mr-1"/>
-
-                                <p class="flex-1">@item.UserDisplay.DisplayName</p>
-
-                                <Check class="flex-none size-5 fill-white hidden group-has-checked:block" Variation="CheckVariation.Large"/>
-
+                            <label class="group">
+                                <UserCard UserId="@item.UserDisplay.UserId"
+                                          DisplayName="@item.UserDisplay.DisplayName"
+                                          UserName="@item.UserDisplay.UserName"
+                                          AvatarSrc="@(string.IsNullOrEmpty(item.UserDisplay.AvatarPath) ? null : ContentService.GetAssetPath(item.UserDisplay.AvatarPath))"
+                                          class="h-10 active:scale-95 transition-transform duration-200 ease-in-out pointer-events-auto">
+                                    <RightContent>
+                                        <Check class="flex-none size-5 fill-white hidden group-has-checked:block mr-2" Variation="CheckVariation.Large"/>
+                                    </RightContent>
+                                </UserCard>
+                                
                                 <input type="checkbox" class="hidden peer" @bind:get="Model!.IsMemberAdded(item.MemberId)" @bind:set="@(value => Model.SetMemberAdded(item.MemberId, value))">
                             </label>
                         </ItemContent>
@@ -43,8 +47,8 @@
             </CardContent>
             
             <CardFooter class="flex flex-row justify-end gap-2">
-                <button type="button" class="button-danger w-24" @onclick="closeDelegate">Cancel</button>
-                <button type="submit" class="button-primary w-24">Apply</button>
+                <button type="button" class="button-danger w-24 py-2!" @onclick="closeDelegate">Cancel</button>
+                <button type="submit" class="button-primary w-24 py-2!">Apply</button>
             </CardFooter>
         </Card>
     </EditForm>
@@ -61,6 +65,8 @@
 
     private Virtualize<MemberDisplayDTO> _virtualize = null!;
 
+    private Debouncer _searchDebouncer = null!;
+
     protected override void OnInitialized() {
         Model ??= new();
     }
@@ -71,12 +77,26 @@
         }
     }
 
-    private async Task HandleSearch() {
-        await _virtualize.RefreshDataAsync();
+    protected override void OnAfterRender(bool firstRender) {
+        if (firstRender) {
+            _searchDebouncer = new(OnDebouncerEnd, TimeSpan.FromMilliseconds(250));
+        }
+    }
+
+    private async Task HandleSearchDebouncer() {
+        await _searchDebouncer.Start();
+    }
+
+    private async Task OnDebouncerEnd(CancellationToken cancellationToken) {
+        await InvokeAsync(async () => {
+            await _virtualize.RefreshDataAsync();
+            StateHasChanged();
+        });
     }
 
     private async ValueTask<ItemsProviderResult<MemberDisplayDTO>> MemberSearchProvider(ItemsProviderRequest request) {
         await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
         
         var query = dbContext.CommunityMembers
             .Where(x => x.CommunityId == CommunityId && x.RoleId == null);

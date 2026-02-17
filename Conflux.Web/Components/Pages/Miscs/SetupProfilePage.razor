@@ -39,7 +39,7 @@
                     <button class="button-primary inline-flex flex-row items-center" @onclick="HidePrompt">
                         Show me the way
 
-                        <Arrow Direction="ArrowDirection.Right" class="ml-2 size-6 fill-white"/>
+                        <Arrow Variations="ArrowVariations.Right" class="ml-2 size-6 fill-white"/>
                     </button>
                 </div>
             </section>
@@ -72,7 +72,7 @@
                     <div class="flex flex-row justify-center">
                         <ProcessingStateButton @bind-IsProcessing="_processingAvatar" class="mt-2 button-primary inline-flex flex-row items-center" type="submit">
                             <ChildContent>
-                                Next <Arrow Direction="ArrowDirection.Right" class="ml-2 size-6 fill-white"/>
+                                Next <Arrow Variations="ArrowVariations.Right" class="ml-2 size-6 fill-white"/>
                             </ChildContent>
                             
                             <ProcessingContent>
@@ -156,7 +156,7 @@
 
                 <div class="flex flex-row justify-around items-center flex-none">
                     <button class="mt-2 button-primary inline-flex flex-row justify-center items-center gap-2 w-36" @onclick="ToSetupAvatar">
-                        <Arrow Direction="ArrowDirection.Left" class="size-6 fill-white"/>
+                        <Arrow Variations="ArrowVariations.Left" class="size-6 fill-white"/>
 
                         Previous
                     </button>
@@ -164,7 +164,7 @@
                     <SpinnerButton @bind-IsSpinning="_isProcessingProfile" type="submit" class="mt-2 button-primary inline-flex flex-row justify-center items-center gap-2 w-36" @onclick="HandleProfileSubmit" SpinnerCssClass="size-6 fill-white">
                         Next
 
-                        <Arrow Direction="ArrowDirection.Right" class="size-6 fill-white"/>
+                        <Arrow Variations="ArrowVariations.Right" class="size-6 fill-white"/>
                     </SpinnerButton>
                 </div>
             </section>

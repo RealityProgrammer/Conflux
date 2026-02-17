@@ -15,7 +15,7 @@ public interface IModerationService {
     Task<ReportDisplayDTO?> GetReportDisplayAsync(Guid reportId);
     Task<ModerationRecordDisplayDTO?> GetModerationRecordDisplayAsync(Guid recordId);
 
-    Task<(int TotalCount, List<UserDisplayDTO> Page)> PaginateReportedUsersAsync(int startIndex, int count);
+    Task<(int TotalCount, List<UserDisplayDTO> Page)> PaginateReportedUsersAsync(Func<IQueryable<MessageReport>, IQueryable<MessageReport>> filterQueryProvider, int startIndex, int count);
     Task<(int TotalCount, List<Guid>)> PaginateUserReportedMessageIdsAsync(Guid userId, int startIndex, int count);
     Task<(int TotalCount, List<Guid>)> PaginateReportIdsAsync(Guid messageId, int startIndex, int count);
     
