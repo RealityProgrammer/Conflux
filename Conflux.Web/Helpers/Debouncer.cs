@@ -7,19 +7,18 @@ public sealed class Debouncer(Func<CancellationToken, Task> callback, TimeSpan d
 
     public async Task Start() {
         try {
-            if (_cts != null) {
-                await _cts.CancelAsync();
-                _cts.Dispose();
+            var newCancellationToken = new CancellationTokenSource();
+            var oldCts = Interlocked.Exchange(ref _cts, newCancellationToken);
+
+            if (oldCts != null) {
+                await oldCts.CancelAsync();
+                oldCts.Dispose();
             }
 
-            _cts = new();
-            await Task.Delay(delay, _cts.Token);
-            await callback(_cts.Token);
-            
-            await _cts.CancelAsync();
-            _cts.Dispose();
-            _cts = null;
+            await Task.Delay(delay, newCancellationToken.Token);
+            await callback(newCancellationToken.Token);
         } catch (TaskCanceledException) {
+        } catch (OperationCanceledException) {
         }
     }
 
@@ -37,10 +36,10 @@ public sealed class Debouncer(Func<CancellationToken, Task> callback, TimeSpan d
 
     private void Dispose(bool disposing) {
         if (disposing) {
-            if (_cts != null) {
-                _cts.Cancel();
-                _cts.Dispose();
-                _cts = null;
+            var activeCts = Interlocked.Exchange(ref _cts, null);
+            if (activeCts != null) {
+                activeCts.Cancel();
+                activeCts.Dispose();
             }
         }
     }
@@ -50,11 +49,10 @@ public sealed class Debouncer(Func<CancellationToken, Task> callback, TimeSpan d
     }
 
     private async ValueTask DisposeAsyncCore() {
-        if (_cts != null) {
-            await _cts.CancelAsync();
-            _cts.Dispose();
-
-            _cts = null;
+        var activeCts = Interlocked.Exchange(ref _cts, null);
+        if (activeCts != null) {
+            await activeCts.CancelAsync();
+            activeCts.Dispose();
         }
     }
 }
