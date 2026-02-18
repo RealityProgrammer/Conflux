@@ -28,10 +28,12 @@
             break;
     
         case InitializationStatus.Success:
-            <div class="flex flex-row items-center justify-center @(_loadingTop ? "block" : "hidden")">
-                <Spinner class="size-6 fill-white"/>
-            </div>
-    
+            if (_loadingTop) {
+                <div class="flex flex-row items-center justify-center">
+                    <Spinner class="size-6 fill-white"/>
+                </div>
+            }
+
             for (int i = 0, c = _visibleMessages.Count; i < c;) {
                 IConversationService.RenderingMessageDTO message = _visibleMessages[i];
     
@@ -154,10 +156,12 @@
                 </div>
             }
     
-            <div class="flex flex-row items-center justify-center @(_loadingBottom ? "block" : "hidden")">
-                <Spinner class="size-6 fill-white"/>
-            </div>
-            
+            @if (_loadingBottom) {
+                <div class="flex flex-row items-center justify-center">
+                    <Spinner class="size-6 fill-white"/>
+                </div>
+            }
+
             <Popover TargetReference="_extraActionTargetElement"
                      @bind-IsShowing:get="_showExtraActionPopover"
                      @bind-IsShowing:set="SetIsShowingExtraActionPopover"
@@ -329,6 +333,8 @@
             
             await LoadInitialMessages();
             _initStatus = InitializationStatus.Success;
+
+            _previousConversationId = ConversationId;
         }
     }
 
