@@ -1,4 +1,5 @@
 ﻿using Conflux.Application.Dto;
+using Conflux.Domain;
 using Conflux.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
@@ -21,6 +22,7 @@ public interface IUserService {
     Task<IList<string>> GetRolesAsync(Guid userId);
     
     Task<UserDisplayDTO?> GetUserDisplayAsync(Guid userId);
+    Task<UserDisplayDTO?> GetUserDisplayAsync(ApplicationDbContext dbContext, Guid userId);
     
     Task<UserBanState?> GetBanStateAsync(Guid userId);
     Task<UserBanDetails?> GetLatestBanDetails(Guid userId);

@@ -77,7 +77,11 @@ public class UserService(
     public async Task<UserDisplayDTO?> GetUserDisplayAsync(Guid userId) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-        
+
+        return await GetUserDisplayAsync(dbContext, userId);
+    }
+
+    public async Task<UserDisplayDTO?> GetUserDisplayAsync(ApplicationDbContext dbContext, Guid userId) {
         return await dbContext.Users
             .Where(u => u.Id == userId)
             .Select(u => new UserDisplayDTO(u.Id, u.DisplayName, u.UserName, u.AvatarProfilePath))

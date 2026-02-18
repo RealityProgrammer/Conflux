@@ -14,6 +14,8 @@
 @inject IContentService ContentService
 @inject ModalService ModalService
 @inject IModerationService ModerationService
+@inject IUserService UserService
+@inject ILogger<MessageTimeline> Logger
 
 @implements IDisposable
 
@@ -310,7 +312,13 @@
     private IJSObjectReference? _module;
     private DotNetObjectReference<MessageTimeline>? _objectReference;
 
-    protected override void OnParametersSet() {
+    protected override async Task OnParametersSetAsync() {
+        if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
+            _cssClass = Convert.ToString(obj);
+        }
+
+        AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "class").ToDictionary();
+        
         if (_previousConversationId != ConversationId) {
             _initStatus = InitializationStatus.Loading;
 
@@ -318,13 +326,10 @@
 
             _visibleMessages.Clear();
             _replyMessages.Clear();
+            
+            await LoadInitialMessages();
+            _initStatus = InitializationStatus.Success;
         }
-
-        if (AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out object? obj)) {
-            _cssClass = Convert.ToString(obj);
-        }
-
-        AdditionalAttributes = AdditionalAttributes?.Where(x => x.Key is not "class").ToDictionary();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
@@ -337,62 +342,51 @@
             ConversationEventDispatcher.OnMessageReceived += OnMessageReceived;
             ConversationEventDispatcher.OnMessageDeleted += OnMessageDeleted;
             ConversationEventDispatcher.OnMessageEdited += OnMessageEdited;
-        } else {
-            if (_module != null) {
-                if (_jumpToBottom) {
-                    _jumpToBottom = false;
-
-                    await _module.InvokeVoidAsync("scrollToBottom", _scrollContainer);
-                }
-
-                if (_savedScrollPositionForTop != null) {
-                    await _module.InvokeVoidAsync("restoreScrollPositionForTop", _scrollContainer, _savedScrollPositionForTop);
-                    _savedScrollPositionForTop = null;
-                }
-
-                if (_savedScrollPositionForBottom != null) {
-                    await _module.InvokeVoidAsync("restoreScrollPositionForBottom", _scrollContainer, _savedScrollPositionForBottom);
-                    _savedScrollPositionForBottom = null;
-                }
-            }
-
-            if (_focusOnEditTextArea && _editTextArea != null) {
-                await _editTextArea.Element!.Value.FocusAsync();
-            }
             
-            _focusOnEditTextArea = false;
+            StateHasChanged();
         }
         
-        if (_previousConversationId != ConversationId) {
-            _previousConversationId = ConversationId;
+        if (_module != null) {
+            if (_jumpToBottom) {
+                _jumpToBottom = false;
+
+                await _module.InvokeVoidAsync("scrollToBottom", _scrollContainer);
+            }
             
-            await LoadInitialMessages();
-            _initStatus = InitializationStatus.Success;
-            StateHasChanged();
+            if (_savedScrollPositionForTop != null) {
+                await _module.InvokeVoidAsync("restoreScrollPositionForTop", _scrollContainer, _savedScrollPositionForTop);
+                _savedScrollPositionForTop = null;
+            }
+
+            if (_savedScrollPositionForBottom != null) {
+                await _module.InvokeVoidAsync("restoreScrollPositionForBottom", _scrollContainer, _savedScrollPositionForBottom);
+                _savedScrollPositionForBottom = null;
+            }
+        }
+
+        if (_focusOnEditTextArea && _editTextArea != null) {
+            await _editTextArea.Element!.Value.FocusAsync();
+            _focusOnEditTextArea = false;
         }
     }
     
     private async Task LoadInitialMessages() {
-        await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
-            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+        IConversationService.RenderingMessages messages =
+            await ConversationService.LoadMessagesBeforeTimestampAsync(ConversationId, DateTime.MaxValue, LoadCount);
 
-            IConversationService.RenderingMessages messages =
-                await ConversationService.LoadMessagesBeforeTimestampAsync(ConversationId, DateTime.MaxValue, LoadCount);
+        _visibleMessages.AddRange(messages.VisibleMessages);
 
-            _visibleMessages.AddRange(messages.VisibleMessages);
+        foreach (var replyMessage in messages.RepliedMessages) {
+            _replyMessages.TryAdd(replyMessage.MessageId, replyMessage);
+        }
 
-            foreach (var replyMessage in messages.RepliedMessages) {
-                _replyMessages.TryAdd(replyMessage.MessageId, replyMessage);
-            }
+        _endBottom = _jumpToBottom = true;
 
-            _endBottom = _jumpToBottom = true;
-
-            if (messages.VisibleMessages.Count > 0) {
-                _endTop = false;
-                _topLoadTimestamp = messages.VisibleMessages[0].CreatedAt;
-            } else {
-                _endTop = true;
-            }
+        if (messages.VisibleMessages.Count > 0) {
+            _endTop = false;
+            _topLoadTimestamp = messages.VisibleMessages[0].CreatedAt;
+        } else {
+            _endTop = true;
         }
     }
 
@@ -659,26 +653,31 @@
                 return;
             }
 
-            await using var dbContext = await DbContextFactory.CreateDbContextAsync();
-            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+            Guid memberId;
 
-            var nullableMemberId = await dbContext.Conversations
-                .Where(c => c.Id == ConversationId && c.CommunityChannelId != null)
-                .Include(c => c.CommunityChannel!)
-                .ThenInclude(c => c.ChannelCategory)
-                .Join(
-                    dbContext.CommunityMembers.Where(r => r.UserId == _extraActionTargetMessage.SenderUserId),
-                    conversation => conversation.CommunityChannel!.ChannelCategory.CommunityId,
-                    member => member.CommunityId,
-                    (conversation, member) => member.Id
-                )
-                .Cast<Guid?>()
-                .FirstOrDefaultAsync();
+            await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
+                dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
-            if (nullableMemberId is not { } memberId) {
-                return;
+                var nullableMemberId = await dbContext.Conversations
+                    .Where(c => c.Id == ConversationId && c.CommunityChannelId != null)
+                    .Include(c => c.CommunityChannel!)
+                    .ThenInclude(c => c.ChannelCategory)
+                    .Join(
+                        dbContext.CommunityMembers.Where(r => r.UserId == _extraActionTargetMessage.SenderUserId),
+                        conversation => conversation.CommunityChannel!.ChannelCategory.CommunityId,
+                        member => member.CommunityId,
+                        (conversation, member) => member.Id
+                    )
+                    .Cast<Guid?>()
+                    .FirstOrDefaultAsync();
+
+                if (!nullableMemberId.HasValue) {
+                    return;
+                }
+
+                memberId = nullableMemberId.Value;
             }
-            
+
             bool success = await ModerationService.BanMemberAsync(memberId, UserId, info.Duration, info.Reason);
             if (success) {
                 ModalService.Open<OperationSuccessModal>(parameters: new Dictionary<string, object?> {
@@ -707,9 +706,6 @@
                 return;
             }
 
-            await using var dbContext = await DbContextFactory.CreateDbContextAsync();
-            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-            
             bool success = await ModerationService.BanUserAsync(_extraActionTargetMessage.SenderUserId, UserId, info.Duration, info.Reason);
             if (success) {
                 ModalService.Open<OperationSuccessModal>(parameters: new Dictionary<string, object?> {
@@ -733,15 +729,8 @@
 
                 await using var dbContext = await DbContextFactory.CreateDbContextAsync();
                 dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-                
-                var senderData = await dbContext.Users
-                    .Where(u => u.Id == args.SenderId)
-                    .Select(u => new {
-                        u.Id,
-                        u.DisplayName,
-                        u.AvatarProfilePath,
-                    })
-                    .FirstAsync();
+
+                var senderDisplay = (await UserService.GetUserDisplayAsync(args.SenderId))!.Value;
 
                 IConversationService.RenderingReplyMessageDTO? replyMessage = null;
 
@@ -763,7 +752,7 @@
                         .FirstOrDefaultAsync();
                 }
 
-                _visibleMessages.Add(new(args.MessageId, senderData.Id, senderData.DisplayName, senderData.AvatarProfilePath, messageData.Body, messageData.CreatedAt, false, messageData.ReplyMessageId, messageData.Attachments));
+                _visibleMessages.Add(new(args.MessageId, senderDisplay.UserId, senderDisplay.DisplayName, senderDisplay.AvatarPath, messageData.Body, messageData.CreatedAt, false, messageData.ReplyMessageId, messageData.Attachments));
 
                 if (replyMessage != null) {
                     _replyMessages.TryAdd(replyMessage.MessageId, replyMessage);
