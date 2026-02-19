@@ -1,13 +1,14 @@
 @page "/auth/verify-email"
 
+@using Conflux.Web.Services.Abstracts
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
 @using System.Diagnostics
 @using System.Text
 
 @inject NavigationManager NavigationManager
-@inject IJSRuntime JavascriptRuntime
 @inject UserManager<ApplicationUser> UserManager
+@inject IMailService MailService
 
 @* The background element *@
 <div class="h-dvh w-dvw bg-blue-400 grid grid-cols-1 px-4 md:px-0 md:grid-cols-4 lg:grid-cols-3">
@@ -23,23 +24,16 @@
                     <button type="button" class="mt-8 text-white font-semibold rounded-lg w-full h-11 shadow-md bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 cursor-pointer" @onclick="SendVerificationEmail">
                         Send verification email
                     </button>
+                    
+                    @if (_isSendingEmail is { } isSending) {
+                        if (isSending) {
+                            <p class="text-sm text-gray-400 animate-bounce text-center mt-2">Sending Email...</p>
+                        } else {
+                            <p class="text-sm text-green-500 text-center mt-2">Email has been sent.</p>
+                        }
+                    }
                 </div>
             </div>
-            
-            @if (ShowConfirmationButton) {
-                <div class="bg-gray-700 w-full rounded-3xl shadow-xl text-white overflow-hidden relative mt-4">
-                    <div class="absolute rounded-t-3xl w-full h-1 panel-accent-color-1"></div>
-                
-                    <div class="p-10">
-                        <h1 class="text-center font-bold text-3xl text-white">Lmao</h1>
-                        <p class="text-center text-gray-400 text-sm mt-2">No email system yet, just press to confirm</p>
-                    
-                        <button type="button" class="mt-8 text-white font-semibold rounded-lg w-full h-11 shadow-md bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 cursor-pointer" @onclick="ConfirmAccount">
-                            Confirm account
-                        </button>
-                    </div>
-                </div>
-            }
         </div>
     </div>
 </div>
@@ -47,9 +41,10 @@
 @code {
     [SupplyParameterFromQuery(Name = "UserId")] public string? UserId { get; set; }
 
-    public bool ShowConfirmationButton { get; private set; }
+    // public bool ShowConfirmationButton { get; private set; }
 
     private ApplicationUser? _user;
+    private bool? _isSendingEmail;
 
     protected override async Task OnInitializedAsync() {
         if (UserId == null) {
@@ -65,20 +60,20 @@
     }
 
     private async Task SendVerificationEmail() {
-        await JavascriptRuntime.InvokeVoidAsync("open", "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
-        ShowConfirmationButton = true;
-    }
-
-    private async Task ConfirmAccount() {
         Debug.Assert(_user != null);
+        
+        _isSendingEmail = true;
         
         string confirmationCode = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(await UserManager.GenerateEmailConfirmationTokenAsync(_user)));
         
         // TODO: Put the confirmation code into email as an url to other page and send it away.
-        string destination = NavigationManager.GetUriWithQueryParameters("/auth/confirm-email", new Dictionary<string, object?> {
+        string destination = NavigationManager.ToAbsoluteUri(NavigationManager.GetUriWithQueryParameters("/auth/confirm-email", new Dictionary<string, object?> {
             ["UserId"] = UserId,
             ["Code"] = confirmationCode,
-        });
-        NavigationManager.NavigateTo(destination);
+        })).ToString();
+
+        await MailService.SendAccountConfirmationEmailAsync(_user.Email!, destination);
+
+        _isSendingEmail = false;
     }
 }

@@ -138,8 +138,7 @@ builder.Services
     .AddSignInManager()
     .AddDefaultTokenProviders();
 
-// TODO: Email sending services.
-// builder.Services.AddSingleton<IEmailSender<ApplicationUser>, ...>();
+builder.Services.AddScoped<IMailService, MailService>();
 
 // System services.
 builder.Services.AddMemoryCache();
