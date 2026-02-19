@@ -10,6 +10,7 @@ public interface IUserService {
     Task<ApplicationUser?> GetUserAsync(ClaimsPrincipal claimsPrincipal);
     
     Task<bool> IsUserNameTaken(string username);
+    Task<bool> IsUserEmailConfirmed(Guid userId);
     
     Task<bool> IsTwoFactorEnabled(ClaimsPrincipal claimsPrincipal);
     Task<bool> IsTwoFactorEnabled(ApplicationUser user);

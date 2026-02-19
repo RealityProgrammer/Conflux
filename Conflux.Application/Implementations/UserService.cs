@@ -20,9 +20,17 @@ public class UserService(
     }
     
     public async Task<bool> IsUserNameTaken(string username) {
-        await using (var dbContext = await dbContextFactory.CreateDbContextAsync()) {
-            return await dbContext.Users.AnyAsync(user => userManager.NormalizeName(username).Equals(user.NormalizedUserName, StringComparison.InvariantCultureIgnoreCase));
-        }
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+        
+        return await dbContext.Users.AnyAsync(user => userManager.NormalizeName(username).Equals(user.NormalizedUserName, StringComparison.InvariantCulture));
+    }
+
+    public async Task<bool> IsUserEmailConfirmed(Guid userId) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        return await dbContext.Users.Where(u => u.Id == userId).Select(u => u.EmailConfirmed).FirstOrDefaultAsync();
     }
 
     public async Task<bool> IsTwoFactorEnabled(ClaimsPrincipal claimsPrincipal) {

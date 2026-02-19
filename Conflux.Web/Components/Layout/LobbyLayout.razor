@@ -16,6 +16,9 @@
 
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 
+<RedirectToEmailConfirmation/>
+<RedirectToProfileSetup/>
+
 @if (_isLoading) {
     <div class="h-dvh w-dvw bg-gray-750 flex flex-row justify-center items-center">
         <Spinner class="size-16 fill-white"/>
@@ -25,8 +28,6 @@
 }
 
 <CascadingValue Value="_userBanState" Name="SessionUserBanState">
-    <RedirectToProfileSetup/>
-
     <ExpandableLobbyLocationList/>
 
     <section class="h-dvh w-dvw bg-gray-750 text-white">
