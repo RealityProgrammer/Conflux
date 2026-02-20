@@ -1,0 +1,60 @@
+﻿@page "/auth/external-login/google"
+
+@using Microsoft.AspNetCore.Identity
+@using System.Security.Claims
+
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager Nav
+
+<p>Finalizing Google login...</p>
+
+@code {
+    [SupplyParameterFromQuery] public string? ReturnUrl { get; set; }
+
+    protected override async Task OnInitializedAsync() {
+        var info = await SignInManager.GetExternalLoginInfoAsync();
+
+        if (info == null) {
+            Nav.NavigateTo("/login/error?code=ExternalLoginFailed");
+            return;
+        }
+
+        var loginResult = await SignInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: false);
+
+        if (loginResult.Succeeded) {
+            Nav.NavigateTo(ReturnUrl ?? "/", forceLoad: true);
+        } else {
+            var email = info.Principal.FindFirstValue(ClaimTypes.Email)!;
+            var pictureUrl = info.Principal.FindFirstValue("picture");
+
+            var user = new ApplicationUser {
+                UserName = email,
+                Email = email,
+                DisplayName = email[..email.IndexOf("@", StringComparison.Ordinal)],
+                CreatedAt = DateTime.UtcNow,
+                EmailConfirmed = true,
+            };
+            
+            var createResult = await UserManager.CreateAsync(user);
+            
+            if (createResult.Succeeded) {
+                // 3. Link the Google account to this new user (Creates the AspNetUserLogins entry)
+                var addLoginResult = await UserManager.AddLoginAsync(user, info);
+
+                if (addLoginResult.Succeeded) {
+                    // 4. Actually sign the user in to establish the session cookie
+                    await SignInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: false);
+            
+                    // 5. Redirect to home or return URL
+                    Nav.NavigateTo(ReturnUrl ?? "/", forceLoad: true);
+                } else {
+                    Nav.NavigateTo("/login/error?code=LinkLoginFailed");
+                }
+            } else {
+                // This usually happens if the email is already taken by a local account
+                Nav.NavigateTo("/login/error?code=UserCreationFailed");
+            }
+        }
+    }
+}

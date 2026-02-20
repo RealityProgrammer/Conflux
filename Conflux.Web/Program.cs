@@ -15,6 +15,7 @@ using Conflux.Web.Services;
 using Conflux.Web.Services.Abstracts;
 using Conflux.Web.Services.Implementations;
 using Markdig;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.FileProviders;
@@ -22,14 +23,14 @@ using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Configuration
-    .AddJsonFile("appsettings.json", false, true)
-    .AddEnvironmentVariables();
-
-if (builder.Environment.EnvironmentName != "Production") {
-    builder.Configuration
-        .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", false, true);
-}
+// builder.Configuration
+//     .AddEnvironmentVariables()
+//     .AddJsonFile("appsettings.json", false, true);
+//
+// if (builder.Environment.EnvironmentName != "Production") {
+//     builder.Configuration
+//         .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", false, true);
+// }
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -39,14 +40,26 @@ builder.Services.AddRazorComponents()
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<AuthenticationStateProvider, ApplicationAuthenticationStateProvider>();
 
-builder.Services.AddAuthentication(options => {
+var authBuilder = builder.Services.AddAuthentication(options => {
     options.DefaultScheme = IdentityConstants.ApplicationScheme;
     options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
-}).AddIdentityCookies(cookieBuilder => {
-    cookieBuilder.ApplicationCookie!.Configure(options => {
-        options.LoginPath = "/auth/login";
-        options.LogoutPath = "/auth/logout";
-        options.AccessDeniedPath = "/denied";
+});
+
+authBuilder.AddGoogle(options => {
+    IConfigurationSection googleAuth = builder.Configuration.GetSection("Authentication:Google");
+    
+    options.ClientId = googleAuth["ClientId"] ?? throw new InvalidOperationException("Missing Google ClientId");
+    options.ClientSecret = googleAuth["ClientSecret"] ?? throw new InvalidOperationException("Missing Google ClientSecret");
+    
+    options.CallbackPath = "/auth/signin-google";
+    options.ClaimActions.MapJsonKey("picture", "picture");
+});
+
+authBuilder.AddIdentityCookies(configCookies => {
+    configCookies.ApplicationCookie!.Configure(configOptions => {
+        configOptions.LoginPath = "/auth/login";
+        configOptions.LogoutPath = "/auth/logout";
+        configOptions.AccessDeniedPath = "/denied";
     });
 });
 
@@ -253,6 +266,11 @@ app.UseStaticFiles(new StaticFileOptions {
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+app.MapGet("/auth/external-login", ([FromQuery(Name = "Provider")] string provider, [FromServices] SignInManager<ApplicationUser> signInManager) => {
+    var properties = signInManager.ConfigureExternalAuthenticationProperties(provider, "/auth/external-login/google");
+    return Results.Challenge(properties, [provider]);
+});
 
 app.MapPost("/auth/confirm-profile-setup", async (ClaimsPrincipal claims, [FromServices] IUserService userService, [FromForm(Name = "ReturnUrl")] string returnUrl) => {
     await userService.UpdateProfileSetup(claims, true);

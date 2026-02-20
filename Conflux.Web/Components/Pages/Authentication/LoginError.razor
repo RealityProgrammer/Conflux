@@ -1,0 +1,19 @@
+﻿@page "/login/error"
+
+@switch (ErrorCode) {
+    case "ExternalLoginFailed":
+        <p>External login failed.</p>
+        break;
+        
+    case "UserCreationFailed":
+        <p>Failed to create user.</p>
+        break;
+        
+    case "LinkLoginFailed":
+        <p>User link login failed.</p>
+        break;
+}
+
+@code {
+    [SupplyParameterFromQuery(Name = "code")] public string ErrorCode { get; set; } = null!;
+}
