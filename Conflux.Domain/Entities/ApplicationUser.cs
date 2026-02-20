@@ -23,7 +23,6 @@ public class ApplicationUser : IdentityUser<Guid> {
     public ICollection<FriendRequest> SentFriendRequests { get; set; } = null!;
     public ICollection<FriendRequest> ReceivedFriendRequests { get; set; } = null!;
 
-    public ICollection<Community> OwnedCommunities { get; set; } = null!;
     public ICollection<Community> CreatedCommunities { get; set; } = null!;
     public ICollection<CommunityMember> CommunityMembers { get; set; } = null!;
 }
