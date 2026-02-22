@@ -402,9 +402,6 @@ namespace Conflux.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("ChatMessageId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -445,8 +442,6 @@ namespace Conflux.Infrastructure.Migrations
                         });
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ChatMessageId");
 
                     b.HasIndex("MessageId");
 
@@ -644,7 +639,8 @@ namespace Conflux.Infrastructure.Migrations
 
                     b.HasOne("Conflux.Domain.Entities.ChatMessage", "ReplyMessage")
                         .WithMany()
-                        .HasForeignKey("ReplyMessageId");
+                        .HasForeignKey("ReplyMessageId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("Conflux.Domain.Entities.ApplicationUser", "Sender")
                         .WithMany()
@@ -769,12 +765,8 @@ namespace Conflux.Infrastructure.Migrations
 
             modelBuilder.Entity("Conflux.Domain.Entities.MessageReport", b =>
                 {
-                    b.HasOne("Conflux.Domain.Entities.ChatMessage", null)
-                        .WithMany("Reports")
-                        .HasForeignKey("ChatMessageId");
-
                     b.HasOne("Conflux.Domain.Entities.ChatMessage", "Message")
-                        .WithMany()
+                        .WithMany("Reports")
                         .HasForeignKey("MessageId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -813,7 +805,7 @@ namespace Conflux.Infrastructure.Migrations
                     b.HasOne("Conflux.Domain.Entities.ApplicationUser", "ResolverUser")
                         .WithMany()
                         .HasForeignKey("ResolverUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("OffenderMember");

@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Conflux.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialMigration : Migration
+    public partial class InitialMigrations : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -38,6 +38,7 @@ namespace Conflux.Infrastructure.Migrations
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     AvatarProfilePath = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     StatusText = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: true),
+                    UnbanAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     UserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
@@ -172,23 +173,17 @@ namespace Conflux.Infrastructure.Migrations
                     Name = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     AvatarPath = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     BannerPath = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    CreatorId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatorUserId = table.Column<Guid>(type: "uuid", nullable: false),
                     InvitationId = table.Column<Guid>(type: "uuid", nullable: false),
                     Description = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ApplicationUserId = table.Column<Guid>(type: "uuid", nullable: true)
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Communities", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Communities_AspNetUsers_ApplicationUserId",
-                        column: x => x.ApplicationUserId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_Communities_AspNetUsers_CreatorId",
-                        column: x => x.CreatorId,
+                        name: "FK_Communities_AspNetUsers_CreatorUserId",
+                        column: x => x.CreatorUserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -199,8 +194,8 @@ namespace Conflux.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    SenderId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ReceiverId = table.Column<Guid>(type: "uuid", nullable: false),
+                    SenderUserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ReceiverUserId = table.Column<Guid>(type: "uuid", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     ResponseAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
@@ -209,14 +204,14 @@ namespace Conflux.Infrastructure.Migrations
                 {
                     table.PrimaryKey("PK_FriendRequests", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_FriendRequests_AspNetUsers_ReceiverId",
-                        column: x => x.ReceiverId,
+                        name: "FK_FriendRequests_AspNetUsers_ReceiverUserId",
+                        column: x => x.ReceiverUserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_FriendRequests_AspNetUsers_SenderId",
-                        column: x => x.SenderId,
+                        name: "FK_FriendRequests_AspNetUsers_SenderUserId",
+                        column: x => x.SenderUserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -326,8 +321,8 @@ namespace Conflux.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Type = table.Column<int>(type: "integer", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    LatestMessageTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     FriendRequestId = table.Column<Guid>(type: "uuid", nullable: true),
                     CommunityChannelId = table.Column<Guid>(type: "uuid", nullable: true)
                 },
@@ -349,25 +344,68 @@ namespace Conflux.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "ModerationRecords",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    OffenderUserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    OffenderMemberId = table.Column<Guid>(type: "uuid", nullable: true),
+                    ResolverUserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    MessageReportId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Action = table.Column<int>(type: "integer", nullable: false),
+                    BanDuration = table.Column<TimeSpan>(type: "interval", nullable: true),
+                    Reason = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ModerationRecords", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ModerationRecords_AspNetUsers_OffenderUserId",
+                        column: x => x.OffenderUserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ModerationRecords_AspNetUsers_ResolverUserId",
+                        column: x => x.ResolverUserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ModerationRecords_CommunityMembers_OffenderMemberId",
+                        column: x => x.OffenderMemberId,
+                        principalTable: "CommunityMembers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "ChatMessages",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     ConversationId = table.Column<Guid>(type: "uuid", nullable: false),
-                    SenderId = table.Column<Guid>(type: "uuid", nullable: false),
+                    SenderUserId = table.Column<Guid>(type: "uuid", nullable: false),
                     Body = table.Column<string>(type: "character varying(1024)", maxLength: 1024, nullable: true),
                     ReplyMessageId = table.Column<Guid>(type: "uuid", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     LastModifiedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeleterUserId = table.Column<Guid>(type: "uuid", nullable: true),
                     Attachments = table.Column<string>(type: "jsonb", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_ChatMessages", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_ChatMessages_AspNetUsers_SenderId",
-                        column: x => x.SenderId,
+                        name: "FK_ChatMessages_AspNetUsers_DeleterUserId",
+                        column: x => x.DeleterUserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ChatMessages_AspNetUsers_SenderUserId",
+                        column: x => x.SenderUserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -394,29 +432,20 @@ namespace Conflux.Infrastructure.Migrations
                     OriginalMessageBody = table.Column<string>(type: "character varying(1024)", maxLength: 1024, nullable: true),
                     Reasons = table.Column<int[]>(type: "integer[]", nullable: false),
                     ExtraMessage = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    ReporterId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ResolverId = table.Column<Guid>(type: "uuid", nullable: true),
-                    ResolvedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    BanDuration = table.Column<TimeSpan>(type: "interval", nullable: true),
-                    Status = table.Column<int>(type: "integer", nullable: false),
+                    ReporterUserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ModerationRecordId = table.Column<Guid>(type: "uuid", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ChatMessageId = table.Column<Guid>(type: "uuid", nullable: true),
                     OriginalMessageAttachments = table.Column<string>(type: "jsonb", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_MessageReports", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_MessageReports_AspNetUsers_ReporterId",
-                        column: x => x.ReporterId,
+                        name: "FK_MessageReports_AspNetUsers_ReporterUserId",
+                        column: x => x.ReporterUserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_MessageReports_ChatMessages_ChatMessageId",
-                        column: x => x.ChatMessageId,
-                        principalTable: "ChatMessages",
-                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_MessageReports_ChatMessages_MessageId",
                         column: x => x.MessageId,
@@ -424,9 +453,9 @@ namespace Conflux.Infrastructure.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_MessageReports_CommunityMembers_ResolverId",
-                        column: x => x.ResolverId,
-                        principalTable: "CommunityMembers",
+                        name: "FK_MessageReports_ModerationRecords_ModerationRecordId",
+                        column: x => x.ModerationRecordId,
+                        principalTable: "ModerationRecords",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.SetNull);
                 });
@@ -474,24 +503,24 @@ namespace Conflux.Infrastructure.Migrations
                 columns: new[] { "ConversationId", "CreatedAt" });
 
             migrationBuilder.CreateIndex(
+                name: "IX_ChatMessages_DeleterUserId",
+                table: "ChatMessages",
+                column: "DeleterUserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_ChatMessages_ReplyMessageId",
                 table: "ChatMessages",
                 column: "ReplyMessageId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ChatMessages_SenderId",
+                name: "IX_ChatMessages_SenderUserId",
                 table: "ChatMessages",
-                column: "SenderId");
+                column: "SenderUserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Communities_ApplicationUserId",
+                name: "IX_Communities_CreatorUserId",
                 table: "Communities",
-                column: "ApplicationUserId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Communities_CreatorId",
-                table: "Communities",
-                column: "CreatorId");
+                column: "CreatorUserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_CommunityChannelCategories_CommunityId",
@@ -537,20 +566,15 @@ namespace Conflux.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_FriendRequests_ReceiverId",
+                name: "IX_FriendRequests_ReceiverUserId",
                 table: "FriendRequests",
-                column: "ReceiverId");
+                column: "ReceiverUserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_FriendRequests_SenderId_ReceiverId",
+                name: "IX_FriendRequests_SenderUserId_ReceiverUserId",
                 table: "FriendRequests",
-                columns: new[] { "SenderId", "ReceiverId" },
+                columns: new[] { "SenderUserId", "ReceiverUserId" },
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_MessageReports_ChatMessageId",
-                table: "MessageReports",
-                column: "ChatMessageId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_MessageReports_MessageId",
@@ -558,14 +582,30 @@ namespace Conflux.Infrastructure.Migrations
                 column: "MessageId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MessageReports_ReporterId",
+                name: "IX_MessageReports_ModerationRecordId",
                 table: "MessageReports",
-                column: "ReporterId");
+                column: "ModerationRecordId",
+                unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_MessageReports_ResolverId",
+                name: "IX_MessageReports_ReporterUserId",
                 table: "MessageReports",
-                column: "ResolverId");
+                column: "ReporterUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ModerationRecords_OffenderMemberId",
+                table: "ModerationRecords",
+                column: "OffenderMemberId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ModerationRecords_OffenderUserId",
+                table: "ModerationRecords",
+                column: "OffenderUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ModerationRecords_ResolverUserId",
+                table: "ModerationRecords",
+                column: "ResolverUserId");
         }
 
         /// <inheritdoc />
@@ -596,19 +636,22 @@ namespace Conflux.Infrastructure.Migrations
                 name: "ChatMessages");
 
             migrationBuilder.DropTable(
-                name: "CommunityMembers");
+                name: "ModerationRecords");
 
             migrationBuilder.DropTable(
                 name: "Conversations");
 
             migrationBuilder.DropTable(
-                name: "CommunityRoles");
+                name: "CommunityMembers");
 
             migrationBuilder.DropTable(
                 name: "CommunityChannels");
 
             migrationBuilder.DropTable(
                 name: "FriendRequests");
+
+            migrationBuilder.DropTable(
+                name: "CommunityRoles");
 
             migrationBuilder.DropTable(
                 name: "CommunityChannelCategories");
