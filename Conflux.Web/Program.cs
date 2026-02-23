@@ -19,19 +19,9 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.FileProviders;
-using System.Diagnostics;
 using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// builder.Configuration
-//     .AddEnvironmentVariables()
-//     .AddJsonFile("appsettings.json", false, true);
-//
-// if (builder.Environment.EnvironmentName != "Production") {
-//     builder.Configuration
-//         .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", false, true);
-// }
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
