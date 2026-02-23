@@ -145,7 +145,6 @@ builder.Services
 builder.Services.AddScoped<IMailService, MailService>();
 
 // System services.
-builder.Services.AddMemoryCache();
 builder.Services.AddDistributedPostgresCache(options => {
     options.ConnectionString = builder.Configuration.GetConnectionString("PostgresCache");
     options.SchemaName = builder.Configuration.GetValue<string>("PostgresCache:SchemaName", "public");
