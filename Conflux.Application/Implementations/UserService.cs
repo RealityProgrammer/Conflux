@@ -13,7 +13,7 @@ public class UserService(
     UserManager<ApplicationUser> userManager,
     SignInManager<ApplicationUser> signInManager,
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
-    IConfluxCache cacheService
+    ICacheService cacheService
 ) : IUserService
 {
     public Task<ApplicationUser?> GetUserAsync(ClaimsPrincipal claimsPrincipal) {

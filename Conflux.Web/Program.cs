@@ -174,7 +174,7 @@ builder.Services.AddDistributedPostgresCache(options => {
     }
 });
 
-builder.Services.AddSingleton<IConfluxCache, ConfluxCache>();
+builder.Services.AddSingleton<ICacheService, CacheService>();
 
 builder.Services.AddHttpClient<CloudflareTurnServerClient>();
 

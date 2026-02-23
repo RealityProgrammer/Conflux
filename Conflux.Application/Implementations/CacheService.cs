@@ -5,7 +5,7 @@ using System.Text.Json;
 
 namespace Conflux.Application.Implementations;
 
-public sealed class ConfluxCache(IDistributedCache cache) : IConfluxCache {
+public sealed class CacheService(IDistributedCache cache) : ICacheService {
     public async Task<UserDisplayDTO?> GetOrSetUserDisplayAsync(Guid userId, Func<Guid, Task<UserDisplayDTO?>> factory) {
         string key = CreateUserDisplayCacheKey(userId);
         var cachedData = await cache.GetAsync(key);
@@ -50,7 +50,33 @@ public sealed class ConfluxCache(IDistributedCache cache) : IConfluxCache {
         return factoryResult;
     }
 
-    private string CreateUserDisplayCacheKey(Guid userId) {
+    private static string CreateUserDisplayCacheKey(Guid userId) {
         return $"users.display.{userId:N}";
+    }
+
+    public async Task<TData> GetOrSetStatisticsDataAsync<TData>(string key, Func<Task<TData>> factory) {
+        key = CreateStatisticsDataAsync(key);
+        var cachedData = await cache.GetAsync(key);
+
+        if (cachedData != null) {
+            return JsonSerializer.Deserialize<TData>(cachedData)!;
+        }
+
+        var factoryResult = await factory();
+
+        if (factoryResult == null) {
+            return default!;
+        }
+
+        await using var memoryStream = new MemoryStream();
+        await JsonSerializer.SerializeAsync(memoryStream, factoryResult);
+        
+        await cache.SetAsync(key, memoryStream.ToArray());
+
+        return factoryResult;
+    }
+    
+    private static string CreateStatisticsDataAsync(string key) {
+        return $"statistics.{key}";
     }
 }
