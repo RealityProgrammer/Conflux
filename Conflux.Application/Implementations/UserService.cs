@@ -5,7 +5,6 @@ using Conflux.Domain.Entities;
 using Conflux.Domain.Enums;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Distributed;
 using System.Security.Claims;
 
 namespace Conflux.Application.Implementations;
@@ -91,16 +90,12 @@ public class UserService(
             await using var dbContext = await dbContextFactory.CreateDbContextAsync();
             dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
-            return await GetUserDisplayAsync(dbContext, id);
+            return await dbContext.Users
+                .Where(u => u.Id == userId)
+                .Select(u => new UserDisplayDTO(u.Id, u.DisplayName, u.UserName, u.AvatarProfilePath))
+                .Cast<UserDisplayDTO?>()
+                .FirstOrDefaultAsync();
         }
-    }
-
-    public async Task<UserDisplayDTO?> GetUserDisplayAsync(ApplicationDbContext dbContext, Guid userId) {
-        return await dbContext.Users
-            .Where(u => u.Id == userId)
-            .Select(u => new UserDisplayDTO(u.Id, u.DisplayName, u.UserName, u.AvatarProfilePath))
-            .Cast<UserDisplayDTO?>()
-            .FirstOrDefaultAsync();
     }
 
     public async Task<(int TotalCount, IReadOnlyList<UserDisplayDTO> Page)> PaginateUserDisplayAsync(
