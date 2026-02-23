@@ -155,6 +155,24 @@ builder.Services.AddScoped<IMailService, MailService>();
 
 // System services.
 builder.Services.AddMemoryCache();
+builder.Services.AddDistributedPostgresCache(options => {
+    options.ConnectionString = builder.Configuration.GetConnectionString("PostgresCache");
+    options.SchemaName = builder.Configuration.GetValue<string>("PostgresCache:SchemaName", "public");
+    options.TableName = builder.Configuration.GetValue<string>("PostgresCache:TableName", "cache");
+    options.CreateIfNotExists = builder.Configuration.GetValue("PostgresCache:CreateIfNotExists", true);
+    options.UseWAL = builder.Configuration.GetValue("PostgresCache:UseWAL", false);
+    
+    var expirationInterval = builder.Configuration.GetValue<string>("PostgresCache:ExpiredItemsDeletionInterval");
+    if (!string.IsNullOrEmpty(expirationInterval) && TimeSpan.TryParse(expirationInterval, out var interval)) {
+        options.ExpiredItemsDeletionInterval = interval;
+    }
+    
+    var slidingExpiration = builder.Configuration.GetValue<string>("PostgresCache:DefaultSlidingExpiration");
+    if (!string.IsNullOrEmpty(slidingExpiration) && TimeSpan.TryParse(slidingExpiration, out var sliding)) {
+        options.DefaultSlidingExpiration = sliding;
+    }
+});
+
 builder.Services.AddHttpClient<CloudflareTurnServerClient>();
 
 builder.Services.AddScoped<IUserService, UserService>();
