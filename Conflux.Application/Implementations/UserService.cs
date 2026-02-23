@@ -5,6 +5,7 @@ using Conflux.Domain.Entities;
 using Conflux.Domain.Enums;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 using System.Security.Claims;
 
 namespace Conflux.Application.Implementations;
@@ -12,7 +13,8 @@ namespace Conflux.Application.Implementations;
 public class UserService(
     UserManager<ApplicationUser> userManager,
     SignInManager<ApplicationUser> signInManager,
-    IDbContextFactory<ApplicationDbContext> dbContextFactory
+    IDbContextFactory<ApplicationDbContext> dbContextFactory,
+    IConfluxCache cacheService
 ) : IUserService
 {
     public Task<ApplicationUser?> GetUserAsync(ClaimsPrincipal claimsPrincipal) {
@@ -83,10 +85,14 @@ public class UserService(
     }
     
     public async Task<UserDisplayDTO?> GetUserDisplayAsync(Guid userId) {
-        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
-        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+        return await cacheService.GetOrSetUserDisplayAsync(userId, RetrieveFromDatabase);
 
-        return await GetUserDisplayAsync(dbContext, userId);
+        async Task<UserDisplayDTO?> RetrieveFromDatabase(Guid id) {
+            await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+            return await GetUserDisplayAsync(dbContext, id);
+        }
     }
 
     public async Task<UserDisplayDTO?> GetUserDisplayAsync(ApplicationDbContext dbContext, Guid userId) {
