@@ -28,15 +28,15 @@ public sealed class CacheService(IDistributedCache cache) : ICacheService {
         return factoryResult;
     }
 
-    public async Task<UserDisplayDTO?> GetOrSetUserDisplayAsync<TState>(Guid userId, Func<Guid, TState, Task<UserDisplayDTO?>> factory, TState state) {
-        string key = CreateUserDisplayCacheKey(userId);
+    public async Task<RolePermissions?> GetOrSetCommunityRolePermissionsAsync(Guid roleId, Func<Guid, Task<RolePermissions?>> factory) {
+        string key = CreateCommunityRolePermissionsCacheKey(roleId);
         var cachedData = await cache.GetAsync(key);
 
         if (cachedData != null) {
-            return JsonSerializer.Deserialize<UserDisplayDTO>(cachedData);
+            return JsonSerializer.Deserialize<RolePermissions>(cachedData);
         }
 
-        var factoryResult = await factory(userId, state);
+        var factoryResult = await factory(roleId);
 
         if (factoryResult == null) {
             return null;
@@ -50,8 +50,13 @@ public sealed class CacheService(IDistributedCache cache) : ICacheService {
         return factoryResult;
     }
 
-    private static string CreateUserDisplayCacheKey(Guid userId) {
-        return $"users.display.{userId:N}";
+    public async Task UpdateCommunityRolePermissionsAsync(Guid roleId, RolePermissions permissions) {
+        string key = CreateCommunityRolePermissionsCacheKey(roleId);
+        
+        await using var memoryStream = new MemoryStream();
+        await JsonSerializer.SerializeAsync(memoryStream, permissions);
+        
+        await cache.SetAsync(key, memoryStream.ToArray());
     }
 
     public async Task<TData> GetOrSetStatisticsDataAsync<TData>(string key, Func<Task<TData>> factory) {
@@ -76,7 +81,15 @@ public sealed class CacheService(IDistributedCache cache) : ICacheService {
         return factoryResult;
     }
     
+    private static string CreateUserDisplayCacheKey(Guid userId) {
+        return $"user.display.{userId:N}";
+    }
+    
+    private static string CreateCommunityRolePermissionsCacheKey(Guid roleId) {
+        return $"community.role.permissions.{roleId:N}";
+    }
+    
     private static string CreateStatisticsDataAsync(string key) {
-        return $"statistics.{key}";
+        return $"statistic.{key}";
     }
 }

@@ -9,7 +9,8 @@ namespace Conflux.Application.Implementations;
 
 public class CommunityRoleService(
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
-    ICommunityEventDispatcher eventDispatcher
+    ICommunityEventDispatcher eventDispatcher,
+    ICacheService cacheService
 ) : ICommunityRoleService {
     public async Task<ICommunityRoleService.CreateRoleStatus> CreateRoleAsync(Guid communityId, string roleName) {
         if (roleName == "Owners") {
@@ -85,10 +86,17 @@ public class CommunityRoleService(
     }
     
     public async Task<RolePermissions?> GetPermissionsAsync(Guid roleId) {
-        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
-        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+        return await cacheService.GetOrSetCommunityRolePermissionsAsync(roleId, RetrieveFromDatabase);
 
-        return await GetPermissionsAsync(dbContext, roleId);
+        async Task<RolePermissions?> RetrieveFromDatabase(Guid id) {
+            await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+            return await dbContext.CommunityRoles
+                .Where(r => r.Id == id)
+                .Select(r => new RolePermissions(r.ChannelPermissions, r.RolePermissions, r.AccessPermissions, r.ManagementPermissions))
+                .FirstOrDefaultAsync();
+        }
     }
     
     public async Task<RolePermissions?> GetPermissionsAsync(ApplicationDbContext dbContext, Guid roleId) {
@@ -123,6 +131,8 @@ public class CommunityRoleService(
         if (numUpdatedRows == 0) {
             return false;
         }
+
+        await cacheService.UpdateCommunityRolePermissionsAsync(roleId, permissions);
         
         await eventDispatcher.Dispatch(new CommunityRolePermissionUpdatedEventArg(communityId, roleId));
         
