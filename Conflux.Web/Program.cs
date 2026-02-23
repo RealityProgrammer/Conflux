@@ -19,6 +19,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.FileProviders;
+using System.Diagnostics;
 using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -228,13 +229,15 @@ using (var scope = app.Services.CreateScope()) {
     }
     
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
     
     await CreateRoles(roleManager);
+    await CreateAdminUser(userManager, scope.ServiceProvider.GetRequiredService<IConfiguration>());
 
     var environment = scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>();
 
     if (environment.IsDevelopment()) {
-        await CreateFakeUsers(scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>());
+        await CreateFakeUsers(userManager);
     }
 }
 
@@ -339,54 +342,35 @@ async Task CreateFakeUsers(UserManager<ApplicationUser> userManager) {
             }, "Password1!");
         }
     }
+}
+
+async Task CreateAdminUser(UserManager<ApplicationUser> userManager, IConfiguration config) {
+    const string adminEmail = "admin@conflux.com";
     
-    if (!await userManager.Users.AnyAsync(u => userManager.NormalizeEmail("admin@example.com") == u.NormalizedEmail)) {
-        await userManager.CreateAsync(new() {
-            Email = "admin@example.com",
-            UserName = $"Admin User",
-            DisplayName = $"Admin User",
+    if (!await userManager.Users.AnyAsync(u => userManager.NormalizeEmail(adminEmail) == u.NormalizedEmail)) {
+        var adminUser = new ApplicationUser {
+            Email = adminEmail,
+            UserName = "Admin",
+            DisplayName = "Admin",
             EmailConfirmed = true,
             IsProfileSetup = true,
-        }, "Password1!");
-
-        await userManager.AddToRoleAsync(await userManager.Users.Where(u => u.Email == "admin@example.com").FirstAsync(), "Admin");
-    }
-    
-    if (!await userManager.Users.AnyAsync(u => userManager.NormalizeEmail("moderator@example.com") == u.NormalizedEmail)) {
-        await userManager.CreateAsync(new() {
-            Email = "moderator@example.com",
-            UserName = $"Moderator User",
-            DisplayName = $"Moderator User",
-            EmailConfirmed = true,
-            IsProfileSetup = true,
-        }, "Password1!");
-
-        await userManager.AddToRoleAsync(await userManager.Users.Where(u => u.Email == "moderator@example.com").FirstAsync(), "Moderator");
-    }
-    
-    if (!await userManager.Users.AnyAsync(u => userManager.NormalizeEmail("sysdev@example.com") == u.NormalizedEmail)) {
-        await userManager.CreateAsync(new() {
-            Email = "sysdev@example.com",
-            UserName = $"SystemDeveloper",
-            DisplayName = $"SystemDeveloper",
-            EmailConfirmed = true,
-            IsProfileSetup = true,
-        }, "Password1!");
-
-        await userManager.AddToRoleAsync(await userManager.Users.Where(u => u.Email == "sysdev@example.com").FirstAsync(), "SystemDeveloper");
-    }
-
-    if (!await userManager.Users.AnyAsync(u => userManager.NormalizeEmail("sysdev2@example.com") == u.NormalizedEmail)) {
-        var result = await userManager.CreateAsync(new() {
-            Email = "sysdev2@example.com",
-            UserName = $"SystemDeveloper2",
-            DisplayName = $"SystemDeveloper2",
-            EmailConfirmed = true,
-            IsProfileSetup = true,
-        }, "Password1!");
+            CreatedAt = DateTime.UtcNow,
+        };
         
-        await userManager.AddToRoleAsync(await userManager.Users.Where(u => u.Email == "sysdev2@example.com").FirstAsync(), "Admin");
-        await userManager.AddToRoleAsync(await userManager.Users.Where(u => u.Email == "sysdev2@example.com").FirstAsync(), "Moderator");
-        await userManager.AddToRoleAsync(await userManager.Users.Where(u => u.Email == "sysdev2@example.com").FirstAsync(), "SystemDeveloper");
+        var result = await userManager.CreateAsync(adminUser, config["InitialAdminPassword"]!);
+
+        if (!result.Succeeded) {
+            var error = result.Errors.First();
+            
+            throw new($"Failed to create Admin user ({error.Code} - {error.Description})");
+        }
+
+        result = await userManager.AddToRoleAsync(adminUser, "Admin");
+        
+        if (!result.Succeeded) {
+            var error = result.Errors.First();
+            
+            throw new($"Failed to add Admin role to Admin user ({error.Code} - {error.Description})");
+        }
     }
 }
