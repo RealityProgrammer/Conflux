@@ -19,6 +19,8 @@ public interface IConversationService {
     Task<RenderingMessages> LoadMessagesBeforeTimestampAsync(Guid conversationId, DateTime beforeTimestamp, int take);
     Task<RenderingMessages> LoadMessagesAfterTimestampAsync(Guid conversationId, DateTime afterTimestamp, int take);
 
+    Task<(int TotalCount, List<DirectConversationDisplayDTO> Page)> PaginateDirectConversationDisplayAsync(Guid userId, int startIndex, int count);
+    
     public record RenderingMessageDTO(Guid MessageId, Guid SenderUserId, string SenderDisplayName, string? SenderAvatar, string? Body, DateTime CreatedAt, bool IsEdited, Guid? ReplyMessageId, List<MessageAttachment> Attachments);
     public record RenderingReplyMessageDTO(Guid MessageId, string SenderDisplayName, string? Body);
     public readonly record struct RenderingMessages(IList<RenderingMessageDTO> VisibleMessages, IList<RenderingReplyMessageDTO> RepliedMessages);

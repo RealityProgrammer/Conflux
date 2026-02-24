@@ -43,6 +43,37 @@ public sealed class ConversationService(
         return conversation;
     }
 
+    public async Task<(int TotalCount, List<DirectConversationDisplayDTO> Page)> PaginateDirectConversationDisplayAsync(Guid userId, int startIndex, int count) {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+        dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+
+        var query = dbContext.Conversations
+            .Where(x => x.FriendRequestId != null && (x.FriendRequest!.SenderUserId == userId || x.FriendRequest.ReceiverUserId == userId));
+
+        int totalCount = await query.CountAsync();
+
+        if (totalCount == 0) {
+            return (0, []);
+        }
+
+        List<DirectConversationDisplayDTO> page = await query
+            .OrderByDescending(x => x.LatestMessageTime ?? DateTime.MinValue)
+            .Join(
+                dbContext.Users, 
+                conversation => conversation.FriendRequest!.SenderUserId == userId ? conversation.FriendRequest.ReceiverUserId : conversation.FriendRequest.SenderUserId, 
+                user => user.Id, 
+                (conversation, user) => new DirectConversationDisplayDTO {
+                    ConversationId = conversation.Id,
+                    OtherUserDisplay = new(user.Id, user.DisplayName, user.UserName, user.AvatarProfilePath)
+                }
+            )
+            .Skip(startIndex)
+            .Take(count)
+            .ToListAsync();
+
+        return (totalCount, page);
+    }
+
     public async Task<IConversationService.SendStatus> SendMessageAsync(Guid conversationId, Guid senderUserId, string? body, Guid? replyMessageId, IReadOnlyCollection<IConversationService.UploadingAttachment> attachments, CancellationToken cancellationToken = default) {
         // TODO: Rewrite this, this is goddamn ugly.
 

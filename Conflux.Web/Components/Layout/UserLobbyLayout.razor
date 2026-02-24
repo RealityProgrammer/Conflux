@@ -1,8 +1,6 @@
 ﻿@using Conflux.Application.Dto
-@using Conflux.Domain.Enums
 @using Conflux.Domain.Events
 @using Microsoft.AspNetCore.Components.Sections
-@using Microsoft.EntityFrameworkCore
 @using System.Diagnostics
 @using System.Security.Claims
 
@@ -12,7 +10,6 @@
 
 @layout SidebarLobbyLayout
 
-@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject IContentService ContentService
 @inject IConversationService ConversationService
 @inject IUserNotificationService UserNotificationService
@@ -59,7 +56,7 @@
 
     private Guid _userId;
 
-    private Virtualize<ConversationDisplayDTO> _conversationsVirtualize = null!;
+    private Virtualize<DirectConversationDisplayDTO> _conversationsVirtualize = null!;
 
     protected override async Task OnInitializedAsync() {
         var authState = await AuthenticationState;
@@ -81,36 +78,9 @@
         NavigationManager.NavigateTo($"/lobby/messages/{conversationId}");
     }
 
-    private async ValueTask<ItemsProviderResult<ConversationDisplayDTO>> ConversationsLoadProvider(ItemsProviderRequest request) {
-        await using (var dbContext = await DbContextFactory.CreateDbContextAsync()) {
-            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-
-            var query = dbContext.Conversations
-                .Where(x => x.FriendRequestId != null && (x.FriendRequest!.SenderUserId == _userId || x.FriendRequest.ReceiverUserId == _userId));
-
-            int totalCount = await query.CountAsync();
-
-            if (totalCount == 0) {
-                return new([], 0);
-            }
-
-            List<ConversationDisplayDTO> elements = await query
-                .OrderByDescending(x => x.LatestMessageTime ?? DateTime.MinValue)
-                .Skip(request.StartIndex)
-                .Take(request.Count)
-                .Join(
-                    dbContext.Users, 
-                    conversation => conversation.FriendRequest!.SenderUserId == _userId ? conversation.FriendRequest.ReceiverUserId : conversation.FriendRequest.SenderUserId, 
-                    user => user.Id, 
-                    (conversation, user) => new ConversationDisplayDTO {
-                        ConversationId = conversation.Id,
-                        OtherUserDisplay = new(user.Id, user.DisplayName, user.UserName, user.AvatarProfilePath)
-                    }
-                )
-                .ToListAsync();
-
-            return new(elements, totalCount);
-        }
+    private async ValueTask<ItemsProviderResult<DirectConversationDisplayDTO>> ConversationsLoadProvider(ItemsProviderRequest request) {
+        (int totalCount, List<DirectConversationDisplayDTO> page) = await ConversationService.PaginateDirectConversationDisplayAsync(_userId, request.StartIndex, request.Count);
+        return new(page, totalCount);
     }
 
     private void OnConversationCreated(Conversation conversation) {
@@ -131,6 +101,4 @@
         ConversationService.OnConversationCreated -= OnConversationCreated;
         UserNotificationService.OnIncomingDirectMessage -= OnIncomingDirectMessage;
     }
-
-    private readonly record struct ConversationDisplayDTO(Guid ConversationId, UserDisplayDTO OtherUserDisplay);
 }
