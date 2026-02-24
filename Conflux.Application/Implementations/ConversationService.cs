@@ -18,11 +18,12 @@ public sealed class ConversationService(
 ) : IConversationService {
     public event Action<Conversation>? OnConversationCreated;
     
-    public async Task<Conversation> GetOrCreateDirectConversationAsync(Guid friendRequestId) {
+    public async Task<Conversation> GetOrCreateDirectConversationAsync(Guid friendRequestId, Guid creatorUserId) {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
 
         Conversation? conversation = await dbContext.Conversations
             .Where(c => c.FriendRequestId == friendRequestId)
+            .Include(c => c.FriendRequest)
             .FirstOrDefaultAsync();
 
         if (conversation != null) {
@@ -37,8 +38,14 @@ public sealed class ConversationService(
         dbContext.Conversations.Add(conversation);
             
         await dbContext.SaveChangesAsync();
+
+        Guid otherUserId = await dbContext.FriendRequests
+            .Where(r => r.Id == friendRequestId)
+            .Select(r => r.SenderUserId == creatorUserId ? r.ReceiverUserId : r.SenderUserId)
+            .FirstOrDefaultAsync();
         
         OnConversationCreated?.Invoke(conversation);
+        await userNotificationService.Dispatch(new DirectConversationCreatedEventArgs(otherUserId, conversation.Id));
 
         return conversation;
     }

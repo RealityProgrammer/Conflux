@@ -464,7 +464,7 @@
             return;
         }
 
-        var conversation = await ConversationService.GetOrCreateDirectConversationAsync(requestId);
+        var conversation = await ConversationService.GetOrCreateDirectConversationAsync(requestId, SessionUserId);
         NavigationManager.NavigateTo($"/lobby/messages/{conversation.Id}");
 
         await OnCloseRequested.InvokeAsync();

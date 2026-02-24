@@ -69,7 +69,8 @@
 
     protected override void OnAfterRender(bool firstRender) {
         if (firstRender) {
-            ConversationService.OnConversationCreated += OnConversationCreated;
+            ConversationService.OnConversationCreated += OnConversationCreatedActively;
+            UserNotificationService.OnDirectConversationCreated += OnConversationCreatedPassively;
             UserNotificationService.OnIncomingDirectMessage += OnIncomingDirectMessage;
         }
     }
@@ -83,7 +84,14 @@
         return new(page, totalCount);
     }
 
-    private void OnConversationCreated(Conversation conversation) {
+    private void OnConversationCreatedActively(Conversation conversation) {
+        InvokeAsync(async () => {
+            await _conversationsVirtualize.RefreshDataAsync();
+            StateHasChanged();
+        });
+    }
+    
+    private void OnConversationCreatedPassively(DirectConversationCreatedEventArgs args) {
         InvokeAsync(async () => {
             await _conversationsVirtualize.RefreshDataAsync();
             StateHasChanged();
@@ -98,7 +106,8 @@
     }
 
     public void Dispose() {
-        ConversationService.OnConversationCreated -= OnConversationCreated;
+        ConversationService.OnConversationCreated -= OnConversationCreatedActively;
+        UserNotificationService.OnDirectConversationCreated -= OnConversationCreatedPassively;
         UserNotificationService.OnIncomingDirectMessage -= OnIncomingDirectMessage;
     }
 }
