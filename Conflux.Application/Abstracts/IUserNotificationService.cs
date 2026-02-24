@@ -10,6 +10,7 @@ public interface IUserNotificationService {
     event Action<CommunityBannedEventArgs> OnCommunityBanned;
     
     event Action<IncomingDirectMessageEventArgs> OnIncomingDirectMessage;
+    event Action<DirectConversationCreatedEventArgs> OnDirectConversationCreated;
 
     Task Connect();
     Task Disconnect();
@@ -19,4 +20,5 @@ public interface IUserNotificationService {
     Task Dispatch(CommunityWarnedEventArgs args);
     Task Dispatch(CommunityBannedEventArgs args);
     Task Dispatch(IncomingDirectMessageEventArgs args);
+    Task Dispatch(DirectConversationCreatedEventArgs args);
 }

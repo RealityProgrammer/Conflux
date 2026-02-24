@@ -21,6 +21,7 @@ public sealed class UserNotificationService(
     public event Action<CommunityBannedEventArgs>? OnCommunityBanned;
     public event Func<IncomingCallEventArgs, Task>? OnIncomingCall;
     public event Action<IncomingDirectMessageEventArgs>? OnIncomingDirectMessage;
+    public event Action<DirectConversationCreatedEventArgs>? OnDirectConversationCreated;
 
     private HubConnection? _hubConnection;
 
@@ -92,6 +93,10 @@ public sealed class UserNotificationService(
             }
         });
 
+        _hubConnection.On<DirectConversationCreatedEventArgs>(nameof(IUserClient.DirectConversationCreated), args => {
+            OnDirectConversationCreated?.Invoke(args);
+        });
+
         await _hubConnection.StartAsync();
     }
 
@@ -123,6 +128,10 @@ public sealed class UserNotificationService(
 
     public async Task Dispatch(IncomingCallEventArgs args) {
         await hubContext.Clients.User(args.UserId.ToString()).IncomingCall(args);
+    }
+
+    public async Task Dispatch(DirectConversationCreatedEventArgs args) {
+        await hubContext.Clients.User(args.UserId.ToString()).DirectConversationCreated(args);
     }
 
     public async ValueTask DisposeAsync() {
