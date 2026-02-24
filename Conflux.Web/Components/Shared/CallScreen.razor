@@ -53,11 +53,13 @@
                 var otherUser = _otherUser!.Value;
                 
                 @if (CallRoom.State == CallRoomState.WaitingForAnswer) {
-                    <div class="size-full overflow-hidden flex justify-center items-center">
-                        <img src="@(string.IsNullOrEmpty(otherUser.AvatarPath) ? null : ContentService.GetAssetPath(otherUser.AvatarPath))"
-                             alt="@(isCallInitiator ? "Receiver's Avatar" : "Caller's Avatar")"
-                             class="size-full object-contain">
-                    </div>
+                    @if (!string.IsNullOrEmpty(otherUser.AvatarPath)) {
+                        <div class="size-full overflow-hidden flex justify-center items-center">
+                            <img src="@ContentService.GetAssetPath(otherUser.AvatarPath)"
+                                 alt="@(isCallInitiator ? "Receiver's Avatar" : "Caller's Avatar")"
+                                 class="size-full object-contain">
+                        </div>
+                    }
                 }
                 break;
             }
