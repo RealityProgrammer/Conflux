@@ -1,10 +1,8 @@
 ﻿@page "/settings/account"
-@using System.Security.Claims
 
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 
 @inject IUserService UserService
-@inject AuthenticationStateProvider AuthStateProvider
 
 <h1 class="font-bold text-3xl">Account Management</h1>
 
@@ -69,7 +67,7 @@
             </LogoutButton>
         </div>
     </li>
-    
+
     <li class="p-4 flex flex-row items-center justify-between border-b border-b-gray-500">
         <div class="flex-1">
             <p class="font-bold">Temporary disable account</p>

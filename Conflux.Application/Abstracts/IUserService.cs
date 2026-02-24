@@ -26,6 +26,8 @@ public interface IUserService {
     
     Task<UserBanState?> GetBanStateAsync(Guid userId);
     Task<UserBanDetails?> GetLatestBanDetails(Guid userId);
+    
+    Task<IdentityResult> UpdateAsync(ApplicationUser user);
 
     Task<(int TotalCount, IReadOnlyList<UserDisplayDTO> Page)> PaginateUserDisplayAsync(
         Func<IQueryable<ApplicationUser>, IOrderedQueryable<ApplicationUser>> orderQueryProvider,

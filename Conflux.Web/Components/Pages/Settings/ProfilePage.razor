@@ -1,5 +1,7 @@
 ﻿@page "/settings/profile"
 
+@using Conflux.Web.Services.Implementations
+@using Markdig
 @using Microsoft.AspNetCore.Identity
 @using System.ComponentModel
 @using System.ComponentModel.DataAnnotations
@@ -8,7 +10,12 @@
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 
 @inject NavigationManager RedirectManager
+@inject IUserService UserService
 @inject UserManager<ApplicationUser> UserManager
+@inject IContentService ContentService
+@inject IJSRuntime JavascriptRuntime
+@inject MarkdownPipeline MarkdownPipeline
+@inject ProfileSanitizingService SanitizingService
 
 @if (_user == null) {
     <div class="flex flex-col h-full">
@@ -24,43 +31,185 @@
     return;
 }
 
-<div class="relative h-full">
-    <h1 class="font-bold text-3xl">Profile Management</h1>
-
-    <TabContainer class="mt-2 pb-4" ButtonContainerCssClass="flex flex-row justify-start gap-3 border-b border-gray-600" @bind-ActiveId="_tabActiveId">
+<div class="relative overflow-hidden">
+    <TabContainer @bind-ActiveId="_tabActiveId" class="flex-1 flex flex-col text-white size-full" ButtonContainerCssClass="flex-none border-b border-b-gray-600" ContentContainerCssClass="min-h-0 flex-1 mt-2 overflow-y-auto scrollbar-hide">
         <Buttons Context="_">
-            <TabButton TabId="preview" class="p-3 text-gray-400 bg-transparent hover:text-gray-200 hover:bg-gray-400 rounded-t-lg cursor-pointer" ActiveCssClass="text-blue-400! cursor-default! hover:bg-transparent!">
-                Preview
-            </TabButton>
-
-            <TabButton TabId="edit" class="p-3 text-gray-400 bg-transparent hover:text-gray-200 hover:bg-gray-400 rounded-t-lg cursor-pointer" ActiveCssClass="text-blue-400! cursor-default! hover:bg-transparent!">
-                Edit
-            </TabButton>
+            <h1 class="font-bold text-3xl">Profile Management</h1>
+    
+            <div class="flex flex-row justify-start gap-3">
+                <TabButton TabId="preview" class="p-3 text-gray-400 bg-transparent hover:text-gray-200 hover:bg-gray-400 rounded-t-lg cursor-pointer" ActiveCssClass="text-blue-400! cursor-default! hover:bg-transparent!">
+                    Preview
+                </TabButton>
+    
+                <TabButton TabId="edit" class="p-3 text-gray-400 bg-transparent hover:text-gray-200 hover:bg-gray-400 rounded-t-lg cursor-pointer" ActiveCssClass="text-blue-400! cursor-default! hover:bg-transparent!">
+                    Edit
+                </TabButton>
+            </div>
         </Buttons>
-
+    
         <Contents Context="_">
-            <TabContent TabId="preview">
-                <ProfilePreview Model="Model" User="_user" AvatarPreviewUrl="@_avatarPreviewUrl"/>
+            <TabContent TabId="preview" RenderStrategy="RenderStrategy.Conditional" class="size-full mt-3 mx-0 w-full md:mx-auto md:w-2/3 lg:w-3/4 grid grid-cols-1 lg:grid-cols-[40%_60%] border border-gray-800 shadow-lg rounded-lg">
+                <section class="pb-2 border-b border-b-gray-600 lg:border-r lg:border-r-gray-600 lg:border-b-0">
+                    @* Avatar and Banner *@
+                    <div class="relative h-32">
+                        <div class="absolute inset-0 bg-cover bg-center bg-black rounded-tl-lg rounded-tr-lg lg:rounded-tr-none"></div>
+    
+                        <div class="absolute -bottom-8 left-4">
+                            <div class="relative">
+                                @{
+                                    string? displayImageSrc = Model!.Avatar.FileOperation.Operation switch {
+                                        ImageUploadOperation.Upload => Model.Avatar.FileOperation.PreviewUrl,
+                                        ImageUploadOperation.Nothing => string.IsNullOrEmpty(_user.AvatarProfilePath) ? null : ContentService.GetAssetPath(_user.AvatarProfilePath),
+                                        _ => null,
+                                    };
+    
+                                }
+    
+                                <Avatar class="size-20 border-4 border-gray-700" ImageSrc="@displayImageSrc" ImageAlt="Preview Avatar"/>
+    
+                                @* TODO: Status indicator *@
+                            </div>
+                        </div>
+                    </div>
+    
+                    @* Username, Bio, etc... *@
+                    <div class="px-2 pt-10">
+                        <p class="text-2xl font-bold">@Model.DisplayName</p>
+                        <p class="text-sm">@_user.UserName</p>
+    
+                        <p class="mt-2 text-sm">
+                            <span class="font-semibold">Joined since:</span> @_user.CreatedAt.ToString("yyyy/MM/dd")
+                        </p>
+    
+                        @if (Model.Pronouns is { } pronouns) {
+                            <p class="text-sm mt-2">
+                                <span class="font-semibold">Pronouns:</span>
+    
+                                @pronouns
+                            </p>
+                        }
+                    </div>
+                </section>
+    
+                <section class="w-full p-4">
+                    @if (!string.IsNullOrEmpty(_markupBio.Value)) {
+                        @_markupBio
+                    } else {
+                        <div class="size-full flex justify-center items-center">
+                            <p class="text-sm text-gray-400">Well this is awkward...</p>
+                        </div>
+                    }
+                </section>
             </TabContent>
-
-            <TabContent TabId="edit" RenderStrategy="RenderStrategy.Visibility">
-                <ProfileEdit Model="Model" User="_user" @bind-AvatarPreviewUrl="_avatarPreviewUrl"/>
+    
+            <TabContent TabId="edit" RenderStrategy="RenderStrategy.Visibility" class="mt-3 mx-0 w-full md:mx-auto md:w-2/3 lg:w-3/4">
+                <EditForm class="grid grid-cols-1 lg:grid-cols-2 gap-2" EditContext="_editContext" FormName="Profile">
+                    <AntiforgeryToken/>
+                    <DataAnnotationsValidator/>
+    
+                    <div class="col-span-1 lg:col-span-2 xl:col-span-1">
+                        <label class="font-semibold">Avatar</label>
+    
+                        <div class="mt-2 flex flex-row justify-center xl:block">
+                            <PreviewableImageInput @ref="_avatarElement"
+                                                   @bind-File="Model!.Avatar.FileOperation"
+                                                   @bind-File:after="OnAvatarOperationChanged"
+                                                   ImageSrc="@(string.IsNullOrEmpty(_user.AvatarProfilePath) ? null : ContentService.GetAssetPath(_user.AvatarProfilePath))"
+                                                   ImageAlt="Avatar"
+                                                   class="size-96 rounded-full"/>
+    
+                            @if (_avatarElement?.RootElementReference is { } targetElement) {
+                                <Popover TargetReference="targetElement" ArrowCssClass="bg-[#ff4b6a]" Placement="top" Offset="8" IsShowing="@(!_editContext.IsValid(_avatarOperationField))" class="max-w-[90%]">
+                                    <ValidationMessage For="() => Model.Avatar.FileOperation" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"></ValidationMessage>
+                                </Popover>
+                            }
+                        </div>
+                    </div>
+    
+                    <div>
+                        <label class="font-semibold">Username</label>
+                        <input type="text" readonly value="@_user.UserName" class="mt-2 input-field h-11 w-full" disabled>
+                    </div>
+    
+                    <div class="relative">
+                        <label class="font-semibold">Display Name</label>
+    
+                        @{
+                            string classes = $"w-full h-11 mt-2 input-field {(_editContext.IsValid(_displayNameField) ? string.Empty : "border-red-700")}";
+    
+                        }
+    
+                        <InputText @ref="_displayNameElement" type="text" @bind-Value="Model.DisplayName" placeholder="Display Name" class="@classes" maxlength="32"/>
+    
+                        @if (_displayNameElement?.Element.HasValue ?? false) {
+                            <Popover TargetReference="_displayNameElement.Element.Value" ArrowCssClass="bg-[#ff4b6a]" Placement="top" Offset="8" IsShowing="@(!_editContext.IsValid(_displayNameField))" class="max-w-[90%]">
+                                <ValidationMessage For="() => Model.DisplayName" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"></ValidationMessage>
+                            </Popover>
+                        }
+                    </div>
+    
+                    <div class="relative">
+                        <label class="font-semibold">Pronouns</label>
+    
+                        @{
+                            classes = $"w-full h-11 mt-2 input-field {(_editContext.IsValid(_pronounsField) ? string.Empty : "border-red-700")}";
+    
+                        }
+    
+                        <InputText @ref="_pronounsElement" type="text" @bind-Value="Model.Pronouns" placeholder="Pronouns" class="@classes" maxlength="32"/>
+    
+                        @if (_pronounsElement?.Element.HasValue ?? false) {
+                            <Popover TargetReference="_pronounsElement.Element.Value" ArrowCssClass="bg-[#ff4b6a]" Placement="top" Offset="8" IsShowing="@(!_editContext.IsValid(_pronounsField))" class="max-w-[90%]">
+                                <ValidationMessage For="() => Model.Pronouns" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"></ValidationMessage>
+                            </Popover>
+                        }
+                    </div>
+    
+                    <div class="col-start-1 col-end-2 lg:col-end-3">
+                        <label class="font-semibold">About me</label>
+    
+                        @{
+                            classes = $"w-full h-55 mt-2 input-field resize-none {(_editContext.IsValid(_bioField) ? string.Empty : "border-red-700")}";
+    
+                        }
+    
+                        <InputTextArea @ref="_bioElement" type="text" @bind-Value:get="Model.Bio" @bind-Value:set="SetBio" class="@classes" placeholder="Biography"/>
+    
+                        @if (_bioElement?.Element.HasValue ?? false) {
+                            <Popover TargetReference="_bioElement.Element.Value" ArrowCssClass="bg-[#ff4b6a]" Placement="top" Offset="8" IsShowing="@(!_editContext.IsValid(_bioField))" class="max-w-[90%]">
+                                <ValidationMessage For="() => Model.Bio" class="bg-[#ff4b6a] p-2 text-white text-sm rounded-lg shadow-md"></ValidationMessage>
+                            </Popover>
+                        }
+                    </div>
+                </EditForm>
             </TabContent>
         </Contents>
     </TabContainer>
+    
+    <UnsavedChangesPopup IsShowing="_editContext.IsModified()" OnCancelRequest="CancelEdit" OnSaveRequest="SaveProfile"/>
 </div>
+
 
 @code {
     private ApplicationUser? _user;
 
-    private ProfileInputModel Model { get; } = new() {
-        DisplayName = string.Empty,
-    };
+    private ProfileInputModel? Model;
 
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = null!;
 
     private string _tabActiveId = "preview";
     private string? _avatarPreviewUrl;
+    
+    private EditContext _editContext = null!;
+
+    private PreviewableImageInput? _avatarElement;
+    private InputText? _displayNameElement, _pronounsElement;
+    private InputTextArea? _bioElement;
+    
+    private FieldIdentifier _displayNameField, _pronounsField, _bioField, _avatarOperationField;
+    private ValidationMessageStore _validationMessages = null!;
+    
+    private MarkupString _markupBio;
     
     // TODO: Do these parameters logic inside OnParametersSetAsync.
     protected override async Task OnInitializedAsync() {
@@ -73,9 +222,124 @@
             return;
         }
 
+        Model ??= new() {
+            DisplayName = _user.DisplayName,
+        };
+
         Model.DisplayName = _user!.DisplayName;
         Model.Pronouns = _user.Pronouns;
         Model.Bio = _user.Bio;
+        
+        _displayNameField = FieldIdentifier.Create(() => Model.DisplayName);
+        _pronounsField = FieldIdentifier.Create(() => Model.Pronouns);
+        _bioField = FieldIdentifier.Create(() => Model.Bio);
+        _avatarOperationField = FieldIdentifier.Create(() => Model.Avatar.FileOperation);
+        
+        _editContext = new(Model);
+        _validationMessages = new(_editContext);
+        _editContext.OnValidationRequested += ValidationRequested;
+    }
+
+    private void SetBio(string? value) {
+        Model!.Bio = value;
+        
+        if (string.IsNullOrWhiteSpace(Model.Bio)) {
+            _markupBio = new(string.Empty);
+            return;
+        }
+
+        var document = Markdown.Parse(Model.Bio, MarkdownPipeline);
+        _markupBio = (MarkupString)SanitizingService.Sanitize(document.ToHtml(MarkdownPipeline));
+    }
+    
+    private void ValidationRequested(object? sender, ValidationRequestedEventArgs args) {
+        _validationMessages.Clear();
+
+        if (Model!.Avatar.FileOperation.File is { } avatarFile) {
+            if (!avatarFile.ContentType.StartsWith("image/")) {
+                _validationMessages.Add(_avatarOperationField, "Invalid file format.");
+                return;
+            }
+
+            if (avatarFile.Size > ApplicationConstants.MaxUserAvatarSize) {
+                _validationMessages.Add(_avatarOperationField, $"Avatar surpassed maximum allowed size of {ApplicationConstants.MaxUserAvatarSize} bytes.");
+            }
+        }
+    }
+    
+    private void OnAvatarOperationChanged() {
+        switch (Model!.Avatar.FileOperation.Operation) {
+            case ImageUploadOperation.Delete or ImageUploadOperation.Upload:
+                _editContext.NotifyFieldChanged(_avatarOperationField);
+                break;
+                
+            case ImageUploadOperation.Nothing:
+                _editContext.MarkAsUnmodified(_avatarOperationField);
+                break;
+        }
+    }
+
+    private async Task SaveProfile() {
+        if (!_editContext.Validate()) {
+            return;
+        }
+
+        // Copy model properties into user instance
+        _user!.DisplayName = Model!.DisplayName.Trim();
+        _user.Pronouns = Model.Pronouns?.Trim();
+        _user.Bio = Model.Bio?.Trim();
+
+        // Process Avatar.
+        switch (Model.Avatar.FileOperation.Operation) {
+            case ImageUploadOperation.Upload:
+            {
+                await using var srcStream = Model.Avatar.FileOperation.File!.OpenReadStream(ApplicationConstants.MaxUserAvatarSize);
+
+                string databasePath = await ContentService.UploadUserAvatarAsync(srcStream, _user.Id);
+
+                _user.AvatarProfilePath = databasePath;
+                break;
+            }
+                
+            case ImageUploadOperation.Delete:
+                await ContentService.DeleteUserAvatarAsync(_user.Id);
+                _user.AvatarProfilePath = null;
+                break;
+        }
+
+        _user.IsProfileSetup = true; // Mark user as profile setup, vibe checked.
+
+        var updateResult = await UserService.UpdateAsync(_user);
+
+        if (!updateResult.Succeeded) {
+            // TODO: Report.
+        }
+
+        await JavascriptRuntime.InvokeVoidAsync("URL.revokeObjectURL", _avatarPreviewUrl);
+        _avatarPreviewUrl = null;
+        Model.Avatar.FileOperation = default;
+    }
+
+    private async Task CancelEdit() {
+        Model!.DisplayName = _user!.DisplayName;
+        Model.Pronouns = _user.Pronouns;
+        Model.Bio = _user.Bio;
+        Model.Avatar.FileOperation = default;
+
+        _avatarPreviewUrl = null;
+        
+        await JavascriptRuntime.InvokeVoidAsync("URL.revokeObjectURL", _avatarPreviewUrl);
+
+        _editContext.MarkAsUnmodified();
+    }
+    
+    public async ValueTask DisposeAsync() {
+        if (_avatarPreviewUrl != null) {
+            try {
+                await JavascriptRuntime.InvokeVoidAsync("URL.revokeObjectURL", _avatarPreviewUrl);
+            } catch (JSDisconnectedException) {
+            }
+        }
     }
     
     public sealed class ProfileInputModel {

@@ -14,8 +14,7 @@ public class UserService(
     SignInManager<ApplicationUser> signInManager,
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     ICacheService cacheService
-) : IUserService
-{
+) : IUserService {
     public async Task<ApplicationUser?> GetUserAsync(ClaimsPrincipal claimsPrincipal) {
         return await userManager.GetUserAsync(claimsPrincipal);
     }
@@ -145,5 +144,15 @@ public class UserService(
             .Select(m => new UserBanDetails(m.Reason, m.BanDuration!.Value, m.OffenderUser.UnbanAt!.Value))
             .Cast<UserBanDetails?>()
             .FirstOrDefaultAsync();
+    }
+
+    public async Task<IdentityResult> UpdateAsync(ApplicationUser user) {
+        var result = await userManager.UpdateAsync(user);
+
+        if (result.Succeeded) {
+            await cacheService.ResetUserDisplayAsync(user.Id);
+        }
+
+        return result;
     }
 }

@@ -28,6 +28,12 @@ public sealed class CacheService(IDistributedCache cache) : ICacheService {
         return factoryResult;
     }
 
+    public async Task ResetUserDisplayAsync(Guid userId) {
+        string key = CreateUserDisplayCacheKey(userId);
+
+        await cache.RemoveAsync(key);
+    }
+
     public async Task<RolePermissions?> GetOrSetCommunityRolePermissionsAsync(Guid roleId, Func<Guid, Task<RolePermissions?>> factory) {
         string key = CreateCommunityRolePermissionsCacheKey(roleId);
         var cachedData = await cache.GetAsync(key);
