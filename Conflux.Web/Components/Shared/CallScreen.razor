@@ -67,11 +67,11 @@
         
         <div class="size-full overflow-hidden flex justify-center items-center @(_state == State.Success && CallRoom.State == CallRoomState.Calling ? string.Empty : "hidden")">
             <div class="flex-1 h-full flex justify-center items-center">
-                <video @ref="_localVideoElement" class="max-w-full max-h-full object-contain -scale-x-100" playsinline autoplay muted></video>
+                <video @ref="_localVideoElement" class="size-full object-contain -scale-x-100" playsinline autoplay muted></video>
             </div>
             
             <div class="flex-1 h-full flex justify-center items-center">
-                <video @ref="_remoteVideoElement" class="max-w-full max-h-full object-contain -scale-x-100" playsinline autoplay></video>
+                <video @ref="_remoteVideoElement" class="size-full object-contain -scale-x-100" playsinline autoplay></video>
             </div>
         </div>
 
@@ -125,7 +125,6 @@
 
 @code {
     [Parameter, EditorRequired] public required CallRoom CallRoom { get; set; }
-
     [CascadingParameter(Name = "SessionUserId")] private Guid SessionUserId { get; set; }
 
     private IJSObjectReference? _module;
@@ -136,8 +135,6 @@
     private ElementReference _rootElement;
     private State _state;
 
-    // private ElementReference _localVideoElement;
-
     private UserDisplayDTO? _otherUser;
     private bool _emitOffer;
     private ElementReference _localVideoElement, _remoteVideoElement, _audioOptionsButton, _videoButtonsOption;
@@ -145,7 +142,6 @@
     private bool _isShowingVideoOptions, _isShowingAudioOptions;
 
     private string _audioInputDevice = string.Empty, _audioOutputDevice = string.Empty;
-    private float _audioVolume;
     private string _videoInputDevice = string.Empty;
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
@@ -294,6 +290,7 @@
         }
 
         await _module.InvokeVoidAsync("setAudioInputDevice", _callScreen, deviceId);
+        _audioInputDevice = deviceId;
     }
 
     private async Task SetAudioOutputDevice(string deviceId) {
@@ -302,6 +299,7 @@
         }
         
         await _module.InvokeVoidAsync("setAudioOutputDevice", _callScreen, deviceId);
+        _audioOutputDevice = deviceId;
     }
     
     private async Task SetVideoInputDevice(string value) {
