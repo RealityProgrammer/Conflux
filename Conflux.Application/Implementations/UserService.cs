@@ -16,8 +16,8 @@ public class UserService(
     ICacheService cacheService
 ) : IUserService
 {
-    public Task<ApplicationUser?> GetUserAsync(ClaimsPrincipal claimsPrincipal) {
-        return userManager.GetUserAsync(claimsPrincipal);
+    public async Task<ApplicationUser?> GetUserAsync(ClaimsPrincipal claimsPrincipal) {
+        return await userManager.GetUserAsync(claimsPrincipal);
     }
     
     public async Task<bool> IsUserNameTaken(string username) {
@@ -42,12 +42,12 @@ public class UserService(
         return await userManager.GetTwoFactorEnabledAsync(user);
     }
 
-    public Task<bool> IsTwoFactorEnabled(ApplicationUser user) {
-        return userManager.GetTwoFactorEnabledAsync(user);
+    public async Task<bool> IsTwoFactorEnabled(ApplicationUser user) {
+        return await userManager.GetTwoFactorEnabledAsync(user);
     }
 
-    public Task<bool> IsProfileSetup(ClaimsPrincipal claimsPrincipal) {
-        return Task.FromResult(claimsPrincipal.FindFirstValue("ProfileSetup") == bool.TrueString);
+    public async Task<bool> IsProfileSetup(ClaimsPrincipal claimsPrincipal) {
+        return await Task.FromResult(claimsPrincipal.FindFirstValue("ProfileSetup") == bool.TrueString);
     }
 
     public async Task UpdateProfileSetup(ClaimsPrincipal claimsPrincipal, bool value) {
