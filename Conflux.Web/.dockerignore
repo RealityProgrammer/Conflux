@@ -1,5 +1,3 @@
-appsettings.Development.json
-appsettings.Development.example.json
 Uploads/
 
 # Created by https://www.toptal.com/developers/gitignore/api/csharp,aspnetcore,jetbrains,visualstudio,visualstudiocode,vim,node,nextjs

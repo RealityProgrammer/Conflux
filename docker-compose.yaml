@@ -9,10 +9,11 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_ROOT_PASSWORD: root_password
     healthcheck:
-      test: pg_isready -d Conflux
-      interval: 30s
-      timeout: 60s
+      test: ["CMD-SHELL", "pg_isready -d Conflux -U postgres"]
+      interval: 5s
+      timeout: 20s
       retries: 5
+      start_period: 10s
     ports:
       - "5432:5432"
       
@@ -31,6 +32,15 @@ services:
       Vite__Server__Enabled: true
       Vite__Server__Port: 5173
       
-      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=Conflux;Username=postgres;Password=password;
+      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=Conflux;Username=postgres;Password=password;"
+      ConnectionStrings__PostgresCache: "Host=db;Port=5432;Database=Conflux;Username=postgres;Password=password;"
+      
+      # PostgresCache__SchemaName: "public"
+      # PostgresCache__TableName: "cache"
+      # PostgresCache__CreateIfNotExists: true
+      # PostgresCache__UseWAL: false
+      # PostgresCache__ExpiredItemsDeletionInterval: "00:30:00"
+      # PostgresCache__DefaultSlidingExpiration: "00:10:00"
+      # InitialAdminPassword: "Password1!"
     ports:
       - "8080:8080"
