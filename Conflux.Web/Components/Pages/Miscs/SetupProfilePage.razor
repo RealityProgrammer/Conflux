@@ -269,27 +269,29 @@
     }
 
     private async Task OnAvatarSubmit() {
-        if (_avatarEditContext.Validate()) {
-            if (AvatarModel!.File is { File: { } avatarFile }) {
-                _processingAvatar = true;
+        if (!_avatarEditContext.Validate()) {
+            return;
+        }
+        
+        if (AvatarModel!.File is { File: { } avatarFile }) {
+            _processingAvatar = true;
+            
+            try {
+                await using var imageStream = avatarFile.OpenReadStream(ApplicationConstants.MaxUserAvatarSize);
+            
+                string databasePath = await ContentService.UploadUserAvatarAsync(imageStream, _user!.Id);
+                _user.AvatarProfilePath = databasePath;
+            
+                await UserService.UpdateAsync(_user);
                 
-                try {
-                    await using var imageStream = avatarFile.OpenReadStream(ApplicationConstants.MaxUserAvatarSize);
-                
-                    string databasePath = await ContentService.UploadUserAvatarAsync(imageStream, _user!.Id);
-                    _user.AvatarProfilePath = databasePath;
-                
-                    await UserService.UpdateAsync(_user);
-                    
-                    _stage = SetupStage.Profile;
-                } finally {
-                    _processingAvatar = false;
-                    StateHasChanged();
-                }
-            } else {
-                await ContentService.DeleteUserAvatarAsync(_user!.Id);
                 _stage = SetupStage.Profile;
+            } finally {
+                _processingAvatar = false;
+                StateHasChanged();
             }
+        } else {
+            await ContentService.DeleteUserAvatarAsync(_user!.Id);
+            _stage = SetupStage.Profile;
         }
     }
 
