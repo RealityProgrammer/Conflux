@@ -8,6 +8,7 @@
 @implements IAsyncDisposable
 
 @inject NavigationManager NavigationManager
+@inject IUserService UserService
 @inject UserManager<ApplicationUser> UserManager
 @inject IContentService ContentService
 @inject IJSRuntime JavascriptRuntime
@@ -278,7 +279,7 @@
                     string databasePath = await ContentService.UploadUserAvatarAsync(imageStream, _user!.Id);
                     _user.AvatarProfilePath = databasePath;
                 
-                    await UserManager.UpdateAsync(_user);
+                    await UserService.UpdateAsync(_user);
                     
                     _stage = SetupStage.Profile;
                 } finally {
@@ -305,7 +306,7 @@
             _user.Pronouns = ProfileModel.Pronouns?.Trim();
             _user.Bio = ProfileModel.Bio?.Trim();
             
-            var result = await UserManager.UpdateAsync(_user);
+            var result = await UserService.UpdateAsync(_user);
 
             if (result.Succeeded) {
                 _stage = SetupStage.Complete;
