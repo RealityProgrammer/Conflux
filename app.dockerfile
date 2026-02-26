@@ -8,8 +8,18 @@ EXPOSE 443
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-# Copy the project
-COPY . ./Conflux
+# Copy csproj and restore
+COPY ./Conflux.Domain/Conflux.Domain.csproj ./Conflux/Conflux.Domain/Conflux.Domain.csproj
+COPY ./Conflux.Application/Conflux.Application.csproj ./Conflux/Conflux.Application/Conflux.Application.csproj
+COPY ./Conflux.Infrastructure/Conflux.Infrastructure.csproj ./Conflux/Conflux.Infrastructure/Conflux.Infrastructure.csproj
+COPY ./Conflux.Web/Conflux.Web.csproj ./Conflux/Conflux.Web/Conflux.Web.csproj
+
+RUN dotnet restore ./Conflux/Conflux.Web/Conflux.Web.csproj
+
+COPY ./Conflux.Domain/ ./Conflux/Conflux.Domain/
+COPY ./Conflux.Application/ ./Conflux/Conflux.Application/
+COPY ./Conflux.Infrastructure/ ./Conflux/Conflux.Infrastructure/
+COPY ./Conflux.Web/ ./Conflux/Conflux.Web/
 
 WORKDIR /src/Conflux/Conflux.Web
 
@@ -22,17 +32,12 @@ RUN apt-get update && \
 RUN npm install
 RUN npm run build-prod
 
-# Restore
-RUN dotnet restore ./Conflux.Web.csproj
-
 # Build the project
 RUN dotnet build ./Conflux.Web.csproj -c Release -o /app/build
 
 # Publish app
 FROM build AS publish
 RUN dotnet publish ./Conflux.Web.csproj -c Release -o /app/publish
-
-# ENTRYPOINT ["tail", "-f", "/dev/null"]
 
 # Finalize image:
 FROM base AS final
