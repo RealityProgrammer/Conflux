@@ -13,15 +13,9 @@
 
 <div class="flex flex-col @_cssClass" @attributes="AdditionalAttributes">
     <header class="flex flex-row justify-center items-center gap-1 flex-none">
-        <p class="size-xl font-bold flex-1">Users</p>
+        <p class="size-xl font-bold flex-1">Banned Users</p>
         
         <SearchField @bind-Value="_searchField" @bind-Value:after="AfterModifySearchField" class="flex-1 h-10"/>
-        
-        <AuthorizeView Roles="Admin, SystemDeveloper">
-            <Authorized>
-                <button class="button-primary basis-28 p-2!" @onclick="EventUtils.AsNonRenderingEventHandler(OpenUserCreationModal)">Create</button>
-            </Authorized>
-        </AuthorizeView>
     </header>
     
     <section class="flex-1 border border-gray-600 rounded-lg px-1 mt-1 overflow-y-auto scrollbar-hide space-y-1">
@@ -75,18 +69,16 @@
         
         var page = await UserService.PaginateUserDisplayAsync(
             query => query.OrderBy(u => u.DisplayName),
-            query => 
-                    string.IsNullOrEmpty(_searchField) ? 
-                        query : 
-                        query.Where(u => EF.Functions.ILike(u.DisplayName, namePattern) || EF.Functions.ILike(u.UserName!, namePattern)),
+            query => {
+                var utcNow = DateTime.UtcNow;
+                query = query.Where(u => u.UnbanAt != null && u.UnbanAt < utcNow);
+
+                return string.IsNullOrEmpty(_searchField) ? query : query.Where(u => EF.Functions.ILike(u.DisplayName, namePattern) || EF.Functions.ILike(u.UserName!, namePattern));
+            },
             request.StartIndex,
             request.Count);
         
         return new(page.Page, page.TotalCount);
-    }
-
-    private void OpenUserCreationModal() {
-        ModalService.Open<UserCreationModal>();
     }
 
     private void HandleUserCardClick(UserCard card) {
