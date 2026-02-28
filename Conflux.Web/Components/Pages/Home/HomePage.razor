@@ -18,7 +18,7 @@
 
 <header class="bg-[#071318] w-full border-b-2 border-b-[#353535] px-6 py-2 flex flex-row items-center">
     <section class="flex-1 inline-flex flex-row justify-start items-center gap-4">
-        <Logo/>
+        <Logo class="size-14"/>
 
         <button class="border-2 border-indigo-500/30 size-12 py-2 rounded-full flex flex-col justify-around items-center cursor-pointer lg:hidden" @onclick="OpenNavigationDrawer">
             @if (_openNavigationDrawer) {
@@ -26,9 +26,9 @@
                     <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/>
                 </svg>
             } else {
-                <span class="w-3/5 h-[3px] bg-[#4e4e4e]"></span>
-                <span class="w-3/5 h-[3px] bg-[#4e4e4e]"></span>
-                <span class="w-3/5 h-[3px] bg-[#4e4e4e]"></span>
+                <span class="w-3/5 h-0.75 bg-[#4e4e4e]"></span>
+                <span class="w-3/5 h-0.75 bg-[#4e4e4e]"></span>
+                <span class="w-3/5 h-0.75 bg-[#4e4e4e]"></span>
             }
         </button>
         
