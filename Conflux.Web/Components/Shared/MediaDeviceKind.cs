@@ -1,6 +1,7 @@
 ﻿namespace Conflux.Web.Components.Shared;
 
-public enum MediaDeviceKind {
+public enum MediaDeviceKind
+{
     VideoInput,
     AudioInput,
     AudioOutput,

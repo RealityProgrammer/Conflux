@@ -1,6 +1,7 @@
 ﻿namespace Conflux.Web.Components.Shared.Icons;
 
-public enum TriangleVariations {
+public enum TriangleVariations
+{
     Default,
     Filled,
     Half,

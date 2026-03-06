@@ -1,6 +1,7 @@
 ﻿namespace Conflux.Web.Components.Shared.Icons;
 
-public enum MediaType {
+public enum MediaType
+{
     Gif,
     Image,
 }

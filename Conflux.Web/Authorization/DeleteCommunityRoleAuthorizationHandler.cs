@@ -4,16 +4,18 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace Conflux.Web.Authorization;
 
-public class DeleteCommunityRoleAuthorizationHandler : AuthorizationHandler<DeleteCommunityRoleRequirement, RolePermissions> {
+public class DeleteCommunityRoleAuthorizationHandler : AuthorizationHandler<DeleteCommunityRoleRequirement, RolePermissions>
+{
     protected override Task HandleRequirementAsync(
-        AuthorizationHandlerContext context, 
-        DeleteCommunityRoleRequirement requirement, 
+        AuthorizationHandlerContext context,
+        DeleteCommunityRoleRequirement requirement,
         RolePermissions permissions)
     {
-        if (permissions.Role.HasFlag(RolePermissionFlags.DeleteRole)) {
+        if (permissions.Role.HasFlag(RolePermissionFlags.DeleteRole))
+        {
             context.Succeed(requirement);
         }
-        
+
         return Task.CompletedTask;
     }
 }

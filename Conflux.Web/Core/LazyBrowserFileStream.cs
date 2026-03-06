@@ -3,7 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Conflux.Web.Core;
 
-internal sealed class LazyBrowserFileStream(IBrowserFile file, int maxAllowedSize) 
+internal sealed class LazyBrowserFileStream(IBrowserFile file, int maxAllowedSize)
     : Stream
 {
     private Stream? _underlyingStream;
@@ -25,13 +25,15 @@ internal sealed class LazyBrowserFileStream(IBrowserFile file, int maxAllowedSiz
 
     public override void Flush() => _underlyingStream?.Flush();
 
-    public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) {
+    public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+    {
         EnsureStreamIsOpen();
 
         return _underlyingStream.ReadAsync(buffer, offset, count, cancellationToken);
     }
 
-    public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) {
+    public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+    {
         EnsureStreamIsOpen();
         return _underlyingStream.ReadAsync(buffer, cancellationToken);
     }
@@ -39,8 +41,10 @@ internal sealed class LazyBrowserFileStream(IBrowserFile file, int maxAllowedSiz
     [MemberNotNull(nameof(_underlyingStream))]
     private void EnsureStreamIsOpen() => _underlyingStream ??= file.OpenReadStream(maxAllowedSize);
 
-    protected override void Dispose(bool disposing) {
-        if (_disposed) {
+    protected override void Dispose(bool disposing)
+    {
+        if (_disposed)
+        {
             return;
         }
 

@@ -1,6 +1,7 @@
 ﻿namespace Conflux.Web.Components.Shared.Icons;
 
-public enum ChatArrowDirection {
+public enum ChatArrowDirection
+{
     Left,
     Middle,
     Right,

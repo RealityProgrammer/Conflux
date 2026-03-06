@@ -1,6 +1,7 @@
 ﻿namespace Conflux.Domain.Enums;
 
-public enum ReportReason {
+public enum ReportReason
+{
     Spam,
     Harassment,
     Misinformation,

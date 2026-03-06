@@ -1,8 +1,9 @@
 ﻿namespace Conflux.Web.Components.Shared.Icons;
 
-public enum TelephoneVariation {
+public enum TelephoneVariation
+{
     None,
-    
+
     Forward,
     Inbound,
     Outbound,

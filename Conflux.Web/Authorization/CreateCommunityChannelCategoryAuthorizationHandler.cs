@@ -4,16 +4,18 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace Conflux.Web.Authorization;
 
-public class CreateCommunityChannelCategoryAuthorizationHandler : AuthorizationHandler<CreateCommunityChannelCategoryRequirement, RolePermissions> {
+public class CreateCommunityChannelCategoryAuthorizationHandler : AuthorizationHandler<CreateCommunityChannelCategoryRequirement, RolePermissions>
+{
     protected override Task HandleRequirementAsync(
-        AuthorizationHandlerContext context, 
-        CreateCommunityChannelCategoryRequirement requirement, 
+        AuthorizationHandlerContext context,
+        CreateCommunityChannelCategoryRequirement requirement,
         RolePermissions permissions)
     {
-        if (permissions.Channel.HasFlag(ChannelPermissionFlags.CreateChannelCategory)) {
+        if (permissions.Channel.HasFlag(ChannelPermissionFlags.CreateChannelCategory))
+        {
             context.Succeed(requirement);
         }
-        
+
         return Task.CompletedTask;
     }
 }

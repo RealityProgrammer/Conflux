@@ -5,19 +5,22 @@ using System.Security.Claims;
 
 namespace Conflux.Web.Authentication;
 
-public sealed class ApplicationUserClaimsPrincipalFactory : UserClaimsPrincipalFactory<ApplicationUser, IdentityRole<Guid>> {
+public sealed class ApplicationUserClaimsPrincipalFactory : UserClaimsPrincipalFactory<ApplicationUser, IdentityRole<Guid>>
+{
     public ApplicationUserClaimsPrincipalFactory(
-        UserManager<ApplicationUser> userManager, 
+        UserManager<ApplicationUser> userManager,
         RoleManager<IdentityRole<Guid>> roleManager,
         IOptions<IdentityOptions> options
-    ) : base(userManager, roleManager, options) {
+    ) : base(userManager, roleManager, options)
+    {
     }
 
-    protected override async Task<ClaimsIdentity> GenerateClaimsAsync(ApplicationUser user) {
+    protected override async Task<ClaimsIdentity> GenerateClaimsAsync(ApplicationUser user)
+    {
         var identity = await base.GenerateClaimsAsync(user);
-    
+
         identity.AddClaim(new("ProfileSetup", user.IsProfileSetup.ToString()));
-        
+
         return identity;
     }
 }

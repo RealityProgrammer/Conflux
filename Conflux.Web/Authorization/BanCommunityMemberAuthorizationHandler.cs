@@ -4,16 +4,18 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace Conflux.Web.Authorization;
 
-public class BanCommunityMemberAuthorizationHandler : AuthorizationHandler<BanCommunityMemberRequirement, RolePermissions> {
+public class BanCommunityMemberAuthorizationHandler : AuthorizationHandler<BanCommunityMemberRequirement, RolePermissions>
+{
     protected override Task HandleRequirementAsync(
-        AuthorizationHandlerContext context, 
-        BanCommunityMemberRequirement requirement, 
+        AuthorizationHandlerContext context,
+        BanCommunityMemberRequirement requirement,
         RolePermissions permissions)
     {
-        if (permissions.Management.HasFlag(ManagementPermissionFlags.BanMember)) {
+        if (permissions.Management.HasFlag(ManagementPermissionFlags.BanMember))
+        {
             context.Succeed(requirement);
         }
-    
+
         return Task.CompletedTask;
     }
 }

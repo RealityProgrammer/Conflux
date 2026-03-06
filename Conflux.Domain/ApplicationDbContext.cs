@@ -7,7 +7,8 @@ using System.Runtime.CompilerServices;
 
 namespace Conflux.Domain;
 
-public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>(options) {
+public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>(options)
+{
     public DbSet<FriendRequest> FriendRequests { get; set; } = null!;
     public DbSet<Conversation> Conversations { get; set; } = null!;
     public DbSet<ChatMessage> ChatMessages { get; set; } = null!;
@@ -16,34 +17,38 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<CommunityChannel> CommunityChannels { get; set; } = null!;
     public DbSet<CommunityChannelCategory> CommunityChannelCategories { get; set; } = null!;
     public DbSet<CommunityRole> CommunityRoles { get; set; } = null!;
-    
+
     public DbSet<MessageReport> MessageReports { get; set; } = null!;
     public DbSet<ModerationRecord> ModerationRecords { get; set; } = null!;
-    
-    protected override void OnModelCreating(ModelBuilder builder) {
+
+    protected override void OnModelCreating(ModelBuilder builder)
+    {
         base.OnModelCreating(builder);
-        
-        builder.Entity<ApplicationUser>(entity => {
+
+        builder.Entity<ApplicationUser>(entity =>
+        {
             entity.HasMany(user => user.SentFriendRequests)
                 .WithOne(request => request.Sender)
                 .HasForeignKey(request => request.SenderUserId)
                 .HasPrincipalKey(user => user.Id)
                 .OnDelete(DeleteBehavior.Cascade)
                 .IsRequired();
-            
+
             entity.HasMany(user => user.ReceivedFriendRequests)
                 .WithOne(request => request.Receiver)
                 .HasForeignKey(request => request.ReceiverUserId)
                 .HasPrincipalKey(user => user.Id)
                 .OnDelete(DeleteBehavior.Cascade)
                 .IsRequired();
-        }).Entity<FriendRequest>(entity => {
+        }).Entity<FriendRequest>(entity =>
+        {
             entity.HasKey(request => request.Id);
-            
+
             entity.HasIndex(request => new { request.SenderUserId, request.ReceiverUserId }).IsUnique();
         });
 
-        builder.Entity<Conversation>(entity => {
+        builder.Entity<Conversation>(entity =>
+        {
             entity.HasKey(x => x.Id);
 
             entity.HasMany(conversation => conversation.Messages)
@@ -52,7 +57,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasPrincipalKey(conversation => conversation.Id)
                 .OnDelete(DeleteBehavior.Cascade)
                 .IsRequired();
-            
+
             entity.HasOne(conversation => conversation.FriendRequest)
                 .WithOne(request => request.Conversation)
                 .HasForeignKey<Conversation>(conversation => conversation.FriendRequestId)
@@ -62,17 +67,18 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .WithOne(channel => channel.Conversation)
                 .HasForeignKey<Conversation>(conversation => conversation.CommunityChannelId)
                 .OnDelete(DeleteBehavior.Cascade);
-        }).Entity<ChatMessage>(entity => {
+        }).Entity<ChatMessage>(entity =>
+        {
             entity.HasKey(x => x.Id);
-            
+
             entity.HasIndex(message => new { message.ConversationId, message.CreatedAt });
-            
+
             entity.HasOne(message => message.Sender)
                 .WithMany()
                 .HasForeignKey(message => message.SenderUserId)
                 .HasPrincipalKey(user => user.Id)
                 .OnDelete(DeleteBehavior.Cascade);
-            
+
             entity.HasOne(message => message.ReplyMessage)
                 .WithMany()
                 .HasForeignKey(message => message.ReplyMessageId)
@@ -86,7 +92,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.ComplexCollection(m => m.Attachments, action => action.ToJson());
         });
 
-        builder.Entity<Community>(entity => {
+        builder.Entity<Community>(entity =>
+        {
             entity.HasKey(x => x.Id);
 
             entity.Property(x => x.InvitationId).HasValueGenerator<GuidValueGenerator>();
@@ -110,11 +117,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasPrincipalKey(community => community.Id)
                 .OnDelete(DeleteBehavior.Cascade)
                 .IsRequired();
-        }).Entity<CommunityMember>(entity => {
+        }).Entity<CommunityMember>(entity =>
+        {
             entity.HasKey(x => x.Id);
 
             entity.HasIndex(x => new { x.CommunityId, x.UserId }).IsUnique();
-            
+
             entity.HasOne(member => member.Community)
                 .WithMany(community => community.Members)
                 .HasForeignKey(member => member.CommunityId)
@@ -134,7 +142,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .OnDelete(DeleteBehavior.SetNull);
 
             entity.HasQueryFilter("BanFilter", m => !(m.UnbanAt != null && m.UnbanAt > DateTime.UtcNow));
-        }).Entity<CommunityChannelCategory>(entity => {
+        }).Entity<CommunityChannelCategory>(entity =>
+        {
             entity.HasKey(x => x.Id);
 
             entity.HasMany(category => category.Channels)
@@ -143,11 +152,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasPrincipalKey(category => category.Id)
                 .OnDelete(DeleteBehavior.Cascade)
                 .IsRequired();
-        }).Entity<CommunityChannel>(entity => {
+        }).Entity<CommunityChannel>(entity =>
+        {
             entity.HasKey(x => x.Id);
         });
 
-        builder.Entity<MessageReport>(entity => {
+        builder.Entity<MessageReport>(entity =>
+        {
             entity.HasKey(x => x.Id);
 
             entity.HasOne(report => report.Message)
@@ -160,21 +171,22 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .WithMany()
                 .HasForeignKey(report => report.ReporterUserId)
                 .OnDelete(DeleteBehavior.Cascade);
-            
+
             entity.HasOne(m => m.ModerationRecord)
                 .WithOne(r => r.MessageReport)
                 .HasForeignKey<MessageReport>(m => m.ModerationRecordId)
                 .OnDelete(DeleteBehavior.SetNull);
-            
+
             entity.ComplexCollection(x => x.OriginalMessageAttachments, action => action.ToJson());
-        }).Entity<ModerationRecord>(entity => {
+        }).Entity<ModerationRecord>(entity =>
+        {
             entity.HasKey(x => x.Id);
-            
+
             entity.HasOne(m => m.ResolverUser)
                 .WithMany()
                 .HasForeignKey(m => m.ResolverUserId)
                 .OnDelete(DeleteBehavior.Cascade);
-            
+
             entity.HasOne(m => m.OffenderUser)
                 .WithMany()
                 .HasForeignKey(m => m.OffenderUserId)

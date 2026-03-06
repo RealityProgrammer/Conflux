@@ -1,6 +1,7 @@
 ﻿namespace Conflux.Domain.Enums;
 
-public enum CommunityChannelType {
+public enum CommunityChannelType
+{
     Text,
     Audio,
 }

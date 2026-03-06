@@ -3,20 +3,24 @@ using Microsoft.AspNetCore.Components;
 
 namespace Conflux.Web.Components.Shared.Modals;
 
-public abstract class BaseModal : ComponentBase, IModalComponent {
+public abstract class BaseModal : ComponentBase, IModalComponent
+{
     [Inject] protected ModalService ModalService { get; set; } = null!;
 
     [CascadingParameter] private IModalInstance Instance { get; set; } = null!;
-    
-    public void CloseModal(object? returnValue) {
+
+    public void CloseModal(object? returnValue)
+    {
         ModalService.Close(Instance.Id, returnValue);
     }
 
-    public void CloseModal() {
+    public void CloseModal()
+    {
         ModalService.Close(Instance.Id);
     }
 
-    void IModalComponent.StateHasChanged() {
+    void IModalComponent.StateHasChanged()
+    {
         StateHasChanged();
     }
 }

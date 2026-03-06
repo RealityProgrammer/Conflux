@@ -2,7 +2,8 @@
 
 namespace Conflux.Web.Hubs;
 
-public interface ICallClient {
+public interface ICallClient
+{
     Task UserHangUp(CallUserHangUpEventArgs args);
     Task CallAccepted(Guid callId);
 

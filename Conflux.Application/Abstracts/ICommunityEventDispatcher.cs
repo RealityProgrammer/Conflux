@@ -2,7 +2,8 @@
 
 namespace Conflux.Application.Abstracts;
 
-public interface ICommunityEventDispatcher {
+public interface ICommunityEventDispatcher
+{
     event Action<ChannelCategoryCreatedEventArgs>? OnChannelCategoryCreated;
     event Action<ChannelCreatedEventArgs>? OnChannelCreated;
     event Action<CommunityMemberJoinedEventArgs>? OnMemberJoined;

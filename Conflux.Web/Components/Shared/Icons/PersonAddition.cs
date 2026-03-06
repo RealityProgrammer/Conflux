@@ -1,6 +1,7 @@
 ﻿namespace Conflux.Web.Components.Shared.Icons;
 
-public enum PersonAddition {
+public enum PersonAddition
+{
     None,
     Add,
     Check,

@@ -13,10 +13,12 @@ public sealed class StatisticsService(
     ICacheService cacheService
 ) : IStatisticsService
 {
-    public async Task<UserStatisticsDTO> GetUserStatistics() {
+    public async Task<UserStatisticsDTO> GetUserStatistics()
+    {
         return await cacheService.GetOrSetStatisticsDataAsync("users", CollectStatistics);
 
-        async Task<UserStatisticsDTO> CollectStatistics() {
+        async Task<UserStatisticsDTO> CollectStatistics()
+        {
             await using var dbContext = await dbContextFactory.CreateDbContextAsync();
             dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
@@ -25,7 +27,8 @@ public sealed class StatisticsService(
 
             var counts = await dbContext.Users
                 .GroupBy(u => 1)
-                .Select(g => new {
+                .Select(g => new
+                {
                     UserCount = g.Count(),
                     OnlineCount = 0, // TODO: Online users counting
                     BannedCount = g.Count(u => u.UnbanAt != null && utcNow < u.UnbanAt),
@@ -38,10 +41,12 @@ public sealed class StatisticsService(
         }
     }
 
-    public async Task<ReportStatisticsDTO> GetReportStatistics() {
+    public async Task<ReportStatisticsDTO> GetReportStatistics()
+    {
         return await cacheService.GetOrSetStatisticsDataAsync("reports", CollectStatistics);
 
-        async Task<ReportStatisticsDTO> CollectStatistics() {
+        async Task<ReportStatisticsDTO> CollectStatistics()
+        {
             await using var dbContext = await dbContextFactory.CreateDbContextAsync();
             dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
@@ -64,10 +69,12 @@ public sealed class StatisticsService(
         }
     }
 
-    public async Task<ConversationStatisticsDTO> GetConversationStatistics() {
+    public async Task<ConversationStatisticsDTO> GetConversationStatistics()
+    {
         return await cacheService.GetOrSetStatisticsDataAsync("conversations", CollectStatistics);
 
-        async Task<ConversationStatisticsDTO> CollectStatistics() {
+        async Task<ConversationStatisticsDTO> CollectStatistics()
+        {
             await using var dbContext = await dbContextFactory.CreateDbContextAsync();
             dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
@@ -81,11 +88,13 @@ public sealed class StatisticsService(
             return new(conversationInfo.Item1, conversationInfo.Item2, messageInfo);
         }
     }
-    
-    public async Task<ReportCountStatistics?> GetReportCountStatisticsAsync(Guid communityId) {
+
+    public async Task<ReportCountStatistics?> GetReportCountStatisticsAsync(Guid communityId)
+    {
         return await cacheService.GetOrSetStatisticsDataAsync($"reports.community.{communityId:N}", CollectStatistics);
 
-        async Task<ReportCountStatistics> CollectStatistics() {
+        async Task<ReportCountStatistics> CollectStatistics()
+        {
             await using var dbContext = await dbContextFactory.CreateDbContextAsync();
             dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
@@ -96,7 +105,8 @@ public sealed class StatisticsService(
 
             var statistics = await dbContext.MessageReports
                 .Where(c => c.Message.Conversation.CommunityChannel!.ChannelCategory.CommunityId == communityId)
-                .Select(r => new {
+                .Select(r => new
+                {
                     r.CreatedAt,
                     r.ModerationRecordId
                 })
@@ -113,8 +123,9 @@ public sealed class StatisticsService(
             return statistics;
         }
     }
-    
-    public async Task<UserReportStatistics?> GetUserReportStatistics(Guid userId) {
+
+    public async Task<UserReportStatistics?> GetUserReportStatistics(Guid userId)
+    {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
@@ -133,7 +144,8 @@ public sealed class StatisticsService(
         return stats;
     }
 
-    public async Task<UserReportStatistics?> GetMemberReportStatisticsAsync(Guid memberId) {
+    public async Task<UserReportStatistics?> GetMemberReportStatisticsAsync(Guid memberId)
+    {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
@@ -142,7 +154,8 @@ public sealed class StatisticsService(
             .Select(member => new { member.UserId, member.CommunityId })
             .FirstOrDefaultAsync();
 
-        if (extractedIds == null) {
+        if (extractedIds == null)
+        {
             return null;
         }
 

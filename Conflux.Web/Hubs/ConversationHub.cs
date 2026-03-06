@@ -4,11 +4,14 @@ using Microsoft.AspNetCore.SignalR;
 namespace Conflux.Web.Hubs;
 
 [Authorize]
-public sealed class ConversationHub : Hub<IConversationClient> {
-    public override async Task OnConnectedAsync() {
+public sealed class ConversationHub : Hub<IConversationClient>
+{
+    public override async Task OnConnectedAsync()
+    {
         string? conversationId = Context.GetHttpContext()!.Request.Query["ConversationId"];
 
-        if (string.IsNullOrEmpty(conversationId)) {
+        if (string.IsNullOrEmpty(conversationId))
+        {
             throw new ArgumentException("Conversation ID is unspecified.");
         }
 
@@ -16,7 +19,8 @@ public sealed class ConversationHub : Hub<IConversationClient> {
         await base.OnConnectedAsync();
     }
 
-    public override async Task OnDisconnectedAsync(Exception? exception) {
+    public override async Task OnDisconnectedAsync(Exception? exception)
+    {
         string? conversationId = Context.GetHttpContext()!.Request.Query["ConversationId"];
 
         if (string.IsNullOrEmpty(conversationId)) return;

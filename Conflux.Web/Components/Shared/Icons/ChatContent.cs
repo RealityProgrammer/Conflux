@@ -1,6 +1,7 @@
 ﻿namespace Conflux.Web.Components.Shared.Icons;
 
-public enum ChatContent {
+public enum ChatContent
+{
     Empty,
     Dots,
     Heart,

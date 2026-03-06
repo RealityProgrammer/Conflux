@@ -1,6 +1,7 @@
 ﻿namespace Conflux.Web.Components.Shared.Icons;
 
-public enum VolumeVariations {
+public enum VolumeVariations
+{
     Off,
     Mute,
     Down,

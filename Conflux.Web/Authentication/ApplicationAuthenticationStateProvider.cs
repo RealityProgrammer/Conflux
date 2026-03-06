@@ -11,13 +11,15 @@ internal sealed class ApplicationAuthenticationStateProvider(
     ILoggerFactory loggerFactory,
     IServiceScopeFactory scopeFactory,
     IOptions<IdentityOptions> options
-) : RevalidatingServerAuthenticationStateProvider(loggerFactory) {
+) : RevalidatingServerAuthenticationStateProvider(loggerFactory)
+{
     protected override TimeSpan RevalidationInterval => TimeSpan.FromMinutes(30);
 
     protected override async Task<bool> ValidateAuthenticationStateAsync(
         AuthenticationState authenticationState,
         CancellationToken cancellationToken
-    ) {
+    )
+    {
         await using var scope = scopeFactory.CreateAsyncScope();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
@@ -25,15 +27,18 @@ internal sealed class ApplicationAuthenticationStateProvider(
 
         var applicationUser = await userManager.GetUserAsync(claimsPrinciple);
 
-        if (applicationUser is null) {
+        if (applicationUser is null)
+        {
             return false;
         }
 
-        if (userManager.SupportsUserSecurityStamp) {
+        if (userManager.SupportsUserSecurityStamp)
+        {
             var principalStamp = claimsPrinciple.FindFirstValue(options.Value.ClaimsIdentity.SecurityStampClaimType);
             var securityStamp = await userManager.GetSecurityStampAsync(applicationUser);
 
-            if (principalStamp != securityStamp) {
+            if (principalStamp != securityStamp)
+            {
                 return false;
             }
         }

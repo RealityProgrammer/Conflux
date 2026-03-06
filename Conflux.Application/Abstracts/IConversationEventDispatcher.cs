@@ -2,7 +2,8 @@
 
 namespace Conflux.Application.Abstracts;
 
-public interface IConversationEventDispatcher {
+public interface IConversationEventDispatcher
+{
     event Action<MessageReceivedEventArgs>? OnMessageReceived;
     event Action<MessageDeletedEventArgs>? OnMessageDeleted;
     event Action<MessageEditedEventArgs>? OnMessageEdited;

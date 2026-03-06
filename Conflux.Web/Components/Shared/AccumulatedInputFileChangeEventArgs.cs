@@ -2,11 +2,13 @@
 
 namespace Conflux.Web.Components.Shared;
 
-public sealed class AccumulatedInputFileChangeEventArgs : EventArgs {
+public sealed class AccumulatedInputFileChangeEventArgs : EventArgs
+{
     public readonly InputFileChangeEventArgs ChangeEventArgs;
     public readonly InputFile Owner;
 
-    public AccumulatedInputFileChangeEventArgs(InputFileChangeEventArgs changeEventArgs, InputFile owner) {
+    public AccumulatedInputFileChangeEventArgs(InputFileChangeEventArgs changeEventArgs, InputFile owner)
+    {
         ChangeEventArgs = changeEventArgs;
         Owner = owner;
     }

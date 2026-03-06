@@ -7,8 +7,10 @@ using System.Diagnostics.CodeAnalysis;
 namespace Conflux.Infrastructure.Data;
 
 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-public sealed class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<ApplicationDbContext> {
-    public ApplicationDbContext CreateDbContext(string[] args) {
+public sealed class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<ApplicationDbContext>
+{
+    public ApplicationDbContext CreateDbContext(string[] args)
+    {
         // Get environment
         var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
 
@@ -21,10 +23,11 @@ public sealed class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<App
 
         // Build DbContext options
         var connectionString = configuration.GetConnectionString("DefaultConnection");
-        
+
         var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
 
-        optionsBuilder.UseNpgsql(connectionString, options => {
+        optionsBuilder.UseNpgsql(connectionString, options =>
+        {
             options.MigrationsAssembly(GetType().Assembly);
             options.EnableRetryOnFailure(
                 maxRetryCount: 5,

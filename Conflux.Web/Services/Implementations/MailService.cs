@@ -5,13 +5,16 @@ using MimeKit;
 
 namespace Conflux.Web.Services.Implementations;
 
-internal sealed class MailService(IConfiguration config) : IMailService {
-    public async Task SendAccountConfirmationEmailAsync(string receiverEmail, string confirmationUrl) {
+internal sealed class MailService(IConfiguration config) : IMailService
+{
+    public async Task SendAccountConfirmationEmailAsync(string receiverEmail, string confirmationUrl)
+    {
         var email = new MimeMessage();
         email.From.Add(new MailboxAddress(config["MailSettings:SenderName"], config["MailSettings:SenderEmail"]!));
         email.To.Add(MailboxAddress.Parse(receiverEmail));
         email.Subject = "Account Confirmation code for Conflux";
-        email.Body = new TextPart(MimeKit.Text.TextFormat.Html) {
+        email.Body = new TextPart(MimeKit.Text.TextFormat.Html)
+        {
             Text = $"""
                    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
                        <h2 style="color: #333;">Confirm Your Account</h2>
@@ -44,11 +47,14 @@ internal sealed class MailService(IConfiguration config) : IMailService {
 
         using var smtp = new SmtpClient();
 
-        try {
+        try
+        {
             await smtp.ConnectAsync(config["MailSettings:Server"], int.Parse(config["MailSettings:Port"]!), MailKit.Security.SecureSocketOptions.StartTls);
             await smtp.AuthenticateAsync(config["MailSettings:SenderEmail"], config["MailSettings:Password"]);
             await smtp.SendAsync(email);
-        } finally {
+        }
+        finally
+        {
             await smtp.DisconnectAsync(true);
         }
     }

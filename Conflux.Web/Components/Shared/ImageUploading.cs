@@ -2,7 +2,8 @@
 
 namespace Conflux.Web.Components.Shared;
 
-public enum ImageUploadOperation {
+public enum ImageUploadOperation
+{
     Nothing,
     Upload,
     Delete,

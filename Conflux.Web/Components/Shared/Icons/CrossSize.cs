@@ -1,6 +1,7 @@
 ﻿namespace Conflux.Web.Components.Shared.Icons;
 
-public enum CrossSize {
+public enum CrossSize
+{
     Normal,
     Large
 }

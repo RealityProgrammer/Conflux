@@ -6,12 +6,13 @@ using System.Security.Claims;
 
 namespace Conflux.Application.Abstracts;
 
-public interface IUserService {
+public interface IUserService
+{
     Task<ApplicationUser?> GetUserAsync(ClaimsPrincipal claimsPrincipal);
-    
+
     Task<bool> IsUserNameTaken(string username);
     Task<bool> IsUserEmailConfirmed(Guid userId);
-    
+
     Task<bool> IsTwoFactorEnabled(ClaimsPrincipal claimsPrincipal);
     Task<bool> IsTwoFactorEnabled(ApplicationUser user);
 
@@ -21,18 +22,18 @@ public interface IUserService {
     Task<IdentityResult> AssignRoleAsync(ApplicationUser user, string roleName);
     Task<IdentityResult> RemoveRoleAsync(ApplicationUser user, string roleName);
     Task<IList<string>> GetRolesAsync(Guid userId);
-    
+
     Task<UserDisplayDTO?> GetUserDisplayAsync(Guid userId);
-    
+
     Task<UserBanState?> GetBanStateAsync(Guid userId);
     Task<UserBanDetails?> GetLatestBanDetails(Guid userId);
-    
+
     Task<IdentityResult> UpdateAsync(ApplicationUser user);
 
     Task<(int TotalCount, IReadOnlyList<UserDisplayDTO> Page)> PaginateUserDisplayAsync(
         Func<IQueryable<ApplicationUser>, IOrderedQueryable<ApplicationUser>> orderQueryProvider,
         Func<IQueryable<ApplicationUser>, IQueryable<ApplicationUser>> filterQueryProvider,
-        int start, 
+        int start,
         int count
     );
 }

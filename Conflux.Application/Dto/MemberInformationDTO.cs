@@ -5,6 +5,7 @@ public readonly record struct MemberInformationDTO(
     Guid UserId,
     RolePermissionsWithId Role,
     DateTime? UnbanAt
-) {
+)
+{
     public bool IsBanned => UnbanAt != null && DateTime.UtcNow < UnbanAt.Value;
 }

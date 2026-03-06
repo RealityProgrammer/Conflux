@@ -2,7 +2,8 @@
 
 namespace Conflux.Application.Abstracts;
 
-public interface IStatisticsService {
+public interface IStatisticsService
+{
     Task<UserStatisticsDTO> GetUserStatistics();
     Task<ReportStatisticsDTO> GetReportStatistics();
     Task<ConversationStatisticsDTO> GetConversationStatistics();

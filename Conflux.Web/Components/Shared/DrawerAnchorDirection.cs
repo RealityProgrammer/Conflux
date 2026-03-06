@@ -1,6 +1,7 @@
 ﻿namespace Conflux.Web.Components.Shared;
 
-public enum DrawerAnchorDirection {
+public enum DrawerAnchorDirection
+{
     Left,
     Right,
 }

@@ -2,13 +2,14 @@
 
 namespace Conflux.Application.Abstracts;
 
-public interface IUserNotificationService {
+public interface IUserNotificationService
+{
     event Action<SystemWarnedEventArgs> OnSystemWarned;
     event Action<SystemBannedEventArgs> OnSystemBanned;
 
     event Action<CommunityWarnedEventArgs> OnCommunityWarned;
     event Action<CommunityBannedEventArgs> OnCommunityBanned;
-    
+
     event Action<IncomingDirectMessageEventArgs> OnIncomingDirectMessage;
     event Action<DirectConversationCreatedEventArgs> OnDirectConversationCreated;
 

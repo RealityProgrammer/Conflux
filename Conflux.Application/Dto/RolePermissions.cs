@@ -7,6 +7,7 @@ public record RolePermissions(
     RolePermissionFlags Role,
     AccessPermissionFlags Access,
     ManagementPermissionFlags Management
-) {
+)
+{
     public static RolePermissions Default { get; } = new(ChannelPermissionFlags.None, RolePermissionFlags.None, AccessPermissionFlags.None, ManagementPermissionFlags.None);
 }

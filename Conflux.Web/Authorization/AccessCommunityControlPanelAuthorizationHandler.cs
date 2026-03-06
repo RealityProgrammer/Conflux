@@ -4,16 +4,19 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace Conflux.Web.Authorization;
 
-public sealed class AccessCommunityControlPanelAuthorizationHandler : AuthorizationHandler<AccessCommunityControlPanelRequirement, RolePermissions> {
+public sealed class AccessCommunityControlPanelAuthorizationHandler : AuthorizationHandler<AccessCommunityControlPanelRequirement, RolePermissions>
+{
     protected override Task HandleRequirementAsync(
-        AuthorizationHandlerContext context, 
-        AccessCommunityControlPanelRequirement requirement, 
+        AuthorizationHandlerContext context,
+        AccessCommunityControlPanelRequirement requirement,
         RolePermissions permissions
-    ) {
-        if (permissions.Access.HasFlag(AccessPermissionFlags.AccessControlPanel)) {
+    )
+    {
+        if (permissions.Access.HasFlag(AccessPermissionFlags.AccessControlPanel))
+        {
             context.Succeed(requirement);
         }
-        
+
         return Task.CompletedTask;
     }
 }

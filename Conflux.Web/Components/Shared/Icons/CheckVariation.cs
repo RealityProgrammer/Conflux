@@ -1,6 +1,7 @@
 ﻿namespace Conflux.Web.Components.Shared.Icons;
 
-public enum CheckVariation {
+public enum CheckVariation
+{
     Normal,
     All,
     Normal2,

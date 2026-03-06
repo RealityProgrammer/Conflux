@@ -1,5 +1,6 @@
 ﻿namespace Conflux.Web.Core;
 
-public enum CallRoomType {
+public enum CallRoomType
+{
     Direct,
 }

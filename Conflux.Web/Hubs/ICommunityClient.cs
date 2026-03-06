@@ -2,7 +2,8 @@
 
 namespace Conflux.Web.Hubs;
 
-public interface ICommunityClient {
+public interface ICommunityClient
+{
     Task ChannelCategoryCreated(ChannelCategoryCreatedEventArgs args);
     Task ChannelCreated(ChannelCreatedEventArgs args);
     Task MemberJoined(CommunityMemberJoinedEventArgs args);

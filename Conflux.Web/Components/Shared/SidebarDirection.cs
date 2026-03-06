@@ -1,6 +1,7 @@
 ﻿namespace Conflux.Web.Components.Shared;
 
-public enum SidebarDirection {
+public enum SidebarDirection
+{
     LeftToRight,
     RightToLeft,
 }

@@ -4,16 +4,18 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace Conflux.Web.Authorization;
 
-public class ManageCommunityReportsAuthorizationHandler : AuthorizationHandler<ManageCommunityReportsRequirement, RolePermissions> {
+public class ManageCommunityReportsAuthorizationHandler : AuthorizationHandler<ManageCommunityReportsRequirement, RolePermissions>
+{
     protected override Task HandleRequirementAsync(
-        AuthorizationHandlerContext context, 
-        ManageCommunityReportsRequirement requirement, 
+        AuthorizationHandlerContext context,
+        ManageCommunityReportsRequirement requirement,
         RolePermissions permissions)
     {
-        if (permissions.Management.HasFlag(ManagementPermissionFlags.ManageReports)) {
+        if (permissions.Management.HasFlag(ManagementPermissionFlags.ManageReports))
+        {
             context.Succeed(requirement);
         }
-        
+
         return Task.CompletedTask;
     }
 }

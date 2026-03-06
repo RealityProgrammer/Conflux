@@ -4,11 +4,14 @@ using Microsoft.AspNetCore.SignalR;
 namespace Conflux.Web.Hubs;
 
 [Authorize]
-public sealed class CommunityHub : Hub<ICommunityClient> {
-    public override async Task OnConnectedAsync() {
+public sealed class CommunityHub : Hub<ICommunityClient>
+{
+    public override async Task OnConnectedAsync()
+    {
         string? community = Context.GetHttpContext()!.Request.Query["CommunityId"];
 
-        if (string.IsNullOrEmpty(community)) {
+        if (string.IsNullOrEmpty(community))
+        {
             throw new ArgumentException("Community ID is unspecified.");
         }
 
@@ -16,7 +19,8 @@ public sealed class CommunityHub : Hub<ICommunityClient> {
         await base.OnConnectedAsync();
     }
 
-    public override async Task OnDisconnectedAsync(Exception? exception) {
+    public override async Task OnDisconnectedAsync(Exception? exception)
+    {
         string? community = Context.GetHttpContext()!.Request.Query["CommunityId"];
 
         if (string.IsNullOrEmpty(community)) return;

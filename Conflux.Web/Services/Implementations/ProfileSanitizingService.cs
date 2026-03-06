@@ -2,16 +2,19 @@
 
 namespace Conflux.Web.Services.Implementations;
 
-public sealed class ProfileSanitizingService {
+public sealed class ProfileSanitizingService
+{
     private readonly HtmlSanitizer _sanitizer;
 
-    public ProfileSanitizingService() {
+    public ProfileSanitizingService()
+    {
         _sanitizer = HtmlSanitizer.SimpleHtml5Sanitizer();
         _sanitizer.Tag("u").RemoveEmpty();
         _sanitizer.Tag("del").RemoveEmpty();
     }
 
-    public string Sanitize(string htmlString) {
+    public string Sanitize(string htmlString)
+    {
         return _sanitizer.Sanitize(htmlString);
     }
 }

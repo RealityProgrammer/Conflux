@@ -1,5 +1,6 @@
 ﻿namespace Conflux.Web.Components.Shared.Modals;
 
-public interface IModalComponent {
+public interface IModalComponent
+{
     void StateHasChanged();
 }

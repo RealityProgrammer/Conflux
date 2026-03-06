@@ -3,16 +3,18 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace Conflux.Web.Authorization;
 
-public class UserNotBannedAuthorizationHandler : AuthorizationHandler<UserNotBannedRequirement, UserBanState> {
+public class UserNotBannedAuthorizationHandler : AuthorizationHandler<UserNotBannedRequirement, UserBanState>
+{
     protected override Task HandleRequirementAsync(
-        AuthorizationHandlerContext context, 
-        UserNotBannedRequirement requirement, 
+        AuthorizationHandlerContext context,
+        UserNotBannedRequirement requirement,
         UserBanState state)
     {
-        if (DateTime.UtcNow >= state.ExpiresAt) {
+        if (DateTime.UtcNow >= state.ExpiresAt)
+        {
             context.Succeed(requirement);
         }
-        
+
         return Task.CompletedTask;
     }
 }
