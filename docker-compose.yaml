@@ -28,24 +28,17 @@ services:
     depends_on:
       "db":
         condition: service_healthy
-    environment:
-      DetailedErrors: true
-      
-      Vite__Server__Enabled: true
-      Vite__Server__Port: 5173
-      
-      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=Conflux;Username=postgres;Password=password;"
-      ConnectionStrings__PostgresCache: "Host=db;Port=5432;Database=Conflux;Username=postgres;Password=password;"
-      
-      # PostgresCache__SchemaName: "public"
-      # PostgresCache__TableName: "cache"
-      # PostgresCache__CreateIfNotExists: true
-      # PostgresCache__UseWAL: false
-      # PostgresCache__ExpiredItemsDeletionInterval: "00:30:00"
-      # PostgresCache__DefaultSlidingExpiration: "00:10:00"
-      # InitialAdminPassword: "Password1!"
     ports:
       - "8080:8080"
+    secrets:
+      - app_secrets
+      - app_production_secrets
 
 volumes:
   pgdata:
+
+secrets:
+  app_secrets:
+    file: ./Conflux.Web/secrets.json
+  app_production_secrets:
+    file: ./Conflux.Web/secrets.Production.json

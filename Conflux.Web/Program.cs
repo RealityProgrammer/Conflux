@@ -23,6 +23,15 @@ using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
+if (builder.Environment.IsDevelopment()) {
+    builder.Configuration.AddJsonFile("secrets.json", optional: false);
+    builder.Configuration.AddJsonFile($"secrets.{builder.Environment.EnvironmentName}.json", optional: true);
+} else {
+    // Docker secret file
+    builder.Configuration.AddJsonFile("/run/secrets/app_secrets", optional: false);
+    builder.Configuration.AddJsonFile($"/run/secrets/app_production_secrets", optional: false);
+}
+
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();

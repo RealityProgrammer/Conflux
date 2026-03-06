@@ -1,4 +1,6 @@
 Uploads/
+secrets.json
+secrets.*.json
 
 # Created by https://www.toptal.com/developers/gitignore/api/csharp,aspnetcore,jetbrains,visualstudio,visualstudiocode,vim,node,nextjs
 # Edit at https://www.toptal.com/developers/gitignore?templates=csharp,aspnetcore,jetbrains,visualstudio,visualstudiocode,vim,node,nextjs
