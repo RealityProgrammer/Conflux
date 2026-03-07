@@ -431,7 +431,12 @@ public class ModerationService(
         }
     }
 
-    public async Task<bool> ResolveReportByBanningAsync(Guid reportId, Guid resolverUserId, TimeSpan banDuration, string? reason)
+    public async Task<bool> ResolveReportByBanningAsync(
+        Guid reportId, 
+        Guid resolverUserId, 
+        TimeSpan banDuration, 
+        string? reason
+    )
     {
         if (banDuration < TimeSpan.Zero)
         {

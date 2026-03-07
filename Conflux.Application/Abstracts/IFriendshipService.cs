@@ -2,7 +2,7 @@
 
 public interface IFriendshipService
 {
-    Task<SendingResult> SendFriendRequestAsync(Guid senderId, Guid receiverId);
+    Task<SendingResult> SendFriendRequestAsync(Guid senderUserId, Guid receiverUserId);
     Task<bool> CancelFriendRequestAsync(Guid friendRequestId);
     Task<bool> RejectFriendRequestAsync(Guid friendRequestId);
     Task<bool> AcceptFriendRequestAsync(Guid friendRequestId);

@@ -20,7 +20,7 @@
         <Touch Files="node_modules/.install-stamp" AlwaysCreate="true" />
     </Target>
 
-    <Target Name="NpmRunBuild" DependsOnTargets="NpmInstall" BeforeTargets="BeforeBuild">
+    <Target Name="NpmRunBuild" DependsOnTargets="NpmInstall" BeforeTargets="BeforeBuild" Condition="'$(SonarQubeTargetsImported)' != 'true'">
         <Exec Command="npm run build-dev" Condition="'$(Configuration)' == 'Debug'"/>
         <Exec Command="npm run build-prod" Condition="'$(Configuration)' == 'Release'"/>
     </Target>

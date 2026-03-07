@@ -22,7 +22,7 @@ public class CommunityRoleService(
 
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
 
-        if (dbContext.CommunityRoles.Any(x => x.CommunityId == communityId && x.Name == roleName))
+        if (await dbContext.CommunityRoles.AnyAsync(x => x.CommunityId == communityId && x.Name == roleName))
         {
             return ICommunityRoleService.CreateRoleStatus.NameExists;
         }

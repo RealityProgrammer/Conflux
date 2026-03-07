@@ -13,9 +13,9 @@ public sealed partial class FriendshipService(
     ILogger<FriendshipService> logger
 ) : IFriendshipService
 {
-    public async Task<IFriendshipService.SendingResult> SendFriendRequestAsync(Guid senderId, Guid receiverId)
+    public async Task<IFriendshipService.SendingResult> SendFriendRequestAsync(Guid senderUserId, Guid receiverUserId)
     {
-        if (senderId == receiverId)
+        if (senderUserId == receiverUserId)
         {
             return new(IFriendshipService.SendingStatus.Failed, null);
         }
@@ -23,7 +23,7 @@ public sealed partial class FriendshipService(
         await using var database = await dbContextFactory.CreateDbContextAsync();
         var requestData = await database.FriendRequests
             .AsNoTracking()
-            .Where(r => (r.SenderUserId == senderId && r.ReceiverUserId == receiverId) || (r.SenderUserId == receiverId && r.ReceiverUserId == senderId))
+            .Where(r => (r.SenderUserId == senderUserId && r.ReceiverUserId == receiverUserId) || (r.SenderUserId == receiverUserId && r.ReceiverUserId == senderUserId))
             .Select(x => new
             {
                 x.Id,
@@ -42,12 +42,12 @@ public sealed partial class FriendshipService(
 
                     int numUpdatedRows = await database.FriendRequests
                         .AsNoTracking()
-                        .Where(r => (r.SenderUserId == senderId && r.ReceiverUserId == receiverId) || (r.SenderUserId == receiverId && r.ReceiverUserId == senderId))
+                        .Where(r => (r.SenderUserId == senderUserId && r.ReceiverUserId == receiverUserId) || (r.SenderUserId == receiverUserId && r.ReceiverUserId == senderUserId))
                         .ExecuteUpdateAsync(builder =>
                         {
                             builder
-                                .SetProperty(r => r.SenderUserId, senderId)
-                                .SetProperty(r => r.ReceiverUserId, receiverId)
+                                .SetProperty(r => r.SenderUserId, senderUserId)
+                                .SetProperty(r => r.ReceiverUserId, receiverUserId)
                                 .SetProperty(r => r.CreatedAt, DateTime.UtcNow)
                                 .SetProperty(r => r.ResponseAt, (DateTime?)null)
                                 .SetProperty(r => r.Status, FriendRequestStatus.Pending);
@@ -59,14 +59,14 @@ public sealed partial class FriendshipService(
                             return new(IFriendshipService.SendingStatus.Failed, null);
 
                         case 1:
-                            await eventDispatcher.NotifyFriendRequestReceivedAsync(new(requestData.Id, senderId, receiverId));
+                            await eventDispatcher.NotifyFriendRequestReceivedAsync(new(requestData.Id, senderUserId, receiverUserId));
                             return new(IFriendshipService.SendingStatus.Success, requestData.Id);
 
                         default:
                             // I blame concurrency. Still returns Success for the time being.
-                            LogUnexpectedNumberOfRowsUpdateWhenRetryFriendRequest(senderId, receiverId, numUpdatedRows);
+                            LogUnexpectedNumberOfRowsUpdateWhenRetryFriendRequest(senderUserId, receiverUserId, numUpdatedRows);
 
-                            await eventDispatcher.NotifyFriendRequestReceivedAsync(new(requestData.Id, senderId, receiverId));
+                            await eventDispatcher.NotifyFriendRequestReceivedAsync(new(requestData.Id, senderUserId, receiverUserId));
                             return new(IFriendshipService.SendingStatus.Success, requestData.Id);
                     }
 
@@ -74,7 +74,7 @@ public sealed partial class FriendshipService(
                     return new(IFriendshipService.SendingStatus.Friended, requestData.Id);
 
                 case FriendRequestStatus.Pending:
-                    return new(requestData.SenderId == senderId ? IFriendshipService.SendingStatus.OutcomingPending : IFriendshipService.SendingStatus.IncomingPending, requestData.Id);
+                    return new(requestData.SenderId == senderUserId ? IFriendshipService.SendingStatus.OutcomingPending : IFriendshipService.SendingStatus.IncomingPending, requestData.Id);
 
                 default:
                     throw new UnreachableException("Unknown FriendRequestStatus value.");
@@ -83,8 +83,8 @@ public sealed partial class FriendshipService(
 
         FriendRequest newRequest = new()
         {
-            SenderUserId = senderId,
-            ReceiverUserId = receiverId,
+            SenderUserId = senderUserId,
+            ReceiverUserId = receiverUserId,
             Status = FriendRequestStatus.Pending,
             CreatedAt = DateTime.UtcNow,
         };
@@ -93,7 +93,7 @@ public sealed partial class FriendshipService(
 
         if (await database.SaveChangesAsync() > 0)
         {
-            await eventDispatcher.NotifyFriendRequestReceivedAsync(new(newRequest.Id, senderId, receiverId));
+            await eventDispatcher.NotifyFriendRequestReceivedAsync(new(newRequest.Id, senderUserId, receiverUserId));
 
             return new(IFriendshipService.SendingStatus.Success, newRequest.Id);
         }

@@ -88,7 +88,14 @@ public sealed class ConversationService(
         return (totalCount, page);
     }
 
-    public async Task<IConversationService.SendStatus> SendMessageAsync(Guid conversationId, Guid senderUserId, string? body, Guid? replyMessageId, IReadOnlyCollection<IConversationService.UploadingAttachment> attachments, CancellationToken cancellationToken = default)
+    public async Task<IConversationService.SendStatus> SendMessageAsync(
+        Guid conversationId, 
+        Guid senderUserId, 
+        string? messageBody, 
+        Guid? replyMessageId, 
+        IReadOnlyCollection<IConversationService.UploadingAttachment> attachments, 
+        CancellationToken cancellationToken = default
+    )
     {
         // TODO: Rewrite this, this is goddamn ugly.
 
@@ -133,7 +140,7 @@ public sealed class ConversationService(
             {
                 ConversationId = conversationId,
                 SenderUserId = senderUserId,
-                Body = body,
+                Body = messageBody,
                 ReplyMessageId = replyMessageId,
                 Attachments = attachmentPaths,
                 CreatedAt = DateTime.UtcNow,
@@ -319,7 +326,7 @@ public sealed class ConversationService(
             .FirstOrDefaultAsync();
     }
 
-    public async Task<IConversationService.RenderingMessages> LoadMessagesBeforeTimestampAsync(Guid conversationId, DateTime beforeTimestamp, int take)
+    public async Task<IConversationService.RenderingMessages> LoadMessagesBeforeTimestampAsync(Guid conversationId, DateTime timestamp, int take)
     {
         await using (var dbContext = await dbContextFactory.CreateDbContextAsync())
         {
@@ -328,7 +335,7 @@ public sealed class ConversationService(
             List<IConversationService.RenderingMessageDTO> messages = await dbContext.ChatMessages
                 .Where(m => m.ConversationId == conversationId && m.DeletedAt == null)
                 .OrderByDescending(m => m.CreatedAt)
-                .Where(m => m.CreatedAt < beforeTimestamp)
+                .Where(m => m.CreatedAt < timestamp)
                 .Take(take)
                 .Include(m => m.Sender)
                 .Include(m => m.ReplyMessage)
@@ -348,7 +355,7 @@ public sealed class ConversationService(
         }
     }
 
-    public async Task<IConversationService.RenderingMessages> LoadMessagesAfterTimestampAsync(Guid conversationId, DateTime beforeTimestamp, int take)
+    public async Task<IConversationService.RenderingMessages> LoadMessagesAfterTimestampAsync(Guid conversationId, DateTime timestamp, int take)
     {
         await using (var dbContext = await dbContextFactory.CreateDbContextAsync())
         {
@@ -357,10 +364,20 @@ public sealed class ConversationService(
             List<IConversationService.RenderingMessageDTO> messages = await dbContext.ChatMessages
                 .Where(m => m.ConversationId == conversationId && m.DeletedAt == null)
                 .OrderBy(m => m.CreatedAt)
-                .Where(m => m.CreatedAt > beforeTimestamp)
+                .Where(m => m.CreatedAt > timestamp)
                 .Take(take)
                 .Include(m => m.Sender)
-                .Select(m => new IConversationService.RenderingMessageDTO(m.Id, m.SenderUserId, m.Sender.DisplayName, m.Sender.AvatarProfilePath, m.Body, m.CreatedAt, m.LastModifiedAt != null, m.ReplyMessage != null ? m.DeletedAt != null ? m.ReplyMessageId : Guid.Empty : null, m.Attachments))
+                .Select(m => new IConversationService.RenderingMessageDTO(
+                    m.Id, 
+                    m.SenderUserId, 
+                    m.Sender.DisplayName, 
+                    m.Sender.AvatarProfilePath,
+                    m.Body, 
+                    m.CreatedAt, 
+                    m.LastModifiedAt != null, 
+                    m.ReplyMessage != null ? m.DeletedAt != null ? m.ReplyMessageId : Guid.Empty : null, 
+                    m.Attachments)
+                )
                 .ToListAsync();
 
             List<Guid> replyMessageIds = messages.Where(m => m.ReplyMessageId.HasValue).Select(m => m.ReplyMessageId!.Value).ToList();

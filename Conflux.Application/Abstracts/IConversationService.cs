@@ -10,15 +10,15 @@ public interface IConversationService
 
     Task<Conversation> GetOrCreateDirectConversationAsync(Guid friendRequestId, Guid creatorUserId);
 
-    Task<SendStatus> SendMessageAsync(Guid conversationId, Guid senderUserId, string? body, Guid? replyMessageId, IReadOnlyCollection<UploadingAttachment> attachments, CancellationToken cancellationToken = default);
+    Task<SendStatus> SendMessageAsync(Guid conversationId, Guid senderUserId, string? messageBody, Guid? replyMessageId, IReadOnlyCollection<UploadingAttachment> attachments, CancellationToken cancellationToken = default);
     Task<bool> DeleteMessageAsync(Guid messageId, Guid deleteUserId);
     Task<bool> EditMessageAsync(Guid messageId, string body);
     Task<bool> EditMessageAsync(Guid messageId, Guid senderUserId, string? body);
 
     Task<MessageDisplayDTO?> GetMessageDisplayAsync(Guid messageId);
 
-    Task<RenderingMessages> LoadMessagesBeforeTimestampAsync(Guid conversationId, DateTime beforeTimestamp, int take);
-    Task<RenderingMessages> LoadMessagesAfterTimestampAsync(Guid conversationId, DateTime afterTimestamp, int take);
+    Task<RenderingMessages> LoadMessagesBeforeTimestampAsync(Guid conversationId, DateTime timestamp, int take);
+    Task<RenderingMessages> LoadMessagesAfterTimestampAsync(Guid conversationId, DateTime timestamp, int take);
 
     Task<(int TotalCount, List<DirectConversationDisplayDTO> Page)> PaginateDirectConversationDisplayAsync(Guid userId, int startIndex, int count);
 
