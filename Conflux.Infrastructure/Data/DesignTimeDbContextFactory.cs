@@ -1,8 +1,10 @@
-﻿using Conflux.Domain;
+﻿using System.Diagnostics.CodeAnalysis;
+
+using Conflux.Domain;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Conflux.Infrastructure.Data;
 

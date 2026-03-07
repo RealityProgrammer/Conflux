@@ -1,5 +1,6 @@
-﻿using Microsoft.AspNetCore.StaticFiles;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
+
+using Microsoft.AspNetCore.StaticFiles;
 
 namespace Conflux.Web.Services;
 

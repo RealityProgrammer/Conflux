@@ -1,9 +1,11 @@
-﻿using Conflux.Domain.Entities;
+﻿using System.Runtime.CompilerServices;
+
+using Conflux.Domain.Entities;
+
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ValueGeneration;
-using System.Runtime.CompilerServices;
 
 namespace Conflux.Domain;
 

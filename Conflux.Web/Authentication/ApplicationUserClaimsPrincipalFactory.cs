@@ -1,7 +1,9 @@
-﻿using Conflux.Domain.Entities;
+﻿using System.Security.Claims;
+
+using Conflux.Domain.Entities;
+
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
-using System.Security.Claims;
 
 namespace Conflux.Web.Authentication;
 

@@ -1,11 +1,13 @@
-﻿using Conflux.Application.Abstracts;
+﻿using System.Security.Claims;
+
+using Conflux.Application.Abstracts;
 using Conflux.Application.Dto;
 using Conflux.Domain;
 using Conflux.Domain.Entities;
 using Conflux.Domain.Enums;
+
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 
 namespace Conflux.Application.Implementations;
 

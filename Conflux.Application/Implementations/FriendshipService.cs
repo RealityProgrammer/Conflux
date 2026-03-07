@@ -1,9 +1,11 @@
-﻿using Conflux.Application.Abstracts;
+﻿using System.Diagnostics;
+
+using Conflux.Application.Abstracts;
 using Conflux.Domain;
 using Conflux.Domain.Entities;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System.Diagnostics;
 
 namespace Conflux.Application.Implementations;
 

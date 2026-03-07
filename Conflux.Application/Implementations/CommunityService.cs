@@ -5,7 +5,9 @@ using Conflux.Domain.Entities;
 using Conflux.Domain.Enums;
 using Conflux.Domain.Events;
 using Conflux.Domain.Extensions;
+
 using Microsoft.EntityFrameworkCore;
+
 using RolePermissions = Conflux.Domain.Enums.RolePermissions;
 
 namespace Conflux.Application.Implementations;

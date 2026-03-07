@@ -1,8 +1,10 @@
-﻿using Conflux.Application.Dto;
+﻿using System.Security.Claims;
+
+using Conflux.Application.Dto;
 using Conflux.Domain;
 using Conflux.Domain.Entities;
+
 using Microsoft.AspNetCore.Identity;
-using System.Security.Claims;
 
 namespace Conflux.Application.Abstracts;
 

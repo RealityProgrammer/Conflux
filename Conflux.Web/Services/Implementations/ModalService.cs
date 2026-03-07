@@ -1,5 +1,6 @@
-﻿using Conflux.Web.Components.Shared.Modals;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
+
+using Conflux.Web.Components.Shared.Modals;
 
 namespace Conflux.Web.Services.Implementations;
 

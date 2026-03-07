@@ -1,25 +1,29 @@
+using System.Security.Claims;
+
 using Conflux.Application.Abstracts;
 using Conflux.Application.Implementations;
-using Microsoft.EntityFrameworkCore;
-using Conflux.Web.Components;
 using Conflux.Domain;
-using Vite.AspNetCore;
-using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
 using Conflux.Domain.Entities;
 using Conflux.Web.Authentication;
 using Conflux.Web.Authorization;
+using Conflux.Web.Components;
 using Conflux.Web.Hubs;
 using Conflux.Web.Services;
 using Conflux.Web.Services.Abstracts;
 using Conflux.Web.Services.Implementations;
+
 using Markdig;
+
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
-using System.Security.Claims;
+
+using Vite.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 

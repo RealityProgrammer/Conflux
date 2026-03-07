@@ -1,7 +1,9 @@
-﻿using Conflux.Application.Abstracts;
+﻿using System.Text.Json;
+
+using Conflux.Application.Abstracts;
 using Conflux.Application.Dto;
+
 using Microsoft.Extensions.Caching.Distributed;
-using System.Text.Json;
 
 namespace Conflux.Application.Implementations;
 

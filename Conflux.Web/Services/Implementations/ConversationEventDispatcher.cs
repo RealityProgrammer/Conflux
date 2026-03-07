@@ -1,10 +1,12 @@
-﻿using Conflux.Application.Abstracts;
+﻿using System.Net;
+
+using Conflux.Application.Abstracts;
 using Conflux.Domain.Events;
 using Conflux.Web.Hubs;
+
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
-using System.Net;
 
 namespace Conflux.Web.Services.Implementations;
 

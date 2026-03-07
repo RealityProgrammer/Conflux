@@ -4,6 +4,7 @@ using Conflux.Domain;
 using Conflux.Domain.Entities;
 using Conflux.Domain.Enums;
 using Conflux.Domain.Events;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -89,11 +90,11 @@ public sealed class ConversationService(
     }
 
     public async Task<IConversationService.SendStatus> SendMessageAsync(
-        Guid conversationId, 
-        Guid senderUserId, 
-        string? messageBody, 
-        Guid? replyMessageId, 
-        IReadOnlyCollection<IConversationService.UploadingAttachment> attachments, 
+        Guid conversationId,
+        Guid senderUserId,
+        string? messageBody,
+        Guid? replyMessageId,
+        IReadOnlyCollection<IConversationService.UploadingAttachment> attachments,
         CancellationToken cancellationToken = default
     )
     {
@@ -368,14 +369,14 @@ public sealed class ConversationService(
                 .Take(take)
                 .Include(m => m.Sender)
                 .Select(m => new IConversationService.RenderingMessageDTO(
-                    m.Id, 
-                    m.SenderUserId, 
-                    m.Sender.DisplayName, 
+                    m.Id,
+                    m.SenderUserId,
+                    m.Sender.DisplayName,
                     m.Sender.AvatarProfilePath,
-                    m.Body, 
-                    m.CreatedAt, 
-                    m.LastModifiedAt != null, 
-                    m.ReplyMessage != null ? m.DeletedAt != null ? m.ReplyMessageId : Guid.Empty : null, 
+                    m.Body,
+                    m.CreatedAt,
+                    m.LastModifiedAt != null,
+                    m.ReplyMessage != null ? m.DeletedAt != null ? m.ReplyMessageId : Guid.Empty : null,
                     m.Attachments)
                 )
                 .ToListAsync();

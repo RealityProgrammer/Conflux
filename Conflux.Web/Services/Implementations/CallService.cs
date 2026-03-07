@@ -1,6 +1,7 @@
-﻿using Conflux.Web.Core;
+﻿using System.Diagnostics.CodeAnalysis;
+
+using Conflux.Web.Core;
 using Conflux.Web.Services.Abstracts;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Conflux.Web.Services.Implementations;
 

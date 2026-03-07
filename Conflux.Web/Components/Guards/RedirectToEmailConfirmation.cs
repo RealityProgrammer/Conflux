@@ -1,7 +1,9 @@
-﻿using Conflux.Application.Abstracts;
+﻿using System.Security.Claims;
+
+using Conflux.Application.Abstracts;
+
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
-using System.Security.Claims;
 
 namespace Conflux.Web.Components.Guards;
 

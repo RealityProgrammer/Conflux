@@ -1,13 +1,15 @@
-﻿using Conflux.Application.Abstracts;
+﻿using System.Runtime.CompilerServices;
+
+using Conflux.Application.Abstracts;
 using Conflux.Application.Dto;
 using Conflux.Domain;
 using Conflux.Domain.Entities;
 using Conflux.Domain.Enums;
 using Conflux.Domain.Events;
 using Conflux.Domain.Extensions;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System.Runtime.CompilerServices;
 
 namespace Conflux.Application.Implementations;
 
@@ -432,9 +434,9 @@ public class ModerationService(
     }
 
     public async Task<bool> ResolveReportByBanningAsync(
-        Guid reportId, 
-        Guid resolverUserId, 
-        TimeSpan banDuration, 
+        Guid reportId,
+        Guid resolverUserId,
+        TimeSpan banDuration,
         string? reason
     )
     {
