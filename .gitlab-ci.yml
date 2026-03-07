@@ -30,7 +30,7 @@ linting_job:
 unit_testing_job:
   stage: test
   script:
-    - echo "TODO: Execute Unit Test"
+    - "echo 'TODO: Execute Unit Test'"
 
 sonarqube_analyzing_job:
   stage: analyze
