@@ -3,11 +3,11 @@
 namespace Conflux.Application.Dto;
 
 public record RolePermissions(
-    ChannelPermissionFlags Channel,
-    RolePermissionFlags Role,
-    AccessPermissionFlags Access,
-    ManagementPermissionFlags Management
+    ChannelPermissions Channel,
+    Domain.Enums.RolePermissions Role,
+    AccessPermissions Access,
+    ManagementPermissions Management
 )
 {
-    public static RolePermissions Default { get; } = new(ChannelPermissionFlags.None, RolePermissionFlags.None, AccessPermissionFlags.None, ManagementPermissionFlags.None);
+    public static RolePermissions Default { get; } = new(ChannelPermissions.None, Domain.Enums.RolePermissions.None, AccessPermissions.None, ManagementPermissions.None);
 }

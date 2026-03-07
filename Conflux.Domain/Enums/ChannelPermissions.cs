@@ -1,7 +1,7 @@
 ﻿namespace Conflux.Domain.Enums;
 
 [Flags]
-public enum ChannelPermissionFlags : byte
+public enum ChannelPermissions : byte
 {
     None = 0,
 

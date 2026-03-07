@@ -1,6 +1,7 @@
 ﻿using Conflux.Application.Dto;
 using Conflux.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
+using RolePermissions = Conflux.Application.Dto.RolePermissions;
 
 namespace Conflux.Web.Authorization;
 
@@ -11,7 +12,7 @@ public class BanCommunityMemberAuthorizationHandler : AuthorizationHandler<BanCo
         BanCommunityMemberRequirement requirement,
         RolePermissions permissions)
     {
-        if (permissions.Management.HasFlag(ManagementPermissionFlags.BanMember))
+        if (permissions.Management.HasFlag(ManagementPermissions.BanMember))
         {
             context.Succeed(requirement);
         }

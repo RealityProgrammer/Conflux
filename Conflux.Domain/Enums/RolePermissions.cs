@@ -1,7 +1,7 @@
 ﻿namespace Conflux.Domain.Enums;
 
 [Flags]
-public enum RolePermissionFlags : byte
+public enum RolePermissions : byte
 {
     None = 0,
 

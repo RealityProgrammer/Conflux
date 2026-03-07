@@ -1,7 +1,7 @@
 ﻿namespace Conflux.Domain.Enums;
 
 [Flags]
-public enum ManagementPermissionFlags
+public enum ManagementPermissions
 {
     None = 0,
 

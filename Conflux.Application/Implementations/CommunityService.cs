@@ -6,6 +6,7 @@ using Conflux.Domain.Enums;
 using Conflux.Domain.Events;
 using Conflux.Domain.Extensions;
 using Microsoft.EntityFrameworkCore;
+using RolePermissions = Conflux.Domain.Enums.RolePermissions;
 
 namespace Conflux.Application.Implementations;
 
@@ -37,9 +38,9 @@ public class CommunityService(
         CommunityRole ownerRole = new()
         {
             Name = "Owners",
-            AccessPermissions = AccessPermissionFlags.All,
-            ChannelPermissions = ChannelPermissionFlags.All,
-            RolePermissions = RolePermissionFlags.All,
+            AccessPermissions = AccessPermissions.All,
+            ChannelPermissions = ChannelPermissions.All,
+            RolePermissions = RolePermissions.All,
             CommunityId = community.Id,
             CreatedAt = DateTime.UtcNow,
         };
@@ -186,7 +187,7 @@ public class CommunityService(
 
         if (await roleService.GetPermissionsAsync(dbContext, roleId) is not { } permissions)
         {
-            return new(roleId, RolePermissions.Default);
+            return new(roleId, Dto.RolePermissions.Default);
         }
 
         return new(roleId, permissions);
@@ -264,7 +265,7 @@ public class CommunityService(
             .Include(m => m.Role)
             .Select(m =>
                 new MemberInformationDTO(m.Id, m.UserId, m.Role == null ?
-                    new RolePermissionsWithId(null, RolePermissions.Default) :
+                    new RolePermissionsWithId(null, Dto.RolePermissions.Default) :
                     new(m.RoleId, new(m.Role.ChannelPermissions, m.Role.RolePermissions, m.Role.AccessPermissions, m.Role.ManagementPermissions)), m.UnbanAt))
             .Cast<MemberInformationDTO?>()
             .FirstOrDefaultAsync();
@@ -281,7 +282,7 @@ public class CommunityService(
             .Include(m => m.Role)
             .Select(m =>
                 new MemberInformationDTO(m.Id, m.UserId, m.Role == null ?
-                    new RolePermissionsWithId(null, RolePermissions.Default) :
+                    new RolePermissionsWithId(null, Dto.RolePermissions.Default) :
                     new(m.RoleId, new(m.Role.ChannelPermissions, m.Role.RolePermissions, m.Role.AccessPermissions, m.Role.ManagementPermissions)), m.UnbanAt))
             .Cast<MemberInformationDTO?>()
             .FirstOrDefaultAsync();

@@ -1,17 +1,18 @@
 ﻿using Conflux.Application.Dto;
 using Conflux.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
+using RolePermissions = Conflux.Domain.Enums.RolePermissions;
 
 namespace Conflux.Web.Authorization;
 
-public class UpdateCommunityRolePermissionsAuthorizationHandler : AuthorizationHandler<UpdateCommunityRolePermissionsRequirement, RolePermissions>
+public class UpdateCommunityRolePermissionsAuthorizationHandler : AuthorizationHandler<UpdateCommunityRolePermissionsRequirement, Application.Dto.RolePermissions>
 {
     protected override Task HandleRequirementAsync(
         AuthorizationHandlerContext context,
         UpdateCommunityRolePermissionsRequirement requirement,
-        RolePermissions permissions)
+        Application.Dto.RolePermissions permissions)
     {
-        if (permissions.Role.HasFlag(RolePermissionFlags.ModifyRolePermissions))
+        if (permissions.Role.HasFlag(RolePermissions.ModifyRolePermissions))
         {
             context.Succeed(requirement);
         }

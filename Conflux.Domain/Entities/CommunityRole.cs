@@ -12,10 +12,10 @@ public class CommunityRole
     public Guid CommunityId { get; set; }
     public Community Community { get; set; } = null!;
 
-    public RolePermissionFlags RolePermissions { get; set; }
-    public ChannelPermissionFlags ChannelPermissions { get; set; }
-    public AccessPermissionFlags AccessPermissions { get; set; }
-    public ManagementPermissionFlags ManagementPermissions { get; set; }
+    public RolePermissions RolePermissions { get; set; }
+    public ChannelPermissions ChannelPermissions { get; set; }
+    public AccessPermissions AccessPermissions { get; set; }
+    public ManagementPermissions ManagementPermissions { get; set; }
 
     public DateTime CreatedAt { get; set; }
 

@@ -1,6 +1,7 @@
 ﻿using Conflux.Application.Dto;
 using Conflux.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
+using RolePermissions = Conflux.Application.Dto.RolePermissions;
 
 namespace Conflux.Web.Authorization;
 
@@ -12,7 +13,7 @@ public sealed class AccessCommunityControlPanelAuthorizationHandler : Authorizat
         RolePermissions permissions
     )
     {
-        if (permissions.Access.HasFlag(AccessPermissionFlags.AccessControlPanel))
+        if (permissions.Access.HasFlag(AccessPermissions.AccessControlPanel))
         {
             context.Succeed(requirement);
         }
