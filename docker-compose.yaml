@@ -33,9 +33,12 @@ services:
     secrets:
       - app_secrets
       - app_production_secrets
+    volumes:
+      - uploads:/app/Uploads
 
 volumes:
   pgdata:
+  uploads:
 
 secrets:
   app_secrets:

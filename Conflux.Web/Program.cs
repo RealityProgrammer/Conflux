@@ -36,7 +36,7 @@ else
 {
     // Docker secret file
     builder.Configuration.AddJsonFile("/run/secrets/app_secrets", optional: false);
-    builder.Configuration.AddJsonFile($"/run/secrets/app_production_secrets", optional: false);
+    builder.Configuration.AddJsonFile($"/run/secrets/app_production_secrets", optional: true);
 }
 
 // Add services to the container.

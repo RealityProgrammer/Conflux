@@ -20,7 +20,7 @@
         <Touch Files="node_modules/.install-stamp" AlwaysCreate="true" />
     </Target>
 
-    <Target Name="NpmRunBuild" DependsOnTargets="NpmInstall" BeforeTargets="BeforeBuild" Condition="'$(SonarQubeTargetsImported)' != 'true'">
+    <Target Name="NpmRunBuild" DependsOnTargets="NpmInstall" BeforeTargets="BeforeBuild">
         <Exec Command="npm run build-dev" Condition="'$(Configuration)' == 'Debug'"/>
         <Exec Command="npm run build-prod" Condition="'$(Configuration)' == 'Release'"/>
     </Target>
@@ -43,19 +43,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Remove="appsettings.Development.json.example" />
-    </ItemGroup>
-
-    <ItemGroup>
       <ProjectReference Include="..\Conflux.Application\Conflux.Application.csproj" />
       <ProjectReference Include="..\Conflux.Infrastructure\Conflux.Infrastructure.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Content Update="secrets.json.example">
-        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      </Content>
     </ItemGroup>
 </Project>
