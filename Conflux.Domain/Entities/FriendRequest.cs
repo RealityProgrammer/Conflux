@@ -1,4 +1,6 @@
-﻿namespace Conflux.Domain.Entities;
+﻿using Conflux.Domain.Enums;
+
+namespace Conflux.Domain.Entities;
 
 public class FriendRequest
 {

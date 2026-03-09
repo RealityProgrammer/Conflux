@@ -3,6 +3,7 @@
 using Conflux.Application.Abstracts;
 using Conflux.Domain;
 using Conflux.Domain.Entities;
+using Conflux.Domain.Enums;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
