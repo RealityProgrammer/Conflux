@@ -1,5 +1,4 @@
 using System.Security.Claims;
-
 using Conflux.Application.Abstracts;
 using Conflux.Application.Implementations;
 using Conflux.Domain;
@@ -11,9 +10,7 @@ using Conflux.Web.Hubs;
 using Conflux.Web.Services;
 using Conflux.Web.Services.Abstracts;
 using Conflux.Web.Services.Implementations;
-
 using Markdig;
-
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -22,7 +19,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
-
 using Vite.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);

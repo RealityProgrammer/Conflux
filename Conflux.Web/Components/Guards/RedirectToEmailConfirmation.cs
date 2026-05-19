@@ -1,5 +1,4 @@
 ﻿using System.Security.Claims;
-
 using Conflux.Application.Abstracts;
 
 using Microsoft.AspNetCore.Components;

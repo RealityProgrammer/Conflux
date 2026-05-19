@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.AspNetCore.Components.Forms;
 
 namespace Conflux.Web.Core;

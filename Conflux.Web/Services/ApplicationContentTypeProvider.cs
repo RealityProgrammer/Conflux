@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.AspNetCore.StaticFiles;
 
 namespace Conflux.Web.Services;

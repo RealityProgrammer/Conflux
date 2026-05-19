@@ -1,6 +1,5 @@
 ﻿using Conflux.Application.Abstracts;
 using Conflux.Web.Services.Abstracts;
-
 using MailKit.Net.Smtp;
 
 using MimeKit;

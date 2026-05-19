@@ -1,6 +1,5 @@
 ﻿using System.Text;
 using System.Text.Json.Serialization;
-
 using Conflux.Web.Core;
 
 namespace Conflux.Web.Services;

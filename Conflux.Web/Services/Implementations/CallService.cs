@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-
 using Conflux.Web.Core;
 using Conflux.Web.Services.Abstracts;
 

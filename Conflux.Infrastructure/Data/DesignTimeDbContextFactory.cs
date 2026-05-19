@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-
 using Conflux.Domain;
 
 using Microsoft.EntityFrameworkCore;

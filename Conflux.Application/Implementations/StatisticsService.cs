@@ -4,7 +4,6 @@ using Conflux.Application.Abstracts;
 using Conflux.Application.Dto;
 using Conflux.Domain;
 using Conflux.Domain.Enums;
-
 using Microsoft.EntityFrameworkCore;
 
 namespace Conflux.Application.Implementations;

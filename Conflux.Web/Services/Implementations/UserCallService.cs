@@ -1,9 +1,7 @@
 ﻿using System.Net;
-
 using Conflux.Web.Core;
 using Conflux.Web.Hubs;
 using Conflux.Web.Services.Abstracts;
-
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;

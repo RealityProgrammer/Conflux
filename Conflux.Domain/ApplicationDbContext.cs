@@ -1,5 +1,4 @@
 ﻿using System.Runtime.CompilerServices;
-
 using Conflux.Domain.Entities;
 
 using Microsoft.AspNetCore.Identity;

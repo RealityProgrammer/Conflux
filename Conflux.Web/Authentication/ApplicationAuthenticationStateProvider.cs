@@ -1,7 +1,5 @@
 using System.Security.Claims;
-
 using Conflux.Domain.Entities;
-
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server;
 using Microsoft.AspNetCore.Identity;

@@ -4,7 +4,6 @@ using Conflux.Domain;
 using Conflux.Domain.Entities;
 using Conflux.Domain.Enums;
 using Conflux.Domain.Events;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
